@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- True on the light scheme, so the status and navigation bar icons draw dark -->
+    <bool name="ns_light_system_bars">true</bool>
+</resources>

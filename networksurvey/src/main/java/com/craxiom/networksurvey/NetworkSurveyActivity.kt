@@ -14,7 +14,6 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +24,7 @@ import com.craxiom.networksurvey.data.PlmnColorOverrideManager
 import com.craxiom.networksurvey.listeners.IGnssFailureListener
 import com.craxiom.networksurvey.services.GrpcConnectionService
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.survey.engine.SurveyOrigin
 import com.craxiom.networksurvey.services.NetworkSurveyService.SurveyServiceBinder
 import com.craxiom.networksurvey.ui.main.DeepLinkViewModel
 import com.craxiom.networksurvey.ui.main.MainCompose
@@ -54,11 +54,7 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
     private val sharedViewModel: SharedViewModel by viewModels()
     private var surveyServiceConnection: SurveyServiceConnection? = null
     private var networkSurveyService: NetworkSurveyService? = null
-    private var turnOnCellularLoggingOnNextServiceConnection = false
-    private var turnOnWifiLoggingOnNextServiceConnection = false
-    private var turnOnBluetoothLoggingOnNextServiceConnection = false
-    private var turnOnGnssLoggingOnNextServiceConnection = false
-    private var turnOnCdrLoggingOnNextServiceConnection = false
+    private var autoStartSurveyOnNextServiceConnection = false
     private var gnssFailureListener: IGnssFailureListener? = null
     private var hasRequestedPermissions = false
 
@@ -79,7 +75,6 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         // Load user color overrides before Compose renders the tower map
         PlmnColorOverrideManager(this)
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES) // Force Dark Mode
         setContent {
             MainCompose(
                 appVersion = NsUtils.getAppVersionName(this),
@@ -90,32 +85,13 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         // Install the defaults specified in the XML preferences file, this is only done the first time the app is opened
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
 
-        val applicationContext = applicationContext
-        turnOnCellularLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(
-            NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
-            false,
-            applicationContext
-        )
-        turnOnWifiLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(
-            NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING,
-            false,
-            applicationContext
-        )
-        turnOnBluetoothLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(
-            NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING,
-            false,
-            applicationContext
-        )
-        turnOnGnssLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(
-            NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING,
-            false,
-            applicationContext
-        )
-        turnOnCdrLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(
-            NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING,
-            false,
-            applicationContext
-        )
+        // Auto start runs once per process launch, never on a recreation (rotation, theme change),
+        // so turning the phone never restarts a survey the user just stopped. After the process is
+        // killed it runs again, because the survey died with the process.
+        if (!autoStartAttemptedThisProcess) {
+            autoStartAttemptedThisProcess = true
+            autoStartSurveyOnNextServiceConnection = true
+        }
 
         surveyServiceConnection = SurveyServiceConnection()
 
@@ -512,106 +488,15 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
     }
 
     /**
-     * Starts or stops writing the Cellular log file based on the specified parameter.
-     *
-     * @param enable True if logging should be enabled, false if it should be turned off.
+     * Starts the survey if it is set to start automatically when the app opens. The service decides
+     * (organization policy, the user's setting, and whether the user stopped a managed survey).
      */
-    private fun toggleCellularLogging(enable: Boolean) {
+    private fun startAutoSurveyIfEnabled(service: NetworkSurveyService) {
         lifecycleScope.launch {
-            val enabled = withContext(Dispatchers.IO) {
-                networkSurveyService?.toggleCellularLogging(enable)
+            withContext(Dispatchers.IO) {
+                checkLocationProvider(false)
+                service.startAutoSurveyIfEnabled(SurveyOrigin.APP_OPEN)
             }
-
-            val message = when (enabled) {
-                null -> getString(R.string.cellular_logging_toggle_failed)
-                true -> getString(R.string.cellular_logging_start_toast)
-                false -> getString(R.string.cellular_logging_stop_toast)
-            }
-            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Starts or stops writing the Wi-Fi log file based on the specified parameter.
-     *
-     * @param enable True if logging should be enabled, false if it should be turned off.
-     * @since 0.1.2
-     */
-    private fun toggleWifiLogging(enable: Boolean) {
-        lifecycleScope.launch {
-            val enabled = withContext(Dispatchers.IO) {
-                networkSurveyService?.toggleWifiLogging(enable)
-            }
-
-            val message = when (enabled) {
-                null -> getString(R.string.wifi_logging_toggle_failed)
-                true -> getString(R.string.wifi_logging_start_toast)
-                false -> getString(R.string.wifi_logging_stop_toast)
-            }
-            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Starts or stops writing the Bluetooth log file based on the specified parameter.
-     *
-     * @param enable True if logging should be enabled, false if it should be turned off.
-     * @since 1.0.0
-     */
-    private fun toggleBluetoothLogging(enable: Boolean) {
-        lifecycleScope.launch {
-            val enabled = withContext(Dispatchers.IO) {
-                networkSurveyService?.toggleBluetoothLogging(enable)
-            }
-
-            val message = when (enabled) {
-                null -> getString(R.string.bluetooth_logging_toggle_failed)
-                true -> getString(R.string.bluetooth_logging_start_toast)
-                false -> getString(R.string.bluetooth_logging_stop_toast)
-            }
-            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Starts or stops writing the GNSS log file based on the specified parameter.
-     *
-     * @param enable True if logging should be enabled, false if it should be turned off.
-     */
-    private fun toggleGnssLogging(enable: Boolean) {
-        lifecycleScope.launch {
-            val enabled = withContext(Dispatchers.IO) {
-                if (!checkLocationProvider(false)) return@withContext null
-                networkSurveyService?.toggleGnssLogging(enable)
-            }
-
-            val message = when (enabled) {
-                null -> getString(R.string.gnss_logging_toggle_failed)
-                true -> getString(R.string.gnss_logging_start_toast)
-                false -> getString(R.string.gnss_logging_stop_toast)
-            }
-            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Starts or stops writing the CDR log file based on the specified parameter.
-     *
-     * @param enable True if logging should be enabled, false if it should be turned off.
-     */
-    private fun toggleCdrLogging(enable: Boolean) {
-        lifecycleScope.launch {
-            val enabled = withContext(Dispatchers.IO) {
-                if (!checkLocationProvider(false)) return@withContext null
-                networkSurveyService?.toggleCdrLogging(enable)
-            }
-
-            val message = when (enabled) {
-                null -> getString(R.string.cdr_logging_toggle_failed)
-                true -> getString(R.string.cdr_logging_start_toast)
-                false -> getString(R.string.cdr_logging_stop_toast)
-            }
-            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -748,36 +633,10 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
             networkSurveyService!!.onUiVisible(this@NetworkSurveyActivity)
             networkSurveyService!!.registerGnssFailureListener(gnssFailureListener)
 
-            val cellularLoggingEnabled = networkSurveyService!!.isCellularLoggingEnabled
-            if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled) {
-                toggleCellularLogging(true)
+            if (autoStartSurveyOnNextServiceConnection) {
+                autoStartSurveyOnNextServiceConnection = false
+                startAutoSurveyIfEnabled(networkSurveyService!!)
             }
-
-            val wifiLoggingEnabled = networkSurveyService!!.isWifiLoggingEnabled
-            if (turnOnWifiLoggingOnNextServiceConnection && !wifiLoggingEnabled) {
-                toggleWifiLogging(true)
-            }
-
-            val bluetoothLoggingEnabled = networkSurveyService!!.isBluetoothLoggingEnabled
-            if (turnOnBluetoothLoggingOnNextServiceConnection && !bluetoothLoggingEnabled) {
-                toggleBluetoothLogging(true)
-            }
-
-            val gnssLoggingEnabled = networkSurveyService!!.isGnssLoggingEnabled
-            if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled) {
-                toggleGnssLogging(true)
-            }
-
-            val cdrLoggingEnabled = networkSurveyService!!.isCdrLoggingEnabled
-            if (turnOnCdrLoggingOnNextServiceConnection && !cdrLoggingEnabled) {
-                toggleCdrLogging(true)
-            }
-
-            turnOnCellularLoggingOnNextServiceConnection = false
-            turnOnWifiLoggingOnNextServiceConnection = false
-            turnOnBluetoothLoggingOnNextServiceConnection = false
-            turnOnGnssLoggingOnNextServiceConnection = false
-            turnOnCdrLoggingOnNextServiceConnection = false
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
@@ -788,6 +647,9 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
 
     companion object {
         private const val ACCESS_PERMISSION_REQUEST_ID = 1
+
+        /** True once this process has tried the app-open auto start. */
+        private var autoStartAttemptedThisProcess = false
         val PERMISSIONS: Array<String>
 
         // The BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions are only for Android 12 and above.

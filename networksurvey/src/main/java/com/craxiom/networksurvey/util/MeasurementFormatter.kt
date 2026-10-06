@@ -14,7 +14,7 @@ import kotlin.math.roundToInt
  * - Speed (km/h / mph)
  * - Accuracy (meters/feet)
  *
- * Note: This only affects UI display. All exported data (CSV, GeoPackage, MQTT, gRPC)
+ * Note: This only affects UI display. All exported data (CSV, MQTT, gRPC)
  * remains in metric/SI units.
  */
 object MeasurementFormatter {

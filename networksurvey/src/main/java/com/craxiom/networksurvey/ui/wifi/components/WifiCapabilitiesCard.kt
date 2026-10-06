@@ -10,14 +10,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.common.NsCardHeader
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 
 /**
  * Capabilities card — renders the raw ScanResult.capabilities string in monospace.
  */
 @Composable
 fun WifiCapabilitiesCard(capabilities: String, modifier: Modifier = Modifier) {
-    DetailsCardFrame(modifier = modifier) {
-        CardHeader(text = stringResource(R.string.wifi_details_capabilities))
+    NsDetailsCardFrame(modifier = modifier) {
+        NsCardHeader(text = stringResource(R.string.wifi_details_capabilities))
         SelectionContainer {
             Text(
                 text = capabilities.ifBlank { "-" },

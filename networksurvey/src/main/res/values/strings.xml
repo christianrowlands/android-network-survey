@@ -106,7 +106,7 @@
     <string name="file_mqtt_help_file_toggle_label">Survey Types</string>
     <string name="file_mqtt_help_file_toggle_desc">Toggle Cellular, Wi-Fi, Bluetooth, GNSS, and/or CDR to choose what gets logged</string>
     <string name="file_mqtt_help_file_format_label">File Format</string>
-    <string name="file_mqtt_help_file_format_desc">GeoPackage and/or CSV, depending on your settings</string>
+    <string name="file_mqtt_help_file_format_desc">CSV, with a separate file for each record type</string>
     <string name="file_mqtt_help_mqtt_title">MQTT Streaming</string>
     <string name="file_mqtt_help_mqtt_realtime_label">Real-Time</string>
     <string name="file_mqtt_help_mqtt_realtime_desc">Sends data to a remote server as it is collected</string>
@@ -148,7 +148,7 @@
     <string name="mission_id_help_when_title">When it changes</string>
     <string name="mission_id_help_when">A new Mission ID is created when you go from no surveys running to starting your first survey. Adding another survey type to a survey that is already running keeps the same Mission ID. Stopping everything and starting again creates a new one. OpenCelliD and BeaconDB uploads do not create a new Mission ID.</string>
     <string name="mission_id_help_why_title">Why it matters</string>
-    <string name="mission_id_help_why">Records from one survey all share the same Mission ID. In NS Analytics, and in your exported CSV and GeoPackage files, it is how this survey\'s data is grouped and filtered.</string>
+    <string name="mission_id_help_why">Records from one survey all share the same Mission ID. In NS Analytics, and in your exported CSV files, it is how this survey\'s data is grouped and filtered.</string>
     <string name="mission_id_help_how_title">How to use it</string>
     <string name="mission_id_help_how">Copy the Mission ID shown here and use it in NS Analytics to find and filter this survey\'s data.</string>
 
@@ -161,6 +161,8 @@
     <!-- MQTT Help Dialog -->
     <string name="mqtt_help_title">MQTT Connection</string>
     <string name="mqtt_help_description">Help</string>
+    <string name="help_button_description">Help</string>
+    <string name="back_button_description">Back</string>
     <string name="mqtt_help_dismiss">Got it</string>
 
     <!-- gRPC Help Dialog -->
@@ -224,6 +226,9 @@
     <string name="card_title_upload">OpenCelliD &amp; BeaconDB Upload</string>
     <string name="start_scanning">Start Survey</string>
     <string name="stop_scanning">Stop Survey</string>
+    <string name="survey_start_short">Start</string>
+    <string name="survey_stop_short">Stop</string>
+    <string name="details_button">Details</string>
     <string name="scanning_inactive">Survey Inactive</string>
     <string name="scanning_active">Survey Active</string>
     <string name="upload_scanning_description_text">Collect cellular and Wi-Fi data for upload to public databases. Tap ? for details.</string>
@@ -409,6 +414,20 @@
     <string name="status_disconnecting">Disconnecting …</string>
 
     <string name="survey_monitor">Survey Monitor</string>
+    <string name="survey_monitor_tab_status">Status</string>
+    <string name="survey_monitor_tab_map">Map</string>
+    <string name="survey_monitor_requires_upload_scanning">Requires upload scanning</string>
+    <string name="survey_monitor_new_tower_alerts_on">Alerts when new towers are detected</string>
+    <string name="survey_monitor_time_elapsed">Time Elapsed</string>
+    <string name="survey_monitor_logged">Logged</string>
+    <string name="survey_monitor_to_upload">To Upload</string>
+    <!-- %1$d is the number of records waiting to upload -->
+    <string name="survey_monitor_ns_analytics_queued">Queued: %1$,d</string>
+    <!-- %1$s is a comma separated list of destinations, e.g. "Log files, MQTT" -->
+    <string name="survey_monitor_active_destinations">Active: %1$s</string>
+    <string name="survey_monitor_serving_cell">Serving Cell</string>
+    <string name="survey_monitor_label_network">Network</string>
+    <string name="survey_monitor_label_cell_id">Cell ID</string>
     <string name="settings">Settings</string>
     <string name="manual">User Manual</string>
     <string name="messaging_docs">Messaging Docs</string>
@@ -567,17 +586,11 @@
 
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
-    <string name="stream_cellular_title">Stream Cellular</string>
-    <string name="stream_phone_state_title">Stream Cellular Phone State</string>
-    <string name="stream_wifi_title">Stream Wi-Fi</string>
-    <string name="stream_bluetooth_title">Stream Bluetooth</string>
-    <string name="stream_gnss_title">Stream GNSS</string>
     <string name="stream_device_status_title">Stream Device Status</string>
     <string name="mqtt_topic_prefix_title">MQTT Topic Prefix</string>
 
     <!-- App Restriction Constants -->
     <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
-    <string name="mqtt_start_on_boot_description">If true, when the phone boots an attempt will be made to connect to the MDM configured MQTT broker</string>
     <string name="mqtt_connection_host_title">MQTT Connection Host</string>
     <string name="mqtt_connection_host_description">The MQTT broker hostname (e.g. mqtt.example.com)</string>
     <string name="mqtt_connection_port_title">MQTT Connection Port</string>
@@ -596,13 +609,9 @@
     <string name="mqtt_qos_title">MQTT QoS</string>
     <string name="mqtt_qos_mdm_description">Quality of Service level for MQTT messages. Valid values: 0 (at most once), 1 (at least once), 2 (exactly once). Default: 1</string>
     <string name="cellular_stream_title">Cellular Stream Enabled</string>
-    <string name="cellular_stream_description">True to stream cellular data, false otherwise</string>
     <string name="wifi_stream_title">Wi-Fi Stream Enabled</string>
-    <string name="wifi_stream_description">True to stream Wi-Fi data, false otherwise</string>
     <string name="bluetooth_stream_title">Bluetooth Stream Enabled</string>
-    <string name="bluetooth_stream_description">True to stream Bluetooth data, false otherwise</string>
     <string name="gnss_stream_title">GNSS Stream Enabled</string>
-    <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
     <string name="device_status_stream_title">Device Status Stream Enabled</string>
     <string name="device_status_stream_description">True to stream Device Status messages over MQTT, false otherwise</string>
     <string name="watchlist_stream_title">Watchlist Stream Enabled</string>
@@ -610,53 +619,31 @@
     <string name="watchlist_stream_setting_title">Stream over MQTT</string>
     <string name="watchlist_stream_setting_summary">When an MQTT server connection is active, watchlist match events and your watched networks (including labels) are sent to the server</string>
     <string name="phone_state_stream_title">Phone State Stream Enabled</string>
-    <string name="phone_state_stream_description">Enable or disable streaming of phone state events</string>
-    <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
-    <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
-    <string name="auto_start_bluetooth_logging_description">True to start Bluetooth logging automatically, false otherwise</string>
-    <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
-    <string name="auto_start_cdr_logging_description">True to start CDR logging automatically, false otherwise</string>
-    <string name="auto_start_phone_state_logging_description">Auto start phone state logging on device boot</string>
     <string name="auto_include_phone_state_description">Automatically start phone state logging when cellular logging starts</string>
     <string name="ignore_wifi_scan_throttling_warning_title">Ignore Wi-Fi Throttling Warning</string>
     <string name="ignore_wifi_scan_throttling_warning_description">True to ignore showing the throttling warning snackbar message on the Wi-Fi UI, false to allow the snackbar message to work as normal. The snackbar message tells the user if Wi-Fi throttling is enabled, and gives them a link to turn off throttling in developer options. If developer options are disabled via MDM, then set this to true so the user is not asked to open developer options.</string>
 
     <!-- User Preference Constants -->
-    <string name="mdm_override_title">MDM Override</string>
-    <string name="mdm_override_summary_on">Network Survey is controlled via MDM, but now some of the MDM settings can be overridden</string>
-    <string name="mdm_override_summary_off">Network Survey is controlled via MDM</string>
+    <string name="mdm_override_title">Override organization settings</string>
+    <string name="mdm_override_summary_on">Using your own settings instead of your organization\'s</string>
+    <string name="mdm_override_summary_off">Your organization manages survey settings on this phone</string>
 
     <string name="logging_config_title">Logging Config</string>
 
     <string name="log_rollover_description">The maximum file size (in MB) before starting a new survey log file. The default value is 10 MB.</string>
     <string name="log_rollover_title">Log Rollover Size (MB)</string>
 
-    <string name="log_file_description">Specifies what type of file to log the survey results to. The options are 0, 1, or 2. 0 is for CSV, 1 is for GeoPackage, and 2 is for both CSV and GeoPackage. Default is 0.</string>
-    <string name="log_file_title">Log File Type</string>
-
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
-    <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening or when the phone is turned on</string>
-    <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
 
     <string name="auto_start_wifi_logging_title">Auto Start Wi-Fi Logging</string>
-    <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening or when the phone is turned on</string>
-    <string name="auto_start_wifi_logging_summary_off">Wi-Fi logging will only start when manually enabled</string>
 
     <string name="auto_start_bluetooth_logging_title">Auto Start Bluetooth Logging</string>
-    <string name="auto_start_bluetooth_logging_summary_on">Bluetooth logging will be started upon app opening or when the phone is turned on</string>
-    <string name="auto_start_bluetooth_logging_summary_off">Bluetooth logging will only start when manually enabled</string>
 
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
-    <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening or when the phone is turned on</string>
-    <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
 
     <string name="auto_start_cdr_logging_title">Auto Start CDR Logging</string>
-    <string name="auto_start_cdr_logging_summary_on">CDR logging will be started upon app opening or when the phone is turned on</string>
-    <string name="auto_start_cdr_logging_summary_off">CDR logging will only start when manually enabled</string>
 
     <string name="auto_start_phone_state_logging_title">Auto Start Phone State Logging</string>
-    <string name="auto_start_phone_state_logging_summary_on">Phone State logging will start when the app opens</string>
-    <string name="auto_start_phone_state_logging_summary_off">Phone State logging will not auto start</string>
     <string name="auto_include_phone_state_title">Auto-include Phone State with Cellular</string>
     <string name="auto_include_phone_state_summary_on">Phone State logging will automatically start and stop with Cellular logging</string>
     <string name="auto_include_phone_state_summary_off">Phone State logging must be started independently</string>
@@ -687,7 +674,6 @@
     <string name="device_status_scan_interval_title">Device Status Message Interval</string>
     <string name="device_status_scan_interval_description">The rate at which Device Status messages will be generated in seconds.</string>
 
-    <string name="mqtt_connection_config_title">MQTT Connection Config</string>
 
     <string name="location_config_title">Location Config</string>
     <string name="location_provider_title">Location Provider</string>
@@ -865,9 +851,6 @@
     <string name="new_tower_alerts_title">New Tower Alerts</string>
     <string name="new_tower_alerts_summary_off">Notifications disabled for new cellular towers</string>
     <string name="new_tower_alerts_summary_on">Receive notifications when connected to a tower that hasn\'t been uploaded to the OpenCelliD database yet (requires upload scanning to be active)</string>
-    <string name="auto_start_community_upload_survey_title">Auto Start Survey on Phone Reboot</string>
-    <string name="auto_start_community_upload_survey_summary_off">Community Survey\'s will only start when manually enabled</string>
-    <string name="auto_start_community_upload_survey_summary_on">Community Survey\'s will be started when the phone is rebooted</string>
 
     <string name="auto_upload_title">Auto Upload</string>
     <string name="auto_upload_summary_off">Data will only be uploaded when manually triggered</string>
@@ -884,8 +867,6 @@
     <string name="allow_ns_analytics_title">Allow NS Analytics</string>
     <string name="allow_ns_analytics_mdm_description">True to allow users to register and upload survey records to NS Analytics, false to prevent it</string>
 
-    <string name="auto_start_mqtt_summary_on">The MQTT connection will be started when the phone is booted (Note that a valid MQTT broker must be configured in the connection UI)</string>
-    <string name="auto_start_mqtt_summary_off">The MQTT connection will only be started manually</string>
 
     <string name="pref_file_location_output_title">Location</string>
     <string name="privacy_policy">Privacy Policy</string>
@@ -906,7 +887,7 @@
 
     <!-- GNSS Failure Alert -->
     <string name="not_supported_title">GNSS Features May Not Work</string>
-    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating the GNSS GeoPackage/CSV files, or streaming GNSS records over MQTT. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
+    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating the GNSS CSV files, or streaming GNSS records over MQTT. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
     <string name="remember_my_decision">Don\'t ask me again</string>
 
     <!-- GNSS Status View -->
@@ -1141,7 +1122,7 @@
     <string name="queue_paused_title">Surveys Paused</string>
     <string name="queue_paused_subtitle">Upload Delayed</string>
     <string name="queue_paused_description">Surveys are paused because MQTT data streaming is backing up. Surveys will resume automatically when data transmission catches up. If this persists, check your network connection.</string>
-    <string name="queue_paused_mdm_description">This setting is managed by your administrator. To change the queue limit, enable MDM Override in Settings.</string>
+    <string name="queue_paused_mdm_description">This setting is managed by your administrator. To change the queue limit, turn on Override organization settings in Settings.</string>
     <string name="queue_paused_adjust_limit">Adjust Limit</string>
     <string name="queue_paused_disable_limit">Disable Limit</string>
     <string name="queue_paused_view_settings">View Settings</string>
@@ -1150,7 +1131,7 @@
     <string name="mqtt_drop_mode_title">MQTT Messages Dropping</string>
     <string name="mqtt_drop_mode_subtitle">File Logging Continues</string>
     <string name="mqtt_drop_mode_description">MQTT data streaming is backing up, so MQTT messages are being dropped. File logging and other outputs continue normally. MQTT will resume when connectivity improves.</string>
-    <string name="mqtt_drop_mode_mdm_description">This setting is managed by your administrator. To change the queue limit, enable MDM Override in Settings.</string>
+    <string name="mqtt_drop_mode_mdm_description">This setting is managed by your administrator. To change the queue limit, turn on Override organization settings in Settings.</string>
 
     <!-- Queue Limit Warning Dialogs -->
     <string name="disable_queue_limit_title">Disable Queue Limit?</string>
@@ -1178,6 +1159,10 @@
     <!-- Display Settings -->
     <string name="display_settings_category">Display Settings</string>
     <string name="measurement_units_title">Measurement Units</string>
+    <string name="app_theme_title">Theme</string>
+    <string name="app_theme_entry_system">System default</string>
+    <string name="app_theme_entry_light">Light</string>
+    <string name="app_theme_entry_dark">Dark</string>
 
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID Exclusion List</string>
@@ -1295,6 +1280,19 @@
     <string name="ns_analytics_upload_status_uploading">Uploading…</string>
     <string name="ns_analytics_upload_status_ready">Ready to upload</string>
     <string name="ns_analytics_upload_status_not_registered">Not registered</string>
+    <string name="ns_analytics_records_collected">Records Collected</string>
+    <string name="ns_analytics_records_pending">Pending Records</string>
+    <!-- %1$d is the total number of records -->
+    <plurals name="ns_analytics_records_total">
+        <item quantity="one">%1$d total</item>
+        <item quantity="other">%1$d total</item>
+    </plurals>
+    <string name="ns_analytics_start_survey_hint">Start a survey to begin collecting data</string>
+    <!-- %1$d is hours and %2$d is minutes since the survey started -->
+    <string name="ns_analytics_started_hours_ago">Started %1$d h %2$d min ago</string>
+    <!-- %1$d is minutes since the survey started -->
+    <string name="ns_analytics_started_minutes_ago">Started %1$d min ago</string>
+    <string name="ns_analytics_just_started">Just started</string>
     <string name="ns_analytics_upload_status_complete">Upload complete</string>
     <string name="ns_analytics_upload_status_failed">Upload failed</string>
     <string name="ns_analytics_upload_status_failed_with_reason">Upload failed: %1$s</string>
@@ -1697,4 +1695,38 @@
     <string name="calculator_channel_out_of_range">Out of range. Valid values are 0 to %1$s.</string>
     <string name="calculator_frequency">Frequency</string>
     <string name="calculator_ambiguous_hint">NR band ranges overlap, so a channel number alone cannot always identify one. Your phone reports the band directly when it can.</string>
+
+    <!-- Survey setup: what each destination is sent -->
+    <string name="destination_what_is_sent_title">What is sent</string>
+    <string name="destination_what_is_sent">Everything the survey records, except call records. Choose record types on the Survey screen; every destination gets the same set.</string>
+    <string name="ns_analytics_not_allowed_by_organization">Your organization does not allow sending data to NS Analytics on this phone</string>
+    <string name="ns_analytics_what_is_sent">Everything the survey records, except call records. Every record counts toward the workspace quota, so leave GNSS off unless you need it.</string>
+
+    <!-- Survey setup: starting automatically -->
+    <string name="auto_start_survey_title">Start survey automatically</string>
+    <string name="auto_start_survey_summary">Starts the survey when the app opens and when the phone restarts</string>
+    <string name="auto_start_survey_managed_summary">Set by your organization</string>
+
+    <!-- Survey setup: managed configuration (MDM) restrictions -->
+    <string name="mdm_choice_user">Operator chooses</string>
+    <string name="mdm_choice_on">Always on</string>
+    <string name="mdm_choice_off">Off</string>
+    <string name="mdm_survey_record_type_description">Operator chooses (the default) leaves this record type to the person using the phone. Always on records it in every survey. Off removes it from the Survey screen.</string>
+    <string name="mdm_destination_description">Operator chooses (the default) leaves this destination to the person using the phone. Always on sends every survey here. Off removes it from the Survey screen.</string>
+    <string name="mdm_auto_start_survey_title">Start the survey automatically</string>
+    <string name="mdm_auto_start_survey_description">Operator chooses (the default) uses the setting on the phone. Always on starts the survey when the app opens and when the phone restarts. Off never starts it automatically.</string>
+    <string name="mdm_survey_cellular_title">Record cellular</string>
+    <string name="mdm_survey_phone_state_title">Record phone state</string>
+    <string name="mdm_survey_wifi_title">Record Wi-Fi</string>
+    <string name="mdm_survey_bluetooth_title">Record Bluetooth</string>
+    <string name="mdm_survey_gnss_title">Record GNSS</string>
+    <string name="mdm_survey_cdr_title">Record call records</string>
+    <string name="mdm_destination_log_files_title">Send to log files</string>
+    <string name="mdm_destination_ns_analytics_title">Send to NS Analytics</string>
+    <string name="mdm_destination_mqtt_title">Send to the MQTT broker</string>
+    <string name="mdm_destination_grpc_title">Send to the gRPC server</string>
+    <string name="mdm_destination_community_title">Send to the community databases</string>
+    <string name="mdm_deprecated_auto_start_description">Deprecated, read for one more release only. Use the record type keys (survey_*), destination_log_files and auto_start_survey instead.</string>
+    <string name="mdm_deprecated_stream_description">Deprecated, read for one more release only. Use the record type keys (survey_*) instead; every destination receives every record type the survey records.</string>
+    <string name="mdm_deprecated_mqtt_start_on_boot_description">Deprecated, read for one more release only. Use destination_mqtt and auto_start_survey instead.</string>
 </resources>

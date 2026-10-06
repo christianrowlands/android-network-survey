@@ -33,7 +33,8 @@ import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.common.HelpItem
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsCardHeader
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.util.WifiUtils
 
 private const val STANDARD_PREFIX = "802.11"
@@ -51,8 +52,8 @@ private const val STANDARD_PREFIX = "802.11"
 fun WifiRadioCard(network: WifiNetwork, modifier: Modifier = Modifier) {
     var showInfoDialog by remember { mutableStateOf(false) }
 
-    DetailsCardFrame(modifier = modifier) {
-        CardHeader(
+    NsDetailsCardFrame(modifier = modifier) {
+        NsCardHeader(
             text = stringResource(R.string.wifi_details_radio),
             trailingContent = {
                 IconButton(onClick = { showInfoDialog = true }) {
@@ -196,21 +197,21 @@ private fun RadioStatCell(
                 Text(
                     text = prefix,
                     style = TextStyle(fontSize = 12.sp),
-                    color = WifiTokens.InkFaint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.alignByBaseline(),
                 )
             }
             Text(
                 text = if (isBlank) "-" else primary,
                 style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold),
-                color = WifiTokens.Ink,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.alignByBaseline(),
             )
             if (!isBlank && suffix != null) {
                 Text(
                     text = suffix,
                     style = TextStyle(fontSize = 12.sp),
-                    color = WifiTokens.InkFaint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.alignByBaseline(),
                 )
             }

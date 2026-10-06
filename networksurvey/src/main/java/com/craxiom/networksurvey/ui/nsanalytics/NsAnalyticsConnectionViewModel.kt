@@ -60,7 +60,6 @@ enum class UploadState {
  * Manages the state and business logic for NS Analytics integration, including:
  * - Device registration and QR code scanning
  * - Upload scheduling and progress monitoring
- * - Record type toggles (cellular, wifi, bluetooth, GNSS)
  * - Quota exceeded detection and error handling
  * - Device deregistration and cleanup
  * - Survey status tracking and real-time statistics
@@ -900,29 +899,6 @@ class NsAnalyticsConnectionViewModel(
                     val storedWorkspaceName = NsAnalyticsSecureStorage.getWorkspaceName(context)
                     val deviceToken = NsAnalyticsSecureStorage.getDeviceToken(context)
 
-                    // Get protocol preferences
-                    val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                    val cellularEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED,
-                        NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED
-                    )
-                    val wifiEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED,
-                        NsAnalyticsConstants.DEFAULT_WIFI_ENABLED
-                    )
-                    val bluetoothEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED,
-                        NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED
-                    )
-                    val gnssEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED,
-                        NsAnalyticsConstants.DEFAULT_GNSS_ENABLED
-                    )
-                    val phoneStateEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED,
-                        NsAnalyticsConstants.DEFAULT_PHONE_STATE_ENABLED
-                    )
-
                     // Get queue size
                     val queueSize = database.nsAnalyticsDao().getPendingRecordCount()
 
@@ -963,11 +939,6 @@ class NsAnalyticsConnectionViewModel(
                         quotaMaxRecords = pauseInfo?.maxRecords ?: 0,
                         quotaMessage = pauseInfo?.message,
                         quotaWebUrl = pauseInfo?.webUrl,
-                        cellularEnabled = cellularEnabled,
-                        wifiEnabled = wifiEnabled,
-                        bluetoothEnabled = bluetoothEnabled,
-                        gnssEnabled = gnssEnabled,
-                        phoneStateEnabled = phoneStateEnabled
                     )
 
                     // Update survey status after loading connection state
@@ -1793,129 +1764,6 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
-     * Toggle cellular protocol collection for NS Analytics.
-     */
-    fun toggleCellularProtocol(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit {
-                    putBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED,
-                        enabled
-                    )
-                }
-
-                _uiState.value = _uiState.value.copy(cellularEnabled = enabled)
-                Timber.d("NS Analytics cellular protocol ${if (enabled) "enabled" else "disabled"}")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle cellular protocol")
-                showMessage("Failed to update cellular protocol setting")
-            }
-        }
-    }
-
-    /**
-     * Toggle Wi-Fi protocol collection for NS Analytics.
-     */
-    fun toggleWifiProtocol(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit {
-                    putBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, enabled)
-                }
-
-                _uiState.value = _uiState.value.copy(wifiEnabled = enabled)
-                Timber.d("NS Analytics Wi-Fi protocol ${if (enabled) "enabled" else "disabled"}")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle Wi-Fi protocol")
-                showMessage("Failed to update Wi-Fi protocol setting")
-            }
-        }
-    }
-
-    /**
-     * Toggle Bluetooth protocol collection for NS Analytics.
-     */
-    fun toggleBluetoothProtocol(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit {
-                    putBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED,
-                        enabled
-                    )
-                }
-
-                _uiState.value = _uiState.value.copy(bluetoothEnabled = enabled)
-                Timber.d("NS Analytics Bluetooth protocol ${if (enabled) "enabled" else "disabled"}")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle Bluetooth protocol")
-                showMessage("Failed to update Bluetooth protocol setting")
-            }
-        }
-    }
-
-    /**
-     * Show the Bluetooth permission rationale dialog.
-     */
-    fun showBluetoothPermissionRationale() {
-        _uiState.value = _uiState.value.copy(showBluetoothPermissionDialog = true)
-    }
-
-    /**
-     * Dismiss the Bluetooth permission rationale dialog.
-     */
-    fun dismissBluetoothPermissionDialog() {
-        _uiState.value = _uiState.value.copy(showBluetoothPermissionDialog = false)
-    }
-
-    /**
-     * Toggle GNSS protocol collection for NS Analytics.
-     */
-    fun toggleGnssProtocol(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit {
-                    putBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, enabled)
-                }
-
-                _uiState.value = _uiState.value.copy(gnssEnabled = enabled)
-                Timber.d("NS Analytics GNSS protocol ${if (enabled) "enabled" else "disabled"}")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle GNSS protocol")
-                showMessage("Failed to update GNSS protocol setting")
-            }
-        }
-    }
-
-    /**
-     * Toggle Phone State protocol collection for NS Analytics.
-     */
-    fun togglePhoneStateProtocol(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit {
-                    putBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED,
-                        enabled
-                    )
-                }
-
-                _uiState.value = _uiState.value.copy(phoneStateEnabled = enabled)
-                Timber.d("NS Analytics Phone State protocol ${if (enabled) "enabled" else "disabled"}")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle Phone State protocol")
-                showMessage("Failed to update Phone State protocol setting")
-            }
-        }
-    }
-
-    /**
      * Toggle NS Analytics survey scanning on or off.
      * This starts or stops the data collection for NS Analytics.
      */
@@ -1999,11 +1847,6 @@ data class NsAnalyticsConnectionUiState(
     val totalRecordsToUpload: Int = 0,
     val lastUploadResult: String? = null, // e.g., "234 records" or "Failed: quota exceeded"
     val message: String? = null,
-    val cellularEnabled: Boolean = NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED,
-    val wifiEnabled: Boolean = NsAnalyticsConstants.DEFAULT_WIFI_ENABLED,
-    val bluetoothEnabled: Boolean = NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED,
-    val gnssEnabled: Boolean = NsAnalyticsConstants.DEFAULT_GNSS_ENABLED,
-    val phoneStateEnabled: Boolean = NsAnalyticsConstants.DEFAULT_PHONE_STATE_ENABLED,
     val isSurveyActive: Boolean = false,
     val surveyStartTime: Long = 0,
     val cellularRecordCount: Int = 0,
@@ -2027,5 +1870,4 @@ data class NsAnalyticsConnectionUiState(
     val registrationError: String? = null,
     // Already registered dialog state (shown when user scans QR while registered)
     val showAlreadyRegisteredDialog: Boolean = false,
-    val showBluetoothPermissionDialog: Boolean = false
 )

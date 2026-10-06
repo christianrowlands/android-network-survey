@@ -98,7 +98,7 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat
         Context context = getContext();
         if (context == null) return;
 
-        if (!MdmUtils.isUnderMdmControl(context, SettingsFragment.MDM_OVERLAP_PROPERTY_KEYS))
+        if (!MdmUtils.isManaged(context))
         {
             return;
         }

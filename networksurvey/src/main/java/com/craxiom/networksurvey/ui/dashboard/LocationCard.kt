@@ -38,10 +38,7 @@ import com.craxiom.networksurvey.util.LocationStatusHelper.LocationState
 import com.craxiom.networksurvey.util.MeasurementFormatter
 import kotlinx.coroutines.delay
 import java.text.DecimalFormat
-
-private val LocationGreen = Color(0xFF388E3C)
-private val LocationYellow = Color(0xFFFBC02D)
-private val LocationRed = Color(0xFFD32F2F)
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 private val locationFormat = DecimalFormat("###.#####")
 
@@ -72,9 +69,9 @@ fun LocationCard(
     val context = LocalContext.current
 
     val iconColor = when (state.state) {
-        LocationState.FIX -> LocationGreen
-        LocationState.SEARCHING -> LocationYellow
-        else -> LocationRed
+        LocationState.FIX -> NsTheme.colors.status.success.content
+        LocationState.SEARCHING -> NsTheme.colors.status.warning.content
+        else -> NsTheme.colors.status.danger.content
     }
 
     val statusText = when (state.state) {

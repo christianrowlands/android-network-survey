@@ -153,6 +153,7 @@ import okhttp3.internal.toImmutableMap
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import timber.log.Timber
+import com.craxiom.networksurvey.ui.cellular.towermap.SurveyedPointPalette
 
 // Helper functions to get the correct preference key based on context
 private fun getMapTileSourceKey(context: MapContext): String {
@@ -1294,7 +1295,9 @@ fun TopAppBarOverlay(height: Dp) {
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
-            .background(Color.Black.copy(alpha = 0.25f))
+            // The status bar icons follow the app theme, not the map tiles, so the band behind
+            // them uses the theme's surface: dark icons get a light band in the light scheme
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
     ) {
     }
 }
@@ -1348,11 +1351,11 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
             // Technology badge at the top
             Surface(
                 color = when (servingCell.cellularProtocol) {
-                    CellularProtocol.NR -> Color(0xFFA855F7)
-                    CellularProtocol.LTE -> Color(0xFF009688)
-                    CellularProtocol.UMTS -> Color(0xFF2196F3)
-                    CellularProtocol.CDMA -> Color(0xFF795548)
-                    CellularProtocol.GSM -> Color(0xFFF97316)
+                    CellularProtocol.NR -> SurveyedPointPalette.TECH_NR_COLOR
+                    CellularProtocol.LTE -> SurveyedPointPalette.TECH_LTE_COLOR
+                    CellularProtocol.UMTS -> SurveyedPointPalette.TECH_UMTS_COLOR
+                    CellularProtocol.CDMA -> SurveyedPointPalette.TECH_CDMA_COLOR
+                    CellularProtocol.GSM -> SurveyedPointPalette.TECH_GSM_COLOR
                     else -> MaterialTheme.colorScheme.secondary
                 },
                 shape = MaterialTheme.shapes.small,

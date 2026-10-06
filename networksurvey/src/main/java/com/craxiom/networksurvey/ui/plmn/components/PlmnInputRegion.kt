@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.plmn.PlmnMode
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Pill-style mode tab selector for the PLMN lookup screen. Visually identical to
@@ -77,10 +76,10 @@ fun PlmnModeTabs(
 
 @Composable
 private fun ModeTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) WifiTokens.SsidSoft else Color.Transparent
+    val bg = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
     val border = if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
     val textColor =
-        if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
+        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
@@ -129,7 +128,7 @@ fun PlmnSearchField(
         Icon(
             imageVector = Icons.Filled.Search,
             contentDescription = null,
-            tint = WifiTokens.InkFaint,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.height(20.dp)
         )
         BasicTextField(
@@ -149,14 +148,14 @@ fun PlmnSearchField(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
-            cursorBrush = androidx.compose.ui.graphics.SolidColor(WifiTokens.SsidAccent),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
             decorationBox = { inner ->
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (value.isEmpty()) {
                         Text(
                             text = stringResource(R.string.plmn_lookup_search_placeholder),
                             style = TextStyle(fontSize = 15.sp),
-                            color = WifiTokens.InkFaint,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     inner()
@@ -169,7 +168,7 @@ fun PlmnSearchField(
                 Icon(
                     imageVector = Icons.Filled.Clear,
                     contentDescription = stringResource(R.string.plmn_clear_search_a11y),
-                    tint = WifiTokens.InkFaint,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -248,7 +247,7 @@ private fun NumericCard(
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.08f.em,
             ),
-            color = WifiTokens.InkFaint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 12.dp, top = 8.dp)

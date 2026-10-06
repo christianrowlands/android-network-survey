@@ -30,12 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.craxiom.mqttlibrary.connection.ConnectionState
 import com.craxiom.networksurvey.R
-
-private val MqttDisconnected = Color(0xFFA21919)
-private val MqttConnecting = Color(0xFFFF6D00)
-private val MqttConnected = Color(0xFF00912F)
-private val StreamActive = Color(0xFF03A9F4)
-private val StreamInactive = Color(0xFFA2A2A2)
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * Card that displays MQTT connection status, a toggle switch, and streaming indicators
@@ -54,9 +49,9 @@ fun MqttStatusCard(
 
     val statusColor by animateColorAsState(
         targetValue = when (state.connectionState) {
-            ConnectionState.CONNECTED -> MqttConnected
-            ConnectionState.CONNECTING -> MqttConnecting
-            else -> MqttDisconnected
+            ConnectionState.CONNECTED -> NsTheme.colors.status.success.content
+            ConnectionState.CONNECTING -> NsTheme.colors.status.warning.content
+            else -> NsTheme.colors.status.danger.content
         },
         animationSpec = tween(300),
         label = "mqttStatusColor",
@@ -188,7 +183,7 @@ private fun MqttStreamItem(
             modifier = Modifier
                 .size(10.dp)
                 .background(
-                    color = if (enabled) StreamActive else StreamInactive,
+                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                     shape = CircleShape,
                 ),
         )
@@ -205,7 +200,7 @@ private fun MqttStreamItem(
         Text(
             text = if (enabled) stringResource(R.string.status_on) else stringResource(R.string.status_disabled),
             style = MaterialTheme.typography.bodySmall,
-            color = if (enabled) StreamActive else StreamInactive,
+            color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
         )
     }
 }

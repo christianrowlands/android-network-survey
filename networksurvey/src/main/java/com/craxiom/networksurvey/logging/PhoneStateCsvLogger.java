@@ -19,17 +19,11 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SPE
 import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
-import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -104,14 +98,8 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IPhoneStateL
 
         // Combine the JSON strings into a JSON array
         String networkRegistrationJson = jsonList.toString();
-        String simState = "";
-        try
-        {
-            simState = readSimState(data);
-        } catch (JsonProcessingException e)
-        {
-            // noop
-        }
+        // The enum constant name, e.g. READY or ABSENT
+        String simState = data.getSimState().name();
 
         return new String[]{
                 data.getDeviceTime(),
@@ -130,23 +118,5 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IPhoneStateL
                 data.hasNonTerrestrialNetwork() ? String.valueOf(data.getNonTerrestrialNetwork().getValue()) : "",
                 data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
         };
-    }
-
-    /**
-     * @param data The {@link PhoneStateData} from which to read the sim state value.
-     * @return A String representation of the sim state enum, removing the leading and trailing double-quotes.
-     * @throws JsonProcessingException If the {@link SimState} enum cannot be parsed into a String.
-     */
-    @Nullable
-    private String readSimState(PhoneStateData data) throws JsonProcessingException
-    {
-        String simState = new ObjectMapper().writeValueAsString(data.getSimState());
-
-        if (!Strings.isNullOrEmpty(simState))
-        {
-            simState = simState.replace("\"", "");
-        }
-
-        return simState;
     }
 }

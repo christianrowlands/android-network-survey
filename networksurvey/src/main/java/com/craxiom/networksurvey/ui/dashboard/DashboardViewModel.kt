@@ -19,6 +19,10 @@ import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.MqttConstants
 import com.craxiom.mqttlibrary.connection.ConnectionState
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.setup.SurveyPreferenceKeys
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
 import com.craxiom.networksurvey.listeners.IMissionIdListener
@@ -249,11 +253,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         if (key == null) return
         when (key) {
-            NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED,
-            NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED,
-            NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED,
-            NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED,
-            NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED,
+            SurveyPreferenceKeys.CURRENT_SETUP,
             NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED,
                 -> readMqttStreamSettings()
 
@@ -643,29 +643,19 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         _mqttState.update { it.copy(connectionState = connectionState) }
     }
 
+    /**
+     * MQTT streams the survey's record types (the working setup on the Survey screen), so the
+     * indicators show those. Only device status keeps its own switch.
+     */
     private fun readMqttStreamSettings() {
+        val types = SurveyTypeResolver.typesForCurrentSetup(context, Destination.MQTT)
         _mqttState.update {
             it.copy(
-                cellularStreamEnabled = preferences.getBoolean(
-                    NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED,
-                    NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING,
-                ),
-                phoneStateStreamEnabled = preferences.getBoolean(
-                    NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED,
-                    NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING,
-                ),
-                wifiStreamEnabled = preferences.getBoolean(
-                    NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED,
-                    NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING,
-                ),
-                bluetoothStreamEnabled = preferences.getBoolean(
-                    NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED,
-                    NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING,
-                ),
-                gnssStreamEnabled = preferences.getBoolean(
-                    NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED,
-                    NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING,
-                ),
+                cellularStreamEnabled = RecordType.CELLULAR in types,
+                phoneStateStreamEnabled = RecordType.PHONE_STATE in types,
+                wifiStreamEnabled = RecordType.WIFI in types,
+                bluetoothStreamEnabled = RecordType.BLUETOOTH in types,
+                gnssStreamEnabled = RecordType.GNSS in types,
                 deviceStatusStreamEnabled = preferences.getBoolean(
                     NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED,
                     NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING,

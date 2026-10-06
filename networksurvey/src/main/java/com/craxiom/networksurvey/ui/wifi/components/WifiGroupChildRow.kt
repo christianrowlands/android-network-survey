@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,9 +25,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsBandChip
+import com.craxiom.networksurvey.ui.common.NsSignalMeter
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
@@ -79,7 +82,7 @@ private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         ap.band?.let { band ->
-            BandChip(band = band, channel = ap.channel)
+            NsBandChip(band = band, channel = ap.channel)
         }
         val hasBandwidth = ap.bandwidthLabel.isNotBlank()
         val hasStandard = ap.standardLabel.isNotBlank()
@@ -96,7 +99,7 @@ private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
                     Text(
                         text = "·",
                         style = TextStyle(fontSize = 12.sp),
-                        color = WifiTokens.InkFaint,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SubLabel(ap.standardLabel)
                 }
@@ -115,7 +118,7 @@ private fun SubLabel(text: String) {
     Text(
         text = text,
         style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal),
-        color = WifiTokens.InkFaint,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
@@ -128,7 +131,7 @@ private fun SignalCell(ap: WifiAccessPointDisplay) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.widthIn(min = 64.dp),
     ) {
-        val color = ap.rssi?.toWifiSignalCategory()?.color ?: LocalContentColor.current
+        val color = ap.rssi?.toWifiSignalCategory()?.textColor ?: LocalContentColor.current
         Text(
             text = if (ap.rssi != null) "${ap.rssi} dBm" else "--",
             style = TextStyle(
@@ -138,6 +141,6 @@ private fun SignalCell(ap: WifiAccessPointDisplay) {
             ),
             color = color,
         )
-        SignalMeter(rssi = ap.rssi, width = 56.dp)
+        NsSignalMeter(rssi = ap.rssi, width = 56.dp)
     }
 }

@@ -18,43 +18,10 @@
 
         <SwitchPreferenceCompat
             app:defaultValue="false"
-            app:icon="@drawable/ic_cellular"
-            app:key="auto_start_logging"
-            app:summaryOff="@string/auto_start_cellular_logging_summary_off"
-            app:summaryOn="@string/auto_start_cellular_logging_summary_on"
-            app:title="@string/auto_start_cellular_logging_title" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/ic_wifi"
-            app:key="auto_start_wifi_logging"
-            app:summaryOff="@string/auto_start_wifi_logging_summary_off"
-            app:summaryOn="@string/auto_start_wifi_logging_summary_on"
-            app:title="@string/auto_start_wifi_logging_title" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/ic_bluetooth"
-            app:key="auto_start_bluetooth_logging"
-            app:summaryOff="@string/auto_start_bluetooth_logging_summary_off"
-            app:summaryOn="@string/auto_start_bluetooth_logging_summary_on"
-            app:title="@string/auto_start_bluetooth_logging_title" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/ic_gnss"
-            app:key="auto_start_gnss_logging"
-            app:summaryOff="@string/auto_start_gnss_logging_summary_off"
-            app:summaryOn="@string/auto_start_gnss_logging_summary_on"
-            app:title="@string/auto_start_gnss_logging_title" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/ic_phone_state"
-            app:key="auto_start_phone_state_logging"
-            app:summaryOff="@string/auto_start_phone_state_logging_summary_off"
-            app:summaryOn="@string/auto_start_phone_state_logging_summary_on"
-            app:title="@string/auto_start_phone_state_logging_title" />
+            app:icon="@drawable/ic_play"
+            app:key="auto_start_survey"
+            app:summary="@string/auto_start_survey_summary"
+            app:title="@string/auto_start_survey_title" />
 
         <SwitchPreferenceCompat
             app:defaultValue="true"
@@ -63,14 +30,6 @@
             app:summaryOff="@string/auto_include_phone_state_summary_off"
             app:summaryOn="@string/auto_include_phone_state_summary_on"
             app:title="@string/auto_include_phone_state_title" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:icon="@drawable/ic_cdr"
-            app:key="auto_start_cdr_logging"
-            app:summaryOff="@string/auto_start_cdr_logging_summary_off"
-            app:summaryOn="@string/auto_start_cdr_logging_summary_on"
-            app:title="@string/auto_start_cdr_logging_title" />
 
         <DropDownPreference
             app:defaultValue="10"
@@ -81,16 +40,6 @@
             app:key="log_rollover_size_mb"
             app:title="@string/log_rollover_title"
             app:useSimpleSummaryProvider="true" />
-
-        <ListPreference
-            app:defaultValue="0"
-            app:dialogTitle="@string/log_file_title"
-            app:entries="@array/log_file_option_labels"
-            app:entryValues="@array/log_file_option_index"
-            app:icon="@drawable/ic_log_file"
-            app:key="log_file_type"
-            app:useSimpleSummaryProvider="true"
-            app:title="@string/log_file_title" />
 
         <Preference
             app:key="upload_preferences_group"
@@ -185,20 +134,6 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:icon="@drawable/ic_cloud_connection"
-        app:key="mqtt_connection_config"
-        app:title="@string/mqtt_connection_config_title">
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:key="mqtt_start_on_boot"
-            app:summaryOff="@string/auto_start_mqtt_summary_off"
-            app:summaryOn="@string/auto_start_mqtt_summary_on"
-            app:title="@string/mqtt_start_on_boot_title" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
         app:icon="@drawable/ic_my_location"
         app:key="location_config"
         app:title="@string/location_config_title">
@@ -282,6 +217,15 @@
             app:key="measurement_units"
             app:summary="%s"
             app:title="@string/measurement_units_title" />
+
+        <ListPreference
+            app:defaultValue="system"
+            app:dialogTitle="@string/app_theme_title"
+            app:entries="@array/app_theme_entries"
+            app:entryValues="@array/app_theme_values"
+            app:key="app_theme"
+            app:summary="%s"
+            app:title="@string/app_theme_title" />
 
     </PreferenceCategory>
 

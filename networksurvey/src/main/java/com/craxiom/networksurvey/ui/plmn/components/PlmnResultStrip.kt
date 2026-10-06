@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.plmn.PlmnSortKey
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 private const val PULSE_DURATION_MS = 900
 private const val PULSE_MIN_ALPHA = 0.35f
@@ -85,7 +85,7 @@ private fun ResultMeta(count: Int) {
         Text(
             text = stringResource(R.string.plmn_lookup_results_meta_label),
             style = TextStyle(fontSize = 12.sp),
-            color = WifiTokens.InkMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = count.toString(),
@@ -107,7 +107,7 @@ private fun LiveIndicator(isLoading: Boolean, modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(R.string.plmn_lookup_live_label),
                 style = TextStyle(fontSize = 13.sp),
-                color = WifiTokens.InkMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -134,7 +134,7 @@ private fun PulsingStatusDot() {
             .size(7.dp)
             .alpha(alpha)
             .clip(RoundedCornerShape(50))
-            .background(WifiTokens.SignalStrong)
+            .background(NsTheme.colors.status.success.content)
     )
 }
 
@@ -167,7 +167,7 @@ private fun SortPill(sortKey: PlmnSortKey, onClick: () -> Unit) {
         Text(
             text = "▾",
             style = TextStyle(fontSize = 10.sp),
-            color = WifiTokens.InkFaint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

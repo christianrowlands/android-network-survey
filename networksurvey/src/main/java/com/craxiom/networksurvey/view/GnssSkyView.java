@@ -95,8 +95,10 @@ public class GnssSkyView extends View
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         satRadius = LibUIUtils.dpToPixels(context, 5);
 
-        int textColor = getResources().getColor(android.R.color.secondary_text_dark, null);
-        int backgroundColor = ContextCompat.getColor(context, R.color.cardview_dark_background);
+        // Theme roles resolve per light/dark qualifier, so the sky plot follows the Theme setting
+        int textColor = ContextCompat.getColor(context, R.color.md_theme_onSurfaceVariant);
+        int backgroundColor = ContextCompat.getColor(context, R.color.md_theme_surfaceContainerHigh);
+        int horizonStrokeColor = ContextCompat.getColor(context, R.color.md_theme_outline);
         int satStrokeColorUsed = getResources().getColor(android.R.color.darker_gray, null);
 
         mHorizonActiveFillPaint = new Paint();
@@ -110,7 +112,7 @@ public class GnssSkyView extends View
         mHorizonInactiveFillPaint.setAntiAlias(true);
 
         mHorizonStrokePaint = new Paint();
-        mHorizonStrokePaint.setColor(Color.BLACK);
+        mHorizonStrokePaint.setColor(horizonStrokeColor);
         mHorizonStrokePaint.setStyle(Paint.Style.STROKE);
         mHorizonStrokePaint.setStrokeWidth(2.0f);
         mHorizonStrokePaint.setAntiAlias(true);

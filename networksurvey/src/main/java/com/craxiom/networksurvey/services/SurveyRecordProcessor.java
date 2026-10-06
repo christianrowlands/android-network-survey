@@ -115,6 +115,7 @@ import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
+import com.craxiom.networksurvey.survey.model.RecordType;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
 import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
 import com.craxiom.networksurvey.util.CellularBandwidthUtils;
@@ -2944,8 +2945,7 @@ public class SurveyRecordProcessor
     {
         if (gsmRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -2968,8 +2968,7 @@ public class SurveyRecordProcessor
     {
         if (cdmaRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -2992,8 +2991,7 @@ public class SurveyRecordProcessor
     {
         if (umtsRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -3016,8 +3014,7 @@ public class SurveyRecordProcessor
     {
         if (lteRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -3041,8 +3038,7 @@ public class SurveyRecordProcessor
     {
         if (nrRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         cellularSurveyRecordListeners.forEach(l -> {
             try
@@ -3066,14 +3062,8 @@ public class SurveyRecordProcessor
      */
     private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords, int subscriptionId)
     {
-        // Increment session record count for each record
-        if (networkSurveyService != null && cellularRecords != null)
-        {
-            for (int i = 0; i < cellularRecords.size(); i++)
-            {
-                networkSurveyService.incrementSurveySessionRecordCount();
-            }
-        }
+        // The records in this batch were already counted, one by one, when each per-protocol
+        // listener notify ran, so they are not counted again here.
 
         cellularSurveyRecordListeners.forEach(l -> {
             try
@@ -3267,13 +3257,10 @@ public class SurveyRecordProcessor
                 .filter(record -> !record.isExcluded())
                 .collect(Collectors.toList());
 
-        // Increment session record count for non-excluded records only
+        // Count non-excluded records only
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < nonExcludedRecords.size(); i++)
-            {
-                networkSurveyService.incrementSurveySessionRecordCount();
-            }
+            networkSurveyService.onRecordsProcessed(RecordType.WIFI, nonExcludedRecords.size());
         }
 
         // Send ALL records (including excluded) to listeners that want them (UI display and the
@@ -3319,8 +3306,7 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.BLUETOOTH, 1);
 
         for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
         {
@@ -3344,13 +3330,9 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
 
-        // Increment session record count for each record
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < bluetoothRecords.size(); i++)
-            {
-                networkSurveyService.incrementSurveySessionRecordCount();
-            }
+            networkSurveyService.onRecordsProcessed(RecordType.BLUETOOTH, bluetoothRecords.size());
         }
 
         for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
@@ -3375,8 +3357,7 @@ public class SurveyRecordProcessor
     {
         if (gnssRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.GNSS, 1);
 
         for (IGnssSurveyRecordListener listener : gnssSurveyRecordListeners)
         {
@@ -3406,6 +3387,8 @@ public class SurveyRecordProcessor
      */
     private void notifyCdrListeners(CdrEvent cdrEvent)
     {
+        if (networkSurveyService != null && cdrEvent != null) networkSurveyService.onRecordsProcessed(RecordType.CDR, 1);
+
         for (ICdrEventListener listener : cdrListeners)
         {
             try
@@ -3560,6 +3543,8 @@ public class SurveyRecordProcessor
     private void notifyPhoneStateListeners(PhoneState phoneState)
     {
         if (phoneState == null) return;
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.PHONE_STATE, 1);
+
         for (IPhoneStateListener listener : phoneStateListeners)
         {
             try

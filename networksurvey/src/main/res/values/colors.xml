@@ -1,31 +1,102 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <color name="colorPrimary">#4CAF50</color>
-    <color name="colorAccent">#03A9F4</color>
-    <color name="colorBackground">#2C2C2C</color>
-    <color name="colorCardDark">#121212</color>
-    <color name="colorCardDarkTitle">#6603A9F4</color>
+    <!--
+    Light scheme. Dark values live in values-night/colors.xml. Every theme color here mirrors
+    ui/theme/NsPalette.kt (the Compose side); XmlComposeColorParityTest keeps the two in step.
+    Colors that only point at a role (normalText and friends) are defined once, here, and pick up
+    the right value per qualifier through the reference.
+    -->
 
-    <color name="colorAccentFaded">#6603A9F4</color>
+    <!-- Material 3 roles, Slate accent -->
+    <color name="md_theme_primary">#3F5178</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#E9EDF6</color>
+    <color name="md_theme_onPrimaryContainer">#3F5178</color>
+    <color name="md_theme_secondary">#3F5178</color>
+    <color name="md_theme_onSecondary">#FFFFFF</color>
+    <color name="md_theme_secondaryContainer">#E9EDF6</color>
+    <color name="md_theme_onSecondaryContainer">#3F5178</color>
+    <color name="md_theme_tertiary">#18753A</color>
+    <color name="md_theme_onTertiary">#FFFFFF</color>
+    <color name="md_theme_tertiaryContainer">#E6F4EA</color>
+    <color name="md_theme_onTertiaryContainer">#0D5A28</color>
+    <color name="md_theme_error">#C62828</color>
+    <color name="md_theme_onError">#FFFFFF</color>
+    <color name="md_theme_errorContainer">#FDE8E7</color>
+    <color name="md_theme_onErrorContainer">#8C1D18</color>
+    <color name="md_theme_background">#F2F4F7</color>
+    <color name="md_theme_onBackground">#1B1F26</color>
+    <color name="md_theme_surface">#F2F4F7</color>
+    <color name="md_theme_onSurface">#1B1F26</color>
+    <color name="md_theme_surfaceVariant">#E3E6EB</color>
+    <color name="md_theme_onSurfaceVariant">#5B6372</color>
+    <color name="md_theme_outline">#8A93A0</color>
+    <color name="md_theme_outlineVariant">#E3E6EB</color>
+    <color name="md_theme_inverseSurface">#2A2F36</color>
+    <color name="md_theme_inverseOnSurface">#F2F4F7</color>
+    <color name="md_theme_inversePrimary">#8FA5DB</color>
+    <color name="md_theme_surfaceDim">#DCE0E6</color>
+    <color name="md_theme_surfaceBright">#FFFFFF</color>
+    <color name="md_theme_surfaceContainerLowest">#FFFFFF</color>
+    <color name="md_theme_surfaceContainerLow">#FFFFFF</color>
+    <color name="md_theme_surfaceContainer">#FFFFFF</color>
+    <color name="md_theme_surfaceContainerHigh">#ECEFF3</color>
+    <color name="md_theme_surfaceContainerHighest">#E3E6EB</color>
 
-    <color name="activeTabColor">#FFFFFF</color>
-    <color name="inactiveTabColor">#A2A2A2</color>
-    <color name="fadedGrayColor">#60A2A2A2</color>
+    <!-- Fixed roles are the same in both schemes, so they have no night override -->
+    <color name="md_theme_primaryFixed">#E9EDF6</color>
+    <color name="md_theme_onPrimaryFixed">#1B1F26</color>
+    <color name="md_theme_primaryFixedDim">#B4C4EA</color>
+    <color name="md_theme_onPrimaryFixedVariant">#3F5178</color>
+    <color name="md_theme_secondaryFixed">#E9EDF6</color>
+    <color name="md_theme_onSecondaryFixed">#1B1F26</color>
+    <color name="md_theme_secondaryFixedDim">#B4C4EA</color>
+    <color name="md_theme_onSecondaryFixedVariant">#3F5178</color>
+    <color name="md_theme_tertiaryFixed">#E6F4EA</color>
+    <color name="md_theme_onTertiaryFixed">#0D5A28</color>
+    <color name="md_theme_tertiaryFixedDim">#9BE3AE</color>
+    <color name="md_theme_onTertiaryFixedVariant">#18753A</color>
+
+    <!-- Per-record-type colors (NsPalette.Protocol) -->
+    <color name="ns_protocol_cellular">#6D4DE0</color>
+    <color name="ns_protocol_phone_state">#D99A00</color>
+    <color name="ns_protocol_wifi">#0E9BB0</color>
+    <color name="ns_protocol_bluetooth">#2F6BFF</color>
+    <color name="ns_protocol_gnss">#1E8E3E</color>
+    <color name="ns_protocol_cdr">#D9486B</color>
+
+    <!-- Status colors (NsPalette.Status) -->
+    <color name="ns_status_success">#1E8E3E</color>
+    <color name="ns_status_success_container">#E6F4EA</color>
+    <color name="ns_status_warning">#B26A00</color>
+    <color name="ns_status_warning_container">#FFF3E0</color>
+    <color name="ns_status_danger">#C62828</color>
+    <color name="ns_status_danger_container">#FDE8E7</color>
+
+    <!-- Survey-state vocabulary (NsSurveyStateColors), shared with the notification -->
+    <color name="ns_state_ready">@color/md_theme_onPrimaryContainer</color>
+    <color name="ns_state_ready_container">@color/md_theme_primaryContainer</color>
+    <color name="ns_state_recording">@color/ns_status_success</color>
+    <color name="ns_state_recording_container">@color/ns_status_success_container</color>
+    <color name="ns_state_paused">@color/ns_status_warning</color>
+    <color name="ns_state_paused_container">@color/ns_status_warning_container</color>
+    <color name="ns_state_attention">@color/ns_status_danger</color>
+    <color name="ns_state_attention_container">@color/ns_status_danger_container</color>
+
+    <!-- Legacy names still used by View screens, pointed at the roles they stand for -->
+    <color name="colorAccent">@color/md_theme_primary</color>
+    <color name="colorCardDarkTitle">@color/md_theme_primaryContainer</color>
+    <color name="activeTabColor">@color/md_theme_primary</color>
+    <color name="normalText">@color/md_theme_onSurface</color>
+    <color name="fadedText">@color/md_theme_onSurfaceVariant</color>
+    <color name="body_text_1_dark">@color/md_theme_onSurface</color>
+    <color name="connectionStatusDisconnected">@color/ns_status_danger</color>
+    <color name="connectionStatusConnecting">@color/ns_status_warning</color>
+    <color name="connectionStatusConnected">@color/ns_status_success</color>
+    <color name="alert_red">@color/ns_status_danger</color>
     <color name="signalBarBackground">#00FFFFFF</color>
 
-
-    <color name="connectionStatusDisconnected">#A21919</color>
-    <color name="connectionStatusConnecting">#FF6D00</color>
-    <color name="connectionStatusConnected">#00912F</color>
-
-    <color name="body_text_2_light">#8a000000</color>
-    <color name="body_text_1_dark">#deffffff</color>
-    <color name="normalText">#EFEFEF</color>
-    <color name="fadedText">#C2C1C1</color>
-
-    <color name="alert_red">#A21919</color>
-
-    <!-- Wi-Fi & Bluetooth RSSI color ranges -->
+    <!-- Wi-Fi & Bluetooth RSSI color ranges (NsPalette.Signal), the same in both schemes -->
     <color name="rssi_green">#388E3C</color>
     <color name="rssi_yellow">#FBC02D</color>
     <color name="rssi_orange">#F57C00</color>
@@ -33,15 +104,17 @@
     <color name="rssi_deep_red">#D50000</color>
 
     <!-- GNSS Sky View -->
-    <color name="not_in_view_sat">#DDFFFFFF</color>
+    <color name="body_text_2_light">#8a000000</color>
+    <!-- Satellites seen but not in view: a translucent gray on the light sky disc -->
+    <color name="not_in_view_sat">#998A93A0</color>
     <color name="gray">#ff888888</color>
     <color name="red">#d50000</color>
     <color name="yellow">#ffb300</color>
     <color name="green">#009d00</color>
 
-    <color name="cn0_meter_border">@color/body_text_2_light</color>
+    <color name="cn0_meter_border">@color/md_theme_outline</color>
 
-    
+    <!-- Tower map markers (chosen by the map style, not the app theme) -->
     <color name="general_tower_dark">#DEE3E6</color>
     <color name="serving_cell_dark">#4DA6FF</color>
     <color name="general_tower_light">#606060</color>
@@ -60,65 +133,4 @@
 
     <!-- AirTag indicator color -->
     <color name="airtag_purple">#BA68C8</color>
-
-    <color name="md_theme_primary">#20A1C7</color>
-    <color name="md_theme_onPrimary">#E1F2FA</color>
-    <color name="md_theme_primaryContainer">#004D63</color>
-    <color name="md_theme_onPrimaryContainer">#BCE9FF</color>
-    <color name="md_theme_secondary">#41CBF2</color>
-    <color name="md_theme_onSecondary">#1E333C</color>
-    <color name="md_theme_secondaryContainer">#303C50</color>
-    <color name="md_theme_onSecondaryContainer">#D4E3F1</color>
-    <color name="md_theme_tertiary">#87D6BC</color>
-    <color name="md_theme_onTertiary">#00382C</color>
-    <color name="md_theme_tertiaryContainer">#005140</color>
-    <color name="md_theme_onTertiaryContainer">#A3F2D8</color>
-    <color name="md_theme_error">#FFB4AB</color>
-    <color name="md_theme_onError">#690005</color>
-    <color name="md_theme_errorContainer">#93000A</color>
-    <color name="md_theme_onErrorContainer">#FFDAD6</color>
-    <color name="md_theme_background">#090D0E</color>
-    <color name="md_theme_onBackground">#DEE3E6</color>
-    <color name="md_theme_surface">#090D0E</color>
-    <color name="md_theme_cardBackground">#191E21</color>
-    <color name="md_theme_onSurface">#DEE3E6</color>
-    <color name="md_theme_surfaceVariant">#40484C</color>
-    <color name="md_theme_onSurfaceVariant">#CDD0DA</color>
-    <color name="md_theme_outline">#8A9296</color>
-    <color name="md_theme_outlineVariant">#40484C</color>
-    <color name="md_theme_inverseSurface">#DEE3E6</color>
-    <color name="md_theme_inverseOnSurface">#2C3134</color>
-    <color name="md_theme_inversePrimary">#0F6681</color>
-    <color name="md_theme_primaryFixed">#BCE9FF</color>
-    <color name="md_theme_onPrimaryFixed">#001F29</color>
-    <color name="md_theme_primaryFixedDim">#8AD0EE</color>
-    <color name="md_theme_onPrimaryFixedVariant">#004D63</color>
-    <color name="md_theme_secondaryFixed">#D0E6F2</color>
-    <color name="md_theme_onSecondaryFixed">#081E27</color>
-    <color name="md_theme_secondaryFixedDim">#B4CAD5</color>
-    <color name="md_theme_onSecondaryFixedVariant">#354A53</color>
-    <color name="md_theme_tertiaryFixed">#A3F2D8</color>
-    <color name="md_theme_onTertiaryFixed">#002018</color>
-    <color name="md_theme_tertiaryFixedDim">#87D6BC</color>
-    <color name="md_theme_onTertiaryFixedVariant">#005140</color>
-    <color name="md_theme_surfaceDim">#0F1417</color>
-    <color name="md_theme_surfaceBright">#353A3D</color>
-    <color name="md_theme_surfaceContainerLowest">#0A0F11</color>
-    <color name="md_theme_surfaceContainerLow">#171C1F</color>
-    <color name="md_theme_surfaceContainer">#10151C</color>
-    <color name="md_theme_surfaceContainerHigh">#262B2D</color>
-    <color name="md_theme_surfaceContainerHighest">#303538</color>
-
-    <!-- Battery Management Colors -->
-    <color name="battery_warning_background">#FFF8E1</color>
-    <color name="battery_paused_background">#FFEBEE</color>
-    <color name="battery_warning_text">#E65100</color>
-    <color name="battery_paused_text">#C62828</color>
-    <color name="battery_icon_warning">#FF6F00</color>
-    <color name="battery_icon_paused">#D32F2F</color>
-
-    <!-- Queue Backpressure Colors (Orange/Amber) -->
-    <color name="queue_paused_background">#FFF3E0</color>
-    <color name="queue_paused_text">#E65100</color>
-    <color name="queue_paused_icon">#FF6D00</color>
 </resources>

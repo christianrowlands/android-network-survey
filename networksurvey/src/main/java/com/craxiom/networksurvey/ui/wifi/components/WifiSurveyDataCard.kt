@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.ui.wifi.OpenWifiSettingsButton
 import com.craxiom.networksurvey.ui.wifi.ScanRateInfoButton
 
@@ -46,7 +46,7 @@ fun WifiSurveyDataCard(
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    DetailsCardFrame(modifier = modifier) {
+    NsDetailsCardFrame(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top,
@@ -155,7 +155,7 @@ private fun TogglePill(label: String, onClick: () -> Unit) {
         Text(
             text = label,
             style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-            color = WifiTokens.SsidAccent,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }

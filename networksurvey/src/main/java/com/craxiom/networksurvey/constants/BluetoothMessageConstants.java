@@ -9,27 +9,19 @@ import com.craxiom.messaging.bluetooth.Technology;
 import timber.log.Timber;
 
 /**
- * The constants associated with the Bluetooth table in the GeoPackage file.
+ * The constants associated with the Bluetooth record in the Network Survey Messaging API.
  * <p>
  * Also contains any utility methods to help with converting any of the values.
  *
  * @since 1.0.0
  */
-public class BluetoothMessageConstants extends MessageConstants
+public class BluetoothMessageConstants
 {
     private BluetoothMessageConstants()
     {
     }
 
     public static final String BLUETOOTH_RECORD_MESSAGE_TYPE = "BluetoothRecord";
-    public static final String BLUETOOTH_RECORDS_TABLE_NAME = "BLUETOOTH_MESSAGE";
-
-    public static final String SOURCE_ADDRESS_COLUMN = "Source Address";
-    public static final String SIGNAL_STRENGTH_COLUMN = "Signal Strength";
-    public static final String TX_POWER_COLUMN = "Tx Power";
-    public static final String TECHNOLOGY_COLUMN = "Technology";
-    public static final String SUPPORTED_TECHNOLOGIES_COLUMN = "Supported Technologies";
-    public static final String OTA_DEVICE_NAME_COLUMN = "OTA Device Name";
 
     /**
      * Given the Android API Bluetooth Type associated with a scan result device, return the Network Survey Messaging
@@ -61,7 +53,7 @@ public class BluetoothMessageConstants extends MessageConstants
 
     /**
      * Given a Protocol Buffer defined Bluetooth Technology enum value, return a user friendly string
-     * representation that follows the ICD used for the GeoPackage logging.
+     * representation.
      *
      * @param technology The Technology enum to convert.
      * @return The user friendly Technology, or an empty String if it is unknown/could not be converted.
@@ -88,7 +80,7 @@ public class BluetoothMessageConstants extends MessageConstants
 
     /**
      * Given a Protocol Buffer defined Bluetooth Supported Technologies enum value, return a user friendly string
-     * representation that follows the ICD used for the GeoPackage logging.
+     * representation.
      *
      * @param supportedTechnologies The Supported Technologies enum to convert.
      * @return The user friendly Supported Technologies, or an empty String if it is unknown/could not be converted.

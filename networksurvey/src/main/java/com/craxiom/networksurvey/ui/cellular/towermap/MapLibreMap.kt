@@ -21,9 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.viewinterop.AndroidView
@@ -71,7 +71,7 @@ fun MapLibreMap(
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
-        Box(modifier = modifier.background(Color.LightGray)) {
+        Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
             Text("[Map]", modifier = Modifier.align(Alignment.Center))
         }
         return

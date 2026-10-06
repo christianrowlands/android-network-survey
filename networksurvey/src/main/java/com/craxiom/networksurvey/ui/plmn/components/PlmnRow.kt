@@ -41,7 +41,6 @@ import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.data.plmn.displayName
 import com.craxiom.networksurvey.ui.plmn.PlmnGroup
 import com.craxiom.networksurvey.ui.plmn.isoToFlag
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 
 private const val CHEVRON_ANIM_MS = 180
@@ -95,7 +94,7 @@ fun PlmnRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = openLabel,
-                tint = WifiTokens.InkMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -130,7 +129,7 @@ private fun TopNameRow(record: PlmnRecord) {
         Text(
             text = primary,
             style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-            color = WifiTokens.SsidAccent,
+            color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
@@ -139,7 +138,7 @@ private fun TopNameRow(record: PlmnRecord) {
             Text(
                 text = secondary,
                 style = TextStyle(fontSize = 11.5.sp),
-                color = WifiTokens.InkFaint,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -162,7 +161,7 @@ private fun CountryRow(record: PlmnRecord) {
             Text(
                 text = country,
                 style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -173,7 +172,7 @@ private fun CountryRow(record: PlmnRecord) {
             Text(
                 text = it,
                 style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkFaint,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         record.tadig?.takeIf { it.isNotBlank() }?.let {
@@ -181,7 +180,7 @@ private fun CountryRow(record: PlmnRecord) {
             Text(
                 text = it,
                 style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkFaint,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -192,7 +191,7 @@ private fun FaintMonoDot() {
     Text(
         text = "·",
         style = TextStyle(fontSize = 11.sp),
-        color = WifiTokens.InkFaint,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -217,7 +216,7 @@ private fun RightBlock(mcc: String, mnc: String, plmn: String) {
         Text(
             text = stringResource(R.string.plmn_lookup_plmn_label, plmn),
             style = TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkFaint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -281,7 +280,7 @@ fun PlmnGroupRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = expandLabel,
-                tint = WifiTokens.InkMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.rotate(rotation),
             )
         }
@@ -312,7 +311,7 @@ private fun GroupParentLeftBlock(group: PlmnGroup, modifier: Modifier = Modifier
             Text(
                 text = country.ifBlank { "—" },
                 style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.SsidAccent,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -333,7 +332,7 @@ private fun OperatorsCountPill(count: Int) {
         Text(
             text = pluralStringResource(R.plurals.plmn_lookup_n_operators, count, count),
             style = TextStyle(fontSize = 11.sp),
-            color = WifiTokens.InkMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

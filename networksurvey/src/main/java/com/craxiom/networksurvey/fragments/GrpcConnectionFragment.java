@@ -69,20 +69,6 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     private Integer portNumber = NetworkSurveyConstants.DEFAULT_GRPC_PORT;
     private String deviceName = "";
 
-    private MaterialSwitch cellularStreamToggleSwitch;
-    private MaterialSwitch phoneStateStreamToggleSwitch;
-    private MaterialSwitch wifiStreamToggleSwitch;
-    private MaterialSwitch bluetoothStreamToggleSwitch;
-    private MaterialSwitch gnssStreamToggleSwitch;
-    private MaterialSwitch deviceStatusStreamToggleSwitch;
-
-    private boolean cellularStreamEnabled = true;
-    private boolean phoneStateStreamEnabled = true;
-    private boolean wifiStreamEnabled = true;
-    private boolean bluetoothStreamEnabled = true;
-    private boolean gnssStreamEnabled = true;
-    private boolean deviceStatusStreamEnabled = true;
-
     public GrpcConnectionFragment()
     {
         uiThreadHandler = new Handler(Looper.getMainLooper());
@@ -108,19 +94,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         grpcPortNumberEdit = view.findViewById(R.id.grpcPortNumber);
         deviceNameEdit = view.findViewById(R.id.deviceName);
 
-        cellularStreamToggleSwitch = view.findViewById(R.id.streamCellularToggleSwitch);
-        phoneStateStreamToggleSwitch = view.findViewById(R.id.streamPhoneStateToggleSwitch);
-        wifiStreamToggleSwitch = view.findViewById(R.id.streamWifiToggleSwitch);
-        bluetoothStreamToggleSwitch = view.findViewById(R.id.streamBluetoothToggleSwitch);
-        gnssStreamToggleSwitch = view.findViewById(R.id.streamGnssToggleSwitch);
-        deviceStatusStreamToggleSwitch = view.findViewById(R.id.streamDeviceStatusToggleSwitch);
-
         restoreConnectionParameters();
         grpcHostAddressEdit.setText(host);
         grpcPortNumberEdit.setText(String.valueOf(portNumber));
         deviceNameEdit.setText(deviceName);
-
-        readSettingsAndUpdateStreamToggleSwitches();
 
         // Adding the OnTouchListener as well so that we can reject drag events since those are much harder to deal with
         // Also checking for buttonView.isPressed() so that we don't trigger the onConnectionSwitchToggled call when we
@@ -306,15 +283,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
             portNumber = Integer.valueOf(portString);
             deviceName = deviceNameEdit.getText().toString();
 
-            cellularStreamEnabled = cellularStreamToggleSwitch.isChecked();
-            phoneStateStreamEnabled = phoneStateStreamToggleSwitch.isChecked();
-            wifiStreamEnabled = wifiStreamToggleSwitch.isChecked();
-            bluetoothStreamEnabled = bluetoothStreamToggleSwitch.isChecked();
-            gnssStreamEnabled = gnssStreamToggleSwitch.isChecked();
-            deviceStatusStreamEnabled = deviceStatusStreamToggleSwitch.isChecked();
-
             storeConnectionParameters();
-            storeStreamSettings();
 
             hideSoftInputFromWindow();
 
@@ -379,15 +348,6 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
             return false;
         }
 
-        // Make sure at least one streaming option is enabled
-        if (!cellularStreamToggleSwitch.isChecked() && !phoneStateStreamToggleSwitch.isChecked() && !wifiStreamToggleSwitch.isChecked() &&
-                !bluetoothStreamToggleSwitch.isChecked() && !gnssStreamToggleSwitch.isChecked() && !deviceStatusStreamToggleSwitch.isChecked())
-        {
-            final String noStreamsEnabledMessage = "At least one stream must be enabled";
-            uiThreadHandler.post(() -> Toast.makeText(applicationContext, noStreamsEnabledMessage, Toast.LENGTH_SHORT).show());
-            return false;
-        }
-
         return true;
     }
 
@@ -427,39 +387,6 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         if (!restoredDeviceName.isEmpty()) deviceName = restoredDeviceName;
     }
 
-    private void storeStreamSettings()
-    {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-        final SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_GRPC_CELLULAR_STREAM_ENABLED, cellularStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED, phoneStateStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_GRPC_WIFI_STREAM_ENABLED, wifiStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_GRPC_BLUETOOTH_STREAM_ENABLED, bluetoothStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_GRPC_GNSS_STREAM_ENABLED, gnssStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_GRPC_DEVICE_STATUS_STREAM_ENABLED, deviceStatusStreamEnabled);
-        editor.apply();
-    }
-
-    private void readSettingsAndUpdateStreamToggleSwitches()
-    {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-
-        // Use the same MQTT defaults.
-        cellularStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_GRPC_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
-        phoneStateStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
-        wifiStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_GRPC_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
-        bluetoothStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_GRPC_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
-        gnssStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_GRPC_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
-        deviceStatusStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_GRPC_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
-
-        cellularStreamToggleSwitch.setChecked(cellularStreamEnabled);
-        phoneStateStreamToggleSwitch.setChecked(phoneStateStreamEnabled);
-        wifiStreamToggleSwitch.setChecked(wifiStreamEnabled);
-        bluetoothStreamToggleSwitch.setChecked(bluetoothStreamEnabled);
-        gnssStreamToggleSwitch.setChecked(gnssStreamEnabled);
-        deviceStatusStreamToggleSwitch.setChecked(deviceStatusStreamEnabled);
-    }
-
     /**
      * Disconnect from the gRPC server if it is connected.  If it is not connected, then do nothing.
      */
@@ -478,13 +405,6 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         grpcHostAddressEdit.setEnabled(editable);
         grpcPortNumberEdit.setEnabled(editable);
         deviceNameEdit.setEnabled(editable);
-
-        cellularStreamToggleSwitch.setEnabled(editable);
-        phoneStateStreamToggleSwitch.setEnabled(editable);
-        wifiStreamToggleSwitch.setEnabled(editable);
-        bluetoothStreamToggleSwitch.setEnabled(editable);
-        gnssStreamToggleSwitch.setEnabled(editable);
-        deviceStatusStreamToggleSwitch.setEnabled(editable);
     }
 
     /**
@@ -556,13 +476,9 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
                         .host(host)
                         .port(portNumber)
                         .deviceName(deviceName)
-                        .cellularStreamEnabled(cellularStreamEnabled)
-                        .phoneStateStreamEnabled(phoneStateStreamEnabled)
-                        .wifiStreamEnabled(wifiStreamEnabled)
-                        .bluetoothStreamEnabled(bluetoothStreamEnabled)
-                        .gnssStreamEnabled(gnssStreamEnabled)
-                        .deviceStatusStreamEnabled(deviceStatusStreamEnabled)
                         .build();
+                // No record types are named here: gRPC streams whatever the survey records, which
+                // the connection service reads from the survey service once connected.
                 GrpcConnectionService.connectToGrpcServer(applicationContext, connectionSettings);
             } else
             {

@@ -40,9 +40,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.gpstest.model.GnssType;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
-import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource;
 
 import org.maplibre.android.geometry.LatLngBounds;
@@ -267,22 +265,6 @@ public class PreferenceUtils
     }
 
     /**
-     * Gets the community survey auto start at phone boot preference.
-     * <p>
-     * Note: This preference will always return false if external data uploads are not allowed by MDM.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return The community survey auto start preference to use.
-     */
-    public static boolean getCommunitySurveyAutoStartPreference(Context context)
-    {
-        if (!MdmUtils.isExternalDataUploadAllowed(context)) return false;
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT, false);
-    }
-
-    /**
      * Gets the maximum file size preference. Once this file size is reached, the log file should be closed and a new
      * one started.
      * <p>
@@ -362,43 +344,6 @@ public class PreferenceUtils
         }
 
         return Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
-    }
-
-    /**
-     * Gets the log file type preference.
-     * <p>
-     * First, this method tries to pull the MDM provided log file type. If it is not set (either because the device
-     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
-     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default
-     * value is used.
-     * <p>
-     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
-     * then the user preference value will be used instead of the MDM value.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return A wrapper object that contains flags indicating which file types are enabled.
-     */
-    public static LogTypeState getLogTypePreference(Context context)
-    {
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-
-        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
-
-        // First try to use the MDM provided value.
-        if (restrictionsManager != null && !mdmOverride)
-        {
-            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-
-            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE))
-            {
-                return convertIndexToLogTypeState(String.valueOf(mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE)));
-            }
-        }
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-
-        // Next, try to use the value from user preferences, with a default fallback
-        return convertIndexToLogTypeState(preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE, "0"));
     }
 
     /**
@@ -521,82 +466,6 @@ public class PreferenceUtils
 
         // Next, try to use the value from user preferences, with a default fallback
         return preferences.getBoolean(propertyKey, defaultValue);
-    }
-
-    /**
-     * Converts the user preference index to a wrapper object that contains the flags indicating
-     * which file types are enabled.
-     */
-    private static LogTypeState convertIndexToLogTypeState(String index)
-    {
-        if (index == null || index.isEmpty())
-        {
-            Timber.w("Log type index is null or empty, defaulting to CSV only");
-            return new LogTypeState(true, false);
-        }
-
-        boolean csv = false;
-        boolean geoPackage = false;
-        switch (index)
-        {
-            case "0" -> // CSV Only
-                    csv = true;
-            case "1" -> // GeoPackage Only
-                    geoPackage = true;
-            case "2" ->
-            { // Both
-                csv = true;
-                geoPackage = true;
-            }
-            default ->
-            {
-                Timber.w("Unhandled log type setting=%s, defaulting to CSV only", index);
-                csv = true;
-            }
-        }
-
-        return new LogTypeState(csv, geoPackage);
-    }
-
-    /**
-     * Gets the auto start MQTT connection preference.
-     * <p>
-     * First, this method tries to pull the MDM provided auto start MQTT value. If it is not set (either because the device
-     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
-     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
-     * value is used.
-     * <p>
-     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
-     * then the user preference value will be used instead of the MDM value.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return True if the MQTT connection should be started when the phone is booted, false otherwise.
-     * @since 0.4.0
-     */
-    public static boolean getMqttStartOnBootPreference(Context context)
-    {
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        final boolean mdmOverride = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
-
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-        Bundle mdmProperties = null;
-        if (restrictionsManager != null)
-        {
-            mdmProperties = restrictionsManager.getApplicationRestrictions();
-        }
-
-        if (!mdmOverride
-                && mdmProperties != null
-                && mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT))
-        {
-            Timber.i("Using the MDM MQTT auto start preference");
-            return mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
-        } else
-        {
-            Timber.i("Using the user MQTT auto start preference");
-
-            return sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false);
-        }
     }
 
     public static void saveString(SharedPreferences prefs, String key, String value)
@@ -863,51 +732,12 @@ public class PreferenceUtils
         {
             edit.putInt(PROPERTY_MQTT_QOS, mqttConnectionSettings.mqttQos());
         }
-        if (mqttConnectionSettings.cellularStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, mqttConnectionSettings.cellularStreamEnabled());
-        }
-        if (mqttConnectionSettings.wifiStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, mqttConnectionSettings.wifiStreamEnabled());
-        }
-        if (mqttConnectionSettings.bluetoothStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, mqttConnectionSettings.bluetoothStreamEnabled());
-        }
-        if (mqttConnectionSettings.gnssStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, mqttConnectionSettings.gnssStreamEnabled());
-        }
         if (mqttConnectionSettings.deviceStatusStreamEnabled() != null)
         {
             edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, mqttConnectionSettings.deviceStatusStreamEnabled());
         }
-        if (mqttConnectionSettings.phoneStateStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, mqttConnectionSettings.phoneStateStreamEnabled());
-        }
 
         edit.apply();
-    }
-
-    /**
-     * Saves the provided MQTT Protocol Streaming flags to the shared preferences. Not all the
-     * {@link MqttConnectionInfo} parameters are saved in this method; instead, just the streaming
-     * flags are saved.
-     */
-    public static void saveMqttStreamFlags(MqttConnectionInfo info, Context context)
-    {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, info.isCellularStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, info.isWifiStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, info.isBluetoothStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, info.isGnssStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, info.isDeviceStatusStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, info.isPhoneStateStreamEnabled());
-
-        editor.apply();
     }
 
     /**

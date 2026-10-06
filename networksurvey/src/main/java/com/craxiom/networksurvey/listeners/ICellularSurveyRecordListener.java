@@ -70,7 +70,7 @@ public interface ICellularSurveyRecordListener
      * Called when a new batch of cellular survey records are ready.
      * <p>
      * This method SHOULD NOT be used in addition to the individual protocol listener methods. It contains the full
-     * group (i.e. records with the same {@link com.craxiom.networksurvey.constants.CellularMessageConstants#GROUP_NUMBER_COLUMN})
+     * group (i.e. records with the same group number)
      * associated with a single cellular scan (not really a scan, but an snapshot in time of what towers the phone can
      * see). The individual methods were used prior to this listener method being added and if a listener consumes from
      * both types of methods, then it will receive duplicate records.

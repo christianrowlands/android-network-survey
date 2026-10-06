@@ -17,16 +17,17 @@ import androidx.work.WorkerParameters;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.craxiom.networksurvey.survey.setup.SurveyAutoStart;
 
 import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
 
 /**
- * Starts the Network Survey Service when Android is booted if the {@link NetworkSurveyConstants#PROPERTY_MQTT_START_ON_BOOT}
- * property has been set by the MDM managed configuration.  The {@link NetworkSurveyService} will then try to start the
- * connection to an MQTT Broker using the MDM provided connection information.
+ * Starts the Network Survey Service when Android is booted if the survey is set to start
+ * automatically (the user's "Start survey automatically" setting, or the organization's
+ * {@code auto_start_survey} managed configuration). The {@link NetworkSurveyService} then starts the
+ * survey setup, including any MQTT connection it sends to.
  *
  * @since 0.1.1
  */
@@ -41,25 +42,11 @@ public class StartAtBootReceiver extends BroadcastReceiver
 
         Timber.d("Received the boot completed broadcast message in the Network Survey broadcast receiver");
 
-        if (PreferenceUtils.getMqttStartOnBootPreference(context))
+        if (SurveyAutoStart.isEnabled(context))
         {
-            Timber.i("Auto starting the Network Survey Service based on the user or MDM MQTT auto start preference");
+            Timber.i("Auto starting the Network Survey Service because the survey is set to start automatically");
 
             startNetworkSurveyService(context);
-        } else
-        {
-            // Finally, check to see if we want to auto-start any of the log files.
-            if (PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, context)
-                    || PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, context)
-                    || PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, context)
-                    || PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, context)
-                    || PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false, context)
-                    || PreferenceUtils.getCommunitySurveyAutoStartPreference(context))
-            {
-                Timber.i("Auto starting the Network Survey Service based on one of the auto start preferences");
-
-                startNetworkSurveyService(context);
-            }
         }
     }
 

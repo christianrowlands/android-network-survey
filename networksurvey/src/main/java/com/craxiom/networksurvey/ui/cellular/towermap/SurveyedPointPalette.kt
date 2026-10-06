@@ -3,7 +3,7 @@ package com.craxiom.networksurvey.ui.cellular.towermap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointFeatures
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsPalette
 import com.craxiom.networksurvey.util.PlmnColorMapper
 import com.craxiom.networksurvey.util.SignalBuckets
 
@@ -27,18 +27,28 @@ object SurveyedPointPalette {
     /** Signal bucket colors indexed by [SignalBuckets] value (0 unknown, 5 strong). */
     val BUCKETS: IntArray = intArrayOf(
         UNKNOWN,
-        WifiTokens.SignalVeryWeak.toArgb(),
-        WifiTokens.SignalWeak.toArgb(),
-        WifiTokens.SignalFair.toArgb(),
-        WifiTokens.SignalGood.toArgb(),
-        WifiTokens.SignalStrong.toArgb(),
+        NsPalette.Signal.VeryWeak.toArgb(),
+        NsPalette.Signal.Weak.toArgb(),
+        NsPalette.Signal.Fair.toArgb(),
+        NsPalette.Signal.Good.toArgb(),
+        NsPalette.Signal.Strong.toArgb(),
     )
 
-    private val TECH_NR: Int = Color(0xFFA855F7).toArgb()
-    private val TECH_LTE: Int = Color(0xFF009688).toArgb()
-    private val TECH_UMTS: Int = Color(0xFF2196F3).toArgb()
-    private val TECH_GSM: Int = Color(0xFFF97316).toArgb()
-    private val TECH_CDMA: Int = Color(0xFF795548).toArgb()
+    /**
+     * Cellular technology colors, shared with the tower map's serving-cell badge. These are map
+     * data colors, the same on the light and dark basemaps.
+     */
+    val TECH_NR_COLOR = Color(0xFFA855F7)
+    val TECH_LTE_COLOR = Color(0xFF009688)
+    val TECH_UMTS_COLOR = Color(0xFF2196F3)
+    val TECH_GSM_COLOR = Color(0xFFF97316)
+    val TECH_CDMA_COLOR = Color(0xFF795548)
+
+    private val TECH_NR: Int = TECH_NR_COLOR.toArgb()
+    private val TECH_LTE: Int = TECH_LTE_COLOR.toArgb()
+    private val TECH_UMTS: Int = TECH_UMTS_COLOR.toArgb()
+    private val TECH_GSM: Int = TECH_GSM_COLOR.toArgb()
+    private val TECH_CDMA: Int = TECH_CDMA_COLOR.toArgb()
 
     /** The technologies with a color, in legend order. */
     val TECHNOLOGIES: List<String> = listOf(

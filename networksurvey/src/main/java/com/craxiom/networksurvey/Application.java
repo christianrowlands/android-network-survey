@@ -24,6 +24,11 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.lang.LocaleManager;
 import com.craxiom.networksurvey.notification.NotificationChannels;
+import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource;
+import com.craxiom.networksurvey.survey.setup.SurveySetupMigration;
+import com.craxiom.networksurvey.survey.setup.SurveySetupStore;
+import com.craxiom.networksurvey.ui.theme.ThemeMode;
+import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 
 import dagger.hilt.android.HiltAndroidApp;
@@ -72,6 +77,14 @@ public class Application extends android.app.Application
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         CredentialSecureStorage.INSTANCE.migrateFromPlainTextIfNeeded(this);
+
+        // Turn the old per-destination survey preferences into a survey setup, once. This runs
+        // before any activity, receiver or service reads the setup (including a start at boot).
+        new SurveySetupMigration(mPrefs, new SurveySetupStore(mPrefs), new AndroidRestrictionsSource(this),
+                () -> NsAnalyticsSecureStorage.INSTANCE.isRegistered(this)).migrateIfNeeded();
+
+        // Apply the Theme setting before any activity inflates, so Views and Compose agree
+        ThemeMode.applyFromPreferences(this);
     }
 
     @Override

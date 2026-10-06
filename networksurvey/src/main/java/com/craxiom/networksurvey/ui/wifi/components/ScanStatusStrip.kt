@@ -44,7 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 // Width caps so the fixed chrome cannot squeeze the scan status text out at large font scales.
 private val STATUS_COUNT_MAX_WIDTH = 140.dp
@@ -82,7 +82,7 @@ fun ScanStatusStrip(
             Text(
                 text = stringResource(R.string.wifi_list_scan_number, scanNumber),
                 style = TextStyle(fontSize = 13.sp),
-                color = WifiTokens.InkMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.widthIn(max = STATUS_COUNT_MAX_WIDTH),
@@ -94,7 +94,7 @@ fun ScanStatusStrip(
                     stringResource(R.string.wifi_list_ap_count, apCount)
                 },
                 style = TextStyle(fontSize = 13.sp),
-                color = WifiTokens.InkMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.widthIn(max = STATUS_COUNT_MAX_WIDTH),
@@ -137,7 +137,7 @@ private fun PulsingStatusDot() {
         modifier = Modifier
             .size(7.dp)
             .clip(CircleShape)
-            .background(WifiTokens.SignalStrong)
+            .background(NsTheme.colors.status.success.content)
             .alpha(alpha),
     )
 }

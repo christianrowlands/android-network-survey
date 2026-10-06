@@ -26,7 +26,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * A single option in an [NsSegmentedToggle].
@@ -86,8 +85,8 @@ private fun RowScope.Segment(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val bg = if (selected) WifiTokens.SsidSoft else Color.Transparent
-    val fg = if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
+    val bg = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+    val fg = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
         modifier = modifier

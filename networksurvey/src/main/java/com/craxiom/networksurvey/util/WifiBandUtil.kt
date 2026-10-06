@@ -1,7 +1,7 @@
 package com.craxiom.networksurvey.util
 
 import androidx.compose.ui.graphics.Color
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsPalette
 
 /**
  * Wi-Fi frequency band used by the redesign for band chips and grouping.
@@ -14,9 +14,9 @@ enum class WifiBand {
 
     val dotColor: Color
         get() = when (this) {
-            GHZ_24 -> WifiTokens.Band24
-            GHZ_5 -> WifiTokens.Band5
-            GHZ_6 -> WifiTokens.Band6
+            GHZ_24 -> NsPalette.Band.Ghz24
+            GHZ_5 -> NsPalette.Band.Ghz5
+            GHZ_6 -> NsPalette.Band.Ghz6
         }
 }
 

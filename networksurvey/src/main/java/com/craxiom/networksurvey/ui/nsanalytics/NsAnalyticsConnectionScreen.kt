@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -98,11 +97,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.ui.common.NsInfoCard
+import com.craxiom.networksurvey.ui.common.NsSectionLabel
 import com.craxiom.networksurvey.ui.theme.NsTheme
-import com.craxiom.networksurvey.ui.theme.onPrimaryDark
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import timber.log.Timber
@@ -142,20 +141,6 @@ fun NsAnalyticsConnectionScreen(
         }
     }
 
-    // Bluetooth permission launcher for Android 12+
-    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.values.all { it }
-        if (!allGranted) {
-            Toast.makeText(
-                context,
-                "Bluetooth permissions are required to collect Bluetooth data",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-
     LaunchedEffect(uiState.message) {
         uiState.message?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -186,23 +171,6 @@ fun NsAnalyticsConnectionScreen(
         }
     }
 
-    // Handle Bluetooth toggle with permission check for Android 12+
-    val handleBluetoothToggle: (Boolean) -> Unit = handleBluetoothToggle@{ enabled ->
-        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val missingPermissions = NetworkSurveyActivity.BLUETOOTH_PERMISSIONS.any { permission ->
-                ContextCompat.checkSelfPermission(
-                    context,
-                    permission
-                ) != PackageManager.PERMISSION_GRANTED
-            }
-            if (missingPermissions) {
-                viewModel.showBluetoothPermissionRationale()
-                return@handleBluetoothToggle
-            }
-        }
-        viewModel.toggleBluetoothProtocol(enabled)
-    }
-
     NsAnalyticsConnectionContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
@@ -212,11 +180,6 @@ fun NsAnalyticsConnectionScreen(
         onUploadNowClick = { viewModel.uploadNow() },
         onDisconnectClick = { showDisconnectDialog = true },
         onClearQueueClick = { showClearQueueDialog = true },
-        onToggleCellular = { viewModel.toggleCellularProtocol(it) },
-        onToggleWifi = { viewModel.toggleWifiProtocol(it) },
-        onToggleBluetooth = handleBluetoothToggle,
-        onToggleGnss = { viewModel.toggleGnssProtocol(it) },
-        onTogglePhoneState = { viewModel.togglePhoneStateProtocol(it) },
         onToggleSurvey = { viewModel.toggleSurvey() },
     )
 
@@ -322,16 +285,6 @@ fun NsAnalyticsConnectionScreen(
         )
     }
 
-    // Bluetooth permission rationale dialog
-    if (uiState.showBluetoothPermissionDialog) {
-        BluetoothPermissionRationaleDialog(
-            onDismiss = { viewModel.dismissBluetoothPermissionDialog() },
-            onConfirm = {
-                viewModel.dismissBluetoothPermissionDialog()
-                bluetoothPermissionLauncher.launch(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)
-            }
-        )
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -345,39 +298,34 @@ private fun NsAnalyticsConnectionContent(
     onUploadNowClick: () -> Unit,
     onDisconnectClick: () -> Unit,
     onClearQueueClick: () -> Unit,
-    onToggleCellular: (Boolean) -> Unit,
-    onToggleWifi: (Boolean) -> Unit,
-    onToggleBluetooth: (Boolean) -> Unit,
-    onToggleGnss: (Boolean) -> Unit,
-    onTogglePhoneState: (Boolean) -> Unit,
     onToggleSurvey: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("NS Analytics Details", color = Color.White) },
+                title = { Text("NS Analytics Details", color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Navigate back",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1A1B1F)
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color(0xFF121316)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFF121316))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             if (uiState.isLoading) {
                 Box(
@@ -435,19 +383,7 @@ private fun NsAnalyticsConnectionContent(
                             onUploadNowClick = onUploadNowClick
                         )
 
-                        ActiveProtocolsCard(
-                            cellularEnabled = uiState.cellularEnabled,
-                            wifiEnabled = uiState.wifiEnabled,
-                            bluetoothEnabled = uiState.bluetoothEnabled,
-                            gnssEnabled = uiState.gnssEnabled,
-                            phoneStateEnabled = uiState.phoneStateEnabled,
-                            isSurveyActive = uiState.isSurveyActive,
-                            onToggleCellular = onToggleCellular,
-                            onToggleWifi = onToggleWifi,
-                            onToggleBluetooth = onToggleBluetooth,
-                            onToggleGnss = onToggleGnss,
-                            onTogglePhoneState = onTogglePhoneState
-                        )
+                        WhatIsSentSection()
 
                         DangerZoneCard(
                             queuedRecords = uiState.queuedRecords,
@@ -519,13 +455,13 @@ private fun NsAnalyticsHeroSection() {
             text = stringResource(R.string.ns_analytics),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Text(
             text = stringResource(R.string.ns_analytics_tagline),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -540,7 +476,7 @@ private fun SetupGuideSection() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
@@ -553,7 +489,7 @@ private fun SetupGuideSection() {
                 text = stringResource(R.string.ns_analytics_setup_guide_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             SetupStepItem(
@@ -601,7 +537,7 @@ private fun SetupStepItem(
             modifier = Modifier
                 .size(32.dp)
                 .background(
-                    color = Color(0xFF2A2B30),
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     shape = MaterialTheme.shapes.small
                 ),
             contentAlignment = Alignment.Center
@@ -622,13 +558,13 @@ private fun SetupStepItem(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -700,13 +636,13 @@ private fun CallToActionButtons(
             onClick = onGetStartedClick,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         ) {
             Text(stringResource(R.string.ns_analytics_get_started))
             Icon(
                 painter = painterResource(R.drawable.ic_open_details),
-                tint = onPrimaryDark,
                 contentDescription = null,
                 modifier = Modifier.padding(start = 8.dp)
             )
@@ -772,7 +708,7 @@ private fun WhatHappensNextSection() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
@@ -785,13 +721,13 @@ private fun WhatHappensNextSection() {
                 text = stringResource(R.string.ns_analytics_what_happens_next_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = stringResource(R.string.ns_analytics_what_happens_next_desc),
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -824,7 +760,7 @@ private fun WorkspaceStatusCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Row(
@@ -857,7 +793,7 @@ private fun WorkspaceStatusCard(
                 Text(
                     text = workspaceName ?: "Unknown Workspace",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
@@ -877,13 +813,13 @@ private fun WorkspaceStatusCard(
                         Text(
                             text = "ID: ${id.take(8)}...",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             painter = painterResource(R.drawable.ic_copy),
                             contentDescription = "Copy ID",
-                            tint = Color.Gray,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -894,7 +830,7 @@ private fun WorkspaceStatusCard(
                 Text(
                     text = "Ready to collect and upload survey data",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 workspaceId?.let { id ->
@@ -953,7 +889,7 @@ private fun UploadSettingsCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
@@ -964,7 +900,7 @@ private fun UploadSettingsCard(
             Text(
                 text = "Upload Settings",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
@@ -1002,14 +938,14 @@ private fun UploadSettingsCard(
                 Text(
                     text = resultText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Secondary line: exact timestamp
                 Text(
                     text = exactTime,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -1029,7 +965,7 @@ private fun UploadSettingsCard(
                         .fillMaxWidth()
                         .height(6.dp),
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color.Gray.copy(alpha = 0.3f),
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     drawStopIndicator = {}
                 )
 
@@ -1038,7 +974,7 @@ private fun UploadSettingsCard(
                 Text(
                     text = "$uploadedRecords / $totalRecordsToUpload records",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -1054,12 +990,12 @@ private fun UploadSettingsCard(
                     Text(
                         text = "Auto Upload",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = if (autoUploadEnabled) "Every $uploadFrequencyMinutes min" else "Disabled",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Switch(
@@ -1094,7 +1030,7 @@ private fun UploadSettingsCard(
                 if (uploadState == UploadState.UPLOADING) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1120,10 +1056,10 @@ private fun UploadStatusRow(
     statusMessage: String
 ) {
     val statusColor = when (state) {
-        UploadState.IDLE -> Color(0xFF4CAF50)  // Green
-        UploadState.UPLOADING -> Color(0xFFFFC107)  // Yellow/Amber
-        UploadState.EMPTY -> Color.Gray
-        UploadState.UNAVAILABLE -> Color(0xFFF44336)  // Red
+        UploadState.IDLE -> NsTheme.colors.status.success.content
+        UploadState.UPLOADING -> NsTheme.colors.status.warning.content
+        UploadState.EMPTY -> MaterialTheme.colorScheme.onSurfaceVariant
+        UploadState.UNAVAILABLE -> NsTheme.colors.status.danger.content
     }
 
     Row(
@@ -1141,7 +1077,7 @@ private fun UploadStatusRow(
         Text(
             text = statusMessage,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -1160,7 +1096,7 @@ private fun QuotaPausedBanner(
 ) {
     val context = LocalContext.current
     Surface(
-        color = Color(0xFF3A2E12),
+        color = NsTheme.colors.status.warning.container,
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -1169,14 +1105,14 @@ private fun QuotaPausedBanner(
                 Icon(
                     imageVector = Icons.Filled.Info,
                     contentDescription = null,
-                    tint = Color(0xFFFFC107),
+                    tint = NsTheme.colors.status.warning.content,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.ns_analytics_upload_paused_banner_title),
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -1187,7 +1123,7 @@ private fun QuotaPausedBanner(
                 text = quotaMessage?.takeIf { it.isNotBlank() }
                     ?: stringResource(R.string.ns_analytics_upload_paused_banner_body),
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.9f)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (maxRecords > 0) {
@@ -1199,7 +1135,7 @@ private fun QuotaPausedBanner(
                         NsAnalyticsUtils.formatNumberWithThousandsSeparator(maxRecords)
                     ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -1212,123 +1148,15 @@ private fun QuotaPausedBanner(
     }
 }
 
+/**
+ * States what NS Analytics receives: everything the survey records except call records. The record
+ * types are chosen for the whole survey, so there are no per-type switches here.
+ */
 @Composable
-private fun ActiveProtocolsCard(
-    cellularEnabled: Boolean,
-    wifiEnabled: Boolean,
-    bluetoothEnabled: Boolean,
-    gnssEnabled: Boolean,
-    phoneStateEnabled: Boolean,
-    isSurveyActive: Boolean,
-    onToggleCellular: (Boolean) -> Unit,
-    onToggleWifi: (Boolean) -> Unit,
-    onToggleBluetooth: (Boolean) -> Unit,
-    onToggleGnss: (Boolean) -> Unit,
-    onTogglePhoneState: (Boolean) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Active Protocols",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ProtocolToggleRow(
-                label = "Cellular",
-                description = "GSM, CDMA, UMTS, LTE, NR",
-                isEnabled = cellularEnabled,
-                enabled = !isSurveyActive,
-                onToggle = onToggleCellular
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ProtocolToggleRow(
-                label = "Phone State",
-                description = "Serving cell, registration, and SIM changes",
-                isEnabled = phoneStateEnabled,
-                enabled = !isSurveyActive,
-                onToggle = onTogglePhoneState
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ProtocolToggleRow(
-                label = "Wi-Fi",
-                description = "802.11 networks and access points",
-                isEnabled = wifiEnabled,
-                enabled = !isSurveyActive,
-                onToggle = onToggleWifi
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ProtocolToggleRow(
-                label = "Bluetooth",
-                description = "BLE and classic devices",
-                isEnabled = bluetoothEnabled,
-                enabled = !isSurveyActive,
-                onToggle = onToggleBluetooth
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ProtocolToggleRow(
-                label = "GPS/GNSS",
-                description = "Satellite positioning data",
-                isEnabled = gnssEnabled,
-                enabled = !isSurveyActive,
-                onToggle = onToggleGnss
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProtocolToggleRow(
-    label: String,
-    description: String,
-    isEnabled: Boolean,
-    enabled: Boolean = true,
-    onToggle: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-        }
-        Switch(
-            checked = isEnabled,
-            onCheckedChange = onToggle,
-            enabled = enabled
-        )
+private fun WhatIsSentSection() {
+    Column(verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
+        NsSectionLabel(text = stringResource(R.string.destination_what_is_sent_title))
+        NsInfoCard(text = stringResource(R.string.ns_analytics_what_is_sent))
     }
 }
 
@@ -1347,11 +1175,11 @@ private fun DangerZoneCard(
             modifier = Modifier.fillMaxWidth(),
             enabled = queuedRecords > 0,
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color(0xFFE57373),
-                disabledContentColor = Color(0xFFE57373).copy(alpha = 0.5f)
+                contentColor = MaterialTheme.colorScheme.error,
+                disabledContentColor = MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
             ),
             border = ButtonDefaults.outlinedButtonBorder(true).copy(
-                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFE57373))
+                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.error)
             )
         ) {
             Icon(
@@ -1366,10 +1194,10 @@ private fun DangerZoneCard(
             onClick = onDisconnectClick,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color(0xFFE57373)
+                contentColor = MaterialTheme.colorScheme.error
             ),
             border = ButtonDefaults.outlinedButtonBorder(true).copy(
-                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFE57373))
+                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.error)
             )
         ) {
             Icon(
@@ -2143,32 +1971,6 @@ private fun AlreadyRegisteredDialog(
 }
 
 /**
- * Dialog shown to explain why Bluetooth permissions are needed.
- * Displayed when user tries to enable Bluetooth on Android 12+ without permissions.
- */
-@Composable
-private fun BluetoothPermissionRationaleDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.bluetooth_permissions_rationale_title)) },
-        text = { Text(stringResource(R.string.bluetooth_permissions_rationale)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(android.R.string.ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
-}
-
-/**
  * Preview for the NS Analytics unregistered/not connected screen.
  * Shows the complete onboarding UI with hero section, setup guide, and CTAs.
  */
@@ -2185,7 +1987,7 @@ private fun NotConnectedCardPreview() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF121316))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
             NotConnectedCard(

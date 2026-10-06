@@ -134,4 +134,11 @@
     <string name="band_unit_khz">kHz</string>
     <string name="band_fr1">FR1</string>
     <string name="band_fr2">FR2</string>
+
+    <!-- Values of the three-way survey setup MDM restrictions (SurveyMdmKeys). Never change them. -->
+    <string-array name="mdm_survey_choice_values">
+        <item>user</item>
+        <item>on</item>
+        <item>off</item>
+    </string-array>
 </resources>

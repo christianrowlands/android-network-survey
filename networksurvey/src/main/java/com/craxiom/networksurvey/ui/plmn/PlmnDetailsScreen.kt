@@ -28,10 +28,9 @@ import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.data.plmn.displayName
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsCardHeader
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
-import com.craxiom.networksurvey.ui.wifi.components.CardHeader
-import com.craxiom.networksurvey.ui.wifi.components.DetailsCardFrame
 
 private val SectionGap = 14.dp
 private val CardContentGap = 6.dp
@@ -73,7 +72,7 @@ fun PlmnDetailsScreen(
 private fun HeroCard(record: PlmnRecord) {
     val country = record.country?.takeIf { it.isNotBlank() }
         ?: record.region?.takeIf { it.isNotBlank() }
-    DetailsCardFrame {
+    NsDetailsCardFrame {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -93,7 +92,7 @@ private fun HeroCard(record: PlmnRecord) {
                         fontSize = 22.sp,
                         fontWeight = FontWeight.SemiBold,
                     ),
-                    color = WifiTokens.SsidAccent,
+                    color = MaterialTheme.colorScheme.primary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -101,7 +100,7 @@ private fun HeroCard(record: PlmnRecord) {
                     Text(
                         text = country,
                         style = TextStyle(fontSize = 14.sp),
-                        color = WifiTokens.InkMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -121,15 +120,15 @@ private fun HeroCard(record: PlmnRecord) {
                 fontWeight = FontWeight.SemiBold,
                 fontFeatureSettings = "tnum",
             ),
-            color = WifiTokens.InkDim,
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
 
 @Composable
 private fun IdentifiersCard(record: PlmnRecord) {
-    DetailsCardFrame {
-        CardHeader(text = stringResource(R.string.plmn_details_section_identifiers))
+    NsDetailsCardFrame {
+        NsCardHeader(text = stringResource(R.string.plmn_details_section_identifiers))
         Column(verticalArrangement = Arrangement.spacedBy(CardContentGap)) {
             PlmnLabeledRow(
                 label = stringResource(R.string.plmn_field_plmn),
@@ -166,8 +165,8 @@ private fun OperatorCard(record: PlmnRecord) {
     val merged = brand != null && operator != null &&
             brand.trim().equals(operator.trim(), ignoreCase = true)
 
-    DetailsCardFrame {
-        CardHeader(text = stringResource(R.string.plmn_details_section_provider))
+    NsDetailsCardFrame {
+        NsCardHeader(text = stringResource(R.string.plmn_details_section_provider))
         Column(verticalArrangement = Arrangement.spacedBy(CardContentGap)) {
             when {
                 merged -> PlmnLabeledRow(
@@ -196,8 +195,8 @@ private fun OperatorCard(record: PlmnRecord) {
 @Composable
 private fun LocationCard(record: PlmnRecord) {
     val region = record.region?.takeIf { it.isNotBlank() }
-    DetailsCardFrame {
-        CardHeader(text = stringResource(R.string.plmn_details_section_location))
+    NsDetailsCardFrame {
+        NsCardHeader(text = stringResource(R.string.plmn_details_section_location))
         Column(verticalArrangement = Arrangement.spacedBy(CardContentGap)) {
             PlmnLabeledRow(
                 label = stringResource(R.string.plmn_field_country),
@@ -270,7 +269,7 @@ private fun PlmnLabeledRow(
                 Text(
                     text = subtitle,
                     style = TextStyle(fontSize = 11.sp),
-                    color = WifiTokens.InkFaint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -289,7 +288,7 @@ private fun PlmnLabeledRow(
                     fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default,
                     fontWeight = if (isEmpty) FontWeight.Normal else FontWeight.SemiBold,
                 ),
-                color = if (isEmpty) WifiTokens.InkFaint else MaterialTheme.colorScheme.onSurface,
+                color = if (isEmpty) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 modifier = valueModifier,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -301,7 +300,7 @@ private fun PlmnLabeledRow(
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                     ),
-                    color = WifiTokens.InkFaint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

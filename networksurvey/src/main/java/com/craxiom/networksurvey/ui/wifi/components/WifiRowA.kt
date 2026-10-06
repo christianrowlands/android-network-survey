@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,9 +31,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NetworkTagVariant
+import com.craxiom.networksurvey.ui.common.NsBandChip
+import com.craxiom.networksurvey.ui.common.NsNetworkTag
+import com.craxiom.networksurvey.ui.common.NsSignalMeter
+import com.craxiom.networksurvey.ui.common.classifySecurity
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
@@ -107,7 +114,7 @@ private fun TopSsidRow(
             Text(
                 text = stringResource(R.string.wifi_hidden_ssid_placeholder),
                 style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.HiddenSsid,
+                color = NsTheme.colors.tag.hiddenSsid,
                 fontStyle = FontStyle.Italic,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -119,7 +126,7 @@ private fun TopSsidRow(
             Text(
                 text = ap.ssid,
                 style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.SsidAccent,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -131,7 +138,7 @@ private fun TopSsidRow(
             )
         }
         if (ap.passpoint) {
-            NetworkTag(
+            NsNetworkTag(
                 text = stringResource(R.string.wifi_tag_passpoint),
                 variant = NetworkTagVariant.Passpoint,
             )
@@ -149,16 +156,16 @@ private fun ChipsRow(ap: WifiAccessPointDisplay) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         ap.band?.let { band ->
-            BandChip(band = band, channel = ap.channel)
+            NsBandChip(band = band, channel = ap.channel)
         }
         if (ap.encryptionLabel.isNotBlank()) {
-            NetworkTag(
+            NsNetworkTag(
                 text = ap.encryptionLabel,
                 variant = NetworkTagVariant.Security(classifySecurity(ap.encryptionLabel)),
             )
         }
         if (ap.standardLabel.isNotBlank()) {
-            NetworkTag(
+            NsNetworkTag(
                 text = ap.standardLabel,
                 variant = NetworkTagVariant.Standard,
             )
@@ -176,7 +183,7 @@ private fun ChipsRow(ap: WifiAccessPointDisplay) {
 @Composable
 internal fun ExcludedTag(modifier: Modifier = Modifier) {
     val excludedDescription = stringResource(R.string.wifi_details_excluded_from_survey)
-    NetworkTag(
+    NsNetworkTag(
         text = stringResource(R.string.wifi_tag_excluded),
         variant = NetworkTagVariant.Excluded,
         modifier = modifier.semantics { contentDescription = excludedDescription },
@@ -190,7 +197,7 @@ private fun SignalColumn(ap: WifiAccessPointDisplay) {
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.widthIn(min = 76.dp),
     ) {
-        val color = ap.rssi?.toWifiSignalCategory()?.color ?: LocalContentColor.current
+        val color = ap.rssi?.toWifiSignalCategory()?.textColor ?: LocalContentColor.current
         Text(
             text = if (ap.rssi != null) "${ap.rssi} dBm" else "--",
             style = TextStyle(
@@ -200,7 +207,7 @@ private fun SignalColumn(ap: WifiAccessPointDisplay) {
             ),
             color = color,
         )
-        SignalMeter(rssi = ap.rssi)
+        NsSignalMeter(rssi = ap.rssi)
     }
 }
 

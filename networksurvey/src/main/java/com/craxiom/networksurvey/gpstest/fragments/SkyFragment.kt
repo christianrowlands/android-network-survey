@@ -100,7 +100,7 @@ class SkyFragment : Fragment() {
         super.onResume()
 
         val color: Int =
-            ContextCompat.getColor(requireContext(), android.R.color.secondary_text_dark)
+            ContextCompat.getColor(requireContext(), R.color.md_theme_onSurfaceVariant)
         legend.skyLegendUsedInFix.setImageResource(R.drawable.circle_used_in_fix_dark)
         usedCn0Background = R.drawable.cn0_round_corner_background_used_dark
         usedCn0IndicatorColor = resources.getColor(android.R.color.darker_gray, null)

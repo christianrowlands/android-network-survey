@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
 
 /**
@@ -57,14 +56,14 @@ fun WifiModeTabs(
 
 @Composable
 private fun ModeTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) WifiTokens.SsidSoft else androidx.compose.ui.graphics.Color.Transparent
+    val bg = if (selected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent
     val border = if (selected) {
         androidx.compose.ui.graphics.Color.Transparent
     } else {
         MaterialTheme.colorScheme.outlineVariant
     }
     val textColor =
-        if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
+        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
         modifier = Modifier

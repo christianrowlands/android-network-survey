@@ -1,0 +1,152 @@
+package com.craxiom.networksurvey.survey.engine
+
+import android.content.Context
+import androidx.core.content.edit
+import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
+import com.craxiom.networksurvey.survey.mdm.SurveyMdmKeys
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.model.SurveySetup
+import com.craxiom.networksurvey.survey.setup.SurveySetupStore
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+/**
+ * Tests the coordinator's rules around the orchestrator: auto start, the "stopped by the user" flag
+ * on a managed phone, and the start origin.
+ */
+@RunWith(RobolectricTestRunner::class)
+class SurveyCoordinatorTest {
+
+    private val outputs = FakeSurveyOutputs()
+    private lateinit var store: SurveySetupStore
+    private lateinit var executor: ExecutorService
+    private var restrictions: Map<String, Any?> = emptyMap()
+    private var overrideOn = false
+    private var stateChanges = 0
+    private lateinit var coordinator: SurveyCoordinator
+
+    @Before
+    fun setUp() {
+        val preferences = RuntimeEnvironment.getApplication().getSharedPreferences("coordinator_test", Context.MODE_PRIVATE)
+        preferences.edit { clear() }
+        store = SurveySetupStore(preferences)
+        store.setCurrentSetup(SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.LOG_FILES)))
+        executor = Executors.newSingleThreadExecutor()
+        lateinit var holder: SurveyCoordinator
+        val orchestrator = SurveyOrchestrator(outputs) { holder.policy() }
+        coordinator = SurveyCoordinator(
+            orchestrator, store, { RestrictionsSnapshot(restrictions) }, { overrideOn }, executor,
+        ) { stateChanges++ }
+        holder = coordinator
+    }
+
+    @After
+    fun tearDown() {
+        executor.shutdownNow()
+    }
+
+    private fun managed(values: Map<String, Any?>) {
+        restrictions = values
+        coordinator.refreshPolicy()
+    }
+
+    @Test
+    fun `start with no setup starts the working setup with the organization's locks applied`() {
+        managed(mapOf(SurveyMdmKeys.SURVEY_GNSS to "on"))
+        val result = coordinator.startSurvey(null, SurveyOrigin.USER).get()
+
+        assertTrue(result.recording)
+        assertEquals(setOf(RecordType.WIFI, RecordType.GNSS), outputs.fileTypes)
+        assertEquals(SurveyOrigin.USER, coordinator.startOrigin)
+        assertTrue(stateChanges > 0)
+    }
+
+    @Test
+    fun `a user stop on a phone the organization shapes sets the stopped by user flag`() {
+        managed(mapOf(SurveyMdmKeys.AUTO_START_SURVEY to "on"))
+        coordinator.startSurvey(null, SurveyOrigin.USER).get()
+        coordinator.stopSurvey(SurveyOrigin.USER).get()
+
+        assertTrue(store.stoppedByUser)
+        assertNull(coordinator.startOrigin)
+    }
+
+    @Test
+    fun `a stop on an unmanaged phone or from the Intent API does not set the flag`() {
+        coordinator.startSurvey(null, SurveyOrigin.USER).get()
+        coordinator.stopSurvey(SurveyOrigin.USER).get()
+        assertFalse(store.stoppedByUser)
+
+        managed(mapOf(SurveyMdmKeys.AUTO_START_SURVEY to "on"))
+        coordinator.startSurvey(null, SurveyOrigin.USER).get()
+        coordinator.stopSurvey(SurveyOrigin.INTENT).get()
+        assertFalse(store.stoppedByUser)
+    }
+
+    @Test
+    fun `app open auto start respects the stopped by user flag and boot clears it`() {
+        managed(mapOf(SurveyMdmKeys.AUTO_START_SURVEY to "on"))
+        store.stoppedByUser = true
+
+        assertNull(coordinator.startAutoSurveyIfEnabled(SurveyOrigin.APP_OPEN))
+        assertFalse(outputs.isRunning(Destination.LOG_FILES))
+
+        val result = coordinator.startAutoSurveyIfEnabled(SurveyOrigin.BOOT)!!.get()
+        assertTrue(result.recording)
+        assertFalse(store.stoppedByUser)
+        assertEquals(SurveyOrigin.BOOT, coordinator.startOrigin)
+    }
+
+    @Test
+    fun `auto start follows the user's setting when the organization leaves it to the user`() {
+        assertNull(coordinator.startAutoSurveyIfEnabled(SurveyOrigin.APP_OPEN))
+
+        store.userAutoStart = true
+        val result = coordinator.startAutoSurveyIfEnabled(SurveyOrigin.APP_OPEN)!!.get()
+        assertTrue(result.recording)
+    }
+
+    @Test
+    fun `auto start never restarts a running survey`() {
+        store.userAutoStart = true
+        coordinator.startSurvey(null, SurveyOrigin.USER).get()
+        val callsBefore = outputs.calls.size
+
+        coordinator.startAutoSurveyIfEnabled(SurveyOrigin.APP_OPEN)!!.get()
+        assertEquals(callsBefore, outputs.calls.size)
+        assertEquals(SurveyOrigin.USER, coordinator.startOrigin)
+    }
+
+    @Test
+    fun `the organization turning auto start off beats the user's setting`() {
+        store.userAutoStart = true
+        managed(mapOf(SurveyMdmKeys.AUTO_START_SURVEY to "off"))
+        assertFalse(coordinator.isAutoStartEnabled())
+    }
+
+    @Test
+    fun `the override lifts the organization's auto start`() {
+        managed(mapOf(SurveyMdmKeys.AUTO_START_SURVEY to "on"))
+        overrideOn = true
+        coordinator.refreshPolicy()
+        assertFalse(coordinator.isAutoStartEnabled())
+    }
+
+    @Test
+    fun `the last result is kept for the attention plate`() {
+        outputs.destinationProblems[Destination.MQTT] = SkipReason.NOT_CONFIGURED
+        coordinator.startSurvey(SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.LOG_FILES, Destination.MQTT)), SurveyOrigin.USER).get()
+        assertEquals(mapOf(Destination.MQTT to SkipReason.NOT_CONFIGURED), coordinator.lastResult!!.skipped)
+    }
+}

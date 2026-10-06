@@ -178,7 +178,6 @@ dependencies {
         exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
     }
 
-    implementation(libs.geopackage.android)
     implementation(libs.commons.csv)
 
     implementation(libs.androidx.constraintlayout)
@@ -239,7 +238,6 @@ dependencies {
     androidTestImplementation(libs.barista)
     androidTestImplementation(libs.truth)
     androidTestImplementation(libs.network.survey.messaging)
-    androidTestImplementation(libs.geopackage.android)
 }
 
 licenseReport {

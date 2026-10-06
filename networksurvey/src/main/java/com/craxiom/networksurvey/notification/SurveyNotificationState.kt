@@ -10,7 +10,7 @@ import com.craxiom.mqttlibrary.connection.ConnectionState
  * notification. Keeping the snapshot separate from the service makes the title and text rules a
  * pure function that can be unit tested without a running service.
  *
- * @property fileLogging True when any protocol is being written to a CSV or GeoPackage file.
+ * @property fileLogging True when any protocol is being written to a CSV file.
  * @property communitySurvey True when records are being collected for OpenCelliD / BeaconDB.
  * @property nsAnalytics True when records are being collected for an NS Analytics workspace.
  * @property mqttState The MQTT broker connection state.

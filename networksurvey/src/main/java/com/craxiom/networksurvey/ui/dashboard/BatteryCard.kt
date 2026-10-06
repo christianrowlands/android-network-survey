@@ -25,15 +25,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.theme.NsTheme
+import androidx.compose.material3.MaterialTheme
 
 private const val ANDROID_BATTERY_ICON = android.R.drawable.ic_lock_idle_low_battery
-
-private val BatteryWarningBackground = Color(0xFFFFF8E1)
-private val BatteryPausedBackground = Color(0xFFFFEBEE)
-private val BatteryWarningText = Color(0xFFE65100)
-private val BatteryPausedText = Color(0xFFC62828)
-private val BatteryIconWarning = Color(0xFFFF6F00)
-private val BatteryIconPaused = Color(0xFFD32F2F)
 
 /**
  * Card that displays battery management status when logging is paused due to low battery
@@ -56,10 +51,13 @@ fun BatteryCard(
             shape = DashboardCardDefaults.shape,
             elevation = DashboardCardDefaults.elevation(),
         ) {
-            val backgroundColor =
-                if (state.isPaused) BatteryPausedBackground else BatteryWarningBackground
-            val textColor = if (state.isPaused) BatteryPausedText else BatteryWarningText
-            val iconColor = if (state.isPaused) BatteryIconPaused else BatteryIconWarning
+            // Below the threshold the survey is Paused; approaching it is a warning. Both amber,
+            // matching the prototype's battery-pause attention plate.
+            val colors =
+                if (state.isPaused) NsTheme.colors.state.paused else NsTheme.colors.status.warning
+            val backgroundColor = colors.container
+            val textColor = colors.content
+            val iconColor = colors.content
 
             // Header
             Row(

@@ -28,13 +28,6 @@
 
         <SwitchPreferenceCompat
             app:defaultValue="false"
-            app:key="auto_start_community_upload_survey_at_boot"
-            app:title="@string/auto_start_community_upload_survey_title"
-            app:summaryOff="@string/auto_start_community_upload_survey_summary_off"
-            app:summaryOn="@string/auto_start_community_upload_survey_summary_on" />
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
             app:key="auto_upload_enabled"
             app:title="@string/auto_upload_title"
             app:summaryOff="@string/auto_upload_summary_off"

@@ -32,6 +32,12 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
+import com.craxiom.networksurvey.ui.theme.ThemeMode;
+import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver;
+import com.craxiom.networksurvey.survey.mdm.ManagedState;
+import com.craxiom.networksurvey.survey.mdm.SurveyMdmKeys;
+import com.craxiom.networksurvey.survey.model.RecordType;
+import com.craxiom.networksurvey.survey.setup.SurveySetupStore;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.SettingsUtils;
@@ -54,8 +60,23 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
     /**
      * The list of preferences that can be set in both the MDM app restrictions, and this settings UI.
+     * The pre-v2 auto start keys stay in this list for the one release that still reads them (see
+     * {@link com.craxiom.networksurvey.survey.mdm.LegacyMdmMapper}).
      */
-    public static final String[] MDM_OVERLAP_PROPERTY_KEYS = {NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
+    public static final String[] MDM_OVERLAP_PROPERTY_KEYS = {
+            SurveyMdmKeys.SURVEY_CELLULAR,
+            SurveyMdmKeys.SURVEY_PHONE_STATE,
+            SurveyMdmKeys.SURVEY_WIFI,
+            SurveyMdmKeys.SURVEY_BLUETOOTH,
+            SurveyMdmKeys.SURVEY_GNSS,
+            SurveyMdmKeys.SURVEY_CDR,
+            SurveyMdmKeys.DESTINATION_LOG_FILES,
+            SurveyMdmKeys.DESTINATION_NS_ANALYTICS,
+            SurveyMdmKeys.DESTINATION_MQTT,
+            SurveyMdmKeys.DESTINATION_GRPC,
+            SurveyMdmKeys.DESTINATION_COMMUNITY,
+            SurveyMdmKeys.AUTO_START_SURVEY,
+            NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING,
@@ -64,7 +85,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR,
             NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS,
             NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB,
-            NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE,
             NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
@@ -209,6 +229,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 }
                 break;
 
+            case NetworkSurveyConstants.PROPERTY_APP_THEME:
+                // AppCompat recreates the activity, so every screen picks up the new mode
+                ThemeMode.applyFromPreferences(requireContext());
+                break;
+
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
                 defaultValue = NetworkSurveyConstants.DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS;
                 break;
@@ -262,11 +287,13 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 defaultValue = NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS;
                 break;
 
-            case NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING:
-                final boolean autostartCdr = sharedPreferences.getBoolean(key, false);
-                if (autostartCdr)
+            case SurveyMdmKeys.AUTO_START_SURVEY:
+                final boolean autoStartSurvey = sharedPreferences.getBoolean(key, false);
+                if (autoStartSurvey && new SurveySetupStore(sharedPreferences).getCurrentSetup()
+                        .getRecordTypes().contains(RecordType.CDR))
                 {
-                    // Verify the app has the necessary permissions to start CDR logging
+                    // The survey records call records, so verify the app has the CDR permissions
+                    // before it starts on its own.
                     showCdrPermissionRationaleAndRequestPermissions();
                 }
                 break;
@@ -409,7 +436,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     private void updateUiForMdmIfNecessary()
     {
         Context context = requireContext();
-        if (!MdmUtils.isUnderMdmControl(context, MDM_OVERLAP_PROPERTY_KEYS)) return;
+        if (!MdmUtils.isManaged(context)) return;
 
         final SharedPreferences sharedPreferences = getPreferenceManager().getSharedPreferences();
 
@@ -454,23 +481,16 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
         if (mdmProperties == null) return;
 
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING);
+        updateAutoStartSurveyForMdm(preferenceScreen, context);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED);
         updateLogRolloverSizeForMdm(preferenceScreen, mdmProperties);
-        updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED);
@@ -482,6 +502,26 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         // take effect even if the user never opens the Upload Settings screen.
         writeBooleanMdmPreferenceValue(mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED);
         writeBooleanMdmPreferenceValue(mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY);
+    }
+
+    /**
+     * Shows the organization's auto start choice on the "Start survey automatically" switch. The
+     * restriction is a three-way choice, so it is read through the survey policy (which also
+     * applies the one-release legacy fallback). The user's own value is left untouched in the
+     * shared preferences so it is restored when the organization stops managing it.
+     */
+    private void updateAutoStartSurveyForMdm(PreferenceScreen preferenceScreen, Context context)
+    {
+        final SwitchPreferenceCompat preference = preferenceScreen.findPreference(SurveyMdmKeys.AUTO_START_SURVEY);
+        if (preference == null) return;
+
+        final ManagedState state = SurveyTypeResolver.currentPolicy(context).getAutoStart();
+        if (state == ManagedState.USER) return;
+
+        preference.setEnabled(false);
+        preference.setPersistent(false);
+        preference.setChecked(state == ManagedState.ON);
+        preference.setSummary(R.string.auto_start_survey_managed_summary);
     }
 
     /**
@@ -721,12 +761,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         {
             SettingsDialogs.showCdrRequiredPermissionRationale(getParentFragmentManager(), this::requestRequiredCdrPermissions);
 
-            // Revert the cdr autostart preference if the permissions have not been granted
-            final SwitchPreferenceCompat preference = getPreferenceScreen().findPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING);
+            // Revert the auto start preference if the permissions have not been granted
+            final SwitchPreferenceCompat preference = getPreferenceScreen().findPreference(SurveyMdmKeys.AUTO_START_SURVEY);
             if (preference != null) preference.setChecked(false);
             getPreferenceManager().getSharedPreferences()
                     .edit()
-                    .putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false)
+                    .putBoolean(SurveyMdmKeys.AUTO_START_SURVEY, false)
                     .apply();
 
             return;

@@ -46,7 +46,6 @@ import com.craxiom.networksurvey.ui.plmn.components.PlmnResolveFields
 import com.craxiom.networksurvey.ui.plmn.components.PlmnResultStrip
 import com.craxiom.networksurvey.ui.plmn.components.PlmnRow
 import com.craxiom.networksurvey.ui.plmn.components.PlmnSearchField
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Top-level Compose surface for the "PLMN lookup" drawer screen.
@@ -262,7 +261,7 @@ private fun ResultList(
                 Text(
                     text = stringResource(R.string.plmn_lookup_truncated_hint),
                     style = TextStyle(fontSize = 12.sp),
-                    color = WifiTokens.InkFaint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -286,7 +285,7 @@ private fun StatusCenter(message: String, modifier: Modifier = Modifier) {
         Text(
             text = message,
             style = TextStyle(fontSize = 13.sp),
-            color = WifiTokens.InkFaint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(24.dp),
         )
@@ -305,13 +304,13 @@ private fun EmptyState(modifier: Modifier = Modifier) {
         Text(
             text = stringResource(R.string.plmn_lookup_empty_line1),
             style = TextStyle(fontSize = 13.sp),
-            color = WifiTokens.InkFaint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Text(
             text = stringResource(R.string.plmn_lookup_empty_line2),
             style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkFaint,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
     }
@@ -363,7 +362,7 @@ private fun PlmnSortOption(textRes: Int, selected: Boolean, onClick: () -> Unit)
                 fontSize = 14.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
             ),
-            color = if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurface,
+            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

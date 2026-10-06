@@ -6,6 +6,8 @@ import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.ASignalChartViewModel
 import com.craxiom.networksurvey.ui.SignalChart
+import com.craxiom.networksurvey.ui.common.NsCardHeader
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 
 /**
  * Signal history card. Reuses the existing [SignalChart] (Vico-based, 2-minute buffer) and
@@ -13,8 +15,8 @@ import com.craxiom.networksurvey.ui.SignalChart
  */
 @Composable
 fun WifiSignalCard(viewModel: ASignalChartViewModel, modifier: Modifier = Modifier) {
-    DetailsCardFrame(modifier = modifier) {
-        CardHeader(text = stringResource(R.string.wifi_details_signal_last_2_min))
+    NsDetailsCardFrame(modifier = modifier) {
+        NsCardHeader(text = stringResource(R.string.wifi_details_signal_last_2_min))
         SignalChart(viewModel)
     }
 }

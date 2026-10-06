@@ -65,11 +65,11 @@ public abstract class CsvRecordLogger
     private String loggingFileName;
 
     /**
-     * Constructs a Logger that writes Survey records to a GeoPackage SQLite database.
+     * Constructs a Logger that writes Survey records to a CSV file.
      *
      * @param networkSurveyService The Service instance that is running this logger.
      * @param logDirectoryName     The parent directory name to write all the files in.
-     * @param fileNamePrefix       The prefix to use for the GeoPackage file name.
+     * @param fileNamePrefix       The prefix to use for the CSV file name.
      */
     CsvRecordLogger(NetworkSurveyService networkSurveyService,
                     String logDirectoryName, String fileNamePrefix, boolean lazyFileCreation)
@@ -95,7 +95,7 @@ public abstract class CsvRecordLogger
     abstract String[] getHeaderComments();
 
     /**
-     * Sets up all the GeoPackage stuff so that the survey records can be written to a log file.
+     * Sets up the CSV file so that the survey records can be written to a log file.
      * <p>
      * If calling this method, it is assumed that the caller will add this {@link CsvRecordLogger} as a listener for
      * survey records.
@@ -366,7 +366,7 @@ public abstract class CsvRecordLogger
         private final AtomicInteger recordCount = new AtomicInteger();
 
         /**
-         * The max log size for a GeoPackage file before a new one is created, in bytes. When this
+         * The max log size for a CSV file before a new one is created, in bytes. When this
          * value is set to 0, rollover is de-activated.
          */
         private int rolloverSizeBytes = Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
@@ -409,7 +409,7 @@ public abstract class CsvRecordLogger
                     }
                     final long fileSizeBytes = file.length();
 
-                    Timber.v("Checking GeoPackage file size, currently at: %s bytes", fileSizeBytes);
+                    Timber.v("Checking CSV file size, currently at: %s bytes", fileSizeBytes);
                     if (fileSizeBytes >= rolloverSizeBytes)
                     {
                         // This task is protected by the {@link #csvFileLock} to prevent closing a file that is

@@ -3,11 +3,9 @@ package com.craxiom.networksurvey.fragments;
 import static com.craxiom.networksurvey.util.PreferenceUtils.populatePrefsFromMqttConnectionSettings;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,17 +25,21 @@ import com.craxiom.mqttlibrary.ICredentialStorage;
 import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
-import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver;
+import com.craxiom.networksurvey.survey.model.Destination;
+import com.craxiom.networksurvey.survey.model.RecordType;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.LocalNetworkPermissionUtil;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.google.android.material.materialswitch.MaterialSwitch;
+
+import java.util.Set;
 
 import timber.log.Timber;
 
@@ -47,23 +49,13 @@ import timber.log.Timber;
  */
 public class MqttFragment extends AConnectionFragment<NetworkSurveyService.SurveyServiceBinder>
 {
-    private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 30;
-
-    private MaterialSwitch cellularStreamToggleSwitch;
-    private MaterialSwitch phoneStateStreamToggleSwitch;
-    private MaterialSwitch wifiStreamToggleSwitch;
-    private MaterialSwitch bluetoothStreamToggleSwitch;
-    private MaterialSwitch gnssStreamToggleSwitch;
+    // The record types streamed over MQTT are the survey's record types, chosen on the Survey
+    // screen. Only the device status heartbeat keeps its own switch (and MDM key) here.
     private MaterialSwitch deviceStatusStreamToggleSwitch;
 
     private Button qrCodeScanButton;
 
-    private boolean cellularStreamEnabled = true;
-    private boolean phoneStateStreamEnabled = true;
-    private boolean wifiStreamEnabled = true;
-    private boolean bluetoothStreamEnabled = true;
-    private boolean gnssStreamEnabled = true;
-    private boolean deviceStatusStreamEnabled = true;
+    private boolean deviceStatusStreamEnabled = NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING;
 
     private final ActivityResultLauncher<String> cameraPermissionRequestLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -108,33 +100,14 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void inflateAdditionalFieldsViewStub(LayoutInflater layoutInflater, ViewStub viewStub)
     {
         viewStub.setLayoutResource(R.layout.fragment_stream_options);
         View inflatedStub = viewStub.inflate();
 
-        cellularStreamToggleSwitch = inflatedStub.findViewById(R.id.streamCellularToggleSwitch);
-        phoneStateStreamToggleSwitch = inflatedStub.findViewById(R.id.streamPhoneStateToggleSwitch);
-        wifiStreamToggleSwitch = inflatedStub.findViewById(R.id.streamWifiToggleSwitch);
-        bluetoothStreamToggleSwitch = inflatedStub.findViewById(R.id.streamBluetoothToggleSwitch);
-        gnssStreamToggleSwitch = inflatedStub.findViewById(R.id.streamGnssToggleSwitch);
         deviceStatusStreamToggleSwitch = inflatedStub.findViewById(R.id.streamDeviceStatusToggleSwitch);
         qrCodeScanButton = inflatedStub.findViewById(R.id.code_scan_button);
-
-        bluetoothStreamToggleSwitch.setOnClickListener((buttonView) -> {
-            if (buttonView.isPressed())
-            {
-                MaterialSwitch materialSwitch = (MaterialSwitch) buttonView;
-                if (materialSwitch.isChecked() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingBluetoothPermissions())
-                {
-                    materialSwitch.setChecked(false);
-                    showBluetoothPermissionRationaleAndRequestPermissions();
-                }
-            }
-        });
-        bluetoothStreamToggleSwitch.setOnTouchListener((buttonView, motionEvent) -> motionEvent.getActionMasked() == 2);
 
         Context context = getContext();
         if (context != null)
@@ -201,11 +174,6 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     @Override
     protected void readMdmConfigAdditionalProperties(Bundle mdmProperties)
     {
-        cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
-        phoneStateStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
-        wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
-        bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
-        gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
     }
 
@@ -217,44 +185,24 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     {
         super.updateUiFieldsFromStoredValues();
 
-        cellularStreamToggleSwitch.setChecked(cellularStreamEnabled);
-        phoneStateStreamToggleSwitch.setChecked(phoneStateStreamEnabled);
-        wifiStreamToggleSwitch.setChecked(wifiStreamEnabled);
-        bluetoothStreamToggleSwitch.setChecked(bluetoothStreamEnabled);
-        gnssStreamToggleSwitch.setChecked(gnssStreamEnabled);
         deviceStatusStreamToggleSwitch.setChecked(deviceStatusStreamEnabled);
     }
 
     @Override
     protected void readUIAdditionalFields()
     {
-        cellularStreamEnabled = cellularStreamToggleSwitch.isChecked();
-        phoneStateStreamEnabled = phoneStateStreamToggleSwitch.isChecked();
-        wifiStreamEnabled = wifiStreamToggleSwitch.isChecked();
-        bluetoothStreamEnabled = bluetoothStreamToggleSwitch.isChecked();
-        gnssStreamEnabled = gnssStreamToggleSwitch.isChecked();
         deviceStatusStreamEnabled = deviceStatusStreamToggleSwitch.isChecked();
     }
 
     @Override
     protected void storeAdditionalParameters(SharedPreferences.Editor editor)
     {
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, cellularStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, phoneStateStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, wifiStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, bluetoothStreamEnabled);
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, gnssStreamEnabled);
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, deviceStatusStreamEnabled);
     }
 
     @Override
     protected void restoreAdditionalParameters(SharedPreferences sharedPreferences)
     {
-        cellularStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
-        phoneStateStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
-        wifiStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
-        bluetoothStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
-        gnssStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         deviceStatusStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
     }
 
@@ -263,11 +211,6 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     {
         super.setConnectionInputFieldsEditable(editable, force);
 
-        cellularStreamToggleSwitch.setEnabled(editable);
-        phoneStateStreamToggleSwitch.setEnabled(editable);
-        wifiStreamToggleSwitch.setEnabled(editable);
-        bluetoothStreamToggleSwitch.setEnabled(editable);
-        gnssStreamToggleSwitch.setEnabled(editable);
         deviceStatusStreamToggleSwitch.setEnabled(editable);
     }
 
@@ -280,18 +223,19 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         // without it.
         LocalNetworkPermissionUtil.ensureLocalNetworkPermission(getActivity());
 
+        // The record type flags are left off: the survey service streams the survey's record types.
         return new MqttConnectionInfo(host,
                 portNumber,
                 tlsEnabled,
                 deviceName,
                 mqttUsername,
                 mqttPassword,
-                cellularStreamEnabled,
-                wifiStreamEnabled,
-                bluetoothStreamEnabled,
-                gnssStreamEnabled,
+                false,
+                false,
+                false,
+                false,
                 deviceStatusStreamEnabled,
-                phoneStateStreamEnabled,
+                false,
                 topicPrefix,
                 null,
                 mqttQos);
@@ -300,21 +244,9 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     @Override
     protected void onMdmOverride(boolean mdmOverride)
     {
-        // If the user has turned on or off the MDM override setting, we want to send out a device
-        // status message ASAP so that the receiving MQTT broker can know it has been enabled or
-        // disabled. There is of course a race condition in this single message because it is
-        // possible the user turns on the MDM override and then immediately stops the MQTT
-        // connection before this message is actually sent. There are ways around this but this
-        // race condition is acceptable.
-        if (service != null && service instanceof NetworkSurveyService)
-        {
-            ((NetworkSurveyService) service).sendSingleDeviceStatus();
-        }
-
-        // Save the connection parameters to the user preferences so that they are used for any
-        // auto connect on boot or other scenarios.
-        if (mdmOverride) storeConnectionParameters();
-
+        // Sending the immediate device status and copying the organization's broker into the
+        // user's settings are done by the survey service when the override preference changes,
+        // so they happen no matter which screen changed it.
         updateQrCodeScanButtonVisibility(mdmOverride);
 
         super.onMdmOverride(mdmOverride);
@@ -364,6 +296,8 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             portNumber = 1883;
         }
 
+        final Set<RecordType> streamTypes = SurveyTypeResolver.typesForCurrentSetup(requireContext(), Destination.MQTT);
+
         return new MqttConnectionSettings.Builder()
                 .host(mqttHostAddressEdit.getText().toString())
                 .port(portNumber)
@@ -373,12 +307,14 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 .mqttPassword(passwordEdit.getText().toString())
                 .mqttTopicPrefix(topicPrefix)
                 .mqttQos(mqttQos != null ? mqttQos.getValue() : MqttConstants.DEFAULT_MQTT_QOS.getValue())
-                .cellularStreamEnabled(cellularStreamEnabled)
-                .wifiStreamEnabled(wifiStreamEnabled)
-                .bluetoothStreamEnabled(bluetoothStreamEnabled)
-                .gnssStreamEnabled(gnssStreamEnabled)
+                // Older app versions still read these flags from a shared QR code, so they are
+                // filled in from the survey's record types. This app ignores them when importing.
+                .cellularStreamEnabled(streamTypes.contains(RecordType.CELLULAR))
+                .wifiStreamEnabled(streamTypes.contains(RecordType.WIFI))
+                .bluetoothStreamEnabled(streamTypes.contains(RecordType.BLUETOOTH))
+                .gnssStreamEnabled(streamTypes.contains(RecordType.GNSS))
                 .deviceStatusStreamEnabled(deviceStatusStreamEnabled)
-                .phoneStateStreamEnabled(phoneStateStreamEnabled)
+                .phoneStateStreamEnabled(streamTypes.contains(RecordType.PHONE_STATE))
                 .build();
     }
 
@@ -396,53 +332,4 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         return true;
     }
 
-    /**
-     * Check to see if we should show the rationale for any of the Bluetooth permissions. If so,
-     * then display a dialog that explains what permissions we need for bluetooth to work properly.
-     * <p>
-     * If we should not show the rationale, then just request the permissions.
-     */
-    private void showBluetoothPermissionRationaleAndRequestPermissions()
-    {
-        final FragmentActivity activity = getActivity();
-        if (activity == null) return;
-
-        if (missingBluetoothPermissions())
-        {
-            FragmentDialogs.showBluetoothPermissionRationale(getParentFragmentManager(), this::requestBluetoothPermissions);
-        }
-    }
-
-    /**
-     * @return True if any of the Bluetooth permissions have been denied. False if all the permissions
-     * have been granted.
-     */
-    private boolean missingBluetoothPermissions()
-    {
-        final Context context = getContext();
-        if (context == null) return true;
-        for (String permission : NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)
-        {
-            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
-            {
-                Timber.i("Missing the permission: %s", permission);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Request the permissions needed for bluetooth if any of them have not yet been granted.  If all of the permissions
-     * are already granted then don't request anything.
-     */
-    private void requestBluetoothPermissions()
-    {
-        FragmentActivity activity = getActivity();
-        if (missingBluetoothPermissions() && activity != null)
-        {
-            ActivityCompat.requestPermissions(activity, NetworkSurveyActivity.BLUETOOTH_PERMISSIONS, ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID);
-        }
-    }
 }

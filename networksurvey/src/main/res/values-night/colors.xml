@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!--
+    Dark scheme overrides for values/colors.xml. Only colors that differ between the schemes
+    belong here; mirrors the dark side of ui/theme/NsPalette.kt.
+    -->
+
+    <!-- Material 3 roles, Slate accent. Dark text on the light slate fill keeps 8:1 contrast. -->
+    <color name="md_theme_primary">#8FA5DB</color>
+    <color name="md_theme_onPrimary">#0E1116</color>
+    <color name="md_theme_primaryContainer">#243048</color>
+    <color name="md_theme_onPrimaryContainer">#B4C4EA</color>
+    <color name="md_theme_secondary">#8FA5DB</color>
+    <color name="md_theme_onSecondary">#0E1116</color>
+    <color name="md_theme_secondaryContainer">#243048</color>
+    <color name="md_theme_onSecondaryContainer">#B4C4EA</color>
+    <color name="md_theme_tertiary">#5DC777</color>
+    <color name="md_theme_onTertiary">#0E1116</color>
+    <color name="md_theme_tertiaryContainer">#173222</color>
+    <color name="md_theme_onTertiaryContainer">#9BE3AE</color>
+    <color name="md_theme_error">#FF7A70</color>
+    <color name="md_theme_onError">#0E1116</color>
+    <color name="md_theme_errorContainer">#3A1B1A</color>
+    <color name="md_theme_onErrorContainer">#FFDAD6</color>
+    <color name="md_theme_background">#0E1116</color>
+    <color name="md_theme_onBackground">#E8EBF0</color>
+    <color name="md_theme_surface">#0E1116</color>
+    <color name="md_theme_onSurface">#E8EBF0</color>
+    <color name="md_theme_surfaceVariant">#2A3038</color>
+    <color name="md_theme_onSurfaceVariant">#A3ABB6</color>
+    <color name="md_theme_outline">#7B8490</color>
+    <color name="md_theme_outlineVariant">#2A3038</color>
+    <color name="md_theme_inverseSurface">#E8EBF0</color>
+    <color name="md_theme_inverseOnSurface">#181C22</color>
+    <color name="md_theme_inversePrimary">#3F5178</color>
+    <color name="md_theme_surfaceDim">#0E1116</color>
+    <color name="md_theme_surfaceBright">#2F353E</color>
+    <color name="md_theme_surfaceContainerLowest">#0B0E12</color>
+    <color name="md_theme_surfaceContainerLow">#181C22</color>
+    <color name="md_theme_surfaceContainer">#151920</color>
+    <color name="md_theme_surfaceContainerHigh">#1F242C</color>
+    <color name="md_theme_surfaceContainerHighest">#2A3038</color>
+
+    <!-- Per-record-type colors (NsPalette.Protocol) -->
+    <color name="ns_protocol_cellular">#A48BFF</color>
+    <color name="ns_protocol_phone_state">#F2C15A</color>
+    <color name="ns_protocol_wifi">#4FD0E4</color>
+    <color name="ns_protocol_bluetooth">#7FA4FF</color>
+    <color name="ns_protocol_gnss">#5DC777</color>
+    <color name="ns_protocol_cdr">#FF8AA6</color>
+
+    <!-- Status colors (NsPalette.Status) -->
+    <color name="ns_status_success">#5DC777</color>
+    <color name="ns_status_success_container">#173222</color>
+    <color name="ns_status_warning">#F0B860</color>
+    <color name="ns_status_warning_container">#3A2B12</color>
+    <color name="ns_status_danger">#FF7A70</color>
+    <color name="ns_status_danger_container">#3A1B1A</color>
+
+    <!-- GNSS sky view: satellites seen but not in view draw near-white on the dark sky disc -->
+    <color name="not_in_view_sat">#DDFFFFFF</color>
+</resources>

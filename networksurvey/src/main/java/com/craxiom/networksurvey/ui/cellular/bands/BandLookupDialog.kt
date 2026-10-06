@@ -30,7 +30,6 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.BandReferenceRepository
 import com.craxiom.networksurvey.data.band.BandTapTarget
 import com.craxiom.networksurvey.data.band.CellularBand
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Opens the band reference for the band a cell is currently reporting.
@@ -110,7 +109,7 @@ private fun Chooser(bands: List<CellularBand>, onPick: (CellularBand) -> Unit) {
         Text(
             text = stringResource(R.string.band_lookup_choose),
             style = TextStyle(fontSize = 13.sp),
-            color = WifiTokens.InkMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
         )
         bands.forEach { band ->

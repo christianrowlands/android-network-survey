@@ -93,17 +93,6 @@ class AcknowledgmentsRepository {
                     category = LibraryCategory.CORE_LIBRARIES
                 )
             )
-            add(
-                LibraryAcknowledgment(
-                    name = "GeoPackage Android",
-                    author = "National Geospatial-Intelligence Agency",
-                    description = "GeoPackage implementation for Android",
-                    sourceUrl = "https://github.com/ngageoint/geopackage-android",
-                    licenseName = "MIT License",
-                    licenseUrl = "https://opensource.org/licenses/MIT",
-                    category = LibraryCategory.CORE_LIBRARIES
-                )
-            )
 
             // UI Libraries
             add(

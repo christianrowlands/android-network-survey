@@ -48,7 +48,6 @@ flexbox = "3.0.0"
 coroutines = "1.11.0"
 mqtt = "1.3.0"
 protobufJavaUtil = "4.36.1"
-geopackage = "6.7.5"
 commonsCsv = "1.14.1"
 constraintlayout = "2.2.2"
 recyclerview = "1.4.0"
@@ -144,7 +143,6 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-geopackage-android = { module = "mil.nga.geopackage:geopackage-android", version.ref = "geopackage" }
 commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commonsCsv" }
 rounded-progress-bar = { module = "com.github.MackHartley:RoundedProgressBar", version.ref = "roundedProgressBar" }
 vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }

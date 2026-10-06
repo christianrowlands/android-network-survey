@@ -29,10 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
-
-private val QueuePausedBackground = Color(0xFFFFF3E0)
-private val QueuePausedText = Color(0xFFE65100)
-private val QueuePausedIcon = Color(0xFFFF6D00)
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * Card that displays queue backpressure or MQTT drop mode warnings.
@@ -62,7 +59,7 @@ fun QueueStatusCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(QueuePausedBackground)
+                    .background(NsTheme.colors.state.paused.container)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -70,7 +67,7 @@ fun QueueStatusCard(
                     painter = painterResource(id = R.drawable.ic_cloud_off),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = QueuePausedIcon,
+                    tint = NsTheme.colors.state.paused.content,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -81,7 +78,7 @@ fun QueueStatusCard(
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = QueuePausedText,
+                    color = NsTheme.colors.state.paused.content,
                 )
             }
 
@@ -89,7 +86,7 @@ fun QueueStatusCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(QueuePausedBackground)
+                    .background(NsTheme.colors.state.paused.container)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 Row(
@@ -99,7 +96,7 @@ fun QueueStatusCard(
                         painter = painterResource(id = R.drawable.ic_cloud_off),
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = QueuePausedIcon,
+                        tint = NsTheme.colors.state.paused.content,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -109,7 +106,7 @@ fun QueueStatusCard(
                             } else {
                                 stringResource(R.string.queue_paused_subtitle)
                             },
-                            color = QueuePausedText,
+                            color = NsTheme.colors.state.paused.content,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -127,7 +124,7 @@ fun QueueStatusCard(
                                 else ->
                                     stringResource(R.string.queue_paused_description)
                             },
-                            color = QueuePausedText,
+                            color = NsTheme.colors.state.paused.content,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp),
                         )

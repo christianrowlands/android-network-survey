@@ -33,8 +33,6 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.SurveyTypes
 import com.craxiom.networksurvey.ui.common.NsSeeOnMapButton
 
-private val DividerColor = DashboardCardDefaults.CardHeaderBlue
-
 /**
  * Card for managing community upload scanning, displaying upload progress,
  * results, and queue counts. Hidden when external data upload is not allowed by MDM.
@@ -179,7 +177,7 @@ fun UploadScanningCard(
 
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp),
-                color = DividerColor,
+                color = MaterialTheme.colorScheme.outlineVariant,
             )
 
             // Upload progress
@@ -192,7 +190,7 @@ fun UploadScanningCard(
 
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
-                        color = DividerColor,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
                 }
 
@@ -205,7 +203,7 @@ fun UploadScanningCard(
 
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
-                        color = DividerColor,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
                 }
 

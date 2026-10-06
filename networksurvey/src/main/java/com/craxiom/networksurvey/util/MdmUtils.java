@@ -7,7 +7,8 @@ import android.os.Bundle;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.fragments.SettingsFragment;
+import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource;
+import com.craxiom.networksurvey.survey.mdm.SurveyPolicy;
 
 /**
  * Utilities for MDM properties.
@@ -69,22 +70,22 @@ public class MdmUtils
     }
 
     /**
+     * @return True if the organization has pushed any managed configuration to this app. A phone
+     * configured with only MQTT broker keys is managed too.
+     */
+    public static boolean isManaged(Context context)
+    {
+        return new AndroidRestrictionsSource(context).snapshot().isManaged();
+    }
+
+    /**
      * @return True, if the MDM configuration allows external data uploads or if this device
-     * is not under MDM control, false otherwise.
+     * is not under MDM control, false otherwise. Any managed phone is denied unless the
+     * organization explicitly sets {@code allow_external_data_upload} to true.
      */
     public static boolean isExternalDataUploadAllowed(Context context)
     {
-        if (isUnderMdmControl(context, SettingsFragment.MDM_OVERLAP_PROPERTY_KEYS))
-        {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-            if (restrictionsManager != null)
-            {
-                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-                return mdmProperties.getBoolean(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD, false);
-            }
-        }
-
-        return true;
+        return SurveyPolicy.isExternalDataUploadAllowed(new AndroidRestrictionsSource(context).snapshot());
     }
 
     /**

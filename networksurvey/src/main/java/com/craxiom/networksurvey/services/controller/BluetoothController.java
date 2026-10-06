@@ -24,8 +24,6 @@ import androidx.core.app.ActivityCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.BluetoothCsvLogger;
-import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.NsCrashReporter;
@@ -128,7 +126,6 @@ public class BluetoothController extends AController
     private final SurveyRecordProcessor surveyRecordProcessor;
     private final Handler uiThreadHandler;
 
-    private final BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private final BluetoothCsvLogger bluetoothCsvLogger;
     private volatile int bluetoothScanRateMs;
     private BleScanCallbackImpl bluetoothScanCallback;
@@ -144,7 +141,6 @@ public class BluetoothController extends AController
         this.surveyRecordProcessor = surveyRecordProcessor;
         this.uiThreadHandler = uiThreadHandler;
 
-        bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(surveyService, serviceLooper);
         bluetoothCsvLogger = new BluetoothCsvLogger(surveyService);
     }
 
@@ -156,7 +152,6 @@ public class BluetoothController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (bluetoothLoggingEnabled)
         {
-            bluetoothSurveyRecordLogger.onDestroy();
             bluetoothCsvLogger.onDestroy();
 
             // Cancel any pending tasks
@@ -228,7 +223,6 @@ public class BluetoothController extends AController
 
     public void onRolloverPreferenceChanged()
     {
-        bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
         bluetoothCsvLogger.onSharedPreferenceChanged();
     }
 
@@ -238,26 +232,7 @@ public class BluetoothController extends AController
      */
     public void onMdmPreferenceChanged()
     {
-        bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
         bluetoothCsvLogger.onMdmPreferenceChanged();
-    }
-
-    public void onLogFileTypePreferenceChanged()
-    {
-        synchronized (bluetoothLoggingEnabled)
-        {
-            if (bluetoothLoggingEnabled.get())
-            {
-                final boolean originalLoggingState = bluetoothLoggingEnabled.get();
-                toggleLogging(false);
-                toggleLogging(true);
-                final boolean newLoggingState = bluetoothLoggingEnabled.get();
-                if (originalLoggingState != newLoggingState)
-                {
-                    Timber.i("Logging state changed from %s to %s", originalLoggingState, newLoggingState);
-                }
-            }
-        }
     }
 
     /**
@@ -300,34 +275,21 @@ public class BluetoothController extends AController
                 final boolean bluetoothEnabled = isBluetoothEnabledAndPermissionsGranted(true);
                 if (!bluetoothEnabled) return null;
 
-                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
-                if (types.geoPackage)
-                {
-                    successful = bluetoothSurveyRecordLogger.enableLogging(true);
-                }
-                if (types.csv)
-                {
-                    successful = bluetoothCsvLogger.enableLogging(true);
-                }
+                successful = bluetoothCsvLogger.enableLogging(true);
 
                 if (successful)
                 {
-                    toggleBtConfig(true, types);
+                    toggleBtConfig(true);
                 } else
                 {
-                    // at least one of the loggers failed to toggle;
-                    // disable all of them and set local config to false
-                    bluetoothSurveyRecordLogger.enableLogging(false);
+                    // the logger failed to toggle; disable it and set local config to false
                     bluetoothCsvLogger.enableLogging(false);
-                    toggleBtConfig(false, null);
+                    toggleBtConfig(false);
                 }
             } else
             {
-                // If we are disabling logging, then we need to disable both geoPackage and CSV just
-                // in case the user changed the setting after they started logging.
-                bluetoothSurveyRecordLogger.enableLogging(false);
                 bluetoothCsvLogger.enableLogging(false);
-                toggleBtConfig(false, null);
+                toggleBtConfig(false);
                 successful = true;
             }
 
@@ -544,32 +506,37 @@ public class BluetoothController extends AController
         toggleLogging(false);
     }
 
-    private void toggleBtConfig(boolean enable, LogTypeState types)
+    private void toggleBtConfig(boolean enable)
     {
         if (surveyService == null) return;
 
         bluetoothLoggingEnabled.set(enable);
         if (enable)
         {
-            if (types != null)
-            {
-                if (types.geoPackage)
-                {
-                    surveyService.registerBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
-                }
-                if (types.csv)
-                {
-                    surveyService.registerBluetoothSurveyRecordListener(bluetoothCsvLogger);
-                }
-            } else
-            {
-                throw new IllegalArgumentException("LogTypeState cannot be null when enabling Bluetooth logging");
-            }
+            surveyService.registerBluetoothSurveyRecordListener(bluetoothCsvLogger);
         } else
         {
-            surveyService.unregisterBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
             surveyService.unregisterBluetoothSurveyRecordListener(bluetoothCsvLogger);
         }
+    }
+
+    /**
+     * @return True if the Bluetooth scan and connect permissions are granted. Never prompts.
+     */
+    public boolean hasBluetoothPermissions()
+    {
+        return hasBtConnectPermission() && hasBtScanPermission();
+    }
+
+    /**
+     * Checks whether the Bluetooth radio is on and the permissions are granted, without prompting
+     * the user. Used to validate a survey before it starts.
+     *
+     * @return True if Bluetooth can be scanned right now.
+     */
+    public boolean isBluetoothReady()
+    {
+        return isBluetoothEnabledAndPermissionsGranted(false);
     }
 
     /**

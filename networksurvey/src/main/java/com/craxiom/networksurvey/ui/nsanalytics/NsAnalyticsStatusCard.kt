@@ -30,15 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsSeeOnMapButton
 import com.craxiom.networksurvey.ui.dashboard.DashboardCardDefaults
-
-private val NsAnalyticsStartGreen = Color(0xFF4CAF50)
-private val NsAnalyticsStopRed = Color(0xFFE53935)
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * A reusable NS Analytics status card that can be used in both the main NS Analytics screen
@@ -103,7 +103,7 @@ fun NsAnalyticsStatusCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isSurveyActive) "Survey in Progress" else "Survey Inactive",
+                        text = stringResource(if (isSurveyActive) R.string.scanning_active else R.string.scanning_inactive),
                         style = MaterialTheme.typography.titleMedium,
                         color = DashboardCardDefaults.TextPrimary,
                         fontWeight = FontWeight.Bold
@@ -112,7 +112,7 @@ fun NsAnalyticsStatusCard(
 
                 if (isSurveyActive && showDetailedInfo) {
                     Text(
-                        text = getElapsedTime(surveyStartTime),
+                        text = elapsedTimeText(surveyStartTime),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -129,20 +129,23 @@ fun NsAnalyticsStatusCard(
             ) {
                 Column {
                     Text(
-                        text = if (isSurveyActive) "Records Collected" else "Pending Records",
+                        text = stringResource(
+                            if (isSurveyActive) R.string.ns_analytics_records_collected
+                            else R.string.ns_analytics_records_pending
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
                     if (!isSurveyActive && totalCount > 0) {
                         Text(
-                            text = "Ready to upload",
+                            text = stringResource(R.string.ns_analytics_upload_status_ready),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.tertiary
                         )
                     }
                 }
                 Text(
-                    text = "$totalCount total",
+                    text = pluralStringResource(R.plurals.ns_analytics_records_total, totalCount, totalCount),
                     style = MaterialTheme.typography.titleMedium,
                     color = DashboardCardDefaults.TextPrimary,
                     fontWeight = FontWeight.Bold
@@ -167,17 +170,18 @@ fun NsAnalyticsStatusCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    NsAnalyticsProtocolCountLabel("Cell", cellularCount, Color(0xFFA855F7))
-                    NsAnalyticsProtocolCountLabel("Wi-Fi", wifiCount, Color(0xFF06B6D4))
-                    NsAnalyticsProtocolCountLabel("BT", bluetoothCount, Color(0xFF3B82F6))
-                    NsAnalyticsProtocolCountLabel("GPS", gnssCount, Color(0xFF22C55E))
-                    NsAnalyticsProtocolCountLabel("Phone", phoneStateCount, Color(0xFFEAB308))
+                    val protocol = NsTheme.colors.protocol
+                    NsAnalyticsProtocolCountLabel(stringResource(R.string.cellular_title), cellularCount, protocol.cellular)
+                    NsAnalyticsProtocolCountLabel(stringResource(R.string.wifi_title), wifiCount, protocol.wifi)
+                    NsAnalyticsProtocolCountLabel(stringResource(R.string.bluetooth_title), bluetoothCount, protocol.bluetooth)
+                    NsAnalyticsProtocolCountLabel(stringResource(R.string.gnss_title), gnssCount, protocol.gnss)
+                    NsAnalyticsProtocolCountLabel(stringResource(R.string.phone_state_title), phoneStateCount, protocol.phoneState)
                 }
             } else if (!isSurveyActive) {
                 // No records and survey inactive
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Start a survey to begin collecting data",
+                    text = stringResource(R.string.ns_analytics_start_survey_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                     textAlign = TextAlign.Center,
@@ -198,17 +202,17 @@ fun NsAnalyticsStatusCard(
                         onClick = onToggleSurvey,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSurveyActive) NsAnalyticsStopRed else NsAnalyticsStartGreen
+                            containerColor = if (isSurveyActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            contentColor = if (isSurveyActive) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Icon(
                             imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
                             contentDescription = null,
-                            modifier = Modifier.padding(end = 4.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            modifier = Modifier.padding(end = 4.dp)
                         )
                         Text(
-                            text = if (isSurveyActive) "Stop" else "Start"
+                            text = stringResource(if (isSurveyActive) R.string.survey_stop_short else R.string.survey_start_short)
                         )
                     }
 
@@ -223,7 +227,7 @@ fun NsAnalyticsStatusCard(
                                 .size(18.dp)
                                 .padding(end = 4.dp)
                         )
-                        Text("Details")
+                        Text(stringResource(R.string.details_button))
                     }
                 }
 
@@ -236,7 +240,8 @@ fun NsAnalyticsStatusCard(
                     onClick = onToggleSurvey,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSurveyActive) NsAnalyticsStopRed else NsAnalyticsStartGreen
+                        containerColor = if (isSurveyActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            contentColor = if (isSurveyActive) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
                     Icon(
@@ -245,7 +250,7 @@ fun NsAnalyticsStatusCard(
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
-                        text = if (isSurveyActive) "Stop Survey" else "Start Survey"
+                        text = stringResource(if (isSurveyActive) R.string.stop_scanning else R.string.start_scanning)
                     )
                 }
             }
@@ -278,7 +283,7 @@ fun NsAnalyticsProtocolDistributionBar(
                 modifier = Modifier
                     .weight(cellularCount.toFloat())
                     .fillMaxHeight()
-                    .background(Color(0xFFA855F7))
+                    .background(NsTheme.colors.protocol.cellular)
             )
         }
         if (wifiCount > 0) {
@@ -286,7 +291,7 @@ fun NsAnalyticsProtocolDistributionBar(
                 modifier = Modifier
                     .weight(wifiCount.toFloat())
                     .fillMaxHeight()
-                    .background(Color(0xFF06B6D4))
+                    .background(NsTheme.colors.protocol.wifi)
             )
         }
         if (bluetoothCount > 0) {
@@ -294,7 +299,7 @@ fun NsAnalyticsProtocolDistributionBar(
                 modifier = Modifier
                     .weight(bluetoothCount.toFloat())
                     .fillMaxHeight()
-                    .background(Color(0xFF3B82F6))
+                    .background(NsTheme.colors.protocol.bluetooth)
             )
         }
         if (gnssCount > 0) {
@@ -302,7 +307,7 @@ fun NsAnalyticsProtocolDistributionBar(
                 modifier = Modifier
                     .weight(gnssCount.toFloat())
                     .fillMaxHeight()
-                    .background(Color(0xFF22C55E))
+                    .background(NsTheme.colors.protocol.gnss)
             )
         }
         if (phoneStateCount > 0) {
@@ -310,7 +315,7 @@ fun NsAnalyticsProtocolDistributionBar(
                 modifier = Modifier
                     .weight(phoneStateCount.toFloat())
                     .fillMaxHeight()
-                    .background(Color(0xFFEAB308))
+                    .background(NsTheme.colors.protocol.phoneState)
             )
         }
     }
@@ -343,17 +348,18 @@ fun NsAnalyticsProtocolCountLabel(
 }
 
 /**
- * Utility function to get elapsed time string
+ * How long ago the survey started, e.g. "Started 1 h 5 min ago". Empty when there is no start time.
  */
-private fun getElapsedTime(startTime: Long): String {
+@Composable
+private fun elapsedTimeText(startTime: Long): String {
     if (startTime == 0L) return ""
     val elapsed = System.currentTimeMillis() - startTime
     val minutes = (elapsed / 1000 / 60).toInt()
     val hours = minutes / 60
 
     return when {
-        hours > 0 -> "Started ${hours}h ${minutes % 60}min ago"
-        minutes > 0 -> "Started ${minutes}min ago"
-        else -> "Just started"
+        hours > 0 -> stringResource(R.string.ns_analytics_started_hours_ago, hours, minutes % 60)
+        minutes > 0 -> stringResource(R.string.ns_analytics_started_minutes_ago, minutes)
+        else -> stringResource(R.string.ns_analytics_just_started)
     }
 }

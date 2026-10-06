@@ -130,11 +130,11 @@ private fun ComposeChart(
                     titleComponent =
                         rememberTextComponent(
                             background = rememberShapeComponent(
-                                fill = Fill(colorResource(id = R.color.colorAccent)),
+                                fill = Fill(MaterialTheme.colorScheme.primary),
                                 shape = CircleShape
                             ),
                             style = TextStyle(
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontFamily = FontFamily.Monospace,
                             ),
                             padding = axisTitlePadding,

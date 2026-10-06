@@ -4,42 +4,19 @@ import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 
 /**
- * The constants associated with the Wi-Fi table in the GeoPackage file.
+ * The constants associated with the Wi-Fi beacon record in the Network Survey Messaging API.
  * <p>
  * Also contains any utility methods to help with converting any of the values.
  *
  * @since 0.1.2
  */
-public class WifiBeaconMessageConstants extends MessageConstants
+public class WifiBeaconMessageConstants
 {
     private WifiBeaconMessageConstants()
     {
     }
 
     public static final String WIFI_BEACON_RECORD_MESSAGE_TYPE = "WifiBeaconRecord";
-    public static final String WIFI_BEACON_RECORDS_TABLE_NAME = "80211_BEACON_MESSAGE";
-
-    public static final String SOURCE_ADDRESS_COLUMN = "Source_Address";
-    public static final String DESTINATION_ADDRESS_COLUMN = "Destination_Address";
-    public static final String BSSID_COLUMN = "BSSID";
-
-    public static final String BEACON_INTERVAL_COLUMN = "Beacon_Interval";
-    public static final String SERVICE_SET_TYPE_COLUMN = "Service_Set_Type";
-    public static final String SSID_COLUMN = "SSID";
-    public static final String SUPPORTED_RATES_COLUMN = "Supported_Rates";
-    public static final String EXTENDED_SUPPORTED_RATES_COLUMN = "Extended_Supported_Rates";
-    public static final String CIPHER_SUITES_COLUMN = "Cipher_Suites";
-    public static final String AKM_SUITES_COLUMN = "AKM_Suites";
-    public static final String ENCRYPTION_TYPE_COLUMN = "Encryption_Type";
-    public static final String WPS_COLUMN = "WPS";
-
-    public static final String CHANNEL_COLUMN = "Channel";
-    public static final String FREQUENCY_MHZ_COLUMN = "Frequency";
-    public static final String SIGNAL_STRENGTH_COLUMN = "Signal Strength";
-    public static final String SNR_COLUMN = "SNR";
-    public static final String NODE_TYPE_COLUMN = "Node Type";
-
-    public static final String HIDDEN_SSID_PLACEHOLDER = "<Hidden SSID>";
 
     /**
      * Takes a frequency in MHz and converts it to an 802.11 channel number.  For example, a frequency of 2417 would
@@ -91,8 +68,7 @@ public class WifiBeaconMessageConstants extends MessageConstants
     }
 
     /**
-     * Given a Protocol Buffer defined 802.11 Encryption Type, return a user friendly string representation that follows
-     * the ICD used for the GeoPackage logging.
+     * Given a Protocol Buffer defined 802.11 Encryption Type, return a user friendly string representation.
      *
      * @param encryptionType The Encryption Type enum to convert.
      * @return The user friendly Encryption Type, or an empty String if it is unknown/could not be converted.
@@ -133,8 +109,7 @@ public class WifiBeaconMessageConstants extends MessageConstants
     }
 
     /**
-     * Given a Protocol Buffer defined 802.11 Cipher Suite, return a user friendly string representation that follows
-     * the ICD used for the GeoPackage logging.
+     * Given a Protocol Buffer defined 802.11 Cipher Suite, return a user friendly string representation.
      *
      * @param cipherSuite The Cipher Suite enum to convert.
      * @return The user friendly Cipher Suite, or an empty String if it is unknown/could not be converted.

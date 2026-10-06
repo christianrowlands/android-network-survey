@@ -46,14 +46,13 @@ public class NetworkSurveyConstants
     public static final String WAKE_LOCK_TAG = "NetworkSurvey:WakeLock";
 
     public static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
-    public static final String CSV_LOG_DIRECTORY_NAME = "NetworkSurveyData/csv";
+    public static final String CSV_LOG_DIRECTORY_NAME = LOG_DIRECTORY_NAME + "/csv";
 
     public static final String GSM_FILE_NAME_PREFIX = "craxiom-gsm-";
     public static final String CDMA_FILE_NAME_PREFIX = "craxiom-cdma-";
     public static final String UMTS_FILE_NAME_PREFIX = "craxiom-umts-";
     public static final String LTE_FILE_NAME_PREFIX = "craxiom-lte-";
     public static final String NR_FILE_NAME_PREFIX = "craxiom-nr-";
-    public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";
     public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
     public static final String BLUETOOTH_FILE_NAME_PREFIX = "craxiom-bluetooth-";
     public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
@@ -118,6 +117,17 @@ public class NetworkSurveyConstants
     public static final String EXTRA_GNSS_FILE_LOGGING = "gnss_file_logging";
     public static final String EXTRA_CDR_FILE_LOGGING = "cdr_file_logging";
     public static final String EXTRA_MQTT_CONFIG_JSON = "mqtt_config_json";
+    /**
+     * Intent API START extra: the record types to survey, as a string array or a comma separated
+     * string of wire names (cellular, phone_state, wifi, bluetooth, gnss, cdr). Every destination
+     * receives every record type. Preferred over the per-destination *_file_logging extras.
+     */
+    public static final String EXTRA_RECORD_TYPES = "record_types";
+    /**
+     * Intent API START extra: the destinations, as a string array or a comma separated string of
+     * wire names (log_files, ns_analytics, mqtt, grpc, community).
+     */
+    public static final String EXTRA_DESTINATIONS = "destinations";
 
     public static final int DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS = 5;
     public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 15;
@@ -157,6 +167,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MDM_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     // Preferences
+    // The pre-v2 per-record-type auto start keys. They are no longer user settings; they are only
+    // read as deprecated MDM keys (LegacyMdmMapper) and by the one-time setup migration. The survey
+    // now starts automatically through the single auto_start_survey setting (SurveyMdmKeys).
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
     public static final String PROPERTY_AUTO_START_WIFI_LOGGING = "auto_start_wifi_logging";
     public static final String PROPERTY_AUTO_START_BLUETOOTH_LOGGING = "auto_start_bluetooth_logging";
@@ -172,7 +185,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
     public static final String PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = "device_status_scan_interval_seconds";
     public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
-    public static final String PROPERTY_LOG_FILE_TYPE = "log_file_type";
     public static final String PROPERTY_LOCATION_PROVIDER = "location_provider";
     public static final String PROPERTY_ALLOW_INTENT_CONTROL = "allow_intent_control";
     public static final String PROPERTY_IGNORE_WIFI_SCAN_THROTTLING_WARNING = "ignore_wifi_scan_throttling_warning";
@@ -236,6 +248,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_NS_ANALYTICS_CONNECTION = "ns_analytics_connection_pref";
     public static final String PROPERTY_DELETE_ALL_DATA_IN_UPLOAD_DATABASE = "delete_all_data_in_upload_database";
 
+    // The pre-v2 MQTT record type stream keys. Every destination now receives every record type the
+    // survey records, so these are only read as deprecated MDM keys (LegacyMdmMapper) and by the
+    // one-time setup migration. The device status and watchlist stream keys are still in use.
     public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
     public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
     public static final String PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED = "bluetooth_stream_enabled";
@@ -244,12 +259,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED = "phone_state_stream_enabled";
     public static final String PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED = "watchlist_stream_enabled";
 
-    public static final String PROPERTY_GRPC_CELLULAR_STREAM_ENABLED = "grpc_cellular_stream_enabled";
-    public static final String PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED = "grpc_phone_state_stream_enabled";
-    public static final String PROPERTY_GRPC_WIFI_STREAM_ENABLED = "grpc_wifi_stream_enabled";
-    public static final String PROPERTY_GRPC_BLUETOOTH_STREAM_ENABLED = "grpc_bluetooth_stream_enabled";
-    public static final String PROPERTY_GRPC_GNSS_STREAM_ENABLED = "grpc_gnss_stream_enabled";
-    public static final String PROPERTY_GRPC_DEVICE_STATUS_STREAM_ENABLED = "grpc_device_status_stream_enabled";
 
     // Stored Preferences not exposed via the Settings UI
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
@@ -311,6 +320,11 @@ public class NetworkSurveyConstants
     public static final String MEASUREMENT_UNITS_METRIC = "metric";
     public static final String MEASUREMENT_UNITS_IMPERIAL = "imperial";
     public static final String DEFAULT_MEASUREMENT_UNITS = MEASUREMENT_UNITS_METRIC;
+    public static final String PROPERTY_APP_THEME = "app_theme";
+    public static final String APP_THEME_SYSTEM = "system";
+    public static final String APP_THEME_LIGHT = "light";
+    public static final String APP_THEME_DARK = "dark";
+    public static final String DEFAULT_APP_THEME = APP_THEME_SYSTEM;
 
     // Permission request IDs
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;

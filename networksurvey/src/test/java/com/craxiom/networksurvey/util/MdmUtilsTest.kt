@@ -3,7 +3,9 @@ package com.craxiom.networksurvey.util
 import android.content.Context
 import android.content.RestrictionsManager
 import android.os.Bundle
+import com.craxiom.mqttlibrary.MqttConstants
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.survey.mdm.SurveyMdmKeys
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,7 +15,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
 /**
- * Unit tests for [MdmUtils.isNsAnalyticsAllowed].
+ * Unit tests for [MdmUtils.isNsAnalyticsAllowed], [MdmUtils.isManaged] and
+ * [MdmUtils.isExternalDataUploadAllowed].
  *
  * NS Analytics uploads default to allowed. An MDM admin must explicitly set
  * allow_ns_analytics=false to block them; merely having the device under MDM control for
@@ -67,5 +70,36 @@ class MdmUtilsTest {
         setApplicationRestrictions(restrictions)
 
         assertFalse(MdmUtils.isNsAnalyticsAllowed(context))
+    }
+
+    @Test
+    fun `a phone with no managed configuration is not managed and may upload to community databases`() {
+        assertFalse(MdmUtils.isManaged(context))
+        assertTrue(MdmUtils.isExternalDataUploadAllowed(context))
+    }
+
+    @Test
+    fun `a broker only configuration is managed and denies community uploads by default`() {
+        // Before v2 only the 24 overlap keys made a phone "managed", so a broker-only fleet allowed
+        // community uploads. Any managed configuration now counts.
+        val restrictions = Bundle().apply {
+            putString(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST, "broker.example.com")
+            putString(MqttConstants.PROPERTY_MQTT_CLIENT_ID, "device-1")
+        }
+        setApplicationRestrictions(restrictions)
+
+        assertTrue(MdmUtils.isManaged(context))
+        assertFalse(MdmUtils.isExternalDataUploadAllowed(context))
+    }
+
+    @Test
+    fun `community uploads are allowed on a managed phone when the organization allows them`() {
+        val restrictions = Bundle().apply {
+            putString(SurveyMdmKeys.SURVEY_CELLULAR, SurveyMdmKeys.VALUE_ON)
+            putBoolean(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD, true)
+        }
+        setApplicationRestrictions(restrictions)
+
+        assertTrue(MdmUtils.isExternalDataUploadAllowed(context))
     }
 }

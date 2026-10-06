@@ -44,7 +44,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -345,7 +344,7 @@ fun FlagImage(@DrawableRes flagId: Int, @StringRes contentDescriptionId: Int, mo
     ) {
         Box(
             modifier = Modifier
-                .border(BorderStroke(1.dp, Color.Black))
+                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline))
         ) {
             Image(
                 painter = painterResource(id = flagId),

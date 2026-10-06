@@ -32,7 +32,6 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.BandMatchGroup
 import com.craxiom.networksurvey.data.band.BandReading
 import com.craxiom.networksurvey.ui.cellular.model.BandBrowserViewModel
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * The browsable reference of every LTE and 5G NR operating band.
@@ -120,7 +119,7 @@ fun BandBrowserScreen(viewModel: BandBrowserViewModel, modifier: Modifier = Modi
                     Text(
                         text = stringResource(R.string.band_empty),
                         style = TextStyle(fontSize = 13.sp),
-                        color = WifiTokens.InkFaint,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(24.dp),
@@ -165,13 +164,13 @@ private fun MatchGroupHeader(group: BandMatchGroup) {
         Text(
             text = label,
             style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-            color = WifiTokens.SsidAccent,
+            color = MaterialTheme.colorScheme.primary,
         )
         group.frequencyMhz?.let {
             Text(
                 text = BandFormatting.mhz(it) + " " + stringResource(R.string.band_unit_mhz),
                 style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium),
-                color = WifiTokens.Ink,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
         if (group.bands.isEmpty()) {
@@ -181,7 +180,7 @@ private fun MatchGroupHeader(group: BandMatchGroup) {
                     else R.string.band_group_no_band
                 ),
                 style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkFaint,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -192,7 +191,7 @@ private fun NoMatch(query: String) {
     Text(
         text = stringResource(R.string.band_no_match, query),
         style = TextStyle(fontSize = 13.sp),
-        color = WifiTokens.InkFaint,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -204,7 +203,7 @@ private fun SectionLabel(text: String) {
     Text(
         text = text.uppercase(),
         style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp),
-        color = WifiTokens.InkFaint,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp),
     )
 }

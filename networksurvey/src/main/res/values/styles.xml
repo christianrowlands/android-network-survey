@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <attr name="cardStyle" format="reference" />
 
 
-    <style name="NetworkSurveyTheme" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="NetworkSurveyTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
@@ -53,14 +53,18 @@
         <item name="colorSurfaceContainerHigh">@color/md_theme_surfaceContainerHigh</item>
         <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest</item>
 
+        <!-- Dark system-bar icons on the light scheme, light icons on the dark scheme -->
+        <item name="android:windowLightStatusBar">@bool/ns_light_system_bars</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/ns_light_system_bars</item>
+
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:colorBackgroundFloating">@color/md_theme_surfaceContainer</item>
         <item name="cardStyle">@style/CardViewTheme</item>
     </style>
 
-    <style name="CardViewTheme" parent="CardView.Dark">
-        <item name="cardBackgroundColor">@color/md_theme_cardBackground</item>
+    <style name="CardViewTheme" parent="CardView">
+        <item name="cardBackgroundColor">@color/md_theme_surfaceContainerLow</item>
         <item name="android:layout_gravity">start</item>
         <item name="android:layout_margin">@dimen/small_margin</item>
         <item name="cardCornerRadius">16dp</item>
@@ -72,14 +76,12 @@
         <item name="backgroundTint">@color/md_theme_primaryContainer</item>
     </style>
 
-    <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
-
     <style name="ConnectionSwitchStyle">
         <item name="materialThemeOverlay">@style/ThemeOverlay.ConnectionSwitch</item>
     </style>
 
     <style name="ThemeOverlay.ConnectionSwitch" parent="">
-        <item name="colorPrimary">@color/colorCardDark</item>
+        <item name="colorPrimary">@color/md_theme_primary</item>
     </style>
 
     <style name="CellularTitleText" parent="TextAppearance.AppCompat">
@@ -141,7 +143,7 @@
 
     <style name="StatusText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">20sp</item>
-        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textColor">@color/normalText</item>
     </style>
 
     <style name="StandardText" parent="TextAppearance.AppCompat">
@@ -183,16 +185,11 @@
 
     <style name="SmallStatusText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">#c2c1c1</item>
+        <item name="android:textColor">@color/fadedText</item>
     </style>
 
     <style name="BrighterSmallStatusText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">@color/normalText</item>
-    </style>
-
-    <style name="DescriptionText" parent="TextAppearance.AppCompat">
-        <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/normalText</item>
     </style>
 
@@ -210,7 +207,7 @@
     <style name="CardTitleStyle" parent="android:Widget.TextView">
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/md_theme_onPrimary</item>
+        <item name="android:textColor">@color/md_theme_onPrimaryContainer</item>
     </style>
 
     <style name="NetworkStatusText" parent="TextAppearance.AppCompat">

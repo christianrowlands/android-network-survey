@@ -80,6 +80,8 @@ import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
 import com.craxiom.networksurvey.ui.util.copyMissionIdToClipboard
+import com.craxiom.networksurvey.ui.theme.NsPalette
+import java.util.Locale
 
 /**
  * Navigation arguments for the Survey Monitor screen, passed through the previous back stack
@@ -187,12 +189,12 @@ fun SurveyMonitorScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Status") }
+                    text = { Text(stringResource(R.string.survey_monitor_tab_status)) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Map") }
+                    text = { Text(stringResource(R.string.survey_monitor_tab_map)) }
                 )
             }
 
@@ -247,7 +249,7 @@ private fun ActiveSurveyTopBar(
     TopAppBar(
         title = {
             Text(
-                text = "Survey Monitor",
+                text = stringResource(R.string.survey_monitor),
                 fontWeight = FontWeight.Bold
             )
         },
@@ -255,7 +257,7 @@ private fun ActiveSurveyTopBar(
             IconButton(onClick = onBackPressed) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.back_button_description)
                 )
             }
         }
@@ -299,7 +301,7 @@ private fun SurveyStatusTab(
                 )
 
                 Text(
-                    text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
+                    text = stringResource(if (surveyState.isAnyActive) R.string.scanning_active else R.string.scanning_inactive),
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -375,7 +377,7 @@ private fun SurveyStatusTab(
                                     }
                                 )
                                 Text(
-                                    text = "New Tower Alerts",
+                                    text = stringResource(R.string.new_tower_alerts_title),
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Medium,
                                     color = if (surveyState.isUploadActive) {
@@ -390,7 +392,7 @@ private fun SurveyStatusTab(
                                 ) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_info),
-                                        contentDescription = "Help",
+                                        contentDescription = stringResource(R.string.help_button_description),
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -398,14 +400,14 @@ private fun SurveyStatusTab(
                             }
                             if (!surveyState.isUploadActive) {
                                 Text(
-                                    text = "Requires upload scanning",
+                                    text = stringResource(R.string.survey_monitor_requires_upload_scanning),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     modifier = Modifier.padding(top = 4.dp, start = 28.dp)
                                 )
                             } else if (isNewTowerAlertsEnabled) {
                                 Text(
-                                    text = "Alerts when new towers are detected",
+                                    text = stringResource(R.string.survey_monitor_new_tower_alerts_on),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(top = 4.dp, start = 28.dp)
@@ -766,7 +768,7 @@ private fun SurveyStatistics(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_help),
-                    contentDescription = "Help",
+                    contentDescription = stringResource(R.string.help_button_description),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -799,7 +801,7 @@ private fun SurveyStatistics(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Time Elapsed",
+                        text = stringResource(R.string.survey_monitor_time_elapsed),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -845,7 +847,7 @@ private fun SurveyStatistics(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Time Elapsed",
+                            text = stringResource(R.string.survey_monitor_time_elapsed),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -958,7 +960,7 @@ private fun SurveyStatistics(
                         )
                         Column {
                             Text(
-                                text = "Logged",
+                                text = stringResource(R.string.survey_monitor_logged),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -996,7 +998,7 @@ private fun SurveyStatistics(
                         )
                         Column {
                             Text(
-                                text = "To Upload",
+                                text = stringResource(R.string.survey_monitor_to_upload),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
@@ -1039,20 +1041,18 @@ private fun SurveyStatistics(
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "NS Analytics",
+                            text = stringResource(R.string.ns_analytics),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
                             text = if (surveyState.nsAnalyticsInfo.isRegistered) {
-                                "Queued: ${
-                                    String.format(
-                                        "%,d",
-                                        surveyState.nsAnalyticsInfo.queuedRecords
-                                    )
-                                }"
+                                stringResource(
+                                    R.string.survey_monitor_ns_analytics_queued,
+                                    surveyState.nsAnalyticsInfo.queuedRecords
+                                )
                             } else {
-                                "Not registered"
+                                stringResource(R.string.ns_analytics_upload_status_not_registered)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
@@ -1065,7 +1065,11 @@ private fun SurveyStatistics(
         // Active survey types indicator
         if (activeSurveyTypes.isNotEmpty()) {
             Text(
-                text = "Active: ${activeSurveyTypes.joinToString(", ")}",
+                text = stringResource(
+                    R.string.survey_monitor_active_destinations,
+                    activeSurveyTypes.map { stringResource(it) }
+                        .joinToString(stringResource(R.string.notification_list_separator))
+                ),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(top = 4.dp)
@@ -1277,7 +1281,7 @@ private fun ServingCellCard(
                     }
                 )
                 Text(
-                    text = "Serving Cell",
+                    text = stringResource(R.string.survey_monitor_serving_cell),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 8.dp)
@@ -1325,7 +1329,7 @@ private fun ServingCellCard(
                         ) {
                             Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                                 Text(
-                                    text = "NEW",
+                                    text = stringResource(R.string.mission_id_new_badge),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.Transparent
@@ -1348,7 +1352,7 @@ private fun ServingCellCard(
                             )
                         ) {
                             Text(
-                                text = "NEW",
+                                text = stringResource(R.string.mission_id_new_badge),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onTertiary,
@@ -1370,7 +1374,7 @@ private fun ServingCellCard(
                         val lte = record as com.craxiom.messaging.LteRecord
                         val data = lte.data
                         listOf(
-                            "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            R.string.survey_points_tech_lte, data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L,
                             data.rsrp?.value?.toInt()?.toString() ?: "---",
                             if (data.hasPlmn()) data.plmn.value else null
@@ -1381,7 +1385,7 @@ private fun ServingCellCard(
                         val nr = record as com.craxiom.messaging.NrRecord
                         val data = nr.data
                         listOf(
-                            "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            R.string.survey_points_tech_nr, data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.nci?.value ?: 0L,
                             data.ssRsrp?.value?.toInt()?.toString() ?: "---",
                             if (data.hasPlmn()) data.plmn.value else null
@@ -1392,7 +1396,7 @@ private fun ServingCellCard(
                         val gsm = record as com.craxiom.messaging.GsmRecord
                         val data = gsm.data
                         listOf(
-                            "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            R.string.survey_points_tech_gsm, data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L,
                             data.signalStrength?.value?.toInt()?.toString() ?: "---",
                             if (data.hasPlmn()) data.plmn.value else null
@@ -1403,17 +1407,17 @@ private fun ServingCellCard(
                         val umts = record as com.craxiom.messaging.UmtsRecord
                         val data = umts.data
                         listOf(
-                            "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            R.string.survey_points_tech_umts, data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L,
                             data.rscp?.value?.toInt()?.toString() ?: "---",
                             if (data.hasPlmn()) data.plmn.value else null
                         )
                     }
 
-                    else -> listOf("Unknown", 0, 0, 0, 0L, "---", null)
+                    else -> listOf(R.string.unknown, 0, 0, 0, 0L, "---", null)
                 }
 
-                val technology = cellInfo[0] as String
+                val technology = stringResource(cellInfo[0] as Int)
                 val mcc = (cellInfo[1] as Number).toInt()
                 val mnc = (cellInfo[2] as Number).toInt()
                 val plmnString = cellInfo.getOrNull(6) as? String
@@ -1440,7 +1444,7 @@ private fun ServingCellCard(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "TECHNOLOGY",
+                                text = stringResource(R.string.survey_point_technology).uppercase(Locale.getDefault()),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 2.dp)
@@ -1461,10 +1465,7 @@ private fun ServingCellCard(
                                             text = technology,
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = when (technology) {
-                                                "5G NR", "LTE" -> MaterialTheme.colorScheme.onPrimary
-                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                            },
+                                            color = MaterialTheme.colorScheme.onPrimary,
                                             modifier = Modifier.padding(
                                                 horizontal = 8.dp,
                                                 vertical = 4.dp
@@ -1476,7 +1477,7 @@ private fun ServingCellCard(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "SIGNAL",
+                                text = stringResource(R.string.survey_point_signal).uppercase(Locale.getDefault()),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 2.dp)
@@ -1492,11 +1493,11 @@ private fun ServingCellCard(
                                     else -> 0 // No signal
                                 }
                                 val signalColor = when (signalBars) {
-                                    4 -> Color(0xFF4CAF50) // Green
-                                    3 -> Color(0xFF8BC34A) // Light Green
-                                    2 -> Color(0xFFFFC107) // Yellow
-                                    1 -> Color(0xFFFF9800) // Orange
-                                    else -> Color(0xFFF44336) // Red
+                                    4 -> NsPalette.Signal.Strong
+                                    3 -> NsPalette.Signal.Good
+                                    2 -> NsPalette.Signal.Fair
+                                    1 -> NsPalette.Signal.Weak
+                                    else -> NsPalette.Signal.VeryWeak
                                 }
 
                                 Row(
@@ -1536,7 +1537,7 @@ private fun ServingCellCard(
                                     Spacer(modifier = Modifier.width(4.dp))
 
                                     Text(
-                                        text = "$signalStrength dBm",
+                                        text = stringResource(R.string.dbm_value_label, signalStrength),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -1556,7 +1557,7 @@ private fun ServingCellCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "NETWORK",
+                            text = stringResource(R.string.survey_monitor_label_network).uppercase(Locale.getDefault()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 2.dp)
@@ -1572,7 +1573,7 @@ private fun ServingCellCard(
                         Text(
                             text = if (protocol == com.craxiom.networksurvey.model.CellularProtocol.GSM ||
                                 protocol == com.craxiom.networksurvey.model.CellularProtocol.UMTS
-                            ) "LAC" else "TAC",
+                            ) stringResource(R.string.lac_label) else stringResource(R.string.tac_label),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 2.dp)
@@ -1601,7 +1602,7 @@ private fun ServingCellCard(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "CELL ID",
+                            text = stringResource(R.string.survey_monitor_label_cell_id).uppercase(Locale.getDefault()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 2.dp)
@@ -1647,7 +1648,7 @@ private fun ServingCellCardSkeleton() {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "TECHNOLOGY",
+                    text = stringResource(R.string.survey_point_technology).uppercase(Locale.getDefault()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 2.dp)
@@ -1661,7 +1662,7 @@ private fun ServingCellCardSkeleton() {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "SIGNAL",
+                    text = stringResource(R.string.survey_point_signal).uppercase(Locale.getDefault()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 2.dp)
@@ -1684,7 +1685,7 @@ private fun ServingCellCardSkeleton() {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "NETWORK",
+                    text = stringResource(R.string.survey_monitor_label_network).uppercase(Locale.getDefault()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 2.dp)
@@ -1698,7 +1699,7 @@ private fun ServingCellCardSkeleton() {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "TAC",
+                    text = stringResource(R.string.tac_label),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 2.dp)
@@ -1715,7 +1716,7 @@ private fun ServingCellCardSkeleton() {
         // Cell ID
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "CELL ID",
+                text = stringResource(R.string.survey_monitor_label_cell_id).uppercase(Locale.getDefault()),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 2.dp)

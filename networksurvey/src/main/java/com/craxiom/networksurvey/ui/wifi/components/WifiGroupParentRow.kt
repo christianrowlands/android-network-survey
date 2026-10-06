@@ -39,9 +39,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NetworkTagVariant
+import com.craxiom.networksurvey.ui.common.NsBandChip
+import com.craxiom.networksurvey.ui.common.NsNetworkTag
+import com.craxiom.networksurvey.ui.common.NsSignalMeter
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
@@ -105,7 +110,7 @@ private fun TitleRow(
             Text(
                 text = stringResource(R.string.wifi_hidden_ssid_placeholder),
                 style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.HiddenSsid,
+                color = NsTheme.colors.tag.hiddenSsid,
                 fontStyle = FontStyle.Italic,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -115,7 +120,7 @@ private fun TitleRow(
             Text(
                 text = group.displaySsid,
                 style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.SsidAccent,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.combinedClickable(
@@ -125,7 +130,7 @@ private fun TitleRow(
             )
         }
         if (group.anyPasspoint) {
-            NetworkTag(
+            NsNetworkTag(
                 text = stringResource(R.string.wifi_tag_passpoint),
                 variant = NetworkTagVariant.Passpoint,
             )
@@ -145,13 +150,13 @@ private fun MetaRow(group: WifiDisplayItem.GroupParent) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         group.bands.forEach { band ->
-            BandChip(band = band, channel = null)
+            NsBandChip(band = band, channel = null)
         }
         if (group.encryptionLabel.isNotBlank()) {
             Text(
                 text = group.encryptionLabel,
                 style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -166,7 +171,7 @@ private fun MetaRow(group: WifiDisplayItem.GroupParent) {
                     group.excludedCount
                 ),
                 style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.SignalFair,
+                color = NsTheme.colors.status.warning.content,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -180,7 +185,7 @@ private fun GroupCountPill(count: Int) {
     Text(
         text = text,
         style = TextStyle(fontSize = 11.sp),
-        color = WifiTokens.InkMuted,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
@@ -195,7 +200,7 @@ private fun SignalCell(group: WifiDisplayItem.GroupParent) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.widthIn(min = 76.dp),
     ) {
-        val color = group.bestRssi?.toWifiSignalCategory()?.color ?: LocalContentColor.current
+        val color = group.bestRssi?.toWifiSignalCategory()?.textColor ?: LocalContentColor.current
         Text(
             text = if (group.bestRssi != null) "${group.bestRssi} dBm" else "--",
             style = TextStyle(
@@ -205,7 +210,7 @@ private fun SignalCell(group: WifiDisplayItem.GroupParent) {
             ),
             color = color,
         )
-        SignalMeter(rssi = group.bestRssi, width = 60.dp)
+        NsSignalMeter(rssi = group.bestRssi, width = 60.dp)
     }
 }
 
@@ -222,7 +227,7 @@ private fun Chevron(expanded: Boolean) {
     Icon(
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = description,
-        tint = WifiTokens.InkMuted,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.rotate(rotation),
     )
 }

@@ -56,7 +56,6 @@ import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.data.SsidExclusionManager;
-import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.gpstest.util.FormatUtils;
 import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ExtraLocationListener;
@@ -78,7 +77,6 @@ import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.uploader.AutoUploadManager;
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker;
 import com.craxiom.networksurvey.model.BatteryPauseState;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
@@ -94,24 +92,50 @@ import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.services.watchlist.WatchlistChangePublisher;
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
+import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
+import com.craxiom.networksurvey.survey.engine.DestinationRuntime;
+import com.craxiom.networksurvey.survey.engine.MissionSessionTracker;
+import com.craxiom.networksurvey.survey.engine.SurveyCoordinator;
+import com.craxiom.networksurvey.survey.engine.SurveyOrchestrator;
+import com.craxiom.networksurvey.survey.engine.SurveyOrigin;
+import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState;
+import com.craxiom.networksurvey.survey.engine.SurveySessionCounters;
+import com.craxiom.networksurvey.survey.engine.SurveyStartResult;
+import com.craxiom.networksurvey.survey.engine.SurveyStateHolder;
+import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver;
+import com.craxiom.networksurvey.survey.intent.AndroidIntentExtras;
+import com.craxiom.networksurvey.survey.intent.IntentSurveyRequest;
+import com.craxiom.networksurvey.survey.intent.SurveyIntentMapper;
+import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource;
+import com.craxiom.networksurvey.survey.mdm.MdmOverrideController;
+import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState;
+import com.craxiom.networksurvey.survey.model.Destination;
+import com.craxiom.networksurvey.survey.model.DestinationCapabilities;
+import com.craxiom.networksurvey.survey.model.RecordType;
+import com.craxiom.networksurvey.survey.model.SurveySetup;
+import com.craxiom.networksurvey.survey.setup.SurveySetupStore;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
-import com.google.gson.Gson;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -121,6 +145,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import kotlin.Unit;
+import kotlinx.coroutines.flow.StateFlow;
 import timber.log.Timber;
 
 /**
@@ -141,6 +166,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
 
     private static final String PROPERTY_BATTERY_PAUSE_STATE = "battery_pause_state";
+    private static final long SURVEY_CONTROL_TIMEOUT_SECONDS = 10;
 
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
     private final ScheduledThreadPoolExecutor deviceStatusExecutor = new ScheduledThreadPoolExecutor(1);
@@ -175,16 +201,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private GpsListener primaryLocationListener;
     private ExtraLocationListener gnssLocationListener;
     private ExtraLocationListener networkLocationListener;
-    private DbUploadStore dbUploadStore;
-    private AutoUploadManager autoUploadManager;
-    private NsAnalyticsDataStore nsAnalyticsDataStore;
+    private volatile DbUploadStore dbUploadStore;
+    private volatile AutoUploadManager autoUploadManager;
+    private volatile NsAnalyticsDataStore nsAnalyticsDataStore;
 
     private DeviceStatusCsvLogger deviceStatusCsvLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
-    private boolean mdmOverride = false;
+    private volatile boolean mdmOverride = false;
 
     private BatteryMonitor batteryMonitor;
     private BatteryPauseState batteryPauseState;
@@ -208,20 +234,45 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 
-    // Survey session tracking
-    private Long surveySessionStartTime = null;
-    private final AtomicInteger surveySessionRecordCount = new AtomicInteger(0);
-    private final AtomicInteger surveySessionUploadRecordCount = new AtomicInteger(0);
-
-    // Mission ID tracking. The Mission ID identifies one survey session and rolls when the first
-    // mission relevant survey of a session starts (OpenCelliD/BeaconDB uploads do not count).
-    // missionId is the rolled value shown to the user; it is null until the first real mission and
-    // is retained as the most recent value after a session ends. Before the first roll,
-    // getMissionIdForRecords() returns an empty string; the only records stamped in that window are
-    // OpenCelliD/BeaconDB upload scans, which discard the Mission ID.
-    private volatile String missionId = null;
-    private boolean missionSessionActive = false;
+    // Survey session and Mission ID tracking. The Mission ID identifies one survey session and rolls
+    // when the first mission relevant survey of a session starts (OpenCelliD/BeaconDB uploads do not
+    // count). The rules live in MissionSessionTracker so they can be unit tested; this service only
+    // tells it when destinations start and stop.
+    private final MissionSessionTracker missionSessionTracker;
     private final Set<IMissionIdListener> missionIdListeners = new CopyOnWriteArraySet<>();
+
+    // The survey setup model. Every survey start, change and stop (the Survey screen, the Intent
+    // API, boot, app open and MDM changes) runs through the coordinator, on its own serial thread.
+    private final ExecutorService surveyControlExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        final Thread thread = new Thread(runnable, "SurveyControl");
+        surveyControlThread = thread;
+        return thread;
+    });
+    private final SurveyStateHolder surveyStateHolder = new SurveyStateHolder();
+    private SurveySetupStore surveySetupStore;
+    private SurveyCoordinator surveyCoordinator;
+    private MdmOverrideController mdmOverrideController;
+
+    // Dedicated locks. They are deliberately not the service monitor: the device status listener
+    // registration holds deviceStatusActive and then updates the wake lock, so sharing one monitor
+    // between the wake lock and the destination toggles (which register device status listeners)
+    // could deadlock.
+    private final Object destinationToggleLock = new Object();
+    private final Object wakeLockLock = new Object();
+    private final Object runtimeStatePublishLock = new Object();
+    private volatile boolean destroyed = false;
+    private volatile Thread surveyControlThread;
+
+    // The record types each streaming destination currently receives. Guarded by their own monitor.
+    private final Set<RecordType> mqttStreamTypes = EnumSet.noneOf(RecordType.class);
+    private final Set<RecordType> nsAnalyticsTypes = EnumSet.noneOf(RecordType.class);
+    private final Set<RecordType> grpcStreamTypes = EnumSet.noneOf(RecordType.class);
+
+    // The broker from an Intent API START, used for the MQTT connection that request starts.
+    private volatile BrokerConnectionInfo intentBrokerConnectionInfo = null;
+    // Fingerprint of the broker the running MQTT connection uses, so an MDM change can tell
+    // whether a reconnect is needed.
+    private volatile String connectedBrokerFingerprint = null;
 
     public NetworkSurveyService()
     {
@@ -230,6 +281,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         // Making it single thread to ensure records are processed in the order they are received.
         executorService = Executors.newSingleThreadExecutor();
+
+        missionSessionTracker = new MissionSessionTracker(
+                this::generateMissionId,
+                this::isAnySurveyActive,
+                this::isAnyMissionRelevantSurveyActive,
+                (currentMissionId, sessionActive) -> {
+                    notifyMissionIdListeners(currentMissionId, sessionActive);
+                    return Unit.INSTANCE;
+                },
+                System::currentTimeMillis);
     }
 
     @Override
@@ -283,6 +344,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         PreferenceUtils.populateRandomMqttClientIdIfMissing(context);
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
 
+        initializeSurveyCoordinator();
+
         // Must register for MDM updates AFTER initializing the MQTT connection because we try to make an MQTT connection if the MDM settings change
         initializeMqttConnection();
         registerManagedConfigurationListener();
@@ -327,125 +390,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
-        // If we are started at boot, then that means the NetworkSurveyActivity was never run.  Therefore, to ensure we
-        // read and respect the auto start logging user preferences, we need to read them and start logging here.
+        if (intent == null) return START_REDELIVER_INTENT;
+
+        // If we are started at boot, then that means the NetworkSurveyActivity was never run, so the
+        // auto start setting is applied here.
         final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
         if (startedAtBoot)
         {
-            Timber.i("Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start preferences");
-
-            attemptMqttConnectionAtBoot();
-
-            final Context applicationContext = getApplicationContext();
-
-            final boolean autoStartCellularLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
-            if (autoStartCellularLogging && !cellularController.isLoggingEnabled())
-            {
-                toggleCellularLogging(true);
-            }
-
-            final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
-            if (autoStartWifiLogging && !wifiController.isLoggingEnabled())
-            {
-                toggleWifiLogging(true);
-            }
-
-            final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
-            if (autoStartBluetoothLogging && !bluetoothController.isLoggingEnabled())
-            {
-                toggleBluetoothLogging(true);
-            }
-
-            final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
-            if (autoStartGnssLogging && !gnssController.isLoggingEnabled())
-            {
-                toggleGnssLogging(true);
-            }
-
-            final boolean autoStartPhoneStateLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING, false, applicationContext);
-            if (autoStartPhoneStateLogging && !isPhoneStateLoggingEnabled())
-            {
-                togglePhoneStateLogging(true);
-            }
-
-            final boolean autoStartCdrLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false, applicationContext);
-            if (autoStartCdrLogging && !isCdrLoggingEnabled())
-            {
-                toggleCdrLogging(true);
-            }
-
-            final boolean autoStartCommunitySurvey = PreferenceUtils.getCommunitySurveyAutoStartPreference(applicationContext);
-            if (autoStartCommunitySurvey && !isUploadScanningActive())
-            {
-                toggleUploadRecordSaving(true);
-            }
+            Timber.i("Received the startedAtBoot flag in the NetworkSurveyService. Applying the auto start setting");
+            surveyCoordinator.startAutoSurveyIfEnabled(SurveyOrigin.BOOT);
+            stopSelfAfterRequestIfUnused(startId);
         } else if (ACTION_START_SURVEY.equals(intent.getAction()))
         {
-            boolean allowIntentControl = PreferenceUtils.getAllowIntentControlPreference(this);
-            if (!allowIntentControl)
+            if (!PreferenceUtils.getAllowIntentControlPreference(this))
             {
                 Timber.w("Received a start survey control intent, but the user has disabled intent control");
                 return START_REDELIVER_INTENT;
             }
 
-            Timber.i("The Network Survey Service was started via an external intent");
-
-            final boolean startCellular = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CELLULAR_FILE_LOGGING, false);
-            final boolean startPhoneState = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_PHONE_STATE_FILE_LOGGING, false);
-            final boolean startWifi = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_WIFI_FILE_LOGGING, false);
-            final boolean startBluetooth = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_BLUETOOTH_FILE_LOGGING, false);
-            final boolean startGnss = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_GNSS_FILE_LOGGING, false);
-            final boolean startCdr = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CDR_FILE_LOGGING, false);
-
-            Timber.i("Starting the Network Survey Service with the file logging flags: cellular=%b, phone_state=%b, wifi=%b, bluetooth=%b, gnss=%b, cdr=%b",
-                    startCellular, startPhoneState, startWifi, startBluetooth, startGnss, startCdr);
-
-            if (startCellular && !cellularController.isLoggingEnabled())
-            {
-                toggleCellularLogging(true);
-            }
-            if (startPhoneState && !isPhoneStateLoggingEnabled())
-            {
-                togglePhoneStateLogging(true);
-            }
-            if (startWifi && !wifiController.isLoggingEnabled())
-            {
-                toggleWifiLogging(true);
-            }
-            if (startBluetooth && !bluetoothController.isLoggingEnabled())
-            {
-                toggleBluetoothLogging(true);
-            }
-            if (startGnss && !gnssController.isLoggingEnabled())
-            {
-                toggleGnssLogging(true);
-            }
-            if (startCdr && !isCdrLoggingEnabled()) toggleCdrLogging(true);
-
-            final String mqttConfigJsonString = intent.getStringExtra(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON);
-            if (mqttConfigJsonString != null)
-            {
-                try
-                {
-                    MqttConnectionSettings mqttConnectionSettings = new Gson().fromJson(mqttConfigJsonString, MqttConnectionSettings.class);
-
-                    Timber.i("Starting the MQTT connection with the intent provided configuration");
-
-                    if (mqttConnection.getConnectionState() != ConnectionState.DISCONNECTED)
-                    {
-                        mqttConnection.disconnect();
-                    }
-
-                    connectToMqttBroker(mqttConnectionSettings.toMqttConnectionInfo());
-                } catch (Exception e)
-                {
-                    Timber.e(e, "Failed to parse the MQTT connection settings from the intent");
-                }
-            }
+            handleStartSurveyIntent(intent);
+            stopSelfAfterRequestIfUnused(startId);
         } else if (ACTION_STOP_SURVEY.equals(intent.getAction()))
         {
-            boolean allowIntentControl = PreferenceUtils.getAllowIntentControlPreference(this);
-            if (!allowIntentControl)
+            if (!PreferenceUtils.getAllowIntentControlPreference(this))
             {
                 Timber.w("Received a stop survey control intent, but the user has disabled intent control");
                 return START_REDELIVER_INTENT;
@@ -453,13 +420,125 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             Timber.i("The Network Survey Service is being stopped via an external intent");
 
-            stopAllLogging();
-            disconnectFromMqttBroker();
-
-            stopSelf();
+            // STOP stops everything: file logging, MQTT, gRPC, NS Analytics and the community
+            // databases. The service then stops itself once nothing is using it.
+            surveyCoordinator.stopSurvey(SurveyOrigin.INTENT);
+            stopSelfAfterRequestIfUnused(startId);
         }
 
         return START_REDELIVER_INTENT;
+    }
+
+    /**
+     * Runs a survey control operation on the survey control thread (where the coordinator runs every
+     * start, change and stop) and waits for it, so the older screens that still call the service
+     * directly cannot interleave with a survey start or stop. Runs inline when already on that
+     * thread.
+     *
+     * @return The operation's result, or null if it failed or did not finish in time.
+     */
+    private <T> T callOnSurveyThread(java.util.concurrent.Callable<T> operation)
+    {
+        try
+        {
+            if (Thread.currentThread() == surveyControlThread) return operation.call();
+            return surveyCoordinator.submit(() -> {
+                try
+                {
+                    return operation.call();
+                } catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }).get(SURVEY_CONTROL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e)
+        {
+            Timber.e(e, "A survey control operation failed");
+            return null;
+        }
+    }
+
+    /**
+     * Queued behind a start or stop request: stops this service if, once the request has run,
+     * nothing is using it (for example a STOP, or a START where nothing could start). Uses
+     * {@link #stopSelfResult(int)} so a newer start request delivered in the meantime keeps the
+     * service alive.
+     *
+     * @param startId The start id of the request that was just queued.
+     */
+    private void stopSelfAfterRequestIfUnused(int startId)
+    {
+        surveyCoordinator.submit(() -> {
+            if (!isBeingUsed())
+            {
+                Timber.i("Nothing is using the service after the request with start id %d", startId);
+                stopSelfResult(startId);
+            }
+            return Unit.INSTANCE;
+        });
+    }
+
+    /**
+     * Maps an Intent API START onto a survey setup and adds it to whatever is running. The old
+     * per-destination extras keep working (mapped as a union) but are deprecated in favor of the
+     * {@code record_types} and {@code destinations} extras.
+     */
+    private void handleStartSurveyIntent(Intent intent)
+    {
+        Timber.i("The Network Survey Service was started via an external intent");
+
+        final IntentSurveyRequest request = SurveyIntentMapper.map(new AndroidIntentExtras(intent),
+                SurveyTypeResolver.typesForCurrentSetup(this, Destination.MQTT));
+        if (request == null)
+        {
+            Timber.w("The start survey intent did not name any record type or destination");
+            return;
+        }
+
+        if (request.getUsedLegacyExtras())
+        {
+            Timber.w("The start survey intent uses deprecated per-destination extras; use %s and %s instead",
+                    NetworkSurveyConstants.EXTRA_RECORD_TYPES, NetworkSurveyConstants.EXTRA_DESTINATIONS);
+        }
+        if (!request.getInvalidValues().isEmpty())
+        {
+            Timber.w("Ignoring unknown values in the start survey intent: %s", request.getInvalidValues());
+        }
+
+        if (request.getMqttSettings() != null)
+        {
+            // The intent supplies the broker for this connection, unless the organization keeps MQTT
+            // off (the merge below then skips MQTT). A running connection to another broker is
+            // replaced, as before. Done on the survey control thread so it is ordered with the merge.
+            final BrokerConnectionInfo requestedBroker = request.getMqttSettings().toMqttConnectionInfo();
+            surveyCoordinator.submit(() -> {
+                if (surveyCoordinator.policy().isDestinationAvailable(Destination.MQTT))
+                {
+                    intentBrokerConnectionInfo = requestedBroker;
+                    if (mqttConnection.getConnectionState() != ConnectionState.DISCONNECTED)
+                    {
+                        reconnectMqttBroker(requestedBroker);
+                    }
+                }
+                return Unit.INSTANCE;
+            });
+        }
+
+        surveyCoordinator.mergeIntoRunningSurvey(request.getSetup(), SurveyOrigin.INTENT);
+        surveyCoordinator.submit(() -> {
+            // An intent broker only lives as long as the stream it started.
+            if (!isMqttStreamingActive()) intentBrokerConnectionInfo = null;
+            return Unit.INSTANCE;
+        });
+        surveyCoordinator.submit(() -> {
+            final SurveyStartResult result = surveyCoordinator.getLastResult();
+            if (result != null)
+            {
+                Timber.i("Intent API START result: recording=%b, skipped=%s, record type problems=%s",
+                        result.getRecording(), result.getSkipped(), result.getRecordTypeProblems());
+            }
+            return Unit.INSTANCE;
+        });
     }
 
     @Override
@@ -494,6 +573,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void onDestroy()
     {
+        destroyed = true;
+        // Drop any queued survey control task; nothing may run against the torn down controllers.
+        surveyControlExecutor.shutdownNow();
+
         // Unregister and stop battery monitor
         if (batteryMonitor != null)
         {
@@ -591,13 +674,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 break;
             case NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY:
                 readMdmOverridePreference();
-                break;
-            case NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE:
-                cellularController.onLogFileTypePreferenceChanged();
-                wifiController.onLogFileTypePreferenceChanged();
-                bluetoothController.onLogFileTypePreferenceChanged();
-                gnssController.onLogFileTypePreferenceChanged();
-                stopDeviceStatusReportIfNotNeeded();
+                mdmOverrideController.onOverrideChanged(mdmOverride);
                 break;
             case NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER:
                 updateLocationListener();
@@ -626,6 +703,39 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Creates the survey setup store, the orchestrator and the coordinator that every survey start
+     * and stop goes through, and the controller that reacts to MDM and override changes.
+     */
+    private void initializeSurveyCoordinator()
+    {
+        final Context context = getApplicationContext();
+        surveySetupStore = new SurveySetupStore(context);
+        final AndroidRestrictionsSource restrictionsSource = new AndroidRestrictionsSource(context);
+        final SurveyOrchestrator orchestrator = new SurveyOrchestrator(new ServiceSurveyOutputs(this),
+                () -> surveyCoordinator.policy());
+        surveyCoordinator = new SurveyCoordinator(orchestrator, surveySetupStore, restrictionsSource,
+                () -> mdmOverride, surveyControlExecutor, () -> {
+            updateServiceNotification();
+            return Unit.INSTANCE;
+        });
+        mdmOverrideController = new MdmOverrideController(surveyCoordinator, surveySetupStore,
+                PreferenceManager.getDefaultSharedPreferences(context), restrictionsSource,
+                () -> {
+                    sendSingleDeviceStatus();
+                    return Unit.INSTANCE;
+                },
+                () -> {
+                    copyOrganizationBrokerToUserSettings();
+                    return Unit.INSTANCE;
+                },
+                () -> {
+                    reconnectMqttIfBrokerChanged();
+                    return Unit.INSTANCE;
+                });
+        mdmOverrideController.initialize();
+    }
+
+    /**
      * Creates the {@link DefaultMqttConnection} instance.
      */
     public void initializeMqttConnection()
@@ -643,48 +753,65 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     /**
      * Attempts to connect to the MQTT broker using the saved connection information. First, the MDM
      * saved connection information is used if it is present. If not, then the regular stored "user"
-     * MQTT entered parameters are used.
+     * MQTT entered parameters are used. The connection streams the record types of the running
+     * survey, or of the user's survey setup when nothing is running.
      *
      * @return True if the connection is going to be attempted, false if it could not (for example,
      * the saved connection information is invalid).
      */
     public boolean connectToMqttBrokerUsingSavedConnectionInfo()
     {
-        // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
-        if (!isMqttMdmOverrideEnabled())
-        {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(RESTRICTIONS_SERVICE);
-            if (restrictionsManager != null)
-            {
-                final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
-                if (connectionInfo != null)
-                {
-                    connectToMqttBroker(connectionInfo);
-                    return true;
-                }
-            }
-        }
+        final Boolean started = callOnSurveyThread(() -> {
+            final BrokerConnectionInfo connectionInfo = getActiveBrokerConnectionInfo();
+            if (connectionInfo == null) return false;
 
-        final BrokerConnectionInfo userBrokerConnectionInfo = getUserBrokerConnectionInfo();
-        if (userBrokerConnectionInfo != null)
-        {
-            connectToMqttBroker(userBrokerConnectionInfo);
+            connectToMqttBroker(connectionInfo, getStreamTypesForNewDestination(Destination.MQTT));
             return true;
-        }
-
-        return false;
+        });
+        return Boolean.TRUE.equals(started);
     }
 
     /**
-     * Connect to an MQTT broker.
+     * Connect to an MQTT broker. This is the entry point used by the MQTT settings screen; the
+     * connection streams the record types of the running survey, or of the user's survey setup when
+     * nothing is running.
      *
      * @param connectionInfo The information needed to connect to the MQTT broker.
      */
     @Override
     public void connectToMqttBroker(BrokerConnectionInfo connectionInfo)
     {
-        MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
+        callOnSurveyThread(() -> {
+            connectToMqttBroker(connectionInfo, getStreamTypesForNewDestination(Destination.MQTT));
+            return true;
+        });
+    }
 
+    /**
+     * Connects to the broker the survey should use (an Intent API broker, then the MDM broker unless
+     * overridden, then the user's broker) streaming the given record types.
+     *
+     * @return True if a connection was started, false if no broker is configured.
+     */
+    public boolean connectToMqttBrokerForSurvey(Set<RecordType> types)
+    {
+        final BrokerConnectionInfo connectionInfo = intentBrokerConnectionInfo != null
+                ? intentBrokerConnectionInfo : getActiveBrokerConnectionInfo();
+        if (connectionInfo == null) return false;
+
+        connectToMqttBroker(connectionInfo, types);
+        return true;
+    }
+
+    /**
+     * Connect to an MQTT broker streaming the given record types. The record type flags in the
+     * connection info are ignored; only its device status flag is used.
+     *
+     * @param connectionInfo The information needed to connect to the MQTT broker.
+     * @param types          The record types to stream.
+     */
+    private void connectToMqttBroker(BrokerConnectionInfo connectionInfo, Set<RecordType> types)
+    {
         // Start or stop watchlist streaming BEFORE connecting so the CONNECTED callback, which publishes
         // the initial watchlist snapshot, can never fire while the publisher is still null (the publisher's
         // first flow emission publishes a snapshot that is simply dropped while disconnected). Watchlist
@@ -700,38 +827,95 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         mqttConnection.connect(getApplicationContext(), connectionInfo);
+        connectedBrokerFingerprint = brokerFingerprint(connectionInfo);
 
         // Track survey session when MQTT streaming starts
         onSurveyStarted(true);
         updateWakeLock();
 
-        // Saving the MQTT protocol streaming flags here allows the Dashboard UI to get notified
-        // of the updates since otherwise MDM specified flags won't get propagated to the Dashboard
-        PreferenceUtils.saveMqttStreamFlags(networkSurveyConnection, getApplicationContext());
+        setMqttStreamTypes(types);
 
-        if (networkSurveyConnection.isCellularStreamEnabled())
-        {
-            registerCellularSurveyRecordListener(mqttConnection);
-        }
-        if (networkSurveyConnection.isPhoneStateStreamEnabled())
-        {
-            registerPhoneStateListener(mqttConnection);
-        }
-        if (networkSurveyConnection.isWifiStreamEnabled())
-        {
-            registerWifiSurveyRecordListener(mqttConnection);
-        }
-        if (networkSurveyConnection.isBluetoothStreamEnabled())
-        {
-            registerBluetoothSurveyRecordListener(mqttConnection);
-        }
-        if (networkSurveyConnection.isGnssStreamEnabled())
-        {
-            registerGnssSurveyRecordListener(mqttConnection);
-        }
-        if (networkSurveyConnection.isDeviceStatusStreamEnabled())
+        if (isDeviceStatusStreamEnabled(connectionInfo))
         {
             registerDeviceStatusListener(mqttConnection);
+        }
+    }
+
+    /**
+     * Changes the record types streamed over the MQTT connection without reconnecting, by
+     * registering and unregistering the connection as a record listener.
+     *
+     * @param types The record types to stream from now on (CDR is ignored; it is files only).
+     */
+    public void setMqttStreamTypes(Set<RecordType> types)
+    {
+        synchronized (mqttStreamTypes)
+        {
+            applyListenerTypes(mqttStreamTypes, types, mqttConnection, mqttConnection, mqttConnection,
+                    mqttConnection, mqttConnection);
+        }
+    }
+
+    /**
+     * @return A copy of the record types the MQTT connection streams.
+     */
+    public Set<RecordType> getMqttStreamTypes()
+    {
+        synchronized (mqttStreamTypes)
+        {
+            return EnumSet.copyOf(mqttStreamTypes);
+        }
+    }
+
+    /**
+     * Registers and unregisters one destination's record listeners so that it receives exactly the
+     * given record types, and updates {@code current} to match.
+     */
+    private void applyListenerTypes(Set<RecordType> current, Set<RecordType> wanted,
+                                    ICellularSurveyRecordListener cellularListener,
+                                    IPhoneStateListener phoneStateListener,
+                                    IWifiSurveyRecordListener wifiListener,
+                                    IBluetoothSurveyRecordListener bluetoothListener,
+                                    IGnssSurveyRecordListener gnssListener)
+    {
+        // Register additions first so a type swap never leaves a scanner without a listener in between.
+        for (RecordType type : RecordType.values())
+        {
+            if (wanted.contains(type) && !current.contains(type))
+            {
+                switch (type)
+                {
+                    case CELLULAR -> registerCellularSurveyRecordListener(cellularListener);
+                    case PHONE_STATE -> registerPhoneStateListener(phoneStateListener);
+                    case WIFI -> registerWifiSurveyRecordListener(wifiListener);
+                    case BLUETOOTH -> registerBluetoothSurveyRecordListener(bluetoothListener);
+                    case GNSS -> registerGnssSurveyRecordListener(gnssListener);
+                    default ->
+                    {
+                        // CDR is files only.
+                        continue;
+                    }
+                }
+                current.add(type);
+            }
+        }
+        for (RecordType type : RecordType.values())
+        {
+            if (!wanted.contains(type) && current.contains(type))
+            {
+                switch (type)
+                {
+                    case CELLULAR -> unregisterCellularSurveyRecordListener(cellularListener);
+                    case PHONE_STATE -> unregisterPhoneStateListener(phoneStateListener);
+                    case WIFI -> unregisterWifiSurveyRecordListener(wifiListener);
+                    case BLUETOOTH -> unregisterBluetoothSurveyRecordListener(bluetoothListener);
+                    case GNSS -> unregisterGnssSurveyRecordListener(gnssListener);
+                    default ->
+                    {
+                    }
+                }
+                current.remove(type);
+            }
         }
     }
 
@@ -787,9 +971,24 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void disconnectFromMqttBroker()
     {
+        callOnSurveyThread(() -> {
+            disconnectFromMqttBrokerNow();
+            surveyCoordinator.onRunningStateChanged();
+            return true;
+        });
+    }
+
+    /**
+     * Disconnects from the MQTT broker and removes the MQTT record listeners. Must run on the survey
+     * control thread.
+     */
+    private void disconnectFromMqttBrokerNow()
+    {
         Timber.i("Disconnecting from the MQTT Broker");
 
         mqttConnection.disconnect();
+        intentBrokerConnectionInfo = null;
+        connectedBrokerFingerprint = null;
 
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
@@ -797,6 +996,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
         unregisterPhoneStateListener(mqttConnection);
+        synchronized (mqttStreamTypes)
+        {
+            mqttStreamTypes.clear();
+        }
         stopWatchlistStreaming();
 
         // Clear queue backpressure states since there's no active connection to be backed up
@@ -808,41 +1011,129 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
-     * MQTT connection.
+     * Called by the MQTT settings screen when the managed configuration may have changed. A running
+     * MQTT stream is moved to the broker it should now use; an idle survey is never started, because
+     * starting a survey is the Survey screen's, the Intent API's or auto start's decision.
      *
-     * @param forceDisconnect Set to true so that the MQTT broker connection will be shutdown even if the MDM configured
-     *                        connection info is not present.  This flag is needed to stop an MQTT connection if it was
-     *                        previously configured via MDM, but the config has since been removed from the MDM.  In
-     *                        that case, the connection info will be null but we still want to disconnect from the MQTT
-     *                        broker.
+     * @param forceDisconnect Unused; kept for the {@link IMqttService} contract.
      */
     @Override
     public void attemptMqttConnectWithMdmConfig(boolean forceDisconnect)
     {
-        if (isMqttMdmOverrideEnabled())
+        callOnSurveyThread(() -> {
+            reconnectMqttIfBrokerChanged();
+            return true;
+        });
+    }
+
+    /**
+     * If MQTT is streaming and the broker it should use (MDM unless overridden, otherwise the user's)
+     * is not the one it is connected to, reconnects to the right broker keeping the same record
+     * types. If no broker is configured anymore, MQTT is stopped.
+     */
+    private void reconnectMqttIfBrokerChanged()
+    {
+        if (!isMqttStreamingActive() || intentBrokerConnectionInfo != null) return;
+
+        final BrokerConnectionInfo desired = getActiveBrokerConnectionInfo();
+        if (desired == null)
         {
-            Timber.i("The MQTT MDM override is enabled, so no MDM configured MQTT connection will be attempted");
+            Timber.i("No MQTT broker is configured anymore, so the MQTT stream is stopped");
+            disconnectFromMqttBrokerNow();
             return;
         }
 
-        final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
-
-        if (connectionInfo != null)
+        if (!brokerFingerprint(desired).equals(connectedBrokerFingerprint))
         {
-            // Make sure there is not another connection active first, if there is, disconnect. Don't use the
-            // disconnectFromMqttBroker() method because it will cause the listener to get unregistered, which will
-            // cause the NetworkSurveyService to get stopped if it is the last listener/user of the service.  Since we
-            // are starting the connection right back up there is not a need to remove the listener.
-            mqttConnection.disconnect();
+            Timber.i("The MQTT broker changed, so the MQTT stream is reconnected");
+            reconnectMqttBroker(desired);
+        }
 
-            connectToMqttBroker(connectionInfo);
+        // The device status and watchlist streams have their own (MDM aware) settings, which a
+        // configuration push may have changed without changing the broker.
+        if (isDeviceStatusStreamEnabled(desired))
+        {
+            registerDeviceStatusListener(mqttConnection);
         } else
         {
-            Timber.i("Skipping the MQTT connection because no MDN MQTT broker configuration has been set");
-
-            if (forceDisconnect) disconnectFromMqttBroker();
+            unregisterDeviceStatusListener(mqttConnection);
         }
+        handleWatchlistStreamingPreferenceChange();
+    }
+
+    /**
+     * Moves the running MQTT stream to another broker, keeping its record types and listeners.
+     * The disconnect does not go through {@link #disconnectFromMqttBroker()} because that would
+     * unregister the listeners (possibly stopping this service) and end the survey session.
+     */
+    private void reconnectMqttBroker(BrokerConnectionInfo connectionInfo)
+    {
+        mqttConnection.disconnect();
+        mqttConnection.connect(getApplicationContext(), connectionInfo);
+        connectedBrokerFingerprint = brokerFingerprint(connectionInfo);
+    }
+
+    /**
+     * @return The broker MQTT should use right now: the MDM broker unless the user overrode the MDM
+     * settings, otherwise the user's broker. Null if none is configured.
+     */
+    private BrokerConnectionInfo getActiveBrokerConnectionInfo()
+    {
+        if (!isMqttMdmOverrideEnabled())
+        {
+            final BrokerConnectionInfo mdmConnectionInfo = getMdmBrokerConnectionInfo();
+            if (mdmConnectionInfo != null) return mdmConnectionInfo;
+        }
+        return getUserBrokerConnectionInfo();
+    }
+
+    /**
+     * @return True if MQTT has a broker to connect to (from an Intent API request, MDM or the user).
+     */
+    public boolean hasMqttBrokerConfigured()
+    {
+        return intentBrokerConnectionInfo != null || getActiveBrokerConnectionInfo() != null;
+    }
+
+    /**
+     * @return A string that identifies a broker connection, used to tell whether a reconnect is needed.
+     */
+    private static String brokerFingerprint(BrokerConnectionInfo info)
+    {
+        final String deviceName = info instanceof MqttConnectionInfo ? ((MqttConnectionInfo) info).getDeviceName() : null;
+        return info.getMqttBrokerHost() + ":" + info.getPortNumber() + ":" + info.isTlsEnabled() + ":"
+                + info.getMqttClientId() + ":" + info.getMqttUsername() + ":" + info.getMqttPassword() + ":"
+                + info.getTopicPrefix() + ":" + info.getMqttQos() + ":" + deviceName;
+    }
+
+    /**
+     * @return True if the device status heartbeat should be streamed over this MQTT connection.
+     */
+    private static boolean isDeviceStatusStreamEnabled(BrokerConnectionInfo info)
+    {
+        return !(info instanceof MqttConnectionInfo) || ((MqttConnectionInfo) info).isDeviceStatusStreamEnabled();
+    }
+
+    /**
+     * Copies the organization's MQTT broker into the user's broker settings, so that when the user
+     * turns on "Override organization settings" the stream keeps going to the same broker until
+     * they change it.
+     */
+    private void copyOrganizationBrokerToUserSettings()
+    {
+        final BrokerConnectionInfo mdmConnectionInfo = getMdmBrokerConnectionInfo();
+        if (mdmConnectionInfo == null) return;
+
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
+                .putString(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST, mdmConnectionInfo.getMqttBrokerHost())
+                .putInt(MqttConstants.PROPERTY_MQTT_CONNECTION_PORT, mdmConnectionInfo.getPortNumber())
+                .putBoolean(MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, mdmConnectionInfo.isTlsEnabled())
+                .putString(MqttConstants.PROPERTY_MQTT_CLIENT_ID, mdmConnectionInfo.getMqttClientId())
+                .putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mdmConnectionInfo.getTopicPrefix())
+                .putInt(MqttConstants.PROPERTY_MQTT_QOS, mdmConnectionInfo.getMqttQos().getValue())
+                .apply();
+        CredentialSecureStorage.INSTANCE.storeMqttCredentials(getApplicationContext(),
+                mdmConnectionInfo.getMqttUsername(), mdmConnectionInfo.getMqttPassword());
     }
 
     /**
@@ -1587,13 +1878,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private Boolean toggleImmediateFireSurvey(boolean enable, LoggingToggle controllerToggle)
     {
-        final String missionIdBeforeStart;
-        final boolean missionSessionActiveBeforeStart;
-        synchronized (this)
-        {
-            missionIdBeforeStart = missionId;
-            missionSessionActiveBeforeStart = missionSessionActive;
-        }
+        final MissionSessionTracker.Snapshot missionBeforeStart = missionSessionTracker.snapshot();
 
         if (enable) onSurveyStarted(true);
 
@@ -1608,13 +1893,21 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         // start never leaves behind a rolled Mission ID that no record will ever carry.
         if (enable && result == null)
         {
-            undoOptimisticStart(missionIdBeforeStart, missionSessionActiveBeforeStart);
+            missionSessionTracker.undoOptimisticStart(missionBeforeStart);
         }
 
         return result;
     }
 
-    public synchronized UploadScanningResult toggleUploadRecordSaving(boolean enable)
+    public UploadScanningResult toggleUploadRecordSaving(boolean enable)
+    {
+        synchronized (destinationToggleLock)
+        {
+            return toggleUploadRecordSavingLocked(enable);
+        }
+    }
+
+    private UploadScanningResult toggleUploadRecordSavingLocked(boolean enable)
     {
         try
         {
@@ -1622,6 +1915,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (!externalDataUploadAllowedForMdm)
             {
                 return new UploadScanningResult(false, false, getString(R.string.upload_disabled_via_mdm));
+            }
+
+            if (enable && dbUploadStore != null)
+            {
+                return new UploadScanningResult(true, true, getString(R.string.upload_saving_start_toast));
+            } else if (!enable && dbUploadStore == null)
+            {
+                return new UploadScanningResult(true, false, getString(R.string.upload_saving_stop_toast));
             }
 
             if (enable)
@@ -1714,13 +2015,39 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Toggles NS Analytics scanning on or off. When enabled, survey records are queued
-     * to the NS Analytics data store for upload to the NS Analytics backend.
+     * Toggles NS Analytics scanning on or off. When started this way (the NS Analytics screen, or an
+     * older control), NS Analytics receives the record types of the running survey, or of the
+     * user's survey setup when nothing is running.
      *
      * @param enable True to enable NS Analytics scanning, false to disable
      * @return Result indicating success/failure and whether scanning was started or stopped
      */
-    public synchronized UploadScanningResult toggleNsAnalyticsScanning(boolean enable)
+    public UploadScanningResult toggleNsAnalyticsScanning(boolean enable)
+    {
+        final UploadScanningResult result = callOnSurveyThread(() ->
+                toggleNsAnalyticsScanning(enable, enable ? getStreamTypesForNewDestination(Destination.NS_ANALYTICS)
+                        : Collections.emptySet()));
+        return result != null ? result
+                : new UploadScanningResult(false, false, getString(R.string.ns_analytics_survey_toggle_failed));
+    }
+
+    /**
+     * Toggles NS Analytics scanning on or off. When enabled, survey records of the given types are
+     * queued to the NS Analytics data store for upload to the NS Analytics backend.
+     *
+     * @param enable True to enable NS Analytics scanning, false to disable
+     * @param types  The record types to collect when enabling (CDR is ignored).
+     * @return Result indicating success/failure and whether scanning was started or stopped
+     */
+    public UploadScanningResult toggleNsAnalyticsScanning(boolean enable, Set<RecordType> types)
+    {
+        synchronized (destinationToggleLock)
+        {
+            return toggleNsAnalyticsScanningLocked(enable, types);
+        }
+    }
+
+    private UploadScanningResult toggleNsAnalyticsScanningLocked(boolean enable, Set<RecordType> types)
     {
         try
         {
@@ -1735,68 +2062,58 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                             getString(R.string.ns_analytics_not_registered));
                 }
 
-                nsAnalyticsDataStore = new NsAnalyticsDataStore(this);
-                nsAnalyticsDataStore.startCollecting();
-
-                // Get preferences to check which protocols are enabled
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-                // Register for enabled protocols
-                boolean cellularEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED);
-                boolean phoneStateEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED, NsAnalyticsConstants.DEFAULT_PHONE_STATE_ENABLED);
-                boolean wifiEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, NsAnalyticsConstants.DEFAULT_WIFI_ENABLED);
-                boolean bluetoothEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED, NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED);
-                boolean gnssEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, NsAnalyticsConstants.DEFAULT_GNSS_ENABLED);
-
-                if (!cellularEnabled && !phoneStateEnabled && !wifiEnabled && !bluetoothEnabled && !gnssEnabled)
+                if (!MdmUtils.isNsAnalyticsAllowed(this))
                 {
-                    Timber.w("No NS Analytics protocols enabled, so no survey scanning will be started");
-                    nsAnalyticsDataStore.shutdown();
-                    nsAnalyticsDataStore = null;
+                    return new UploadScanningResult(false, false,
+                            getString(R.string.ns_analytics_not_allowed_by_organization));
+                }
+
+                final Set<RecordType> collectedTypes = DestinationCapabilities.typesFor(Destination.NS_ANALYTICS,
+                        types, Collections.emptySet());
+                if (collectedTypes.isEmpty())
+                {
+                    Timber.w("No NS Analytics record types selected, so no survey scanning will be started");
                     return new UploadScanningResult(false, false,
                             getString(R.string.ns_analytics_survey_no_protocols_enabled));
                 }
 
+                nsAnalyticsDataStore = new NsAnalyticsDataStore(this);
+                nsAnalyticsDataStore.startCollecting();
+
                 // Roll the Mission ID before registering any listener. The phone state listener (and
                 // device status) can emit a record as soon as it is registered, so the roll must be
                 // committed first or that record would capture a pre-roll Mission ID. This is placed
-                // after the no-protocols bail-out above so an abandoned start never rolls.
+                // after the bail-outs above so an abandoned start never rolls.
+                final MissionSessionTracker.Snapshot missionBeforeStart = missionSessionTracker.snapshot();
                 onSurveyStarted(true);
 
-                if (cellularEnabled)
+                try
                 {
-                    registerCellularSurveyRecordListener(nsAnalyticsDataStore);
-                }
-                if (phoneStateEnabled)
+                    setNsAnalyticsTypes(collectedTypes);
+
+                    // Always register for device status
+                    registerDeviceStatusListener(nsAnalyticsDataStore);
+                } catch (Exception e)
                 {
-                    registerPhoneStateListener(nsAnalyticsDataStore);
-                }
-                if (wifiEnabled)
-                {
-                    registerWifiSurveyRecordListener(nsAnalyticsDataStore);
-                }
-                if (bluetoothEnabled)
-                {
-                    registerBluetoothSurveyRecordListener(nsAnalyticsDataStore);
-                }
-                if (gnssEnabled)
-                {
-                    registerGnssSurveyRecordListener(nsAnalyticsDataStore);
+                    // Do not leave a half built data store behind a result that says it failed.
+                    Timber.e(e, "Failed to register the NS Analytics listeners; undoing the start");
+                    shutdownNsAnalyticsDataStore();
+                    missionSessionTracker.undoOptimisticStart(missionBeforeStart);
+                    throw e;
                 }
 
-                // Always register for device status
-                registerDeviceStatusListener(nsAnalyticsDataStore);
+                // Uploads are scheduled from the start itself, so a survey started at boot, by the
+                // Intent API or from the Survey screen uploads the same way.
+                if (PreferenceUtils.isNsAnalyticsAutoUpload(this))
+                {
+                    NsAnalyticsUploadWorker.Companion.schedulePeriodicUpload(this,
+                            NsAnalyticsSecureStorage.INSTANCE.getUploadFrequency(this), false);
+                }
 
                 updateWakeLock();
                 updateServiceNotification();
 
-                Timber.i("NS Analytics survey started - Cellular: %b, WiFi: %b, Bluetooth: %b, GNSS: %b",
-                        cellularEnabled, wifiEnabled, bluetoothEnabled, gnssEnabled);
+                Timber.i("NS Analytics survey started for %s", collectedTypes);
 
                 // Re-evaluate MQTT backpressure mode since NS Analytics is now active
                 reevaluateMqttBackpressureMode();
@@ -1805,17 +2122,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         getString(R.string.ns_analytics_survey_started));
             } else if (!enable && isCurrentlyActive)
             {
-                // Unregister from all listeners
-                unregisterCellularSurveyRecordListener(nsAnalyticsDataStore);
-                unregisterPhoneStateListener(nsAnalyticsDataStore);
-                unregisterWifiSurveyRecordListener(nsAnalyticsDataStore);
-                unregisterBluetoothSurveyRecordListener(nsAnalyticsDataStore);
-                unregisterGnssSurveyRecordListener(nsAnalyticsDataStore);
-                unregisterDeviceStatusListener(nsAnalyticsDataStore);
-
-                // Clean up the data store
-                nsAnalyticsDataStore.shutdown();
-                nsAnalyticsDataStore = null;
+                shutdownNsAnalyticsDataStore();
 
                 // Cancel periodic uploads first
                 NsAnalyticsUploadWorker.Companion.cancelPeriodicUpload(this);
@@ -1866,6 +2173,55 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.e(e, "Failed to toggle NS Analytics scanning");
             return new UploadScanningResult(false, false,
                     getString(R.string.ns_analytics_survey_toggle_failed));
+        }
+    }
+
+    /**
+     * Unregisters the NS Analytics data store from every record stream and shuts it down.
+     */
+    private void shutdownNsAnalyticsDataStore()
+    {
+        final NsAnalyticsDataStore dataStore = nsAnalyticsDataStore;
+        if (dataStore == null) return;
+
+        unregisterCellularSurveyRecordListener(dataStore);
+        unregisterPhoneStateListener(dataStore);
+        unregisterWifiSurveyRecordListener(dataStore);
+        unregisterBluetoothSurveyRecordListener(dataStore);
+        unregisterGnssSurveyRecordListener(dataStore);
+        unregisterDeviceStatusListener(dataStore);
+        synchronized (nsAnalyticsTypes)
+        {
+            nsAnalyticsTypes.clear();
+        }
+
+        dataStore.shutdown();
+        nsAnalyticsDataStore = null;
+    }
+
+    /**
+     * Changes the record types collected for NS Analytics without restarting it.
+     *
+     * @param types The record types to collect from now on (CDR is ignored).
+     */
+    public void setNsAnalyticsTypes(Set<RecordType> types)
+    {
+        final NsAnalyticsDataStore dataStore = nsAnalyticsDataStore;
+        if (dataStore == null) return;
+        synchronized (nsAnalyticsTypes)
+        {
+            applyListenerTypes(nsAnalyticsTypes, types, dataStore, dataStore, dataStore, dataStore, dataStore);
+        }
+    }
+
+    /**
+     * @return A copy of the record types collected for NS Analytics.
+     */
+    public Set<RecordType> getNsAnalyticsTypes()
+    {
+        synchronized (nsAnalyticsTypes)
+        {
+            return EnumSet.copyOf(nsAnalyticsTypes);
         }
     }
 
@@ -2017,12 +2373,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         return isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() ||
                 isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled() ||
-                isMqttStreamingActive() || isGrpcConnectionActive() || isNsAnalyticsScanningActive();
+                isMqttStreamingActive() || isGrpcActiveOrConnecting() || isNsAnalyticsScanningActive();
     }
 
     /**
      * Checks if any survey record outputs other than MQTT streaming are currently active.
-     * This includes file logging (CSV/GeoPackage), gRPC streaming, NS Analytics, and upload scanning.
+     * This includes file logging (CSV), gRPC streaming, NS Analytics, and upload scanning.
      * <p>
      * This is used to determine whether to pause scanning (conserve battery when only MQTT is active)
      * or drop MQTT messages (continue other outputs when MQTT backs up).
@@ -2061,7 +2417,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Long getSurveySessionStartTime()
     {
-        return surveySessionStartTime;
+        return missionSessionTracker.sessionStartTimeMs();
     }
 
     /**
@@ -2069,7 +2425,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * doesn't go to sleep while collecting survey data.
      */
     @SuppressLint("WakelockTimeout")
-    private synchronized void updateWakeLock()
+    private void updateWakeLock()
+    {
+        synchronized (wakeLockLock)
+        {
+            updateWakeLockLocked();
+        }
+    }
+
+    private void updateWakeLockLocked()
     {
         if (wakeLock == null)
         {
@@ -2113,141 +2477,41 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public int getSurveySessionRecordCount()
     {
-        return surveySessionRecordCount.get();
+        return missionSessionTracker.getRecordCount().get();
     }
 
     /**
-     * Called when any survey starts. Initializes session tracking if this is the first survey.
+     * Called when any survey starts. Starts the session if none is running and rolls the Mission ID
+     * on the transition to the first mission relevant survey (see {@link MissionSessionTracker}).
      * <p>
-     * Callers pass whether the survey they are starting counts toward the Mission ID. This must be
-     * driven by caller intent rather than reading back the survey enabled flags, because those flags
-     * are set by the same controller call that registers the immediate-fire phone state / CDR service
-     * state listener. Rolling here first (before that registration) is what guarantees the immediate
-     * record cannot capture a pre-roll Mission ID.
+     * Callers pass whether the survey they are starting counts toward the Mission ID, and call this
+     * before registering any listener that can emit a record immediately, so that record cannot
+     * capture a pre-roll Mission ID.
      *
      * @param missionRelevant true if the starting survey counts toward the Mission ID (every survey
-     *                        except OpenCelliD/BeaconDB upload scanning). When true and no mission
-     *                        session is active yet, a fresh Mission ID is rolled.
+     *                        except OpenCelliD/BeaconDB upload scanning).
      */
     private void onSurveyStarted(boolean missionRelevant)
     {
-        final String missionIdSnapshot;
-        final boolean missionSessionActiveSnapshot;
-        final boolean rolled;
-        synchronized (this)
-        {
-            if (surveySessionStartTime == null)
-            {
-                Timber.i("Starting new survey session");
-                surveySessionStartTime = System.currentTimeMillis();
-                surveySessionRecordCount.set(0);
-                surveySessionUploadRecordCount.set(0);
-            }
-
-            // Roll the Mission ID only on the transition to the first mission relevant survey of a
-            // session. Adding another survey to an already running session keeps the same value,
-            // and OpenCelliD/BeaconDB only sessions never roll (they pass missionRelevant = false).
-            if (missionRelevant && !missionSessionActive)
-            {
-                missionSessionActive = true;
-                missionId = generateMissionId();
-                Timber.i("Rolled to a new Mission ID: %s", missionId);
-                rolled = true;
-            } else
-            {
-                rolled = false;
-            }
-            missionIdSnapshot = missionId;
-            missionSessionActiveSnapshot = missionSessionActive;
-        }
-
-        // Notify outside the lock so listener callbacks never run while holding the service monitor.
-        if (rolled) notifyMissionIdListeners(missionIdSnapshot, missionSessionActiveSnapshot);
+        missionSessionTracker.onSurveyStarted(missionRelevant);
     }
 
     /**
-     * Called when any survey stops. Clears session tracking if all surveys have stopped.
+     * Called when any survey stops. Ends the session when nothing runs anymore.
      */
     private void onSurveyStopped()
     {
-        final String missionIdSnapshot;
-        final boolean missionSessionActiveSnapshot;
-        final boolean ended;
-        synchronized (this)
-        {
-            if (!isAnySurveyActive())
-            {
-                Timber.i("All surveys stopped, ending survey session. Total records: %d, Upload records: %d",
-                        surveySessionRecordCount.get(), surveySessionUploadRecordCount.get());
-                surveySessionStartTime = null;
-                surveySessionRecordCount.set(0);
-                surveySessionUploadRecordCount.set(0);
-            }
-
-            // End the mission session when the last mission relevant survey stops. The missionId is
-            // intentionally retained as the most recent value so the UI can still show and copy it
-            // and any trailing records stay non-null. The next survey start rolls a fresh one.
-            if (missionSessionActive && !isAnyMissionRelevantSurveyActive())
-            {
-                missionSessionActive = false;
-                Timber.i("Mission session ended. Most recent Mission ID: %s", missionId);
-                ended = true;
-            } else
-            {
-                ended = false;
-            }
-            missionIdSnapshot = missionId;
-            missionSessionActiveSnapshot = missionSessionActive;
-        }
-
-        // Notify outside the lock so listener callbacks never run while holding the service monitor.
-        if (ended) notifyMissionIdListeners(missionIdSnapshot, missionSessionActiveSnapshot);
+        missionSessionTracker.onSurveyStopped();
     }
 
     /**
-     * Undoes the optimistic session start and Mission ID roll performed by
-     * {@link #toggleImmediateFireSurvey(boolean, LoggingToggle)} when the controller reports the
-     * start failed. Unlike {@link #onSurveyStopped()} (which retains the Mission ID as the most
-     * recent value for a real session end), this restores the Mission ID to its pre-start value so a
-     * failed start does not leave behind a rolled Mission ID that no record will ever carry. Session
-     * tracking is cleared only when nothing else is running.
-     *
-     * @param missionIdBeforeStart            The Mission ID value captured before the optimistic roll.
-     * @param missionSessionActiveBeforeStart Whether a mission session was already active before the
-     *                                        optimistic roll (if so, this attempt did not roll).
+     * Ends the survey session and the Mission ID session right away, even if a destination (gRPC) is
+     * still finishing an asynchronous stop, so a Start right after a Stop rolls a fresh Mission ID.
      */
-    private void undoOptimisticStart(String missionIdBeforeStart, boolean missionSessionActiveBeforeStart)
+    public void endMissionSession()
     {
-        final String missionIdSnapshot;
-        final boolean missionSessionActiveSnapshot;
-        final boolean rolledBack;
-        synchronized (this)
-        {
-            // onSurveyStarted(true) only rolls when no mission session was active yet, so only undo
-            // the Mission ID when this attempt is the one that rolled it.
-            if (!missionSessionActiveBeforeStart && missionSessionActive)
-            {
-                missionSessionActive = false;
-                missionId = missionIdBeforeStart;
-                rolledBack = true;
-            } else
-            {
-                rolledBack = false;
-            }
-
-            // Clear session tracking if this attempt started it and nothing else is running.
-            if (!isAnySurveyActive())
-            {
-                surveySessionStartTime = null;
-                surveySessionRecordCount.set(0);
-                surveySessionUploadRecordCount.set(0);
-            }
-            missionIdSnapshot = missionId;
-            missionSessionActiveSnapshot = missionSessionActive;
-        }
-
-        // Notify outside the lock so the UI settles back to the pre-start Mission ID.
-        if (rolledBack) notifyMissionIdListeners(missionIdSnapshot, missionSessionActiveSnapshot);
+        missionSessionTracker.endSession();
+        updateWakeLock();
     }
 
     /**
@@ -2267,7 +2531,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             onSurveyStarted(true);
         } else
         {
+            synchronized (grpcStreamTypes)
+            {
+                grpcStreamTypes.clear();
+            }
             onSurveyStopped();
+            surveyCoordinator.onRunningStateChanged();
         }
         updateWakeLock();
     }
@@ -2294,8 +2563,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public String getMissionIdForRecords()
     {
-        final String currentMissionId = missionId;
-        return currentMissionId != null ? currentMissionId : "";
+        return missionSessionTracker.missionIdForRecords();
     }
 
     /**
@@ -2304,15 +2572,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public String getRolledMissionId()
     {
-        return missionId;
+        return missionSessionTracker.rolledMissionId();
     }
 
     /**
      * @return true while at least one mission relevant survey is running.
      */
-    public synchronized boolean isMissionSessionActive()
+    public boolean isMissionSessionActive()
     {
-        return missionSessionActive;
+        return missionSessionTracker.isMissionSessionActive();
     }
 
     /**
@@ -2344,12 +2612,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Increment the survey session record count. This should be called by the SurveyRecordProcessor
-     * for each record processed.
+     * Counts records the {@link SurveyRecordProcessor} just processed, for the session totals (the
+     * stall watchdog) and the per record type counts (the Recording screen).
+     *
+     * @param type  The record type.
+     * @param count The number of records of that type.
      */
-    public void incrementSurveySessionRecordCount()
+    public void onRecordsProcessed(RecordType type, int count)
     {
-        surveySessionRecordCount.incrementAndGet();
+        if (count <= 0) return;
+        missionSessionTracker.getRecordCount().addAndGet(count);
+        missionSessionTracker.getCounters().increment(type, count);
+    }
+
+    /**
+     * @return The per record type counts and last-record time for the current survey session.
+     */
+    public SurveySessionCounters getSessionCounters()
+    {
+        return missionSessionTracker.getCounters();
     }
 
     /**
@@ -2359,20 +2640,20 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public int getSurveySessionUploadRecordCount()
     {
-        return surveySessionUploadRecordCount.get();
+        return missionSessionTracker.getUploadRecordCount().get();
     }
 
     // IUploadRecordCountListener implementation
     @Override
     public void onCellularUploadRecordsWritten(int recordCount)
     {
-        surveySessionUploadRecordCount.addAndGet(recordCount);
+        missionSessionTracker.getUploadRecordCount().addAndGet(recordCount);
     }
 
     @Override
     public void onWifiUploadRecordsWritten(int recordCount)
     {
-        surveySessionUploadRecordCount.addAndGet(recordCount);
+        missionSessionTracker.getUploadRecordCount().addAndGet(recordCount);
     }
 
     /**
@@ -2640,56 +2921,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Tries to establish an MQTT broker connection after the phone is first started up.
-     * <p>
-     * This method only applies to creating the MQTT connection at boot for two reasons. First, it checks the start
-     * MQTT at boot preference before creating the connection, and secondly, it does not first disconnect any existing
-     * connections because it assumes this method is being called from a fresh start of the Android phone.
-     * <p>
-     * First, it tries to create a connection using the MDM configured MQTT parameters as long as the user has not
-     * toggled the MDM override option. In that case, this method will jump straight to using the user provided MQTT
-     * connection information.
-     * <p>
-     * If the MDM override option is enabled, or if the MDM connection information could not be found then this method
-     * attempts to use the user provided MQTT connection information.
-     *
-     * @since 0.1.3
-     */
-    private void attemptMqttConnectionAtBoot()
-    {
-        if (!PreferenceUtils.getMqttStartOnBootPreference(getApplicationContext()))
-        {
-            Timber.i("Skipping the mqtt auto-connect because the preference indicated as such");
-            return;
-        }
-
-        // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
-        boolean mdmConnection = false;
-        if (!isMqttMdmOverrideEnabled())
-        {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(RESTRICTIONS_SERVICE);
-            if (restrictionsManager != null)
-            {
-                final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
-                if (connectionInfo != null)
-                {
-                    mdmConnection = true;
-                    connectToMqttBroker(connectionInfo);
-                }
-            }
-        }
-
-        if (!mdmConnection)
-        {
-            final BrokerConnectionInfo userBrokerConnectionInfo = getUserBrokerConnectionInfo();
-            if (userBrokerConnectionInfo != null)
-            {
-                connectToMqttBroker(userBrokerConnectionInfo);
-            }
-        }
-    }
-
-    /**
      * Starts the device status report if any of the logging types are enabled (other than CDR logging), otherwise it
      * does nothing.
      */
@@ -2700,8 +2931,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled())
         {
-            LogTypeState types = PreferenceUtils.getLogTypePreference(getApplicationContext());
-            if (surveyRecordProcessor != null && types.csv)
+            if (surveyRecordProcessor != null)
             {
                 deviceStatusCsvLogger.enableLogging(true);
                 surveyRecordProcessor.registerDeviceStatusListener(deviceStatusCsvLogger);
@@ -2883,13 +3113,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (!deviceStatusActive.get()) return;
 
-        LogTypeState types = PreferenceUtils.getLogTypePreference(getApplicationContext());
-
-        // We only want to stop the device status report if all of the logging types are inactive or CSV logging is off
-        if (!types.csv ||
-                // Not checking for CDR logging since that is a different beast (it logs at a much lower rate)
-                (!cellularController.isLoggingEnabled() && !wifiController.isLoggingEnabled() && !bluetoothController.isLoggingEnabled() && !gnssController.isLoggingEnabled())
-        )
+        // We only want to stop the device status report if all of the logging types are inactive.
+        // Not checking for CDR logging since that is a different beast (it logs at a much lower rate)
+        if (!cellularController.isLoggingEnabled() && !wifiController.isLoggingEnabled() && !bluetoothController.isLoggingEnabled() && !gnssController.isLoggingEnabled())
         {
             surveyRecordProcessor.unregisterDeviceStatusListener(deviceStatusCsvLogger);
             deviceStatusCsvLogger.enableLogging(false);
@@ -2947,6 +3173,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateServiceNotification()
     {
+        if (destroyed) return;
+
+        publishSurveyRuntimeState();
+
         try
         {
             final Notification notification = surveyNotificationBuilder.build(buildNotificationState());
@@ -2976,6 +3206,238 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Publishes the survey state as it is actually running, for the Survey screen. Called from
+     * {@link #updateServiceNotification()} so the screen and the notification always agree.
+     */
+    private void publishSurveyRuntimeState()
+    {
+        if (surveyCoordinator == null || mqttConnection == null || destroyed) return;
+
+        // Computed and published under one lock, so a slower thread can never overwrite a newer
+        // snapshot with an older one.
+        synchronized (runtimeStatePublishLock)
+        {
+            publishSurveyRuntimeStateLocked();
+        }
+    }
+
+    private void publishSurveyRuntimeStateLocked()
+    {
+        try
+        {
+            final ServiceSurveyOutputs outputs = new ServiceSurveyOutputs(this);
+            final Map<Destination, DestinationRuntime> destinations = new EnumMap<>(Destination.class);
+            for (Destination destination : Destination.values())
+            {
+                if (!outputs.isRunning(destination)) continue;
+                final boolean connecting = (destination == Destination.MQTT && mqttConnection.getConnectionState() == ConnectionState.CONNECTING)
+                        || (destination == Destination.GRPC && GrpcConnectionService.getConnectedState() == ConnectionState.CONNECTING);
+                destinations.put(destination, new DestinationRuntime(outputs.activeTypes(destination), connecting));
+            }
+
+            surveyStateHolder.publish(new SurveyRuntimeState(
+                    destinations,
+                    missionSessionTracker.rolledMissionId(),
+                    missionSessionTracker.isMissionSessionActive(),
+                    missionSessionTracker.sessionStartTimeMs(),
+                    isPausedForBattery(),
+                    isPausedForQueueBackpressure(),
+                    isMqttDroppingMessages(),
+                    surveyStallWatchdog != null ? surveyStallWatchdog.getStalledMinutes() : null,
+                    surveyCoordinator.policy(),
+                    destinations.isEmpty() ? null : surveyCoordinator.getStartOrigin(),
+                    surveyCoordinator.getLastResult()));
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not publish the survey state");
+        }
+    }
+
+    /**
+     * @return The survey state as it is actually running. The Survey screen collects this.
+     */
+    public StateFlow<SurveyRuntimeState> getSurveyStateFlow()
+    {
+        return surveyStateHolder.getState();
+    }
+
+    /**
+     * @return The store of the user's survey setups and survey preferences.
+     */
+    public SurveySetupStore getSurveySetupStore()
+    {
+        return surveySetupStore;
+    }
+
+    /**
+     * @return The organization policy in force (managed configuration plus the override switch).
+     */
+    public SurveyPolicyState getSurveyPolicy()
+    {
+        return surveyCoordinator.policy();
+    }
+
+    /**
+     * Starts a survey. With a null setup, the user's working setup (with the organization's locks
+     * applied) is started. If a survey is already running it is changed to match instead.
+     *
+     * @return The pending per-destination result.
+     */
+    public Future<SurveyStartResult> startSurvey(SurveySetup setup, SurveyOrigin origin)
+    {
+        return surveyCoordinator.startSurvey(setup, origin);
+    }
+
+    /**
+     * Changes the running survey to the given setup without rolling the Mission ID.
+     */
+    public Future<SurveyStartResult> applySurveySetup(SurveySetup setup, SurveyOrigin origin)
+    {
+        return surveyCoordinator.applySetup(setup, origin);
+    }
+
+    /**
+     * Stops every destination of the running survey.
+     */
+    public Future<SurveyStartResult> stopSurvey(SurveyOrigin origin)
+    {
+        return surveyCoordinator.stopSurvey(origin);
+    }
+
+    /**
+     * Starts the survey if it is set to start automatically (organization policy, otherwise the
+     * user's setting) and nothing is running yet.
+     *
+     * @param origin {@link SurveyOrigin#BOOT} or {@link SurveyOrigin#APP_OPEN}.
+     */
+    public Future<SurveyStartResult> startAutoSurveyIfEnabled(SurveyOrigin origin)
+    {
+        return surveyCoordinator.startAutoSurveyIfEnabled(origin);
+    }
+
+    /**
+     * @return The record types a destination turned on outside a survey start receives: those of the
+     * running survey, or of the user's survey setup when nothing is running.
+     */
+    public Set<RecordType> getStreamTypesForNewDestination(Destination destination)
+    {
+        Set<RecordType> types = Collections.emptySet();
+        if (surveyCoordinator != null && surveyCoordinator.getOrchestrator().isRecording())
+        {
+            final Set<RecordType> running = surveyCoordinator.getOrchestrator().runningSetup().getRecordTypes();
+            types = DestinationCapabilities.typesFor(destination, running, SurveyTypeResolver.communityTargets(this));
+        }
+        if (types.isEmpty()) types = SurveyTypeResolver.typesForCurrentSetup(this, destination);
+
+        if (destination == Destination.GRPC)
+        {
+            // A gRPC connection started from its settings screen asks for its types here once it
+            // connects, so remember what it was given.
+            synchronized (grpcStreamTypes)
+            {
+                grpcStreamTypes.clear();
+                grpcStreamTypes.addAll(types);
+            }
+        }
+        return types;
+    }
+
+    /**
+     * Starts the gRPC stream for a survey, with the saved gRPC server settings.
+     *
+     * @return True if a connection was started, false if no gRPC server is set up.
+     */
+    public boolean connectToGrpcServerForSurvey(Set<RecordType> types)
+    {
+        final GrpcConnectionSettings settings = GrpcConnectionSettings.fromPreferences(
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext()));
+        if (settings == null) return false;
+
+        synchronized (grpcStreamTypes)
+        {
+            grpcStreamTypes.clear();
+            grpcStreamTypes.addAll(types);
+        }
+        GrpcConnectionService.connectToGrpcServer(getApplicationContext(), settings, types);
+        return true;
+    }
+
+    /**
+     * Changes the record types streamed over the gRPC connection without reconnecting.
+     */
+    public void setGrpcStreamTypes(Set<RecordType> types)
+    {
+        synchronized (grpcStreamTypes)
+        {
+            grpcStreamTypes.clear();
+            grpcStreamTypes.addAll(types);
+        }
+        GrpcConnectionService.updateStreamTypes(getApplicationContext(), types);
+    }
+
+    /**
+     * @return A copy of the record types the gRPC connection streams.
+     */
+    public Set<RecordType> getGrpcStreamTypes()
+    {
+        synchronized (grpcStreamTypes)
+        {
+            return EnumSet.copyOf(grpcStreamTypes);
+        }
+    }
+
+    /**
+     * Disconnects from the gRPC server. The disconnect is asynchronous; the session bookkeeping
+     * happens when the gRPC service reports DISCONNECTED.
+     */
+    public void disconnectFromGrpcServer()
+    {
+        GrpcConnectionService.disconnectFromGrpcServer(getApplicationContext());
+    }
+
+    /**
+     * @return True while the gRPC connection is up or being established.
+     */
+    public boolean isGrpcActiveOrConnecting()
+    {
+        final ConnectionState state = GrpcConnectionService.getConnectedState();
+        return state == ConnectionState.CONNECTED || state == ConnectionState.CONNECTING;
+    }
+
+    /**
+     * @return True if a gRPC server host is saved.
+     */
+    public boolean hasGrpcServerConfigured()
+    {
+        return GrpcConnectionSettings.fromPreferences(
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext())) != null;
+    }
+
+    /**
+     * @return True if the Wi-Fi radio is on. Never prompts.
+     */
+    public boolean isWifiRadioOn()
+    {
+        return wifiController.isWifiRadioOn();
+    }
+
+    /**
+     * @return True if the Bluetooth permissions are granted. Never prompts.
+     */
+    public boolean hasBluetoothPermissions()
+    {
+        return bluetoothController.hasBluetoothPermissions();
+    }
+
+    /**
+     * @return True if Bluetooth can be scanned right now. Never prompts.
+     */
+    public boolean isBluetoothReady()
+    {
+        return bluetoothController.isBluetoothReady();
+    }
+
+    /**
      * Snapshots everything the survey notification reflects. Kept as one method so the notification
      * always sees a consistent view of the service state.
      */
@@ -3002,7 +3464,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 getCurrentBatteryLevel(),
                 isPausedForQueueBackpressure(),
                 surveyStallWatchdog != null ? surveyStallWatchdog.getStalledMinutes() : null,
-                surveySessionStartTime);
+                missionSessionTracker.sessionStartTimeMs());
     }
 
     /**
@@ -3013,7 +3475,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private SurveyStallWatchdog createStallWatchdog()
     {
         return new SurveyStallWatchdog(serviceHandler,
-                surveySessionRecordCount::get,
+                () -> missionSessionTracker.getRecordCount().get(),
                 this::isAnySurveyActive,
                 () -> isPausedForBattery() || isPausedForQueueBackpressure(),
                 this::getStallThresholdMs,
@@ -3100,7 +3562,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             public void onReceive(Context context, Intent intent)
             {
                 setScanRateValues();
-                attemptMqttConnectWithMdmConfig(true);
+                // Applies a changed survey setup to the running survey and moves a running MQTT
+                // stream to a changed broker. A configuration push never starts an idle survey.
+                mdmOverrideController.onRestrictionsChanged();
 
                 cellularController.onMdmPreferenceChanged();
                 wifiController.onMdmPreferenceChanged();
@@ -3170,11 +3634,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final String username = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_USERNAME);
             final String password = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_PASSWORD);
 
-            final boolean cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
-            final boolean phoneStateStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
-            final boolean wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
-            final boolean bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
-            final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
             final boolean deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
             final String topicPrefix = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
             final int qosValue = mdmProperties.getInt(MqttConstants.PROPERTY_MQTT_QOS, MqttConstants.DEFAULT_MQTT_QOS.getValue());
@@ -3201,9 +3660,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 return null;
             }
 
+            // The record types streamed come from the survey, not the connection info.
             return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled,
-                    deviceStatusStreamEnabled, phoneStateStreamEnabled, topicPrefix, deviceName, mqttQos);
+                    false, false, false, false, deviceStatusStreamEnabled, false, topicPrefix, deviceName, mqttQos);
         }
 
         return null;
@@ -3234,11 +3693,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         String password = CredentialSecureStorage.INSTANCE.getMqttPassword(getApplicationContext());
         if (password == null) password = "";
 
-        final boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
-        final boolean phoneStateStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
-        final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
-        final boolean bluetoothStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
-        final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         final boolean deviceStatusStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
         final String topicPrefix = preferences.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
         final int qosValue = preferences.getInt(MqttConstants.PROPERTY_MQTT_QOS, MqttConstants.DEFAULT_MQTT_QOS.getValue());
@@ -3252,9 +3706,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             mqttQos = MqttConstants.DEFAULT_MQTT_QOS;
         }
 
+        // The record types streamed come from the survey, not the connection info.
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled,
-                deviceStatusStreamEnabled, phoneStateStreamEnabled, topicPrefix, null, mqttQos);
+                false, false, false, false, deviceStatusStreamEnabled, false, topicPrefix, null, mqttQos);
     }
 
     /**
@@ -3359,6 +3813,23 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (connectionState == ConnectionState.DISCONNECTED)
         {
             clearMqttBackpressureStates();
+
+            // A connection the MQTT client gave up on (bad credentials) must still end the survey
+            // session if nothing else is running, or the next start would reuse the old Mission ID.
+            // The library reports transient losses as CONNECTING, not DISCONNECTED. The check runs on
+            // the survey control thread so a broker switch (disconnect then connect, also on that
+            // thread) has finished before it looks.
+            if (surveyCoordinator != null && !destroyed)
+            {
+                surveyCoordinator.submit(() -> {
+                    if (!isMqttStreamingActive())
+                    {
+                        onSurveyStopped();
+                        surveyCoordinator.onRunningStateChanged();
+                    }
+                    return Unit.INSTANCE;
+                });
+            }
         } else if (connectionState == ConnectionState.CONNECTED && watchlistChangePublisher != null)
         {
             // Publish the full authoritative watchlist snapshot on every (re)connect, including the MQTT

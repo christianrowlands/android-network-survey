@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,7 +18,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 
 /**
@@ -44,7 +44,7 @@ internal fun BssidVendorRow(
         Text(
             text = ap.bssid,
             style = TextStyle(fontSize = 11.5.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.combinedClickable(
@@ -60,7 +60,7 @@ internal fun BssidVendorRow(
                 Text(
                     text = "·",
                     style = TextStyle(fontSize = 11.5.sp),
-                    color = WifiTokens.InkFaint,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = text,
@@ -68,7 +68,7 @@ internal fun BssidVendorRow(
                         fontSize = 11.5.sp,
                         fontStyle = if (vendorLabel.italic) FontStyle.Italic else FontStyle.Normal,
                     ),
-                    color = if (vendorLabel.italic) WifiTokens.InkFaint else WifiTokens.InkDim,
+                    color = if (vendorLabel.italic) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

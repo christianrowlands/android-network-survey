@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.activesurvey.model
 
 import androidx.compose.ui.graphics.Color
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.SurveyTypes
 import org.maplibre.android.geometry.LatLng
 
@@ -25,9 +26,6 @@ data class FileLoggingInfo(
     val csvEnabled: Boolean,
     val csvFileSize: Long = 0,
     val csvRecordCount: Long = 0,
-    val geoPackageEnabled: Boolean,
-    val geoPackageFileSize: Long = 0,
-    val geoPackageRecordCount: Long = 0,
     val activeProtocols: Set<String> = emptySet()
 )
 
@@ -110,14 +108,14 @@ data class ActiveSurveyState(
     val missionId: String = ""
 ) {
     /**
-     * Get list of active survey types for display
+     * String resources naming the active destinations, using the same labels as the notification
      */
-    val activeSurveyTypes: List<String>
+    val activeSurveyTypes: List<Int>
         get() = buildList {
-            if (isFileLoggingActive) add("File")
-            if (isMqttActive) add("MQTT")
-            if (isGrpcActive) add("gRPC")
-            if (isNsAnalyticsActive) add("NS Analytics")
+            if (isFileLoggingActive) add(R.string.notification_dest_log_files)
+            if (isMqttActive) add(R.string.notification_dest_mqtt)
+            if (isGrpcActive) add(R.string.notification_dest_grpc)
+            if (isNsAnalyticsActive) add(R.string.ns_analytics)
         }
 
     /**

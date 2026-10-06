@@ -43,7 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsBandDot
 import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayFilter
 import com.craxiom.networksurvey.util.WifiBand
 
@@ -167,7 +167,7 @@ fun WifiFilterSheet(
 
 /**
  * Multi-select band toggle pill, visually consistent with the mode tabs on the Wi-Fi list and
- * carrying the band's dot color for continuity with [BandChip].
+ * carrying the band's dot color for continuity with [com.craxiom.networksurvey.ui.common.NsBandChip].
  */
 @Composable
 private fun BandFilterPill(
@@ -182,10 +182,10 @@ private fun BandFilterPill(
             WifiBand.GHZ_6 -> R.string.wifi_band_6_ghz
         }
     )
-    val bg = if (selected) WifiTokens.SsidSoft else Color.Transparent
+    val bg = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
     val border = if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
     val textColor =
-        if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
+        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
         modifier = Modifier
@@ -203,7 +203,7 @@ private fun BandFilterPill(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        BandDot(color = band.dotColor)
+        NsBandDot(color = band.dotColor)
         Text(
             text = bandLabel,
             style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),

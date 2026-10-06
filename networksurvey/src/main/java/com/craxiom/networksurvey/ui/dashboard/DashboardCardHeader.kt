@@ -15,10 +15,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
@@ -32,14 +34,23 @@ object DashboardCardDefaults {
     val defaultElevation = 4.dp
     val margin = 8.dp
 
-    /** Original cyan-blue header band color (#03A9F4 at 40% alpha), matching the XML colorCardDarkTitle. */
-    val CardHeaderBlue = Color(0x6603A9F4)
+    /** Header band behind a card's icon and title; the XML colorCardDarkTitle points at the same role. */
+    val HeaderBackground: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primaryContainer
 
-    /** Primary text color matching the original XML @color/normalText for dashboard cards. */
-    val TextPrimary = Color(0xFFEFEFEF)
+    /** Primary text color for dashboard cards; the XML @color/normalText points at the same role. */
+    val TextPrimary: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.onSurface
 
-    /** Secondary/faded text color matching the original XML @color/fadedText for dashboard cards. */
-    val TextSecondary = Color(0xFFC2C1C1)
+    /** Secondary text color for dashboard cards; the XML @color/fadedText points at the same role. */
+    val TextSecondary: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.onSurfaceVariant
 
     /**
      * Returns the standard card elevation for dashboard cards. Must be called
@@ -63,7 +74,7 @@ fun DashboardCardHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(DashboardCardDefaults.CardHeaderBlue)
+            .background(DashboardCardDefaults.HeaderBackground)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -71,7 +82,7 @@ fun DashboardCardHeader(
             painter = painterResource(id = icon),
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onPrimary,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -80,7 +91,7 @@ fun DashboardCardHeader(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.weight(1f),
         )
 
@@ -91,9 +102,9 @@ fun DashboardCardHeader(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_help),
-                    contentDescription = "Help",
+                    contentDescription = stringResource(R.string.help_button_description),
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }

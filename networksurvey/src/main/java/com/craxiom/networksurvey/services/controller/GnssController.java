@@ -19,8 +19,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.logging.GnssCsvLogger;
-import com.craxiom.networksurvey.logging.GnssRecordLogger;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -71,7 +69,6 @@ public class GnssController extends AController
     private GnssMeasurementsEvent.Callback measurementListener;
     private GnssStatus.Callback statusListener;
     private IGnssFailureListener gnssFailureListener;
-    private final GnssRecordLogger gnssRecordLogger;
     private final GnssCsvLogger gnssCsvLogger;
     private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
@@ -88,7 +85,6 @@ public class GnssController extends AController
         this.serviceHandler = serviceHandler;
         this.surveyRecordProcessor = surveyRecordProcessor;
 
-        gnssRecordLogger = new GnssRecordLogger(surveyService, serviceLooper);
         gnssCsvLogger = new GnssCsvLogger(surveyService);
     }
 
@@ -99,7 +95,6 @@ public class GnssController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (gnssLoggingEnabled)
         {
-            gnssRecordLogger.onDestroy();
             gnssCsvLogger.onDestroy();
             super.onDestroy();
         }
@@ -122,7 +117,6 @@ public class GnssController extends AController
 
     public void onRolloverPreferenceChanged()
     {
-        gnssRecordLogger.onSharedPreferenceChanged();
         gnssCsvLogger.onSharedPreferenceChanged();
     }
 
@@ -132,26 +126,7 @@ public class GnssController extends AController
      */
     public void onMdmPreferenceChanged()
     {
-        gnssRecordLogger.onMdmPreferenceChanged();
         gnssCsvLogger.onMdmPreferenceChanged();
-    }
-
-    public void onLogFileTypePreferenceChanged()
-    {
-        synchronized (gnssLoggingEnabled)
-        {
-            if (gnssLoggingEnabled.get())
-            {
-                final boolean originalLoggingState = gnssLoggingEnabled.get();
-                toggleLogging(false);
-                toggleLogging(true);
-                final boolean newLoggingState = gnssLoggingEnabled.get();
-                if (originalLoggingState != newLoggingState)
-                {
-                    Timber.i("Logging state changed from %s to %s", originalLoggingState, newLoggingState);
-                }
-            }
-        }
     }
 
     @Override
@@ -276,34 +251,21 @@ public class GnssController extends AController
             boolean successful = false;
             if (enable)
             {
-                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
-                if (types.geoPackage)
-                {
-                    successful = gnssRecordLogger.enableLogging(true);
-                }
-                if (types.csv)
-                {
-                    successful = gnssCsvLogger.enableLogging(true);
-                }
+                successful = gnssCsvLogger.enableLogging(true);
 
                 if (successful)
                 {
-                    toggleGnssConfig(true, types);
+                    toggleGnssConfig(true);
                 } else
                 {
-                    // at least one of the loggers failed to toggle;
-                    // disable all of them and set local config to false
-                    gnssRecordLogger.enableLogging(false);
+                    // the logger failed to toggle; disable it and set local config to false
                     gnssCsvLogger.enableLogging(false);
-                    toggleGnssConfig(false, null);
+                    toggleGnssConfig(false);
                 }
             } else
             {
-                // If we are disabling logging, then we need to disable both geoPackage and CSV just
-                // in case the user changed the setting after they started logging.
-                gnssRecordLogger.enableLogging(false);
                 gnssCsvLogger.enableLogging(false);
-                toggleGnssConfig(false, null);
+                toggleGnssConfig(false);
                 successful = true;
             }
 
@@ -502,30 +464,16 @@ public class GnssController extends AController
         toggleLogging(false);
     }
 
-    private void toggleGnssConfig(boolean enable, LogTypeState types)
+    private void toggleGnssConfig(boolean enable)
     {
         if (surveyService == null) return;
 
         gnssLoggingEnabled.set(enable);
         if (enable)
         {
-            if (types != null)
-            {
-                if (types.geoPackage)
-                {
-                    surveyService.registerGnssSurveyRecordListener(gnssRecordLogger);
-                }
-                if (types.csv)
-                {
-                    surveyService.registerGnssSurveyRecordListener(gnssCsvLogger);
-                }
-            } else
-            {
-                throw new IllegalArgumentException("LogTypeState cannot be null when enabling GNSS logging");
-            }
+            surveyService.registerGnssSurveyRecordListener(gnssCsvLogger);
         } else
         {
-            surveyService.unregisterGnssSurveyRecordListener(gnssRecordLogger);
             surveyService.unregisterGnssSurveyRecordListener(gnssCsvLogger);
         }
     }
