@@ -36,8 +36,8 @@ class CryptoManager {
      * Get or create the encryption key
      */
     private fun getOrCreateKey(): SecretKey {
-        val existingKey = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-        return existingKey?.secretKey ?: createKey()
+        val existingKey = keyStore.getKey(KEY_ALIAS, null) as? SecretKey
+        return existingKey ?: createKey()
     }
 
     /**
