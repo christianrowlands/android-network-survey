@@ -11,10 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -30,23 +29,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.data.plmn.PlmnResult
+import com.craxiom.networksurvey.ui.common.NsLazyPanelItem
 import com.craxiom.networksurvey.ui.plmn.components.PlmnGroupRow
 import com.craxiom.networksurvey.ui.plmn.components.PlmnModeTabs
 import com.craxiom.networksurvey.ui.plmn.components.PlmnResolveFields
 import com.craxiom.networksurvey.ui.plmn.components.PlmnResultStrip
 import com.craxiom.networksurvey.ui.plmn.components.PlmnRow
 import com.craxiom.networksurvey.ui.plmn.components.PlmnSearchField
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Top-level Compose surface for the "PLMN lookup" drawer screen.
@@ -241,28 +238,26 @@ private fun ResultList(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
-        items(groups, key = { it.plmn }) { group ->
-            if (group.records.size == 1) {
-                PlmnRow(record = group.records.first(), onRecordClick = onRecordClick)
-            } else {
-                PlmnGroupRow(
-                    group = group,
-                    expanded = group.plmn in expandedPlmns,
-                    onToggle = { onToggle(group.plmn) },
-                    onRecordClick = onRecordClick,
-                )
+        itemsIndexed(groups, key = { _, group -> group.plmn }) { index, group ->
+            NsLazyPanelItem(index = index, count = groups.size) {
+                if (group.records.size == 1) {
+                    PlmnRow(record = group.records.first(), onRecordClick = onRecordClick)
+                } else {
+                    PlmnGroupRow(
+                        group = group,
+                        expanded = group.plmn in expandedPlmns,
+                        onToggle = { onToggle(group.plmn) },
+                        onRecordClick = onRecordClick,
+                    )
+                }
             }
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant,
-                thickness = 1.dp,
-            )
         }
         if (truncated) {
             item {
                 Text(
                     text = stringResource(R.string.plmn_lookup_truncated_hint),
-                    style = TextStyle(fontSize = 12.sp),
-                    color = WifiTokens.InkFaint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -285,8 +280,8 @@ private fun StatusCenter(message: String, modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text(
             text = message,
-            style = TextStyle(fontSize = 13.sp),
-            color = WifiTokens.InkFaint,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(24.dp),
         )
@@ -304,14 +299,14 @@ private fun EmptyState(modifier: Modifier = Modifier) {
     ) {
         Text(
             text = stringResource(R.string.plmn_lookup_empty_line1),
-            style = TextStyle(fontSize = 13.sp),
-            color = WifiTokens.InkFaint,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Text(
             text = stringResource(R.string.plmn_lookup_empty_line2),
-            style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkFaint,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
     }
@@ -329,7 +324,7 @@ private fun PlmnSortSheetContent(
     ) {
         Text(
             text = stringResource(R.string.plmn_sort_sheet_title),
-            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         )
@@ -359,11 +354,10 @@ private fun PlmnSortOption(textRes: Int, selected: Boolean, onClick: () -> Unit)
     ) {
         Text(
             text = stringResource(textRes),
-            style = TextStyle(
-                fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
             ),
-            color = if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurface,
+            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

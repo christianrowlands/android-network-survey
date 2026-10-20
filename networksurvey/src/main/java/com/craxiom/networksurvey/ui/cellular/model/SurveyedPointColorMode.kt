@@ -97,5 +97,8 @@ sealed class SurveyedPointTap {
  */
 data class SurveyedPointSelection(val points: List<SurveyedPointEntity>, val aggregateCount: Int?)
 
-/** One entry of a data-driven legend (provider, cell, or area in view). */
-data class SurveyedPointLegendKey(val key: String, val label: String?, val count: Int)
+/**
+ * One entry of a data-driven legend (provider, cell, or area in view); [enbSector] is an LTE cell's
+ * eNB ID and sector ID in the cell legend.
+ */
+data class SurveyedPointLegendKey(val key: String, val label: String?, val count: Int, val enbSector: Pair<Int, Int>?)

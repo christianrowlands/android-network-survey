@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.util
 
 import android.content.Context
 import com.craxiom.networksurvey.R
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
@@ -14,7 +15,7 @@ import kotlin.math.roundToInt
  * - Speed (km/h / mph)
  * - Accuracy (meters/feet)
  *
- * Note: This only affects UI display. All exported data (CSV, GeoPackage, MQTT, gRPC)
+ * Note: This only affects UI display. All exported data (CSV, MQTT, gRPC)
  * remains in metric/SI units.
  */
 object MeasurementFormatter {
@@ -115,37 +116,6 @@ object MeasurementFormatter {
     }
 
     /**
-     * Formats horizontal and vertical accuracy for display.
-     *
-     * @param context The context for accessing preferences
-     * @param horizontalMeters The horizontal accuracy in meters
-     * @param verticalMeters The vertical accuracy in meters
-     * @return Formatted accuracy string with units (e.g., "5.2/3.1 m" or "17.1/10.2 ft")
-     */
-    @JvmStatic
-    fun formatAccuracyPair(
-        context: Context,
-        horizontalMeters: Float,
-        verticalMeters: Float
-    ): String {
-        return if (PreferenceUtils.useImperialUnits(context)) {
-            val horizontalFeet = horizontalMeters * METERS_TO_FEET
-            val verticalFeet = verticalMeters * METERS_TO_FEET
-            context.getString(
-                R.string.gps_hor_and_vert_accuracy_value_feet,
-                horizontalFeet.toFloat(),
-                verticalFeet.toFloat()
-            )
-        } else {
-            context.getString(
-                R.string.gps_hor_and_vert_accuracy_value_meters,
-                horizontalMeters,
-                verticalMeters
-            )
-        }
-    }
-
-    /**
      * Formats a range value for tower info display.
      *
      * @param context The context for accessing preferences
@@ -165,7 +135,7 @@ object MeasurementFormatter {
             else -> {
                 val km = meters / 1000.0
                 if (km < 10) {
-                    String.format("%.1fkm", km)
+                    String.format(Locale.getDefault(), "%.1fkm", km)
                 } else {
                     "${km.roundToInt()}km"
                 }
@@ -180,7 +150,7 @@ object MeasurementFormatter {
             else -> {
                 val miles = meters * METERS_TO_MILES
                 if (miles < 10) {
-                    String.format("%.1fmi", miles)
+                    String.format(Locale.getDefault(), "%.1fmi", miles)
                 } else {
                     "${miles.roundToInt()}mi"
                 }

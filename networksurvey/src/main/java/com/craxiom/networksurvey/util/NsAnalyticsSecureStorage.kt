@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.util
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
@@ -65,15 +64,6 @@ object NsAnalyticsSecureStorage {
             cryptoManager.decrypt(encrypted)?.toLongOrNull() ?: defaultValue
         } else {
             defaultValue
-        }
-    }
-
-    /**
-     * Encrypt and store an int value
-     */
-    private fun putEncryptedInt(prefs: SharedPreferences, key: String, value: Int) {
-        prefs.edit {
-            putString(key, cryptoManager.encrypt(value.toString()))
         }
     }
 
@@ -260,14 +250,6 @@ object NsAnalyticsSecureStorage {
     }
 
     /**
-     * Store upload frequency setting
-     */
-    fun setUploadFrequency(context: Context, minutes: Int) {
-        val prefs = getPrefs(context)
-        putEncryptedInt(prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_FREQUENCY, minutes)
-    }
-
-    /**
      * Get upload frequency setting
      */
     fun getUploadFrequency(context: Context): Int {
@@ -275,18 +257,6 @@ object NsAnalyticsSecureStorage {
             getPrefs(context),
             NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_FREQUENCY,
             NsAnalyticsConstants.DEFAULT_UPLOAD_FREQUENCY
-        )
-    }
-
-    /**
-     * Update last upload timestamp
-     */
-    fun updateLastUploadTime(context: Context) {
-        val prefs = getPrefs(context)
-        putEncryptedLong(
-            prefs,
-            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
-            System.currentTimeMillis()
         )
     }
 
@@ -316,7 +286,6 @@ object NsAnalyticsSecureStorage {
      * @param recordsCount The number of records uploaded
      * @param errorType The error type/code if upload failed (e.g., QUOTA_EXCEEDED), null for success
      */
-    @SuppressLint("ApplySharedPref")
     fun saveUploadCompletion(
         context: Context,
         workId: String,
@@ -327,33 +296,32 @@ object NsAnalyticsSecureStorage {
         val prefs = getPrefs(context)
         // Use commit() for synchronous write to ensure data is persisted before
         // WorkManager transitions the work state
-        val editor = prefs.edit()
-            .putString(
+        prefs.edit(commit = true) {
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID,
                 cryptoManager.encrypt(workId)
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS,
                 cryptoManager.encrypt(success.toString())
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS,
                 cryptoManager.encrypt(recordsCount.toString())
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE,
                 if (errorType != null) cryptoManager.encrypt(errorType) else null
             )
 
-        // Only update the last upload timestamp on successful uploads
-        if (success) {
-            editor.putString(
-                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
-                cryptoManager.encrypt(System.currentTimeMillis().toString())
-            )
+            // Only update the last upload timestamp on successful uploads
+            if (success) {
+                putString(
+                    NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
+                    cryptoManager.encrypt(System.currentTimeMillis().toString())
+                )
+            }
         }
-
-        editor.commit()
     }
 
     /**
@@ -430,7 +398,6 @@ object NsAnalyticsSecureStorage {
      * whether to reschedule periodic uploads (clear-then-reschedule must be consistent in a
      * single worker pass).
      */
-    @SuppressLint("ApplySharedPref")
     fun saveQuotaPause(
         context: Context,
         currentUsage: Int,
@@ -439,32 +406,32 @@ object NsAnalyticsSecureStorage {
         webUrl: String?,
         retryAfterEpochMillis: Long
     ) {
-        getPrefs(context).edit()
-            .putString(
+        getPrefs(context).edit(commit = true) {
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA,
                 cryptoManager.encrypt(true.toString())
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE,
                 cryptoManager.encrypt(currentUsage.toString())
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX,
                 cryptoManager.encrypt(maxRecords.toString())
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE,
                 if (message != null) cryptoManager.encrypt(message) else null
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL,
                 if (webUrl != null) cryptoManager.encrypt(webUrl) else null
             )
-            .putString(
+            putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER,
                 cryptoManager.encrypt(retryAfterEpochMillis.toString())
             )
-            .commit()
+        }
     }
 
     /**
@@ -516,16 +483,15 @@ object NsAnalyticsSecureStorage {
      * Uses synchronous commit() so a subsequent reschedule check in the same worker pass sees
      * the cleared flag.
      */
-    @SuppressLint("ApplySharedPref")
     fun clearQuotaPause(context: Context) {
-        getPrefs(context).edit()
-            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA)
-            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE)
-            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX)
-            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE)
-            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL)
-            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER)
-            .commit()
+        getPrefs(context).edit(commit = true) {
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER)
+        }
     }
 
     /**

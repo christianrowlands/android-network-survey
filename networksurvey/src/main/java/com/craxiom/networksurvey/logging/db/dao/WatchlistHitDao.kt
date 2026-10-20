@@ -17,12 +17,6 @@ interface WatchlistHitDao {
     suspend fun insert(hit: WatchlistHitEntity): Long
 
     /**
-     * Observe the full history, newest first.
-     */
-    @Query("SELECT * FROM watchlist_hit ORDER BY timestamp DESC")
-    fun observeAll(): Flow<List<WatchlistHitEntity>>
-
-    /**
      * Observe only the located hits (those with a recorded position), newest first, for the history
      * map. Filtering in SQL keeps the loaded rows and work down versus loading the whole table.
      */

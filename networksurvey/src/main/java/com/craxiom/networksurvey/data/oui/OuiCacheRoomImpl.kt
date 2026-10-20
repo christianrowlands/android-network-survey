@@ -48,12 +48,6 @@ class OuiCacheRoomImpl(
 
     override suspend fun evictAll() = dao.evictAll()
 
-    override suspend fun evictStale(currentVersion: String): Int = dao.evictStale(currentVersion)
-
-    override suspend fun count(): Int = dao.count()
-
-    override suspend fun evictOldest(limit: Int) = dao.evictOldest(limit)
-
     private suspend fun enforceCap() {
         val count = dao.count()
         if (count > MAX_ENTRIES) {

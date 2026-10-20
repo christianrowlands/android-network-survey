@@ -1,7 +1,11 @@
 package com.craxiom.networksurvey.ui.wifi.model
 
+import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
+import com.craxiom.networksurvey.model.WifiRecordWrapper
+import timber.log.Timber
+
 /**
- * Sorting and grouping helpers for the Wi-Fi list, extracted from [WifiListViewModel] to keep
+ * Sorting, grouping and de-duplication helpers for the Wi-Fi list, extracted from [WifiListViewModel] to keep
  * that class focused on state management.
  */
 
@@ -67,7 +71,7 @@ internal fun buildGroupParents(
         val uniqueBands = sortedAps.mapNotNull { it.band }.distinct().sorted()
         val distinctSecurity =
             sortedAps.map { it.encryptionLabel }.filter { it.isNotBlank() }.distinct()
-        val encryptionLabel = distinctSecurity.joinToString(" / ")
+        val encryptionLabel = distinctSecurity.joinToString(WifiBeaconMessageConstants.SECURITY_LABEL_SEPARATOR)
         val anyPasspoint = sortedAps.any { it.passpoint }
         val excludedCount = sortedAps.count { it.isExcluded }
         WifiDisplayItem.GroupParent(
@@ -83,4 +87,36 @@ internal fun buildGroupParents(
             excludedCount = excludedCount,
         )
     }.sortedWith(groupComparator(sortIndex))
+}
+
+/**
+ * Drops wrappers with an empty BSSID (scanner invariant violation; they cannot open details) and
+ * de-duplicates by BSSID so LazyColumn keys never collide. Scanners can emit the same BSSID across
+ * sub-scans or via MBSSID merges; a collision crashes the list with IllegalStateException: Key was
+ * already used.
+ */
+internal fun dedupeByBssid(wrappers: List<WifiRecordWrapper>): List<WifiRecordWrapper> {
+    val seen = HashSet<String>(wrappers.size)
+    val deduped = mutableListOf<WifiRecordWrapper>()
+    var emptyBssidDropped = 0
+    var duplicateBssidDropped = 0
+    for (wrapper in wrappers) {
+        val bssid = wrapper.wifiBeaconRecord.data.bssid
+        if (bssid.isNullOrBlank()) {
+            emptyBssidDropped++
+            continue
+        }
+        if (!seen.add(bssid)) {
+            duplicateBssidDropped++
+            continue
+        }
+        deduped += wrapper
+    }
+    if (emptyBssidDropped > 0) {
+        Timber.w("Dropped %d Wi-Fi wrappers with empty BSSID", emptyBssidDropped)
+    }
+    if (duplicateBssidDropped > 0) {
+        Timber.d("Dropped %d duplicate-BSSID Wi-Fi wrappers in scan", duplicateBssidDropped)
+    }
+    return deduped
 }

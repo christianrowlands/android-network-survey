@@ -77,8 +77,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
-        viewBinding = true
-        dataBinding = true
         compose = true
         buildConfig = true
         resValues = true
@@ -156,15 +154,12 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.timber)
     implementation(libs.material)
-    implementation(libs.androidx.localbroadcastmanager)
-    implementation(libs.androidx.cardview)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.fragment.compose)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.viewpager2)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.drawerlayout)
-    implementation(libs.flexbox)
     implementation(libs.kotlinx.coroutines.android)
 
     implementation(libs.mqtt.library)
@@ -178,13 +173,11 @@ dependencies {
         exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
     }
 
-    implementation(libs.geopackage.android)
     implementation(libs.commons.csv)
 
-    implementation(libs.androidx.constraintlayout)
+    // The preference screens draw with RecyclerView; without this line Material's older one resolves.
     implementation(libs.androidx.recyclerview)
 
-    implementation(libs.rounded.progress.bar)
     implementation(libs.vico.compose.m3)
 
     implementation(libs.code.scanner)
@@ -195,7 +188,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
 
     implementation(libs.dagger)
-    implementation(libs.compose.ui.viewbinding)
     ksp(libs.androidx.room.compiler)
     ksp(libs.dagger.compiler)
     implementation(libs.hilt.android)
@@ -214,6 +206,11 @@ dependencies {
     def composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
+    // Robolectric Compose tests live in src/testDebug: ui-test-manifest is debug only, and CI's
+    // `./gradlew test` also runs the release unit test variants, which must not see them.
+    testImplementation(composeBom)
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.bundles.compose)
 
@@ -236,10 +233,24 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
-    androidTestImplementation(libs.barista)
+    // The navigation smoke test drives the real activity's Compose UI.
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.truth)
     androidTestImplementation(libs.network.survey.messaging)
-    androidTestImplementation(libs.geopackage.android)
+    androidTestImplementation(libs.androidx.work.testing)
+    androidTestImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(libs.moquette.broker) {
+        // Only the broker core is needed on the device. These pull in JVM-only metrics, logging
+        // backends, native transports and database pools that do not run on ART.
+        exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+        exclude group: 'io.netty', module: 'netty-transport-native-epoll'
+        exclude group: 'com.zaxxer', module: 'HikariCP'
+        exclude group: 'io.dropwizard.metrics'
+        exclude group: 'com.librato.metrics'
+        exclude group: 'com.bugsnag'
+        exclude group: 'com.h2database', module: 'h2'
+    }
 }
 
 licenseReport {

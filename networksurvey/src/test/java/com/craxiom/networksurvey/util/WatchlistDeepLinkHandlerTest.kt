@@ -164,7 +164,7 @@ class WatchlistDeepLinkHandlerTest {
 
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_NO_VALID_NETWORKS,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -174,7 +174,7 @@ class WatchlistDeepLinkHandlerTest {
     fun `parseUri returns Error when data param is missing`() {
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_NO_DATA,
-            error(WatchlistDeepLinkHandler.parseUri(rawUriFor(null))).message
+            error(WatchlistDeepLinkHandler.parseUri(rawUriFor(null))).messageRes
         )
     }
 
@@ -182,7 +182,7 @@ class WatchlistDeepLinkHandlerTest {
     fun `parseUri returns Error when data param is blank`() {
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_NO_DATA,
-            error(WatchlistDeepLinkHandler.parseUri(rawUriFor("   "))).message
+            error(WatchlistDeepLinkHandler.parseUri(rawUriFor("   "))).messageRes
         )
     }
 
@@ -191,7 +191,7 @@ class WatchlistDeepLinkHandlerTest {
         val huge = "A".repeat(WatchlistDeepLinkHandler.MAX_ENCODED_LENGTH + 1)
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_TOO_LARGE,
-            error(WatchlistDeepLinkHandler.parseUri(rawUriFor(huge))).message
+            error(WatchlistDeepLinkHandler.parseUri(rawUriFor(huge))).messageRes
         )
     }
 
@@ -199,7 +199,7 @@ class WatchlistDeepLinkHandlerTest {
     fun `parseUri returns Error for malformed base64`() {
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_UNREADABLE,
-            error(WatchlistDeepLinkHandler.parseUri(rawUriFor("@@@not-base64@@@"))).message
+            error(WatchlistDeepLinkHandler.parseUri(rawUriFor("@@@not-base64@@@"))).messageRes
         )
     }
 
@@ -207,7 +207,7 @@ class WatchlistDeepLinkHandlerTest {
     fun `parseUri returns Error for malformed JSON`() {
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_UNREADABLE,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor("not json {"))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor("not json {"))).messageRes
         )
     }
 
@@ -218,7 +218,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":2,"entries":[{"ssid":"HQ"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_UNSUPPORTED_VERSION,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -227,7 +227,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"entries":[{"ssid":"HQ"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_UNSUPPORTED_VERSION,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -236,7 +236,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"entries":[]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_NO_NETWORKS,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -245,7 +245,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"entries":[{"label":"a"},{"label":"b"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_NO_VALID_NETWORKS,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -256,7 +256,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"entries":[$entries]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_TOO_MANY,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -265,7 +265,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"entries":[{"bssid":"not-a-mac"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_INVALID_BSSID,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -275,7 +275,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"entries":[{"ssid":"$longSsid"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_SSID_TOO_LONG,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -285,7 +285,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"entries":[{"label":"$longLabel","ssid":"HQ"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_LABEL_TOO_LONG,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 
@@ -295,7 +295,7 @@ class WatchlistDeepLinkHandlerTest {
         val json = """{"v":1,"name":"$longName","entries":[{"ssid":"HQ"}]}"""
         assertEquals(
             WatchlistDeepLinkHandler.ERROR_NAME_TOO_LONG,
-            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).message
+            error(WatchlistDeepLinkHandler.parseUri(uriFor(json))).messageRes
         )
     }
 

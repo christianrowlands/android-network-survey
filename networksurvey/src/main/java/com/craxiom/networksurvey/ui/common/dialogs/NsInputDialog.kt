@@ -1,6 +1,10 @@
 package com.craxiom.networksurvey.ui.common.dialogs
 
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -11,9 +15,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.preview.NsPreview
 import com.craxiom.networksurvey.ui.preview.PreviewDayNight
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * A text-input dialog with a single [OutlinedTextField] and optional validation.
@@ -27,6 +33,8 @@ import com.craxiom.networksurvey.ui.preview.PreviewDayNight
  * @param allowBlankConfirm when false (the default) the confirm button is disabled while the field
  * is blank, without showing an error.
  * @param validate optional validator returning an error message, or null when the value is valid.
+ * @param message optional explanation shown above the field.
+ * @param keyboardType the keyboard the field opens, for example numbers only.
  */
 @Composable
 fun NsInputDialog(
@@ -41,6 +49,8 @@ fun NsInputDialog(
     dismissText: String = stringResource(R.string.cancel),
     allowBlankConfirm: Boolean = false,
     validate: ((String) -> String?)? = null,
+    message: String? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     var value by rememberSaveable { mutableStateOf(initialValue) }
     val errorMessage = validate?.invoke(value)
@@ -67,6 +77,10 @@ fun NsInputDialog(
             }
         },
         body = {
+            if (message != null) {
+                Text(text = message, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(NsTheme.spacing.m))
+            }
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
@@ -75,6 +89,7 @@ fun NsInputDialog(
                 singleLine = singleLine,
                 isError = errorMessage != null,
                 supportingText = errorMessage?.let { { Text(text = it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             )
         },
     )

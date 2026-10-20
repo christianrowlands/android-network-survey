@@ -25,9 +25,6 @@ interface OuiCacheDao {
     @Query("DELETE FROM oui_cache_entry")
     suspend fun evictAll()
 
-    @Query("DELETE FROM oui_cache_entry WHERE dataset_version != :currentVersion")
-    suspend fun evictStale(currentVersion: String): Int
-
     @Query("SELECT COUNT(*) FROM oui_cache_entry")
     suspend fun count(): Int
 

@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 import timber.log.Timber
+import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * Utility functions for NS Analytics operations.
@@ -112,6 +113,54 @@ object NsAnalyticsUtils {
         return java.text.NumberFormat.getNumberInstance().format(number)
     }
 
+    /** How this phone's NS Analytics registration changed. */
+    enum class RegistrationChange {
+        /** The phone connected to a workspace. */
+        CONNECTED,
+
+        /** The user disconnected the phone on the NS Analytics page. */
+        DISCONNECTED_BY_USER,
+
+        /**
+         * NS Analytics no longer accepts the phone: the workspace removed it, or its registration
+         * or token is no longer valid (found by the upload worker, the page or the survey).
+         */
+        REMOVED_BY_WORKSPACE,
+    }
+
+    /** Told when this phone connects to, or leaves, an NS Analytics workspace. */
+    fun interface RegistrationListener {
+        fun onRegistrationChanged(change: RegistrationChange)
+    }
+
+    private val registrationListeners = CopyOnWriteArraySet<RegistrationListener>()
+
+    /**
+     * Adds a listener told after this phone connected to a workspace, and after
+     * [cleanupAfterDeregistration] cleared its registration, whichever check found that (the upload
+     * worker, the NS Analytics page, or the running survey).
+     */
+    @JvmStatic
+    fun addRegistrationListener(listener: RegistrationListener) {
+        registrationListeners.add(listener)
+    }
+
+    @JvmStatic
+    fun removeRegistrationListener(listener: RegistrationListener) {
+        registrationListeners.remove(listener)
+    }
+
+    /** Tells the listeners how this phone's registration changed. */
+    fun notifyRegistrationChanged(change: RegistrationChange) {
+        registrationListeners.forEach { listener ->
+            try {
+                listener.onRegistrationChanged(change)
+            } catch (e: Exception) {
+                Timber.e(e, "An NS Analytics registration listener failed")
+            }
+        }
+    }
+
     /**
      * Performs complete local cleanup when device is deregistered.
      *
@@ -127,8 +176,9 @@ object NsAnalyticsUtils {
      * to preserve collected data for potential re-registration.
      *
      * @param context Android context
+     * @param change    Why: the user disconnected, or the workspace removed the phone.
      */
-    fun cleanupAfterDeregistration(context: Context) {
+    fun cleanupAfterDeregistration(context: Context, change: RegistrationChange = RegistrationChange.REMOVED_BY_WORKSPACE) {
         // Clear all stored credentials and registration data
         NsAnalyticsSecureStorage.clearAllCredentials(context)
 
@@ -145,6 +195,8 @@ object NsAnalyticsUtils {
         NsAnalyticsNotificationHelper.clearUploadsPausedNotification(context)
 
         Timber.i("Completed deregistration cleanup: cleared credentials and cancelled uploads")
+
+        notifyRegistrationChanged(change)
     }
 
     /**

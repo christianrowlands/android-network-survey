@@ -7,16 +7,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,32 +27,34 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.WifiNetwork
+import com.craxiom.networksurvey.ui.common.NetworkTagVariant
+import com.craxiom.networksurvey.ui.common.NsBandChip
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
+import com.craxiom.networksurvey.ui.common.NsNetworkTag
+import com.craxiom.networksurvey.ui.common.NsSignalMeterWide
+import com.craxiom.networksurvey.ui.common.classifySecurity
+import com.craxiom.networksurvey.ui.common.securityLabelText
 import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.util.frequencyMhzToWifiBand
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
-private val HeroSsidMaxFontSize = 22.sp
-private val HeroSsidMinFontSize = 14.sp
-private val HeroSsidAutoSizeStep = 1.sp
-private val HeroDbmFontSize = 22.sp
 private val HeroRowGap = 10.dp
 private val HeroStackedGap = 8.dp
 
 /**
- * Hero card at the top of the Wi-Fi Details screen: big SSID + large dBm, full-width meter,
- * BSSID · vendor line, and a wrapping tag row (band chip, security, standard, passpoint).
+ * Hero card at the top of the Wi-Fi Details screen: big SSID + large dBm, the BSSID · vendor line,
+ * a full-width meter, and a wrapping tag row (band chip, security, standard, passpoint).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -69,50 +66,43 @@ fun WifiDetailsHeroCard(
     val hidden = network.ssid.isEmpty()
     val band = frequencyMhzToWifiBand(network.frequency)
     val signalColor =
-        currentRssi?.toWifiSignalCategory()?.color ?: MaterialTheme.colorScheme.onSurface
+        currentRssi?.toWifiSignalCategory()?.textColor ?: MaterialTheme.colorScheme.onSurface
 
-    Card(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors(),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    // The same hero as Bluetooth details: name and dBm, the address line, a full-width meter, then tags
+    NsDetailsCardFrame(modifier = modifier) {
+        HeroSsidAndSignal(
+            ssid = network.ssid,
+            hidden = hidden,
+            currentRssi = currentRssi,
+            signalColor = signalColor,
+        )
+        BssidVendorRow(bssid = network.bssid)
+        NsSignalMeterWide(rssi = currentRssi, modifier = Modifier.fillMaxWidth())
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            HeroSsidAndSignal(
-                ssid = network.ssid,
-                hidden = hidden,
-                currentRssi = currentRssi,
-                signalColor = signalColor,
-            )
-            BssidVendorRow(bssid = network.bssid)
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                itemVerticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (band != null) {
-                    BandChip(band = band, channel = network.channel)
-                }
-                if (network.encryptionType.isNotBlank()) {
-                    NetworkTag(
-                        text = network.encryptionType,
-                        variant = NetworkTagVariant.Security(classifySecurity(network.encryptionType)),
-                    )
-                }
-                val standardText =
-                    com.craxiom.networksurvey.util.WifiUtils.formatStandard(network.standard)
-                if (standardText.isNotBlank()) {
-                    NetworkTag(text = standardText, variant = NetworkTagVariant.Standard)
-                }
-                if (network.passpoint == true) {
-                    NetworkTag(
-                        text = stringResource(R.string.wifi_tag_passpoint),
-                        variant = NetworkTagVariant.Passpoint,
-                    )
-                }
+            if (band != null) {
+                NsBandChip(band = band, channel = network.channel)
+            }
+            if (network.encryptionType.isNotBlank()) {
+                NsNetworkTag(
+                    text = securityLabelText(network.encryptionType),
+                    variant = NetworkTagVariant.Security(classifySecurity(network.encryptionType)),
+                )
+            }
+            val standardText =
+                com.craxiom.networksurvey.util.WifiUtils.formatStandard(network.standard)
+            if (standardText.isNotBlank()) {
+                NsNetworkTag(text = standardText, variant = NetworkTagVariant.Standard)
+            }
+            if (network.passpoint == true) {
+                NsNetworkTag(
+                    text = stringResource(R.string.wifi_tag_passpoint),
+                    variant = NetworkTagVariant.Passpoint,
+                )
             }
         }
     }
@@ -136,8 +126,8 @@ private fun BssidVendorRow(bssid: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = bssid,
-                style = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkDim,
+                style = NsTheme.textStyles.mono.copy(fontWeight = FontWeight.Normal),
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.combinedClickable(
                     onClick = {},
                     onLongClick = copyBssid,
@@ -150,7 +140,7 @@ private fun BssidVendorRow(bssid: String) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_content_copy),
                     contentDescription = copyContentDescription,
-                    tint = WifiTokens.InkDim,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -158,22 +148,21 @@ private fun BssidVendorRow(bssid: String) {
         label.text?.let { text ->
             Text(
                 text = text,
-                style = TextStyle(
-                    fontSize = 13.sp,
+                style = NsTheme.textStyles.compact.copy(
                     fontStyle = if (label.italic) FontStyle.Italic else FontStyle.Normal,
                 ),
-                color = if (label.italic) WifiTokens.InkFaint else WifiTokens.InkDim,
+                color = if (label.italic) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             )
         }
     }
 }
 
 /**
- * Top section of the hero card: SSID alongside the dBm value + signal meter.
+ * Top section of the hero card: SSID alongside the dBm value.
  *
  * Lays out as a single row when the SSID fits at the design font size; otherwise
  * stacks the SSID on its own full-width line (auto-shrinking from
- * [HeroSsidMaxFontSize] down to [HeroSsidMinFontSize]) with the dBm + signal bar
+ * titleLarge down to bodyMedium) with the dBm
  * right-aligned on a second line. Long SSIDs at large font scales would otherwise
  * ellipsise, hiding the most identifying field on this screen.
  */
@@ -189,7 +178,7 @@ private fun HeroSsidAndSignal(
     } else {
         ssid
     }
-    val dbmText = if (currentRssi != null) "$currentRssi dBm" else "-- dBm"
+    val dbmText = stringResource(R.string.dbm_value_label, currentRssi?.toString() ?: stringResource(R.string.signal_none))
 
     val context = LocalContext.current
     val ssidClipLabel = stringResource(R.string.ssid_clip_label)
@@ -201,15 +190,13 @@ private fun HeroSsidAndSignal(
         { copyTextToClipboard(context, ssidClipLabel, ssid, ssidCopiedToast) }
     }
 
-    val ssidStyle = TextStyle(
-        fontSize = HeroSsidMaxFontSize,
+    val ssidStyle = MaterialTheme.typography.titleLarge.copy(
         fontWeight = FontWeight.SemiBold,
         fontStyle = if (hidden) FontStyle.Italic else FontStyle.Normal,
-        color = if (hidden) WifiTokens.HiddenSsid else WifiTokens.SsidAccent,
+        color = if (hidden) NsTheme.colors.tag.hiddenSsid else MaterialTheme.colorScheme.primary,
     )
-    val dbmStyle = TextStyle(
-        fontSize = HeroDbmFontSize,
-        fontWeight = FontWeight.Bold,
+    val dbmStyle = MaterialTheme.typography.headlineSmall.copy(
+        fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.End,
         color = signalColor,
     )
@@ -246,10 +233,9 @@ private fun HeroSsidAndSignal(
                     onLongClick = onSsidLongPress,
                     modifier = Modifier.weight(1f),
                 )
-                DbmSignalColumn(
+                DbmText(
                     dbmText = dbmText,
                     dbmStyle = dbmStyle,
-                    rssi = currentRssi,
                 )
             }
         } else {
@@ -265,10 +251,9 @@ private fun HeroSsidAndSignal(
                     onLongClick = onSsidLongPress,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                DbmSignalColumn(
+                DbmText(
                     dbmText = dbmText,
                     dbmStyle = dbmStyle,
-                    rssi = currentRssi,
                     modifier = Modifier.align(Alignment.End),
                 )
             }
@@ -307,9 +292,8 @@ private fun SsidText(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             autoSize = TextAutoSize.StepBased(
-                minFontSize = HeroSsidMinFontSize,
-                maxFontSize = HeroSsidMaxFontSize,
-                stepSize = HeroSsidAutoSizeStep,
+                minFontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                maxFontSize = MaterialTheme.typography.titleLarge.fontSize,
             ),
             modifier = combinedModifier,
         )
@@ -325,18 +309,10 @@ private fun SsidText(
 }
 
 @Composable
-private fun DbmSignalColumn(
+private fun DbmText(
     dbmText: String,
     dbmStyle: TextStyle,
-    rssi: Int?,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier.width(IntrinsicSize.Max),
-    ) {
-        Text(text = dbmText, style = dbmStyle)
-        SignalMeterWide(rssi = rssi)
-    }
+    Text(text = dbmText, style = dbmStyle, modifier = modifier)
 }

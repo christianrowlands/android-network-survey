@@ -15,11 +15,6 @@
  */
 package com.craxiom.networksurvey.gpstest.util;
 
-import android.location.GnssAntennaInfo;
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import com.craxiom.networksurvey.gpstest.model.GnssType;
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus;
 
@@ -358,44 +353,6 @@ public class CarrierFreqUtils
             return getBeidoucCf(carrierFrequencyMhz);
         }
         return CF_UNKNOWN;
-    }
-
-    /**
-     * Returns the carrier frequency label (e.g. "L1") for the provided GNSS antenna's
-     * carrier frequency. TODO - combine this with getCarrierFrequencyLabel(SatelliteStatus status)?
-     *
-     * @param gnssAntennaInfo
-     * @return the carrier frequency label (e.g. "L1") for the provided GNSS antenna's
-     * carrier frequency
-     */
-    @RequiresApi(api = Build.VERSION_CODES.R)
-    public static String getCarrierFrequencyLabel(GnssAntennaInfo gnssAntennaInfo)
-    {
-        String label;
-        double cfMHz = gnssAntennaInfo.getCarrierFrequencyMHz();
-        // Try each GNSS until we find a valid label
-        label = getNavstarCF(cfMHz);
-        if (label.equals(CF_UNKNOWN))
-        {
-            label = getGalileoCf(cfMHz);
-        }
-        if (label.equals(CF_UNKNOWN))
-        {
-            label = getGlonassCf(cfMHz);
-        }
-        if (label.equals(CF_UNKNOWN))
-        {
-            label = getBeidoucCf(cfMHz);
-        }
-        if (label.equals(CF_UNKNOWN))
-        {
-            label = getQzssCf(cfMHz);
-        }
-        if (label.equals(CF_UNKNOWN))
-        {
-            label = getIrnssCf(cfMHz);
-        }
-        return label;
     }
 
     /**

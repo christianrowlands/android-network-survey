@@ -37,7 +37,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     private final ExecutorService executorService;
     private final JsonFormat.Printer jsonPrinter;
     private final SurveyedPointStore surveyedPointStore;
-    private long nsAnalyticsSurveyStartTime = 0;
     private String currentBatchId;
 
     public NsAnalyticsDataStore(Context context)
@@ -72,7 +71,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
      */
     public void startCollecting()
     {
-        nsAnalyticsSurveyStartTime = System.currentTimeMillis();
         generateNewBatchId();
         executorService.execute(surveyedPointStore::reset);
     }
@@ -82,7 +80,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
      */
     public void shutdown()
     {
-        nsAnalyticsSurveyStartTime = 0;
         executorService.shutdown();
     }
 
@@ -220,11 +217,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
         }
 
         storeRecord(NsAnalyticsConstants.RECORD_TYPE_PHONE_STATE, phoneState, System.currentTimeMillis());
-    }
-
-    public long getNsAnalyticsSurveyStartTime()
-    {
-        return nsAnalyticsSurveyStartTime;
     }
 
     /**

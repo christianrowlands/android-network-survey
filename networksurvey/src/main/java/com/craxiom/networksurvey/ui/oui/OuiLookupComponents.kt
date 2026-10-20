@@ -37,18 +37,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 
 private const val MAX_HEX_BYTES = 6
-private val MacFontSize = 22.sp
-private val MacLetterSpacing = 1.5.sp
 private const val MAC_PLACEHOLDER = "··"
 
 /**
@@ -101,16 +98,17 @@ internal fun MacDisplay(query: String) {
             }
         }
     }
-    val spokenMac = query.replace(":", " : ").ifEmpty { "empty" }
+    val spokenMac = if (query.isEmpty()) {
+        stringResource(R.string.oui_lookup_mac_spoken_empty)
+    } else {
+        stringResource(R.string.oui_lookup_mac_spoken, query.replace(":", " : "))
+    }
     Text(
         text = text,
         modifier = Modifier
             .horizontalScroll(rememberScrollState())
-            .semantics { contentDescription = "MAC address $spokenMac" },
-        fontFamily = FontFamily.Monospace,
-        fontSize = MacFontSize,
-        fontWeight = FontWeight.Medium,
-        letterSpacing = MacLetterSpacing,
+            .semantics { contentDescription = spokenMac },
+        style = NsTheme.textStyles.monoReadout,
         maxLines = 1,
         softWrap = false,
     )
@@ -120,10 +118,7 @@ internal fun MacDisplay(query: String) {
 internal fun SectionLabel(text: String) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.8.sp,
-        ),
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

@@ -6,18 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.manufacturer.WifiManufacturerLabelText
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 
 /**
@@ -30,21 +27,22 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 @Composable
 internal fun BssidVendorRow(
     ap: WifiAccessPointDisplay,
+    vendorLabel: WifiManufacturerLabelText,
     onClick: () -> Unit,
     onBssidLongPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val vendorLabel = rememberWifiManufacturerLabelText(ap.bssid)
+    val style = MaterialTheme.typography.bodySmall
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
+        verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xxs),
         itemVerticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
     ) {
         Text(
             text = ap.bssid,
-            style = TextStyle(fontSize = 11.5.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkMuted,
+            style = style.copy(fontFamily = NsTheme.textStyles.mono.fontFamily),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.combinedClickable(
@@ -54,21 +52,19 @@ internal fun BssidVendorRow(
         )
         vendorLabel.text?.let { text ->
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "·",
-                    style = TextStyle(fontSize = 11.5.sp),
-                    color = WifiTokens.InkFaint,
+                    style = style,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = text,
-                    style = TextStyle(
-                        fontSize = 11.5.sp,
-                        fontStyle = if (vendorLabel.italic) FontStyle.Italic else FontStyle.Normal,
-                    ),
-                    color = if (vendorLabel.italic) WifiTokens.InkFaint else WifiTokens.InkDim,
+                    style = style,
+                    fontStyle = if (vendorLabel.italic) FontStyle.Italic else FontStyle.Normal,
+                    color = if (vendorLabel.italic) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

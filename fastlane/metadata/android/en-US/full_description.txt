@@ -1,4 +1,4 @@
-<p>The <i>Network Survey</i> app enables logging cellular, Wi-Fi, Bluetooth, and/or GNSS information to a log file (GeoPackage or CSV format). For cellular records it supports logging GSM, CDMA, UMTS, LTE, and NR records.</p>
+<p>The <i>Network Survey</i> app enables logging cellular, Wi-Fi, Bluetooth, and/or GNSS information to a log file (CSV format). For cellular records it supports logging GSM, CDMA, UMTS, LTE, and NR records.</p>
 
 <p>You might receive an alert from anti-malware software indicating that Network Survey sends SMS messages in private manner to deceive users. This is NOT the case. SMS permission is necessary for some of the logging that is done. Just to be clear though, Network Survey does not send any text messages, nor does it install anything. In fact, you can deny all the SMS permissions if you are not using the CDR (call detail record) logging feature. The SMS permissions are only requested the first time you turn on CDR logging. More information can be found in this GitHub Discussion: https://github.com/christianrowlands/android-network-survey/discussions/35</p>
 

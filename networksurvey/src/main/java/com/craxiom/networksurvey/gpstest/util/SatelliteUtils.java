@@ -26,7 +26,6 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 
 import com.craxiom.networksurvey.gpstest.model.GnssType;
-import com.craxiom.networksurvey.gpstest.model.SatelliteName;
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus;
 
 /**
@@ -36,69 +35,6 @@ import com.craxiom.networksurvey.gpstest.model.SatelliteStatus;
  */
 public class SatelliteUtils
 {
-
-    private static final String TAG = "SatelliteUtils";
-
-    /**
-     * Returns the satellite name for a satellite given the constellation type and svid.  For
-     * Android 7.0 and higher.
-     *
-     * @param gnssType constellation type
-     * @param svid     identification number
-     * @return SatelliteName for the given constellation type and svid
-     */
-    public static SatelliteName getSatelliteName(GnssType gnssType, int svid)
-    {
-        switch (gnssType)
-        {
-            case NAVSTAR:
-                return SatelliteName.UNKNOWN;
-            case GLONASS:
-                return SatelliteName.UNKNOWN;
-            case BEIDOU:
-                return SatelliteName.UNKNOWN;
-            case QZSS:
-                return SatelliteName.UNKNOWN;
-            case GALILEO:
-                return SatelliteName.UNKNOWN;
-            case IRNSS:
-                return SatelliteName.UNKNOWN;
-            case SBAS:
-                if (svid == 120)
-                {
-                    return SatelliteName.INMARSAT_3F2;
-                } else if (svid == 122)
-                {
-                    return SatelliteName.INMARSAT_4F1;
-                } else if (svid == 123)
-                {
-                    return SatelliteName.ASTRA_5B;
-                } else if (svid == 126)
-                {
-                    return SatelliteName.INMARSAT_3F5;
-                } else if (svid == 131)
-                {
-                    return SatelliteName.GEO5;
-                } else if (svid == 133)
-                {
-                    return SatelliteName.INMARSAT_4F3;
-                } else if (svid == 135)
-                {
-                    return SatelliteName.GALAXY_15;
-                } else if (svid == 136)
-                {
-                    return SatelliteName.SES_5;
-                } else if (svid == 138)
-                {
-                    return SatelliteName.ANIK;
-                }
-                return SatelliteName.UNKNOWN;
-            case UNKNOWN:
-                return SatelliteName.UNKNOWN;
-            default:
-                return SatelliteName.UNKNOWN;
-        }
-    }
 
     /**
      * Returns true if this device supports the Sensor.TYPE_ROTATION_VECTOR sensor, false if it
@@ -135,7 +71,7 @@ public class SatelliteUtils
      */
     public static boolean isCfSupported()
     {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
+        return true;
     }
 
     /**
@@ -146,7 +82,7 @@ public class SatelliteUtils
      */
     public static boolean isAutomaticGainControlSupported(GnssMeasurement gnssMeasurement)
     {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && gnssMeasurement.hasAutomaticGainControlLevelDb();
+        return gnssMeasurement.hasAutomaticGainControlLevelDb();
     }
 
     /**
@@ -177,28 +113,6 @@ public class SatelliteUtils
     }
 
     /**
-     * Returns true if the platform supports the Android GnssAntennaInfo (https://developer.android.com/reference/android/location/GnssAntennaInfo.Listener)
-     * , false if it does not
-     *
-     * @return true if the platform supports the Android GnssAntennaInfo (https://developer.android.com/reference/android/location/GnssAntennaInfo.Listener)
-     * , false if it does not
-     */
-    public static boolean isGnssAntennaInfoSupported(LocationManager manager)
-    {
-        if (manager == null)
-        {
-            return false;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-        {
-            return manager.getGnssCapabilities().hasAntennaInfo();
-        } else
-        {
-            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && manager.getGnssCapabilities().hasGnssAntennaInfo();
-        }
-    }
-
-    /**
      * Returns true if "force full GNSS measurements" can be programmatically invoked, and false if not
      *
      * @return true if "force full GNSS measurements" can be programmatically invoked, and false if not
@@ -217,17 +131,6 @@ public class SatelliteUtils
     public static boolean isMeasurementsSupported(LocationManager manager)
     {
         return manager != null && manager.getGnssCapabilities().hasMeasurements();
-    }
-
-    /**
-     * Returns true if the platform supports navigation messages, false if it does not.
-     *
-     * @return true if the platform supports navigation messages, false if it does not
-     */
-    @RequiresApi(api = Build.VERSION_CODES.S)
-    public static boolean isNavMessagesSupported(LocationManager manager)
-    {
-        return manager != null && manager.getGnssCapabilities().hasNavigationMessages();
     }
 
     /**

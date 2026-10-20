@@ -6,10 +6,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import com.craxiom.networksurvey.BuildConfig
+import com.craxiom.networksurvey.R
 import timber.log.Timber
 
 /**
@@ -24,8 +26,6 @@ class BatteryOptimizationHelper(private val context: Context) {
         // Preference keys
         private const val PREF_DONT_SHOW_BATTERY_PROMPT = "dont_show_battery_optimization_prompt"
         private const val PREF_LAST_PROMPT_TIME = "last_battery_optimization_prompt_time"
-        private const val PREF_HAS_SHOWN_FIRST_PROMPT =
-            "has_shown_battery_optimization_first_prompt"
 
         // Minimum time between prompts (24 hours)
         private const val MIN_PROMPT_INTERVAL_MS = 24L * 60L * 60L * 1000L
@@ -68,21 +68,6 @@ class BatteryOptimizationHelper(private val context: Context) {
         }
 
         return true
-    }
-
-    /**
-     * Checks if this is the first time we should show the prompt.
-     * Used to show immediately on first app launch.
-     */
-    fun shouldShowFirstTimePrompt(): Boolean {
-        if (prefs.getBoolean(PREF_HAS_SHOWN_FIRST_PROMPT, false)) {
-            return false
-        }
-
-        // Mark as shown for next time
-        prefs.edit { putBoolean(PREF_HAS_SHOWN_FIRST_PROMPT, true) }
-
-        return shouldPromptForBatteryOptimization()
     }
 
     /**
@@ -183,61 +168,20 @@ class BatteryOptimizationHelper(private val context: Context) {
     }
 
     /**
-     * Gets manufacturer-specific instructions for disabling battery optimization.
+     * The extra steps this phone's maker needs to keep the survey running, as a string resource, or
+     * null when the maker needs none.
      */
-    fun getManufacturerInstructions(): String? {
+    @StringRes
+    fun getManufacturerInstructions(): Int? {
         val manufacturer = Build.MANUFACTURER.lowercase()
 
         return when {
-            manufacturer.contains(MANUFACTURER_XIAOMI) -> {
-                "Xiaomi devices require additional steps:\n" +
-                        "1. Go to Settings → Battery & performance\n" +
-                        "2. Choose 'App battery saver'\n" +
-                        "3. Select Network Survey\n" +
-                        "4. Choose 'No restrictions'\n" +
-                        "5. Also enable 'Autostart' in Security app"
-            }
-
-            manufacturer.contains(MANUFACTURER_SAMSUNG) -> {
-                "Samsung devices:\n" +
-                        "1. Go to Settings → Device care → Battery\n" +
-                        "2. Tap 'Background usage limits'\n" +
-                        "3. Add Network Survey to 'Never sleeping apps'\n" +
-                        "4. Disable 'Put unused apps to sleep'"
-            }
-
-            manufacturer.contains(MANUFACTURER_HUAWEI) -> {
-                "Huawei devices:\n" +
-                        "1. Go to Settings → Battery → App launch\n" +
-                        "2. Find Network Survey\n" +
-                        "3. Disable 'Manage automatically'\n" +
-                        "4. Enable all three options (Auto-launch, Secondary launch, Run in background)"
-            }
-
-            manufacturer.contains(MANUFACTURER_OPPO) || manufacturer.contains(MANUFACTURER_REALME) -> {
-                "Oppo/Realme devices:\n" +
-                        "1. Go to Settings → Battery → App battery management\n" +
-                        "2. Find Network Survey\n" +
-                        "3. Turn off background restriction\n" +
-                        "4. Also check Security Center → Privacy Permissions → Startup manager"
-            }
-
-            manufacturer.contains(MANUFACTURER_VIVO) -> {
-                "Vivo devices:\n" +
-                        "1. Go to Settings → Battery → Background power consumption\n" +
-                        "2. Find Network Survey\n" +
-                        "3. Allow background activity\n" +
-                        "4. Also check i-Manager → App manager → Autostart"
-            }
-
-            manufacturer.contains(MANUFACTURER_ONEPLUS) -> {
-                "OnePlus devices:\n" +
-                        "1. Go to Settings → Battery → Battery optimization\n" +
-                        "2. Find Network Survey\n" +
-                        "3. Choose 'Don't optimize'\n" +
-                        "4. Also disable 'Adaptive Battery' and 'Sleep standby optimization'"
-            }
-
+            manufacturer.contains(MANUFACTURER_XIAOMI) -> R.string.battery_steps_xiaomi
+            manufacturer.contains(MANUFACTURER_SAMSUNG) -> R.string.battery_steps_samsung
+            manufacturer.contains(MANUFACTURER_HUAWEI) -> R.string.battery_steps_huawei
+            manufacturer.contains(MANUFACTURER_OPPO) || manufacturer.contains(MANUFACTURER_REALME) -> R.string.battery_steps_oppo
+            manufacturer.contains(MANUFACTURER_VIVO) -> R.string.battery_steps_vivo
+            manufacturer.contains(MANUFACTURER_ONEPLUS) -> R.string.battery_steps_oneplus
             else -> null
         }
     }

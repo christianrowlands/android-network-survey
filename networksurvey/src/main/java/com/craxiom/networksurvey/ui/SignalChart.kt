@@ -1,13 +1,16 @@
 package com.craxiom.networksurvey.ui
 
 import androidx.compose.animation.core.snap
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.craxiom.networksurvey.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -34,7 +37,8 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
 
     val markerList by viewModel.markerList.collectAsStateWithLifecycle()
 
-    val eventMarker = rememberMarker(viewModel.getMarkerLabel())
+    val markerLabel = viewModel.getMarkerLabel()
+    val eventMarker = rememberMarker(if (markerLabel == 0) "" else stringResource(markerLabel))
 
     CartesianChartHost(
         chart = rememberCartesianChart(
@@ -42,7 +46,7 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(
-                            Fill(colorResource(id = R.color.colorAccent))
+                            Fill(MaterialTheme.colorScheme.primary)
                         )
                     )
                 ),
@@ -51,7 +55,17 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
                     maxY = maxRssi.toDouble(),
                 ),
             ),
+            // Quiet axis, as in the design: solid hairline guides, no axis line or ticks, small labels
             startAxis = VerticalAxis.rememberStart(
+                line = null,
+                tick = null,
+                guideline = rememberAxisGuidelineComponent(
+                    fill = Fill(MaterialTheme.colorScheme.outlineVariant),
+                    shape = RectangleShape,
+                ),
+                label = rememberAxisLabelComponent(
+                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                ),
                 horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
                 itemPlacer = VerticalAxis.ItemPlacer.step({
                     // Use different tick spacing based on the chart range

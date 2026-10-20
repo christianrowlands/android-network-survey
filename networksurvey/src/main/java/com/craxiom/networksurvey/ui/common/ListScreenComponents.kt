@@ -21,7 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /**
  * Shared building blocks for list management screens (Watchlist, SSID Exclusion List, and
@@ -130,10 +129,8 @@ fun NsInfoCard(text: String) {
 fun NsSectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelMedium.copy(
-            fontFamily = FontFamily.Monospace,
-            letterSpacing = 0.5.sp
-        ),
+        // labelMedium already carries the widened 0.5 sp letter spacing.
+        style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
     )

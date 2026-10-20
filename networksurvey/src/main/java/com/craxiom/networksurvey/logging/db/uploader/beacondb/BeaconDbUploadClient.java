@@ -8,7 +8,7 @@ import androidx.annotation.Nullable;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
 import com.craxiom.networksurvey.logging.db.uploader.RequestResult;
-import com.craxiom.networksurvey.logging.db.uploader.UploadConstants;
+import com.craxiom.networksurvey.logging.db.uploader.UploadEndpoints;
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult;
 
 import java.io.IOException;
@@ -40,7 +40,7 @@ public interface BeaconDbUploadClient
                 .build();
 
         return new Retrofit.Builder()
-                .baseUrl(UploadConstants.BEACONDB_URL)
+                .baseUrl(UploadEndpoints.getBeaconDbBaseUrl())
                 .client(client)
                 .addConverterFactory(GeosubmitJsonConverterFactory.create())  // Add custom converter
                 .addConverterFactory(GsonConverterFactory.create())  // Use Gson for other JSON handling

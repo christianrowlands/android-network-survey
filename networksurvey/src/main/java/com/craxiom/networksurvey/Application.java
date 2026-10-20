@@ -24,6 +24,17 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.lang.LocaleManager;
 import com.craxiom.networksurvey.notification.NotificationChannels;
+import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource;
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfile;
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfileMigration;
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfileStore;
+import com.craxiom.networksurvey.survey.setup.SurveySetupMigration;
+import com.craxiom.networksurvey.survey.setup.SurveySetupStore;
+import com.craxiom.networksurvey.gpstest.util.SatSortMigration;
+import com.craxiom.networksurvey.ui.map.MapPreferenceCleanup;
+import com.craxiom.networksurvey.ui.settings.SettingsDefaults;
+import com.craxiom.networksurvey.ui.theme.ThemeMode;
+import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 
 import dagger.hilt.android.HiltAndroidApp;
@@ -55,11 +66,6 @@ public class Application extends android.app.Application
 
     private static LocaleManager mLocaleManager;
 
-    public static LocaleManager getLocaleManager()
-    {
-        return mLocaleManager;
-    }
-
     @Override
     public void onCreate()
     {
@@ -72,6 +78,29 @@ public class Application extends android.app.Application
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         CredentialSecureStorage.INSTANCE.migrateFromPlainTextIfNeeded(this);
+
+        // Turn the single MQTT broker of earlier versions into a broker profile, once. It waits for
+        // the credentials migration above, and runs before the survey setup migration reads it.
+        MqttBrokerProfileMigration.migrateIfNeeded(this);
+
+        // Turn the old per-destination survey preferences into a survey setup, once. This runs
+        // before any activity, receiver or service reads the setup (including a start at boot).
+        final MqttBrokerProfileStore brokerProfileStore = MqttBrokerProfileStore.create(this);
+        new SurveySetupMigration(mPrefs, new SurveySetupStore(mPrefs), new AndroidRestrictionsSource(this),
+                () -> NsAnalyticsSecureStorage.INSTANCE.isRegistered(this),
+                () -> brokerProfileStore.profiles().stream()
+                        .anyMatch(profile -> profile.getOrigin() == MqttBrokerProfile.Origin.USER),
+                () -> SettingsDefaults.wereApplied(this),
+                getString(R.string.survey_setup_ns_analytics_name)).migrateIfNeeded();
+
+        // The survey map is gone with the Survey Monitor; drop its copy of the map settings
+        MapPreferenceCleanup.removeRetiredKeys(mPrefs);
+
+        // The GNSS sort was stored as its label, which a translation or rewording silently reset
+        SatSortMigration.migrate(mPrefs);
+
+        // Apply the Theme setting before any activity inflates, so Views and Compose agree
+        ThemeMode.applyFromPreferences(this);
     }
 
     @Override

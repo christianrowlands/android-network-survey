@@ -3,27 +3,31 @@ package com.craxiom.networksurvey.ui.wifi.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
+
+private val TAB_MIN_HEIGHT = 36.dp
+private val TAB_BORDER = 1.dp
 
 /**
  * Mode toggle tabs: Flat · BSSID vs Group by SSID. Band filtering lives in the display filter
@@ -38,8 +42,9 @@ fun WifiModeTabs(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .selectableGroup()
+            .padding(horizontal = NsTheme.spacing.screenGutter - NsTheme.spacing.xxs),
+        horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ModeTab(
@@ -57,28 +62,25 @@ fun WifiModeTabs(
 
 @Composable
 private fun ModeTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) WifiTokens.SsidSoft else androidx.compose.ui.graphics.Color.Transparent
-    val border = if (selected) {
-        androidx.compose.ui.graphics.Color.Transparent
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
-    val textColor =
-        if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
+    val bg = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+    val border = if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
+    val textColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .minimumInteractiveComponentSize()
+            .clip(NsTheme.shapes.pill)
             .background(bg)
-            .border(BorderStroke(1.dp, border), RoundedCornerShape(999.dp))
-            .clickable(onClick = onClick)
-            .heightIn(min = 36.dp)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .border(BorderStroke(TAB_BORDER, border), NsTheme.shapes.pill)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+            .heightIn(min = TAB_MIN_HEIGHT)
+            .padding(horizontal = NsTheme.spacing.m + NsTheme.spacing.xxs, vertical = NsTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
-            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+            style = NsTheme.textStyles.compact,
+            fontWeight = FontWeight.SemiBold,
             color = textColor,
         )
     }

@@ -11,7 +11,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.bands.BandBrowserScreen
@@ -20,10 +19,10 @@ import com.craxiom.networksurvey.ui.cellular.model.BandBrowserViewModel
 import com.craxiom.networksurvey.ui.cellular.model.CalculatorViewModel
 import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
 import com.craxiom.networksurvey.ui.common.SegmentedOption
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /** Which pane of the Cellular Tools destination is showing. */
 private const val PANE_BANDS = 0
-private const val PANE_CALCULATORS = 1
 
 /**
  * Host for the two cellular reference tools: a browsable band reference and the calculators.
@@ -53,7 +52,7 @@ fun CellularToolsScreen(
             ),
             selectedIndex = pane,
             onSelected = { pane = it },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = NsTheme.spacing.screenGutter, vertical = NsTheme.spacing.s),
         )
 
         if (pane == PANE_BANDS) {

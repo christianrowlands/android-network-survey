@@ -7,8 +7,6 @@ import androidx.room.Query;
 
 import com.craxiom.networksurvey.logging.db.model.TowerCacheEntity;
 
-import java.util.List;
-
 /**
  * DAO for tower cache operations.
  *
@@ -39,17 +37,6 @@ public interface TowerCacheDao
     TowerCacheEntity getTower(String mcc, String mnc, int area, long cid);
 
     /**
-     * Get all cached towers for a specific area.
-     *
-     * @param mcc  Mobile Country Code
-     * @param mnc  Mobile Network Code
-     * @param area Location/Tracking Area Code
-     * @return List of cached towers in the area
-     */
-    @Query("SELECT * FROM tower_cache WHERE mcc = :mcc AND mnc = :mnc AND area = :area")
-    List<TowerCacheEntity> getTowersInArea(String mcc, String mnc, int area);
-
-    /**
      * Delete old cache entries.
      *
      * @param cutoffTimestamp Delete entries older than this timestamp
@@ -57,18 +44,4 @@ public interface TowerCacheDao
      */
     @Query("DELETE FROM tower_cache WHERE timestamp < :cutoffTimestamp")
     int deleteOldEntries(long cutoffTimestamp);
-
-    /**
-     * Get total number of cached entries.
-     *
-     * @return Count of cached tower entries
-     */
-    @Query("SELECT COUNT(*) FROM tower_cache")
-    int getCacheSize();
-
-    /**
-     * Clear all cache entries.
-     */
-    @Query("DELETE FROM tower_cache")
-    void clearCache();
 }

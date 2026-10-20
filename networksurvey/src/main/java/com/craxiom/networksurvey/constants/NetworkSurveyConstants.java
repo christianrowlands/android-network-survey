@@ -43,17 +43,19 @@ public class NetworkSurveyConstants
     // Intent extra used by the survey and upload notifications to land the user on the dashboard.
     public static final String EXTRA_NAVIGATE_TO_DASHBOARD = "navigate_to_dashboard";
 
+    // Intent extra used by the new-tower notification to land the user on the Map tab.
+    public static final String EXTRA_NAVIGATE_TO_MAP = "navigate_to_map";
+
     public static final String WAKE_LOCK_TAG = "NetworkSurvey:WakeLock";
 
     public static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
-    public static final String CSV_LOG_DIRECTORY_NAME = "NetworkSurveyData/csv";
+    public static final String CSV_LOG_DIRECTORY_NAME = LOG_DIRECTORY_NAME + "/csv";
 
     public static final String GSM_FILE_NAME_PREFIX = "craxiom-gsm-";
     public static final String CDMA_FILE_NAME_PREFIX = "craxiom-cdma-";
     public static final String UMTS_FILE_NAME_PREFIX = "craxiom-umts-";
     public static final String LTE_FILE_NAME_PREFIX = "craxiom-lte-";
     public static final String NR_FILE_NAME_PREFIX = "craxiom-nr-";
-    public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";
     public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
     public static final String BLUETOOTH_FILE_NAME_PREFIX = "craxiom-bluetooth-";
     public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
@@ -118,6 +120,17 @@ public class NetworkSurveyConstants
     public static final String EXTRA_GNSS_FILE_LOGGING = "gnss_file_logging";
     public static final String EXTRA_CDR_FILE_LOGGING = "cdr_file_logging";
     public static final String EXTRA_MQTT_CONFIG_JSON = "mqtt_config_json";
+    /**
+     * Intent API START extra: the record types to survey, as a string array or a comma separated
+     * string of wire names (cellular, phone_state, wifi, bluetooth, gnss, cdr). Every destination
+     * receives every record type. Preferred over the per-destination *_file_logging extras.
+     */
+    public static final String EXTRA_RECORD_TYPES = "record_types";
+    /**
+     * Intent API START extra: the destinations, as a string array or a comma separated string of
+     * wire names (log_files, ns_analytics, mqtt, grpc, community).
+     */
+    public static final String EXTRA_DESTINATIONS = "destinations";
 
     public static final int DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS = 5;
     public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 15;
@@ -157,6 +170,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MDM_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     // Preferences
+    // The pre-v2 per-record-type auto start keys. They are no longer user settings; they are only
+    // read as deprecated MDM keys (LegacyMdmMapper) and by the one-time setup migration. The survey
+    // now starts automatically through the single auto_start_survey setting (SurveyMdmKeys).
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
     public static final String PROPERTY_AUTO_START_WIFI_LOGGING = "auto_start_wifi_logging";
     public static final String PROPERTY_AUTO_START_BLUETOOTH_LOGGING = "auto_start_bluetooth_logging";
@@ -172,7 +188,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
     public static final String PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = "device_status_scan_interval_seconds";
     public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
-    public static final String PROPERTY_LOG_FILE_TYPE = "log_file_type";
     public static final String PROPERTY_LOCATION_PROVIDER = "location_provider";
     public static final String PROPERTY_ALLOW_INTENT_CONTROL = "allow_intent_control";
     public static final String PROPERTY_IGNORE_WIFI_SCAN_THROTTLING_WARNING = "ignore_wifi_scan_throttling_warning";
@@ -198,14 +213,14 @@ public class NetworkSurveyConstants
     // base64url-encoded JSON payload of the networks to add.
     public static final String WATCHLIST_DEEP_LINK_PATH = "/app/watchlist";
     public static final String WATCHLIST_DEEP_LINK_PARAM_DATA = "d";
+    // The link that opens the gRPC page (the manifest declares the same host and path).
+    public static final String GRPC_DEEP_LINK_HOST = "craxiom.com";
+    public static final String GRPC_DEEP_LINK_PATH = "/grpc_server_connection";
 
-    // A read only value in the preferences that shows the App Version
-    public static final String PROPERTY_APP_VERSION = "app_version";
     // A read only value in the preferences that shows the Device ID, which is called the Device Serial Number in NS Messaging API
     public static final String PREFERENCE_DEVICE_SERIAL_NUMBER = "preference_device_serial_number";
     // A read only value in the preferences that shows the App Instance ID if applicable
     public static final String PROPERTY_APP_INSTANCE_ID = "app_instance_id";
-    public static final String PROPERTY_PRIVACY_POLICY = "privacy_policy";
 
     public static final String TOWER_MAP_PREFERENCES_GROUP = "tower_map_preferences_group";
     public static final String PROPERTY_MAP_KEEP_SCREEN_ON = "tower_map_keep_screen_on";
@@ -236,6 +251,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_NS_ANALYTICS_CONNECTION = "ns_analytics_connection_pref";
     public static final String PROPERTY_DELETE_ALL_DATA_IN_UPLOAD_DATABASE = "delete_all_data_in_upload_database";
 
+    // The pre-v2 MQTT record type stream keys. Every destination now receives every record type the
+    // survey records, so these are only read as deprecated MDM keys (LegacyMdmMapper) and by the
+    // one-time setup migration. The device status and watchlist stream keys are still in use.
     public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
     public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
     public static final String PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED = "bluetooth_stream_enabled";
@@ -244,12 +262,14 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED = "phone_state_stream_enabled";
     public static final String PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED = "watchlist_stream_enabled";
 
-    public static final String PROPERTY_GRPC_CELLULAR_STREAM_ENABLED = "grpc_cellular_stream_enabled";
-    public static final String PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED = "grpc_phone_state_stream_enabled";
-    public static final String PROPERTY_GRPC_WIFI_STREAM_ENABLED = "grpc_wifi_stream_enabled";
-    public static final String PROPERTY_GRPC_BLUETOOTH_STREAM_ENABLED = "grpc_bluetooth_stream_enabled";
-    public static final String PROPERTY_GRPC_GNSS_STREAM_ENABLED = "grpc_gnss_stream_enabled";
-    public static final String PROPERTY_GRPC_DEVICE_STATUS_STREAM_ENABLED = "grpc_device_status_stream_enabled";
+    // The saved MQTT broker profiles (JSON), the id of the selected one, and the storage version.
+    // These replace the single broker that was stored in the flat mqtt_connection_* keys.
+    public static final String PROPERTY_MQTT_BROKER_PROFILES = "mqtt_broker_profiles";
+    // The Settings row that opens the Organization settings page (managed phones only)
+    public static final String PROPERTY_ORGANIZATION_SETTINGS = "organization_settings";
+    public static final String PROPERTY_MQTT_ACTIVE_BROKER_PROFILE = "mqtt_active_broker_profile";
+    public static final String PROPERTY_MQTT_BROKER_PROFILES_SCHEMA_VERSION = "mqtt_broker_profiles_schema_version";
+
 
     // Stored Preferences not exposed via the Settings UI
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
@@ -259,6 +279,8 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
     public static final String PROPERTY_WIFI_GROUP_BY_SSID = "wifi_group_by_ssid";
     public static final String PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER = "bluetooth_devices_sort_order";
+    /** The GNSS sort, as an Int index into R.array.sort_sats. */
+    public static final String PROPERTY_GNSS_SORT_INDEX = "preference_sat_sort_index";
     public static final String PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION = "denied_background_location_permission";
 
     public static final String PROPERTY_LAST_SELECTED_TOWER_SOURCE = "last_selected_tower_source";
@@ -267,27 +289,17 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_SHOW_TOWERS_LAYER = "show_towers_layer";
     public static final String PROPERTY_MAP_SHOW_ONLY_SERVING_CELL = "map_show_only_serving_cell";
     /**
-     * Maximum tower age (in months) used to hide stale towers on both the Tower Map and the
-     * Survey Monitor map. 0 means "show all" (no filter). Intentionally a single shared key
-     * across both map contexts: freshness is a property of the tower data itself, not the
-     * screen the user is viewing.
+     * Maximum tower age (in months) used to hide stale towers on the Map. 0 means "show all" (no
+     * filter).
      */
     public static final String PROPERTY_MAP_MAX_TOWER_AGE_MONTHS = "map_max_tower_age_months";
     public static final String PROPERTY_NEW_TOWER_ALERTS_ENABLED = "new_tower_alerts_enabled";
 
-    // Survey Monitor specific map preferences
-    public static final String PROPERTY_SURVEY_MAP_TILE_SOURCE = "survey_map_tile_source";
-    public static final String PROPERTY_SURVEY_SHOW_BEACONDB_COVERAGE = "survey_show_beacondb_coverage";
-    public static final String PROPERTY_SURVEY_SHOW_TOWERS_LAYER = "survey_show_towers_layer";
+    // The survey points layer on the Map
     public static final String PROPERTY_SHOW_SURVEY_POINTS = "show_survey_points";
-    public static final String PROPERTY_SURVEY_MAP_SHOW_SURVEY_POINTS = "survey_map_show_survey_points";
     public static final String PROPERTY_SURVEY_POINTS_COLOR_MODE = "survey_points_color_mode";
-    public static final String PROPERTY_SURVEY_MAP_SURVEY_POINTS_COLOR_MODE = "survey_map_survey_points_color_mode";
     public static final String PROPERTY_SURVEY_POINTS_KIND = "survey_points_kind";
-    public static final String PROPERTY_SURVEY_MAP_SURVEY_POINTS_KIND = "survey_map_survey_points_kind";
     public static final String PROPERTY_CLEAR_SURVEY_POINTS = "clear_survey_points";
-    public static final String PROPERTY_SURVEY_MAP_SHOW_ONLY_SERVING_CELL = "survey_map_show_only_serving_cell";
-    public static final String PROPERTY_SURVEY_MAP_KEEP_SCREEN_ON = "survey_map_keep_screen_on";
 
     public static final String TOWER_MAP_SHARED_PREFERENCES = "tower_map_prefs";
     public static final String PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION = "last_tower_map_view_location";
@@ -295,8 +307,14 @@ public class NetworkSurveyConstants
     // Battery Management preferences
     public static final String PROPERTY_BATTERY_THRESHOLD_PERCENT = "battery_threshold_percent";
     public static final int DEFAULT_BATTERY_THRESHOLD_PERCENT = 0;
+    /** The Survey screen warns once the battery is within this many percent of the pause threshold. */
+    public static final int BATTERY_WARNING_MARGIN_PERCENT = 5;
 
     // Streaming Queue Management preferences
+    /** Keep the screen awake on the Survey screen and the survey map while a survey records. */
+    public static final String PROPERTY_KEEP_SCREEN_ON_WHILE_RECORDING = "keep_screen_on_while_recording";
+    public static final boolean DEFAULT_KEEP_SCREEN_ON_WHILE_RECORDING = true;
+
     public static final String PROPERTY_STREAMING_QUEUE_LIMIT = "streaming_queue_limit";
     public static final int DEFAULT_STREAMING_QUEUE_LIMIT = 20000;
     public static final int HIGH_STREAMING_QUEUE_LIMIT_THRESHOLD = 50000;
@@ -311,6 +329,11 @@ public class NetworkSurveyConstants
     public static final String MEASUREMENT_UNITS_METRIC = "metric";
     public static final String MEASUREMENT_UNITS_IMPERIAL = "imperial";
     public static final String DEFAULT_MEASUREMENT_UNITS = MEASUREMENT_UNITS_METRIC;
+    public static final String PROPERTY_APP_THEME = "app_theme";
+    public static final String APP_THEME_SYSTEM = "system";
+    public static final String APP_THEME_LIGHT = "light";
+    public static final String APP_THEME_DARK = "dark";
+    public static final String DEFAULT_APP_THEME = APP_THEME_SYSTEM;
 
     // Permission request IDs
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;

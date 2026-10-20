@@ -7,6 +7,7 @@ import com.craxiom.networksurvey.util.CalculationUtils
 internal class SurveyedPointLegendBuilder(private val mode: SurveyedPointColorMode) {
     private val counts = LinkedHashMap<String, Int>()
     private val labels = HashMap<String, String>()
+    private val enbSectors = HashMap<String, Pair<Int, Int>>()
     val plmns = HashSet<String>()
     val size: Int get() = counts.size
 
@@ -20,6 +21,7 @@ internal class SurveyedPointLegendBuilder(private val mode: SurveyedPointColorMo
         } ?: return
         counts[key] = (counts[key] ?: 0) + 1
         if (key !in labels) labelFor(point)?.let { labels[key] = it }
+        if (key !in enbSectors) enbSectorFor(point)?.let { enbSectors[key] = it }
     }
 
     fun add(key: String?, count: Int) {
@@ -30,16 +32,19 @@ internal class SurveyedPointLegendBuilder(private val mode: SurveyedPointColorMo
 
     fun top(limit: Int): List<SurveyedPointLegendKey> =
         counts.entries.sortedByDescending { it.value }.take(limit)
-            .map { SurveyedPointLegendKey(it.key, labels[it.key], it.value) }
+            .map { SurveyedPointLegendKey(it.key, labels[it.key], it.value, enbSectors[it.key]) }
 
     private fun labelFor(point: SurveyedPointEntity): String? = when (mode) {
         SurveyedPointColorMode.PROVIDER, SurveyedPointColorMode.AREA -> point.provider
-        SurveyedPointColorMode.CELL -> if (point.protocol == SurveyedPointEntity.PROTOCOL_LTE && point.cid in 0..Int.MAX_VALUE) {
-            "eNB ${CalculationUtils.getEnodebIdFromCellId(point.cid.toInt())} " +
-                    "Sector ${CalculationUtils.getSectorIdFromCellId(point.cid.toInt())}"
-        } else null
-
         else -> null
     }
+
+    /** An LTE cell's eNB ID and sector ID, which the cell legend shows under the cell. */
+    private fun enbSectorFor(point: SurveyedPointEntity): Pair<Int, Int>? =
+        if (mode == SurveyedPointColorMode.CELL && point.protocol == SurveyedPointEntity.PROTOCOL_LTE &&
+            point.cid in 0..Int.MAX_VALUE
+        ) {
+            CalculationUtils.getEnodebIdFromCellId(point.cid.toInt()) to CalculationUtils.getSectorIdFromCellId(point.cid.toInt())
+        } else null
 }
 

@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.services.controller;
 
 import android.Manifest;
-import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,19 +8,13 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.Settings;
-import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 
-import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.WifiCsvLogger;
-import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -50,25 +43,21 @@ public class WifiController extends AController
 
     private final Handler serviceHandler;
     private final SurveyRecordProcessor surveyRecordProcessor;
-    private final Handler uiThreadHandler;
 
     private volatile int wifiScanRateMs;
-    private final WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private final WifiCsvLogger wifiCsvLogger;
     private BroadcastReceiver wifiScanReceiver;
     private final AtomicBoolean wasActiveBeforePause = new AtomicBoolean(false);
 
     public WifiController(NetworkSurveyService surveyService, ExecutorService executorService,
                           Looper serviceLooper, Handler serviceHandler,
-                          SurveyRecordProcessor surveyRecordProcessor, Handler uiThreadHandler)
+                          SurveyRecordProcessor surveyRecordProcessor)
     {
         super(surveyService, executorService);
 
         this.serviceHandler = serviceHandler;
         this.surveyRecordProcessor = surveyRecordProcessor;
-        this.uiThreadHandler = uiThreadHandler;
 
-        wifiSurveyRecordLogger = new WifiSurveyRecordLogger(surveyService, serviceLooper);
         wifiCsvLogger = new WifiCsvLogger(surveyService);
     }
 
@@ -79,7 +68,6 @@ public class WifiController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (wifiLoggingEnabled)
         {
-            wifiSurveyRecordLogger.onDestroy();
             wifiCsvLogger.onDestroy();
             wifiScanExecutor.shutdown();
             super.onDestroy();
@@ -103,7 +91,6 @@ public class WifiController extends AController
 
     public void onRolloverPreferenceChanged()
     {
-        wifiSurveyRecordLogger.onSharedPreferenceChanged();
         wifiCsvLogger.onSharedPreferenceChanged();
     }
 
@@ -113,26 +100,7 @@ public class WifiController extends AController
      */
     public void onMdmPreferenceChanged()
     {
-        wifiSurveyRecordLogger.onMdmPreferenceChanged();
         wifiCsvLogger.onMdmPreferenceChanged();
-    }
-
-    public void onLogFileTypePreferenceChanged()
-    {
-        synchronized (wifiLoggingEnabled)
-        {
-            if (wifiLoggingEnabled.get())
-            {
-                final boolean originalLoggingState = wifiLoggingEnabled.get();
-                toggleLogging(false);
-                toggleLogging(true);
-                final boolean newLoggingState = wifiLoggingEnabled.get();
-                if (originalLoggingState != newLoggingState)
-                {
-                    Timber.i("Logging state changed from %s to %s", originalLoggingState, newLoggingState);
-                }
-            }
-        }
     }
 
     /**
@@ -233,38 +201,23 @@ public class WifiController extends AController
             boolean successful = false;
             if (enable)
             {
-                // First check to see if Wi-Fi is enabled
-                final boolean wifiEnabled = isWifiEnabled(true);
-                if (!wifiEnabled) return null;
-
-                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
-                if (types.geoPackage)
-                {
-                    successful = wifiSurveyRecordLogger.enableLogging(true);
-                }
-                if (types.csv)
-                {
-                    successful = wifiCsvLogger.enableLogging(true);
-                }
+                // No radio check, as in earlier versions: scans arrive while Wi-Fi is off when Wi-Fi
+                // scanning is on, and the scan loop picks up again as soon as the radio comes on.
+                successful = wifiCsvLogger.enableLogging(true);
 
                 if (successful)
                 {
-                    toggleWifiConfig(true, types);
+                    toggleWifiConfig(true);
                 } else
                 {
-                    // at least one of the loggers failed to toggle;
-                    // disable all of them and set local config to false
-                    wifiSurveyRecordLogger.enableLogging(false);
+                    // the logger failed to toggle; disable it and set local config to false
                     wifiCsvLogger.enableLogging(false);
-                    toggleWifiConfig(false, null);
+                    toggleWifiConfig(false);
                 }
             } else
             {
-                // If we are disabling logging, then we need to disable both geoPackage and CSV just
-                // in case the user changed the setting after they started logging.
-                wifiSurveyRecordLogger.enableLogging(false);
                 wifiCsvLogger.enableLogging(false);
-                toggleWifiConfig(false, null);
+                toggleWifiConfig(false);
                 successful = true;
             }
 
@@ -447,97 +400,17 @@ public class WifiController extends AController
         toggleLogging(false);
     }
 
-    private void toggleWifiConfig(boolean enable, LogTypeState types)
+    private void toggleWifiConfig(boolean enable)
     {
         if (surveyService == null) return;
 
         wifiLoggingEnabled.set(enable);
         if (enable)
         {
-            if (types != null)
-            {
-                if (types.geoPackage)
-                {
-                    surveyService.registerWifiSurveyRecordListener(wifiSurveyRecordLogger);
-                }
-                if (types.csv)
-                {
-                    surveyService.registerWifiSurveyRecordListener(wifiCsvLogger);
-                }
-            } else
-            {
-                throw new IllegalArgumentException("LogTypeState cannot be null when enabling wifi logging");
-            }
+            surveyService.registerWifiSurveyRecordListener(wifiCsvLogger);
         } else
         {
-            surveyService.unregisterWifiSurveyRecordListener(wifiSurveyRecordLogger);
             surveyService.unregisterWifiSurveyRecordListener(wifiCsvLogger);
-        }
-    }
-
-    /**
-     * Checks to see if the Wi-Fi manager is present, and if Wi-Fi is enabled.
-     * <p>
-     * After the check to see if Wi-Fi is enabled, if Wi-Fi is currently disabled and {@code promptEnable} is true, the
-     * user is then prompted to turn on Wi-Fi.  Even if the user turns on Wi-Fi, this method will still return false
-     * since the call to enable Wi-Fi is asynchronous.
-     *
-     * @param promptEnable If true, and Wi-Fi is currently disabled, the user will be presented with a UI to turn on Wi-Fi.
-     * @return True if Wi-Fi is enabled, false if it is not.
-     */
-    private boolean isWifiEnabled(boolean promptEnable)
-    {
-        synchronized (wifiLoggingEnabled)
-        {
-            if (surveyService == null) return false;
-
-            boolean isEnabled = true;
-
-            final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
-
-            if (wifiManager == null) isEnabled = false;
-
-            if (wifiManager != null && !wifiManager.isWifiEnabled())
-            {
-                isEnabled = false;
-
-                if (promptEnable)
-                {
-                    Timber.i("Wi-Fi is disabled, prompting the user to enable it");
-
-                    if (Build.VERSION.SDK_INT >= 29)
-                    {
-                        try
-                        {
-                            final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                            panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            surveyService.startActivity(panelIntent);
-                        } catch (ActivityNotFoundException e)
-                        {
-                            Timber.w(e, "Could not open the Wi-Fi settings panel");
-                            uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.settings_not_available), Toast.LENGTH_SHORT).show());
-                        }
-                    } else
-                    {
-                        // Open the Wi-Fi setting pages after a couple seconds
-                        uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
-                        serviceHandler.postDelayed(() -> {
-                            try
-                            {
-                                final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                                wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                surveyService.startActivity(wifiSettingIntent);
-                            } catch (Exception e)
-                            {
-                                // An IllegalStateException can occur when the fragment is no longer attached to the activity
-                                Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
-                            }
-                        }, 2000);
-                    }
-                }
-            }
-
-            return isEnabled;
         }
     }
 }

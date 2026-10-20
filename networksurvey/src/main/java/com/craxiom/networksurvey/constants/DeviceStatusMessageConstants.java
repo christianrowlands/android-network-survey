@@ -9,7 +9,7 @@ import com.craxiom.messaging.phonestate.Domain;
  *
  * @since 0.2.0
  */
-public class DeviceStatusMessageConstants extends MessageConstants
+public class DeviceStatusMessageConstants
 {
     private DeviceStatusMessageConstants()
     {
@@ -24,14 +24,6 @@ public class DeviceStatusMessageConstants extends MessageConstants
      * @since 1.4.0
      */
     public static final String PHONE_STATE_MESSAGE_TYPE = "PhoneState";
-
-    public static final String PHONE_STATE_TABLE_NAME = "PHONE_STATE_MESSAGE";
-    public static final String LATITUDE_COLUMN = "latitude";
-    public static final String LONGITUDE_COLUMN = "longitude";
-    public static final String ALTITUDE_COLUMN = "altitude";
-    public static final String SIM_STATE_COLUMN = "simState";
-    public static final String SIM_OPERATOR_COLUMN = "simOperator";
-    public static final String NETWORK_REGISTRATION_COLUMN = "networkRegistrationInfo";
 
     /**
      * Given an Android defined Network Info Domain, return a Protocol Buffer defined {@link Domain}.

@@ -10,22 +10,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
-import com.craxiom.networksurvey.ui.wifi.OpenWifiSettingsButton
-import com.craxiom.networksurvey.ui.wifi.ScanRateInfoButton
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
+import com.craxiom.networksurvey.ui.common.NsScanRateActions
+import com.craxiom.networksurvey.ui.common.wifiScanRateHelp
+import com.craxiom.networksurvey.ui.theme.NsTheme
+
+private val PILL_MIN_HEIGHT = 32.dp
+private val PILL_BORDER = 1.dp
 
 /**
  * Survey-data card. Shows the recording/exclusion status and include/exclude toggle for this
@@ -46,28 +49,28 @@ fun WifiSurveyDataCard(
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    DetailsCardFrame(modifier = modifier) {
+    NsDetailsCardFrame(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top,
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xxs),
             ) {
                 Text(
                     text = stringResource(R.string.wifi_details_survey_data),
-                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = stringResource(R.string.wifi_details_scan_rate_compact, scanRateSeconds),
-                    style = TextStyle(fontSize = 12.sp),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            ScanRateInfoButton()
-            OpenWifiSettingsButton(onNavigate = onNavigateToSettings)
+            NsScanRateActions(wifiScanRateHelp(), onNavigateToSettings)
         }
         StatusPillRow(
             statusText = if (isExcluded) {
@@ -114,11 +117,11 @@ private fun StatusPillRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.m),
     ) {
         Text(
             text = statusText,
-            style = TextStyle(fontSize = 14.sp),
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
@@ -141,21 +144,20 @@ private fun CaptionText(text: String) {
 private fun TogglePill(label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .minimumInteractiveComponentSize()
+            .clip(NsTheme.shapes.pill)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                RoundedCornerShape(999.dp),
-            )
-            .clickable(onClick = onClick)
-            .heightIn(min = 32.dp)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .border(BorderStroke(PILL_BORDER, MaterialTheme.colorScheme.outlineVariant), NsTheme.shapes.pill)
+            .clickable(role = Role.Button, onClick = onClick)
+            .heightIn(min = PILL_MIN_HEIGHT)
+            .padding(horizontal = NsTheme.spacing.m + NsTheme.spacing.xxs, vertical = NsTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
-            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-            color = WifiTokens.SsidAccent,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }

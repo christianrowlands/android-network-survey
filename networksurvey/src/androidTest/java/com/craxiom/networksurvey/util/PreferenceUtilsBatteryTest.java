@@ -137,7 +137,7 @@ public class PreferenceUtilsBatteryTest
                 .apply();
         
         threshold = PreferenceUtils.getBatteryThresholdPercent(context);
-        assertThat(threshold).isEqualTo(0); // Invalid value returns default
+        assertThat(threshold).isEqualTo(95); // Clamped to the maximum
         
         // Test negative value
         preferences.edit()
@@ -145,7 +145,7 @@ public class PreferenceUtilsBatteryTest
                 .apply();
         
         threshold = PreferenceUtils.getBatteryThresholdPercent(context);
-        assertThat(threshold).isEqualTo(0); // Invalid value returns default
+        assertThat(threshold).isEqualTo(0); // Clamped to the minimum (disabled)
     }
     
     @Test

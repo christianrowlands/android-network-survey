@@ -34,12 +34,4 @@ object BluetoothCompanyNameProvider {
             }
         }
     }
-
-    /**
-     * For testing or forced reset.
-     */
-    @JvmStatic
-    fun reset() {
-        instanceRef.set(null)
-    }
 }

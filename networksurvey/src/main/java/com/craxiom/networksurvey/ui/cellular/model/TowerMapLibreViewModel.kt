@@ -3,14 +3,13 @@ package com.craxiom.networksurvey.ui.cellular.model
 import android.location.Location
 import android.os.Handler
 import android.os.Looper
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.messaging.GsmRecord
 import com.craxiom.messaging.LteRecord
 import com.craxiom.messaging.NrRecord
 import com.craxiom.messaging.UmtsRecord
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.Api
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.data.api.TowerResponse
@@ -39,8 +38,6 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.sources.VectorSource
@@ -68,19 +65,22 @@ private const val BEACONDB_STYLE_SOURCE_NAME = "beacondb-source"
 private const val BEACONDB_COVERAGE_COLOR = "#ff8000"
 private const val BEACONDB_COVERAGE_OPACITY = 0.4f
 
+/**
+ * The map's state: the towers, the layers and their filters, the serving-cell overlays, the tower
+ * search, and the MapLibre map while one is shown. The Map tab's [com.craxiom.networksurvey.ui.map.MapTabViewModel]
+ * feeds it serving cells through [MapCellFeed].
+ *
+ * It outlives its MapView: the Map tab keeps it across tab visits while the MapView is recreated
+ * on each, so [onMapDestroyed] drops the map and every async path checks the map is still live.
+ */
+class TowerMapLibreViewModel : ViewModel(), MapCellFeed {
 
-class TowerMapLibreViewModel : ViewModel() {
-
-    // UI insets ------------------------------------
-    private val _paddingInsets = MutableStateFlow(PaddingValues(0.dp, 0.dp, 0.dp, 0.dp))
-    val paddingInsets = _paddingInsets.asStateFlow()
+    /** True once the saved layer and filter settings have been applied to this view model. */
+    internal var savedSettingsLoaded = false
 
     // Serving cell info -----------------------------
     private val _servingCells = MutableStateFlow<HashMap<Int, ServingCellInfo>>(HashMap())
     val servingCells = _servingCells.asStateFlow()
-
-    private val _servingSignals = MutableStateFlow<HashMap<Int, ServingSignalInfo>>(HashMap())
-    val servingSignals = _servingSignals.asStateFlow()
 
     // Towers ---------------------------------------
     // Area queries are served through the tile cache; serving cell only mode publishes its
@@ -129,8 +129,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
     private var hasCenteredLocation = false
 
-    // MapLibre handles ------------------------------
-    private var mapView: MapView? = null
+    // The MapLibre map while one is shown ----------
     private var mapLibreMap: MapLibreMap? = null
 
     // Mutex to prevent concurrent tower queries
@@ -145,9 +144,11 @@ class TowerMapLibreViewModel : ViewModel() {
     // Track if the current radio type selection is manual (user-selected) vs automatic
     private var isManualRadioTypeSelection = false
 
+    // Keeps the PLMN filter on the selected SIM's serving operator until the user sets one
+    private val servingPlmnFollower = ServingPlmnFollower()
+
     // Selected SIM subscription ID for display
     private val _selectedSimSubscriptionId = MutableStateFlow<Int?>(null)
-    val selectedSimSubscriptionId = _selectedSimSubscriptionId.asStateFlow()
 
     // Map layer settings
     private val _selectedMapTileSource = MutableStateFlow(MapTileSource.OPENFREEMAP)
@@ -210,7 +211,7 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _isSearchInProgress = MutableStateFlow(false)
     val isSearchInProgress = _isSearchInProgress.asStateFlow()
 
-    private val _searchError = MutableStateFlow<String?>(null)
+    private val _searchError = MutableStateFlow<Int?>(null)
     val searchError = _searchError.asStateFlow()
 
     // Search input state
@@ -249,11 +250,7 @@ class TowerMapLibreViewModel : ViewModel() {
         }
     }
 
-    fun setPaddingInsets(paddingValues: PaddingValues) {
-        _paddingInsets.value = paddingValues
-    }
-
-    fun setSelectedRadioType(radioType: String, isManualSelection: Boolean = false) {
+    override fun setSelectedRadioType(radioType: String, isManualSelection: Boolean) {
         if (_selectedRadioType.value != radioType) {
             _selectedRadioType.value = radioType
             isManualRadioTypeSelection = isManualSelection
@@ -279,7 +276,8 @@ class TowerMapLibreViewModel : ViewModel() {
         _colorOverrideVersion.value++
     }
 
-    fun setPlmnFilter(plmn: Plmn) {
+    override fun setPlmnFilter(plmn: Plmn, isManualSelection: Boolean) {
+        if (isManualSelection) servingPlmnFollower.onUserPick()
         if (_plmnFilter.value != plmn) {
             _plmnFilter.value = plmn
             // Clear towers when PLMN filter changes
@@ -294,7 +292,7 @@ class TowerMapLibreViewModel : ViewModel() {
         }
     }
 
-    fun setTowerSource(towerSource: TowerSource) {
+    override fun setTowerSource(towerSource: TowerSource) {
         if (_selectedSource.value != towerSource) {
             _selectedSource.value = towerSource
             // Clear towers when source changes
@@ -309,7 +307,7 @@ class TowerMapLibreViewModel : ViewModel() {
         }
     }
 
-    fun setSelectedSimSubscriptionId(subscriptionId: Int) {
+    override fun setSelectedSimSubscriptionId(subscriptionId: Int) {
         if (_selectedSimSubscriptionId.value != subscriptionId) {
             _selectedSimSubscriptionId.value = subscriptionId
 
@@ -323,6 +321,10 @@ class TowerMapLibreViewModel : ViewModel() {
                 Timber.d("Selected SIM changed to subscription $subscriptionId with technology $currentTechnology")
                 setSelectedRadioType(currentTechnology)
             }
+
+            // The operator follows the newly selected SIM too, even if the user had set one
+            servingPlmnFollower.reset()
+            followServingPlmn(servingCellInfo?.servingCell, subscriptionId)
 
             // Recompute serving cell overlays for the selected SIM
             updateServingCellLines()
@@ -443,6 +445,8 @@ class TowerMapLibreViewModel : ViewModel() {
                     viewModelScope.launch {
                         try {
                             val layerIds = fetchBeaconDbLayerIds(tileJsonUrl)
+                            // The map may have been destroyed (a tab switch) during the fetch
+                            if (mapLibreMap !== map) return@launch
                             layerIds.forEach { layerId ->
                                 val fullLayerId = layerPrefix + layerId
                                 if (style.getLayer(fullLayerId) == null) {
@@ -564,26 +568,15 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     /**
-     * Call this from the Composable’s onMapReady.
+     * Call this from the Composable's onMapReady. The camera position is the Compose
+     * [com.craxiom.networksurvey.ui.cellular.towermap.CameraPositionState]'s job (the Map tab seeds
+     * it), so this only wires the camera listeners.
      */
-    fun initMapLibre(view: MapView, map: MapLibreMap, style: Style) {
+    fun initMapLibre(map: MapLibreMap) {
         detachCameraListeners()
-        mapView = view
         mapLibreMap = map
 
-        // 1) Restore the saved viewport if there is one, otherwise fall back to a world view.
-        // The camera idle event that follows drives the first tower query; the tile cache
-        // decides whether anything actually needs fetching, so a recreated map over an area
-        // that is already cached costs no request.
-        val savedBounds = PreferenceUtils.getLatLngBoundsFromPreferences(view.context)
-        val camPos = if (savedBounds != null) {
-            CameraPosition.Builder().target(savedBounds.center).zoom(INITIAL_ZOOM).build()
-        } else {
-            CameraPosition.Builder().target(LatLng(0.0, 0.0)).zoom(1.0).build()
-        }
-        map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
-
-        // 2) When the camera stops moving, plan a tower query after a short trailing debounce.
+        // 1) When the camera stops moving, plan a tower query after a short trailing debounce.
         // A move that starts while the debounce is pending cancels it, so a fling followed by
         // a drag never fires mid gesture.
         val idleListener = MapLibreMap.OnCameraIdleListener {
@@ -599,7 +592,7 @@ class TowerMapLibreViewModel : ViewModel() {
         cameraIdleListener = idleListener
         cameraMoveStartedListener = moveStartedListener
 
-        // 3) tweak gesture settings
+        // 2) tweak gesture settings
         map.uiSettings.apply {
             isZoomGesturesEnabled = true
             isScrollGesturesEnabled = true
@@ -644,9 +637,20 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     /**
+     * Called just before the MapView is destroyed (the Map tab left the screen). Drops the map and
+     * its layer bookkeeping so a late tower query, search or BeaconDB fetch never touches it; the
+     * towers, filters and serving cells stay for the next MapView.
+     */
+    fun onMapDestroyed() {
+        detachCameraListeners()
+        mapLibreMap = null
+        beaconDbLayerIds = emptyList()
+    }
+
+    /**
      * Centers the map on the given location once and returns true if set.
      */
-    fun setMapCenterLocation(location: Location): Boolean {
+    override fun setMapCenterLocation(location: Location): Boolean {
         val map = mapLibreMap  // Capture local reference to avoid race condition
         if (!hasCenteredLocation && map != null) {
             hasCenteredLocation = true
@@ -657,9 +661,9 @@ class TowerMapLibreViewModel : ViewModel() {
                 .zoom(INITIAL_ZOOM)
                 .build()
 
-            // Ensure we call animateCamera on the main thread
+            // Ensure we call animateCamera on the main thread, on a map that is still shown
             Handler(Looper.getMainLooper()).post {
-                map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                if (mapLibreMap === map) map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
             }
         }
         return hasCenteredLocation
@@ -693,8 +697,8 @@ class TowerMapLibreViewModel : ViewModel() {
     /**
      * Handle incoming cellular batches (serving cell updates).
      */
-    fun onCellularBatchResults(
-        cellularBatchResults: MutableList<CellularRecordWrapper?>?,
+    override fun onCellularBatchResults(
+        cellularBatchResults: List<CellularRecordWrapper?>?,
         subscriptionId: Int
     ) {
         if (cellularBatchResults.isNullOrEmpty()) return
@@ -706,10 +710,9 @@ class TowerMapLibreViewModel : ViewModel() {
                 it?.cellularRecord != null && CellularUtils.isServingCell(it.cellularRecord)
             }
 
-        updateServingCellSignals(servingCellRecord, subscriptionId)
-
         // Check if the serving cell technology has changed and update selectedRadioType if needed
         checkAndUpdateSelectedRadioType(servingCellRecord, subscriptionId)
+        followServingPlmn(servingCellRecord, subscriptionId)
 
         // No need to update the serving cell if it is the same as the current serving cell. This
         // prevents a map refresh which is expensive.
@@ -741,7 +744,7 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     /**
-     * Save the viewport when the Fragment pauses.
+     * Saves the viewport, so the next launch opens the map where it was left.
      */
     fun saveViewport(context: android.content.Context) {
         lastViewportBounds.value?.let { bounds ->
@@ -752,48 +755,18 @@ class TowerMapLibreViewModel : ViewModel() {
     /**
      * Triggers any necessary updates to SIM count aware variables.
      */
-    fun resetSimCount() {
+    override fun resetSimCount() {
         _servingCells.update { HashMap() }
-        _servingSignals.update { HashMap() }
         previousServingCellTechnology.clear()
         // Clear manual selection when SIM changes
         isManualRadioTypeSelection = false
+        servingPlmnFollower.reset()
     }
 
-    /**
-     * Updates the serving cell for a given subscription.
-     * Used by Survey Monitor to pass serving cell data from its ViewModel.
-     */
-    fun setServingCell(servingCellRecord: CellularRecordWrapper?, subscriptionId: Int) {
-        updateServingCellSignals(servingCellRecord, subscriptionId)
-        checkAndUpdateSelectedRadioType(servingCellRecord, subscriptionId)
-
-        // No need to update the serving cell if it is the same as the current serving cell
-        val currentServingCell = _servingCells.value[subscriptionId]
-        if (Objects.equals(currentServingCell?.servingCell, servingCellRecord)) return
-
-        if (servingCellRecord == null) {
-            _servingCells.update { map ->
-                HashMap(map).apply { remove(subscriptionId) }
-            }
-        } else {
-            _servingCells.update { oldMap ->
-                val newMap = HashMap(oldMap)
-                newMap[subscriptionId] =
-                    ServingCellInfo(servingCellRecord, subscriptionId, System.currentTimeMillis())
-                newMap
-            }
-        }
-
-        // Update serving cell locations and coverage circles when serving cell changes
-        updateServingCellLocations()
-
-        // If in serving cell only mode, re-query to update displayed towers
-        if (_showOnlyServingCell.value && _showTowersLayer.value) {
-            viewModelScope.launch {
-                runTowerQuery()
-            }
-        }
+    /** Sets the PLMN filter to the serving operator of [subscriptionId] when it should follow it. */
+    private fun followServingPlmn(servingCellRecord: CellularRecordWrapper?, subscriptionId: Int) {
+        servingPlmnFollower.plmnFor(servingCellRecord, subscriptionId, _selectedSimSubscriptionId.value)
+            ?.let { setPlmnFilter(it) }
     }
 
     /**
@@ -826,23 +799,6 @@ class TowerMapLibreViewModel : ViewModel() {
                 setSelectedRadioType(currentTechnology)
             } else {
                 Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for subscription $subscriptionId, but not updating selectedRadioType (selected is $selectedSim)")
-            }
-        }
-    }
-
-    private fun updateServingCellSignals(
-        servingCellRecord: CellularRecordWrapper?,
-        subscriptionId: Int
-    ) {
-        if (servingCellRecord == null) {
-            _servingSignals.update { map ->
-                HashMap(map).apply { remove(subscriptionId) }
-            }
-        } else {
-            _servingSignals.update { oldMap ->
-                val newMap = HashMap(oldMap)
-                newMap[subscriptionId] = CellularUtils.getSignalInfo(servingCellRecord)
-                newMap
             }
         }
     }
@@ -1309,7 +1265,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
                 // Check for 204 No Content specifically
                 if (response.code() == 204) {
-                    _searchError.value = "No towers found with the specified parameters"
+                    _searchError.value = R.string.tower_search_no_match
                     _searchedTower.value = null
                     _searchedTowerCoverage.value = null
                 } else if (response.isSuccessful && response.body() != null) {
@@ -1357,6 +1313,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
                                 // Ensure we animate on the main thread with padding to show full circle
                                 Handler(Looper.getMainLooper()).post {
+                                    if (mapLibreMap !== map) return@post
                                     // Use padding to ensure the circle edge is visible
                                     val padding = 100 // pixels
                                     map.animateCamera(
@@ -1370,9 +1327,9 @@ class TowerMapLibreViewModel : ViewModel() {
                                     .zoom(SEARCH_RESULT_ZOOM)
                                     .build()
 
-                                // Ensure we animate on the main thread
+                                // Ensure we animate on the main thread, on a map that is still shown
                                 Handler(Looper.getMainLooper()).post {
-                                    map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                                    if (mapLibreMap === map) map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
                                 }
                             }
                         }
@@ -1381,19 +1338,19 @@ class TowerMapLibreViewModel : ViewModel() {
                             Timber.d("Search returned ${towerResponse.cells.size} towers, using first result")
                         }
                     } else {
-                        _searchError.value = "No towers found with the specified values"
+                        _searchError.value = R.string.tower_search_no_match
                         _searchedTower.value = null
                         _searchedTowerCoverage.value = null
                     }
                 } else {
-                    _searchError.value = "Error searching for towers. Please try again."
+                    _searchError.value = R.string.tower_search_failed
                     _searchedTower.value = null
                     _searchedTowerCoverage.value = null
                     Timber.e("Tower search failed with response code: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error searching for tower")
-                _searchError.value = "Error searching for tower: ${e.message}"
+                _searchError.value = R.string.tower_search_failed
                 _searchedTower.value = null
                 _searchedTowerCoverage.value = null
             } finally {
@@ -1467,18 +1424,11 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        super.onCleared()
-
         // Clear map references to prevent memory leaks
-        detachCameraListeners()
-        mapLibreMap = null
-        mapView = null
+        onMapDestroyed()
 
         // Clear location reference
         myLocation = null
-
-        // Clear any stored layer IDs
-        beaconDbLayerIds = emptyList()
     }
 
 }

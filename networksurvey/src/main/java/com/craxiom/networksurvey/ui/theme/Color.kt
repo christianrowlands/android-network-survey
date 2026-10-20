@@ -1,75 +1,101 @@
 package com.craxiom.networksurvey.ui.theme
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 
-val primaryLight = Color(0xFF0F6681)
-val onPrimaryLight = Color(0xFFFFFFFF)
-val primaryContainerLight = Color(0xFFBCE9FF)
-val onPrimaryContainerLight = Color(0xFF001F29)
-val secondaryLight = Color(0xFF4D616B)
-val onSecondaryLight = Color(0xFFFFFFFF)
-val secondaryContainerLight = Color(0xFFD0E6F2)
-val onSecondaryContainerLight = Color(0xFF081E27)
-val tertiaryLight = Color(0xFF116B56)
-val onTertiaryLight = Color(0xFFFFFFFF)
-val tertiaryContainerLight = Color(0xFFA3F2D8)
-val onTertiaryContainerLight = Color(0xFF002018)
-val errorLight = Color(0xFFBA1A1A)
-val onErrorLight = Color(0xFFFFFFFF)
-val errorContainerLight = Color(0xFFFFDAD6)
-val onErrorContainerLight = Color(0xFF410002)
-val backgroundLight = Color(0xFFF5FAFD)
-val onBackgroundLight = Color(0xFF171C1F)
-val surfaceLight = Color(0xFFF5FAFD)
-val onSurfaceLight = Color(0xFF171C1F)
-val surfaceVariantLight = Color(0xFFDCE4E9)
-val onSurfaceVariantLight = Color(0xFF40484C)
-val outlineLight = Color(0xFF70787D)
-val outlineVariantLight = Color(0xFFC0C8CC)
-val scrimLight = Color(0xFF000000)
-val inverseSurfaceLight = Color(0xFF2C3134)
-val inverseOnSurfaceLight = Color(0xFFEDF1F5)
-val inversePrimaryLight = Color(0xFF8AD0EE)
-val surfaceDimLight = Color(0xFFD6DBDE)
-val surfaceBrightLight = Color(0xFFF5FAFD)
-val surfaceContainerLowestLight = Color(0xFFFFFFFF)
-val surfaceContainerLowLight = Color(0xFFF0F4F8)
-val surfaceContainerLight = Color(0xFFEAEEF2)
-val surfaceContainerHighLight = Color(0xFFE4E9EC)
-val surfaceContainerHighestLight = Color(0xFFDEE3E6)
+/**
+ * Material 3 color schemes built from [NsPalette].
+ *
+ * Prototype tokens map onto roles directly: the ground is `background`/`surface`, the panel is
+ * `surfaceContainerLowest`/`surfaceContainerLow` (cards), the nav bar is `surfaceContainer`, the
+ * rule is `outlineVariant`, the accent is `primary` with its soft tint as `primaryContainer` and
+ * `secondaryContainer` (the nav pill). Roles the prototype never defines are derived from the
+ * nearest prototype token; `ColorContrastTest` holds every text pair to 4.5:1.
+ *
+ * The XML theme (`res/values/colors.xml`, `res/values-night/colors.xml`) mirrors the [NsAccent.DEFAULT] schemes.
+ */
+fun nsLightColorScheme(accent: NsAccent = NsAccent.DEFAULT): ColorScheme {
+    val a = accent.light
+    return lightColorScheme(
+        primary = a.fill,
+        onPrimary = a.onFill,
+        primaryContainer = a.soft,
+        onPrimaryContainer = a.ink,
+        inversePrimary = accent.dark.fill,
+        secondary = a.fill,
+        onSecondary = a.onFill,
+        secondaryContainer = a.soft,
+        onSecondaryContainer = a.ink,
+        tertiary = NsPalette.Status.GreenDeepLight,
+        onTertiary = NsPalette.Light.Panel,
+        tertiaryContainer = NsPalette.Status.GreenSoftLight,
+        onTertiaryContainer = NsPalette.Status.OnGreenContainerLight,
+        background = NsPalette.Light.Ground,
+        onBackground = NsPalette.Light.Ink,
+        surface = NsPalette.Light.Ground,
+        onSurface = NsPalette.Light.Ink,
+        surfaceVariant = NsPalette.Light.Rule,
+        onSurfaceVariant = NsPalette.Light.Ink2,
+        surfaceTint = a.fill,
+        inverseSurface = NsPalette.Light.Toast,
+        inverseOnSurface = NsPalette.Light.Ground,
+        error = NsPalette.Status.RedLight,
+        onError = NsPalette.Light.Panel,
+        errorContainer = NsPalette.Status.RedSoftLight,
+        onErrorContainer = NsPalette.Status.OnRedContainerLight,
+        outline = NsPalette.Light.Ink3,
+        outlineVariant = NsPalette.Light.Rule,
+        scrim = NsPalette.Scrim,
+        surfaceBright = NsPalette.Light.Panel,
+        surfaceDim = NsPalette.Light.SurfaceDim,
+        surfaceContainerLowest = NsPalette.Light.Panel,
+        surfaceContainerLow = NsPalette.Light.Panel,
+        surfaceContainer = NsPalette.Light.Nav,
+        surfaceContainerHigh = NsPalette.Light.PanelHigh,
+        surfaceContainerHighest = NsPalette.Light.Rule,
+    )
+}
 
-val primaryDark = Color(0xFF20A1C7)
-val onPrimaryDark = Color(0xFFE1F2FA)
-val primaryContainerDark = Color(0xFF004D63)
-val onPrimaryContainerDark = Color(0xFFBCE9FF)
-val secondaryDark = Color(0xFFBA68C8)
-val onSecondaryDark = Color(0xFF1E333C)
-val secondaryContainerDark = Color(0xFF303C50)
-val onSecondaryContainerDark = Color(0xFFD4E3F1)
-val tertiaryDark = Color(0xFF87D6BC)
-val onTertiaryDark = Color(0xFF00382C)
-val tertiaryContainerDark = Color(0xFF005140)
-val onTertiaryContainerDark = Color(0xFFA3F2D8)
-val errorDark = Color(0xFFFFB4AB)
-val onErrorDark = Color(0xFF690005)
-val errorContainerDark = Color(0xFF93000A)
-val onErrorContainerDark = Color(0xFFFFDAD6)
-val backgroundDark = Color(0xFF090D0E)
-val onBackgroundDark = Color(0xFFDEE3E6)
-val surfaceDark = Color(0xFF090D0E)
-val onSurfaceDark = Color(0xFFDEE3E6)
-val surfaceVariantDark = Color(0xFF40484C)
-val onSurfaceVariantDark = Color(0xFFCDD0DA)
-val outlineDark = Color(0xFF8A9296)
-val outlineVariantDark = Color(0xFF40484C)
-val scrimDark = Color(0xFF000000)
-val inverseSurfaceDark = Color(0xFFDEE3E6)
-val inverseOnSurfaceDark = Color(0xFF2C3134)
-val inversePrimaryDark = Color(0xFF0F6681)
-val surfaceDimDark = Color(0xFF0F1417)
-val surfaceBrightDark = Color(0xFF353A3D)
-val surfaceContainerLowestDark = Color(0xFF191E21) //Color(0xFF0A0F11)
-val surfaceContainerLowDark = Color(0xFF191E21) //Color(0xFF171C1F)
-val surfaceContainerDark = Color(0xFF10151C)
-val surfaceContainerHighDark = Color(0xFF262B2D)
-val surfaceContainerHighestDark = Color(0xFF303538)
+/** Dark counterpart of [nsLightColorScheme]. Dark is the prototype's default rendering. */
+fun nsDarkColorScheme(accent: NsAccent = NsAccent.DEFAULT): ColorScheme {
+    val a = accent.dark
+    return darkColorScheme(
+        primary = a.fill,
+        onPrimary = a.onFill,
+        primaryContainer = a.soft,
+        onPrimaryContainer = a.ink,
+        inversePrimary = accent.light.fill,
+        secondary = a.fill,
+        onSecondary = a.onFill,
+        secondaryContainer = a.soft,
+        onSecondaryContainer = a.ink,
+        tertiary = NsPalette.Status.GreenDark,
+        onTertiary = NsPalette.Dark.Ground,
+        tertiaryContainer = NsPalette.Status.GreenSoftDark,
+        onTertiaryContainer = NsPalette.Status.OnGreenContainerDark,
+        background = NsPalette.Dark.Ground,
+        onBackground = NsPalette.Dark.Ink,
+        surface = NsPalette.Dark.Ground,
+        onSurface = NsPalette.Dark.Ink,
+        surfaceVariant = NsPalette.Dark.Rule,
+        onSurfaceVariant = NsPalette.Dark.Ink2,
+        surfaceTint = a.fill,
+        inverseSurface = NsPalette.Dark.Ink,
+        inverseOnSurface = NsPalette.Dark.Panel,
+        error = NsPalette.Status.RedDark,
+        onError = NsPalette.Dark.Ground,
+        errorContainer = NsPalette.Status.RedSoftDark,
+        onErrorContainer = NsPalette.Status.OnRedContainerDark,
+        outline = NsPalette.Dark.Ink3,
+        outlineVariant = NsPalette.Dark.Rule,
+        scrim = NsPalette.Scrim,
+        surfaceBright = NsPalette.Dark.SurfaceBright,
+        surfaceDim = NsPalette.Dark.Ground,
+        surfaceContainerLowest = NsPalette.Dark.PanelLowest,
+        surfaceContainerLow = NsPalette.Dark.Panel,
+        surfaceContainer = NsPalette.Dark.Nav,
+        surfaceContainerHigh = NsPalette.Dark.PanelHigh,
+        surfaceContainerHighest = NsPalette.Dark.Rule,
+    )
+}

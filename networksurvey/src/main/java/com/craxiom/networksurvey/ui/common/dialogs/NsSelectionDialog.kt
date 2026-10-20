@@ -4,26 +4,30 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.preview.NsPreview
 import com.craxiom.networksurvey.ui.preview.PreviewDayNight
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * A single-choice (radio) selection dialog.
@@ -32,6 +36,8 @@ import com.craxiom.networksurvey.ui.preview.PreviewDayNight
  * - Default: the user picks an option then taps the confirm ("Save") button to commit.
  * - [immediateApply]: tapping an option commits and closes immediately (no Save button), matching
  *   the snappy "pick and go" behavior of sort dialogs.
+ *
+ * @param message optional explanation of the options, shown under them.
  */
 @Composable
 fun NsSingleChoiceDialog(
@@ -44,8 +50,9 @@ fun NsSingleChoiceDialog(
     immediateApply: Boolean = false,
     confirmText: String = stringResource(R.string.save),
     dismissText: String = stringResource(R.string.cancel),
+    message: AnnotatedString? = null,
 ) {
-    var selected by remember(selectedIndex) { mutableStateOf(selectedIndex) }
+    var selected by remember(selectedIndex) { mutableIntStateOf(selectedIndex) }
 
     NsAlertDialogScaffold(
         title = title,
@@ -105,6 +112,10 @@ fun NsSingleChoiceDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = option)
                 }
+            }
+            if (message != null) {
+                Spacer(modifier = Modifier.height(NsTheme.spacing.m))
+                Text(text = message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
     )

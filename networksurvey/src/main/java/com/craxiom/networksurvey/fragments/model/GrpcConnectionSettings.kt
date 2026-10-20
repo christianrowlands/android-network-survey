@@ -1,64 +1,61 @@
 package com.craxiom.networksurvey.fragments.model
 
+import android.content.SharedPreferences
+import androidx.core.content.edit
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+
 /**
- * Holds the gRPC connection settings for a network survey.
+ * Holds the gRPC server connection settings. What is streamed is not part of the settings: a gRPC
+ * stream receives every record type the survey records (except CDR, which is files only).
+ *
+ * @property deviceName The name set on every message sent to the server; empty sends no name.
  */
 data class GrpcConnectionSettings(
-    val host: String?,
-    val port: Int?,
-    val deviceName: String?,
-    val cellularStreamEnabled: Boolean?,
-    val phoneStateStreamEnabled: Boolean?,
-    val wifiStreamEnabled: Boolean?,
-    val bluetoothStreamEnabled: Boolean?,
-    val gnssStreamEnabled: Boolean?,
-    val deviceStatusStreamEnabled: Boolean?
+    val host: String,
+    val port: Int,
+    val deviceName: String,
 ) {
 
-    class Builder {
-        private var host: String? = null
-        private var port: Int? = null
-        private var deviceName: String? = null
-        private var cellularStreamEnabled: Boolean? = null
-        private var phoneStateStreamEnabled: Boolean? = null
-        private var wifiStreamEnabled: Boolean? = null
-        private var bluetoothStreamEnabled: Boolean? = null
-        private var gnssStreamEnabled: Boolean? = null
-        private var deviceStatusStreamEnabled: Boolean? = null
+    /** "host:port", with an IPv6 literal in brackets so the port stays readable. */
+    val displayAddress: String get() = displayAddress(host, port)
 
-        fun host(host: String) = apply { this.host = host }
-        fun port(port: Int) = apply { this.port = port }
-        fun deviceName(deviceName: String) = apply { this.deviceName = deviceName }
-        fun cellularStreamEnabled(cellularStreamEnabled: Boolean) =
-            apply { this.cellularStreamEnabled = cellularStreamEnabled }
-
-        fun phoneStateStreamEnabled(phoneStateStreamEnabled: Boolean) =
-            apply { this.phoneStateStreamEnabled = phoneStateStreamEnabled }
-
-        fun wifiStreamEnabled(wifiStreamEnabled: Boolean) =
-            apply { this.wifiStreamEnabled = wifiStreamEnabled }
-
-        fun bluetoothStreamEnabled(bluetoothStreamEnabled: Boolean) =
-            apply { this.bluetoothStreamEnabled = bluetoothStreamEnabled }
-
-        fun gnssStreamEnabled(gnssStreamEnabled: Boolean) =
-            apply { this.gnssStreamEnabled = gnssStreamEnabled }
-
-        fun deviceStatusStreamEnabled(deviceStatusStreamEnabled: Boolean) =
-            apply { this.deviceStatusStreamEnabled = deviceStatusStreamEnabled }
-
-        fun build(): GrpcConnectionSettings {
-            return GrpcConnectionSettings(
-                host,
-                port,
-                deviceName,
-                cellularStreamEnabled ?: false,
-                phoneStateStreamEnabled ?: false,
-                wifiStreamEnabled ?: false,
-                bluetoothStreamEnabled ?: false,
-                gnssStreamEnabled ?: false,
-                deviceStatusStreamEnabled ?: false
+    companion object {
+        /**
+         * @return The gRPC server settings the user saved, or null if no server host is saved (the
+         * gRPC destination is not set up).
+         */
+        @JvmStatic
+        fun fromPreferences(preferences: SharedPreferences): GrpcConnectionSettings? {
+            val host = preferences.getString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, "")
+            if (host.isNullOrBlank()) return null
+            val port = preferences.getInt(
+                NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT,
+                NetworkSurveyConstants.DEFAULT_GRPC_PORT,
             )
+            val deviceName = preferences.getString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, "") ?: ""
+            return GrpcConnectionSettings(host, port, deviceName)
         }
+
+        /**
+         * Saves [settings] in one commit, so the survey service sees the host, port and device name
+         * change together. Call off the main thread.
+         */
+        @JvmStatic
+        fun save(preferences: SharedPreferences, settings: GrpcConnectionSettings) {
+            preferences.edit(commit = true) {
+                putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, settings.host)
+                putInt(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT, settings.port)
+                putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, settings.deviceName)
+            }
+        }
+
+        /** "host:port", with an IPv6 literal in brackets. */
+        @JvmStatic
+        fun displayAddress(host: String, port: Int): String =
+            if (host.contains(IPV6_SEPARATOR) && !host.startsWith(IPV6_OPEN)) "$IPV6_OPEN$host$IPV6_CLOSE:$port" else "$host:$port"
+
+        private const val IPV6_SEPARATOR = ':'
+        private const val IPV6_OPEN = '['
+        private const val IPV6_CLOSE = ']'
     }
 }

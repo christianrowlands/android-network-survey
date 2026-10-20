@@ -7,10 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
@@ -34,6 +31,8 @@ import com.craxiom.networksurvey.data.ManufacturerResolver
 import com.craxiom.networksurvey.data.ManufacturerSources
 import com.craxiom.networksurvey.data.oui.OuiStatus
 import androidx.compose.ui.res.stringResource
+import com.craxiom.networksurvey.ui.common.NsCardHeader
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 
 /**
  * Authoritative manufacturer identity card for a Bluetooth device. Always renders the three
@@ -72,77 +71,58 @@ fun BluetoothManufacturerCard(
 
     var showSheet by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.elevatedCardColors()
-    ) {
-        Column(Modifier.padding(padding)) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.manufacturer_label),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(
-                    onClick = { showSheet = true },
-                    modifier = Modifier
-                ) {
+    NsDetailsCardFrame(modifier = modifier.fillMaxWidth()) {
+        NsCardHeader(
+            text = stringResource(R.string.manufacturer_label),
+            trailingContent = {
+                IconButton(onClick = { showSheet = true }) {
                     Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = stringResource(R.string.manufacturer_info_content_description)
+                        painter = painterResource(R.drawable.ic_info),
+                        contentDescription = stringResource(R.string.manufacturer_info_content_description),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
+            },
+        )
 
-            // Primary line
-            val primary = sources.primary()
-            val primaryText = primary ?: context.getString(R.string.manufacturer_all_unknown)
-            val primaryItalic = primary == null
+        // Primary line
+        val primary = sources.primary()
+        val primaryText = primary ?: stringResource(R.string.manufacturer_all_unknown)
+        val primaryItalic = primary == null
 
-            Text(
-                text = primaryText,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontStyle = if (primaryItalic) FontStyle.Italic else FontStyle.Normal
-                )
+        Text(
+            text = primaryText,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontStyle = if (primaryItalic) FontStyle.Italic else FontStyle.Normal
             )
+        )
 
-            Spacer(modifier = Modifier.height(8.dp))
+        SourcesSection(sources)
 
-            SourcesSection(sources)
+        // Disagreement caption; only when all sources are terminal and at least two resolved disagree.
+        val terminal = sources.ouiStatus != OuiStatus.LOADING
+        val hasDisagreement = terminal && sources.resolvedCount() >= 2 && !sources.allAgree()
+        if (hasDisagreement) {
+            Text(
+                text = stringResource(R.string.manufacturer_disagreement_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
-            // Disagreement caption; only when all sources are terminal and at least two resolved disagree.
-            val terminal = sources.ouiStatus != OuiStatus.LOADING
-            val hasDisagreement = terminal && sources.resolvedCount() >= 2 && !sources.allAgree()
-            if (hasDisagreement) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.manufacturer_disagreement_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Card-level caption when OUI lookup is disabled. Explains why the Chipset row is
-            // blank and points to the actionable path. Rendered once below the whole card, never
-            // crammed into a per-row value cell.
-            if (sources.ouiStatus == OuiStatus.LOOKUP_DISABLED) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val lockedByMdm = remember(context) { isOuiLookupLockedByMdm(context) }
-                Text(
-                    text = if (lockedByMdm)
-                        stringResource(R.string.manufacturer_disabled_mdm)
-                    else
-                        stringResource(R.string.manufacturer_disabled_user),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        // Card-level caption when OUI lookup is disabled. Explains why the Chipset row is
+        // blank and points to the actionable path. Rendered once below the whole card, never
+        // crammed into a per-row value cell.
+        if (sources.ouiStatus == OuiStatus.LOOKUP_DISABLED) {
+            val lockedByMdm = remember(context) { isOuiLookupLockedByMdm(context) }
+            Text(
+                text = if (lockedByMdm)
+                    stringResource(R.string.manufacturer_disabled_mdm)
+                else
+                    stringResource(R.string.manufacturer_disabled_user),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 
@@ -153,12 +133,11 @@ fun BluetoothManufacturerCard(
 
 @Composable
 private fun SourcesSection(sources: ManufacturerSources) {
-    val context = LocalContext.current
     val terminal = sources.ouiStatus != OuiStatus.LOADING
     val disagreementEnabled = terminal && sources.resolvedCount() >= 2 && !sources.allAgree()
     val primaryVendor = sources.primary()
 
-    Column(Modifier.padding(top = 4.dp)) {
+    Column {
         SourceRow(
             label = stringResource(R.string.manufacturer_brand),
             value = sources.companyIdVendor
@@ -168,7 +147,7 @@ private fun SourcesSection(sources: ManufacturerSources) {
         )
         SourceRow(
             label = stringResource(R.string.manufacturer_service),
-            value = sources.uuidVendor ?: context.getString(R.string.manufacturer_none),
+            value = sources.uuidVendor ?: stringResource(R.string.manufacturer_none),
             italic = sources.uuidVendor.isNullOrBlank(),
             highlight = disagreementEnabled && vendorDiffers(sources.uuidVendor, primaryVendor)
         )

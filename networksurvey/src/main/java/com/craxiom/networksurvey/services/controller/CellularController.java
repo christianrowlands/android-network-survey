@@ -3,11 +3,8 @@ package com.craxiom.networksurvey.services.controller;
 import static com.craxiom.networksurvey.listeners.CdrSmsObserver.SMS_URI;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
 import android.os.Build;
@@ -25,23 +22,19 @@ import android.telephony.TelephonyManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.SimChangeReceiver;
+import com.craxiom.networksurvey.SimChanges;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.CdrMmsObserver;
 import com.craxiom.networksurvey.listeners.CdrSmsObserver;
 import com.craxiom.networksurvey.logging.CdmaCsvLogger;
 import com.craxiom.networksurvey.logging.CdrLogger;
-import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GsmCsvLogger;
 import com.craxiom.networksurvey.logging.LteCsvLogger;
 import com.craxiom.networksurvey.logging.NrCsvLogger;
 import com.craxiom.networksurvey.logging.PhoneStateCsvLogger;
-import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
 import com.craxiom.networksurvey.logging.UmtsCsvLogger;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
@@ -92,8 +85,6 @@ public class CellularController extends AController
     private final Object activeSubscriptionInfoListLock = new Object();
     private List<SubscriptionInfo> activeSubscriptionInfoList = new ArrayList<>();
 
-    private final CellularSurveyRecordLogger cellularSurveyRecordLogger;
-    private final PhoneStateRecordLogger phoneStateRecordLogger;
     private final PhoneStateCsvLogger phoneStateCsvLogger;
     private final NrCsvLogger nrCsvLogger;
     private final LteCsvLogger lteCsvLogger;
@@ -101,7 +92,7 @@ public class CellularController extends AController
     private final CdmaCsvLogger cdmaCsvLogger;
     private final GsmCsvLogger gsmCsvLogger;
     private final Map<Integer, PhoneStateListener> phoneStateListenerMap = new HashMap<>();
-    private BroadcastReceiver simBroadcastReceiver;
+    private SimChanges.Listener simChangeListener;
 
     private final AtomicBoolean phoneStateLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean phoneStateAutoStartedByCellular = new AtomicBoolean(false);
@@ -121,8 +112,6 @@ public class CellularController extends AController
         this.serviceHandler = serviceHandler;
         this.surveyRecordProcessor = surveyRecordProcessor;
 
-        cellularSurveyRecordLogger = new CellularSurveyRecordLogger(surveyService, serviceLooper);
-        phoneStateRecordLogger = new PhoneStateRecordLogger(surveyService, serviceLooper);
         phoneStateCsvLogger = new PhoneStateCsvLogger(surveyService);
         nrCsvLogger = new NrCsvLogger(surveyService);
         lteCsvLogger = new LteCsvLogger(surveyService);
@@ -139,11 +128,11 @@ public class CellularController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (cellularLoggingEnabled)
         {
-            // Unregister the SIM broadcast receiver to prevent memory leak
-            if (simBroadcastReceiver != null && surveyService != null)
+            // Stop listening for SIM changes to prevent a memory leak
+            if (simChangeListener != null)
             {
-                LocalBroadcastManager.getInstance(surveyService).unregisterReceiver(simBroadcastReceiver);
-                simBroadcastReceiver = null;
+                SimChanges.removeListener(simChangeListener);
+                simChangeListener = null;
             }
 
             // Clear callback maps to prevent memory leaks from pending TelephonyManager callbacks
@@ -157,8 +146,6 @@ public class CellularController extends AController
                 telephonyManagerList.clear();
             }
 
-            cellularSurveyRecordLogger.onDestroy();
-            phoneStateRecordLogger.onDestroy();
             phoneStateCsvLogger.onDestroy();
             nrCsvLogger.onDestroy();
             lteCsvLogger.onDestroy();
@@ -199,22 +186,9 @@ public class CellularController extends AController
         return cdrLoggingEnabled.get();
     }
 
-    public boolean isAirplaneModeActive()
-    {
-        return airplaneModeActive.get();
-    }
-
     public int getScanRateMs()
     {
         return cellularScanRateMs;
-    }
-
-    public int getSimCount()
-    {
-        synchronized (activeSubscriptionInfoListLock)
-        {
-            return activeSubscriptionInfoList.size();
-        }
     }
 
     public List<SubscriptionInfo> getActiveSubscriptionInfoList()
@@ -227,8 +201,6 @@ public class CellularController extends AController
 
     public void onRolloverPreferenceChanged()
     {
-        cellularSurveyRecordLogger.onSharedPreferenceChanged();
-        phoneStateRecordLogger.onSharedPreferenceChanged();
         phoneStateCsvLogger.onSharedPreferenceChanged();
         nrCsvLogger.onSharedPreferenceChanged();
         lteCsvLogger.onSharedPreferenceChanged();
@@ -244,8 +216,6 @@ public class CellularController extends AController
      */
     public void onMdmPreferenceChanged()
     {
-        cellularSurveyRecordLogger.onMdmPreferenceChanged();
-        phoneStateRecordLogger.onMdmPreferenceChanged();
         phoneStateCsvLogger.onSharedPreferenceChanged();
         nrCsvLogger.onSharedPreferenceChanged();
         lteCsvLogger.onSharedPreferenceChanged();
@@ -253,33 +223,6 @@ public class CellularController extends AController
         cdmaCsvLogger.onSharedPreferenceChanged();
         gsmCsvLogger.onSharedPreferenceChanged();
         cdrLogger.onMdmPreferenceChanged();
-    }
-
-    public void onLogFileTypePreferenceChanged()
-    {
-        synchronized (cellularLoggingEnabled)
-        {
-            if (cellularLoggingEnabled.get())
-            {
-                final boolean originalLoggingState = cellularLoggingEnabled.get();
-                toggleLogging(false);
-                toggleLogging(true);
-                final boolean newLoggingState = cellularLoggingEnabled.get();
-                if (originalLoggingState != newLoggingState)
-                {
-                    Timber.i("Logging state changed from %s to %s", originalLoggingState, newLoggingState);
-                }
-            }
-        }
-
-        synchronized (phoneStateLoggingEnabled)
-        {
-            if (phoneStateLoggingEnabled.get())
-            {
-                togglePhoneStateLogging(false);
-                togglePhoneStateLogging(true);
-            }
-        }
     }
 
     /**
@@ -318,48 +261,35 @@ public class CellularController extends AController
             boolean successful = false;
             if (enable)
             {
-                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
-
-                if (types.geoPackage)
-                {
-                    successful = cellularSurveyRecordLogger.enableLogging(true);
-                }
-                if (types.csv)
-                {
-                    successful = nrCsvLogger.enableLogging(true) &&
-                            lteCsvLogger.enableLogging(true) &&
-                            umtsCsvLogger.enableLogging(true) &&
-                            cdmaCsvLogger.enableLogging(true) &&
-                            gsmCsvLogger.enableLogging(true);
-                }
+                successful = nrCsvLogger.enableLogging(true) &&
+                        lteCsvLogger.enableLogging(true) &&
+                        umtsCsvLogger.enableLogging(true) &&
+                        cdmaCsvLogger.enableLogging(true) &&
+                        gsmCsvLogger.enableLogging(true);
 
                 if (successful)
                 {
-                    toggleCellularConfig(true, types);
+                    toggleCellularConfig(true);
                 } else
                 {
                     Timber.e("Unsuccessful in enabling cellular logging");
                     // at least one of the loggers failed to toggle;
                     // disable all of them and set local config to false
-                    cellularSurveyRecordLogger.enableLogging(false);
                     nrCsvLogger.enableLogging(false);
                     lteCsvLogger.enableLogging(false);
                     umtsCsvLogger.enableLogging(false);
                     cdmaCsvLogger.enableLogging(false);
                     gsmCsvLogger.enableLogging(false);
-                    toggleCellularConfig(false, null);
+                    toggleCellularConfig(false);
                 }
             } else
             {
-                // If we are disabling logging, then we need to disable both geoPackage and CSV just
-                // in case the user changed the setting after they started logging.
-                cellularSurveyRecordLogger.enableLogging(false);
                 nrCsvLogger.enableLogging(false);
                 lteCsvLogger.enableLogging(false);
                 umtsCsvLogger.enableLogging(false);
                 cdmaCsvLogger.enableLogging(false);
                 gsmCsvLogger.enableLogging(false);
-                toggleCellularConfig(false, null);
+                toggleCellularConfig(false);
                 successful = true;
             }
 
@@ -438,40 +368,21 @@ public class CellularController extends AController
             boolean successful = false;
             if (enable)
             {
-                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
-
-                if (types.geoPackage)
-                {
-                    successful = phoneStateRecordLogger.enableLogging(true);
-                }
-                if (types.csv)
-                {
-                    successful = phoneStateCsvLogger.enableLogging(true);
-                }
+                successful = phoneStateCsvLogger.enableLogging(true);
 
                 if (successful)
                 {
                     phoneStateLoggingEnabled.set(true);
-                    if (types.geoPackage)
-                    {
-                        surveyService.registerPhoneStateListener(phoneStateRecordLogger);
-                    }
-                    if (types.csv)
-                    {
-                        surveyService.registerPhoneStateListener(phoneStateCsvLogger);
-                    }
+                    surveyService.registerPhoneStateListener(phoneStateCsvLogger);
                 } else
                 {
                     Timber.e("Unsuccessful in enabling phone state logging");
-                    phoneStateRecordLogger.enableLogging(false);
                     phoneStateCsvLogger.enableLogging(false);
                 }
             } else
             {
                 phoneStateLoggingEnabled.set(false);
-                phoneStateRecordLogger.enableLogging(false);
                 phoneStateCsvLogger.enableLogging(false);
-                surveyService.unregisterPhoneStateListener(phoneStateRecordLogger);
                 surveyService.unregisterPhoneStateListener(phoneStateCsvLogger);
                 successful = true;
             }
@@ -896,38 +807,38 @@ public class CellularController extends AController
     }
 
     /**
-     * Registers a receiver for SIM state change events.
+     * Listens for SIM changes and rebuilds the per-SIM scanning resources when one happens.
      */
     private void registerSimStateChangeReceiver()
     {
         if (surveyService == null) return;
 
-        simBroadcastReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                if (intent == null) return;
+        simChangeListener = () -> {
+            Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
 
-                Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
+            boolean phoneStateWasEnabled = !phoneStateListenerMap.isEmpty();
+            boolean cdrWasEnabled = cdrStarted.get();
 
-                boolean phoneStateWasEnabled = !phoneStateListenerMap.isEmpty();
-                boolean cdrWasEnabled = cdrStarted.get();
+            // The display info callbacks are rebuilt with the SIMs, so a scan that keeps running (a
+            // survey recording cellular) must move from the old callbacks to the new ones, or the
+            // cellular details hero and pills lose their override type and registration rows.
+            boolean scanningWasActive = cellularScanningActive.get();
 
-                if (phoneStateWasEnabled) stopPhoneStateListener();
-                if (cdrWasEnabled) stopCdrEvents();
+            if (phoneStateWasEnabled) stopPhoneStateListener();
+            if (cdrWasEnabled) stopCdrEvents();
+            if (scanningWasActive) unregisterDisplayInfoCallbacks();
 
-                initializeCellularScanningResources();
+            initializeCellularScanningResources();
 
-                // Stop and start the phone state listener so that it will be listening to the new SIM(s),
-                // only if they were started before the SIM change.
-                if (phoneStateWasEnabled) startPhoneStateListener();
-                if (cdrWasEnabled) startCdrEvents();
-            }
+            if (scanningWasActive) registerDisplayInfoCallbacks();
+
+            // Stop and start the phone state listener so that it will be listening to the new SIM(s),
+            // only if they were started before the SIM change.
+            if (phoneStateWasEnabled) startPhoneStateListener();
+            if (cdrWasEnabled) startCdrEvents();
         };
 
-        LocalBroadcastManager.getInstance(surveyService).registerReceiver(simBroadcastReceiver,
-                new IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT));
+        SimChanges.addListener(simChangeListener);
     }
 
     /**
@@ -1043,17 +954,7 @@ public class CellularController extends AController
 
             final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            {
-                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
-                {
-                    Object displayInfoListener = displayInfoCallbackMap.get(wrapper.getSubscriptionId());
-                    if (displayInfoListener instanceof TelephonyCallback)
-                    {
-                        wrapper.getTelephonyManager().registerTelephonyCallback(executorService, (TelephonyCallback) displayInfoListener);
-                    }
-                }
-            }
+            registerDisplayInfoCallbacks();
 
             serviceHandler.postDelayed(new Runnable()
             {
@@ -1156,19 +1057,44 @@ public class CellularController extends AController
         Timber.d("Setting the cellular scanning active flag to false");
         cellularScanningActive.set(false);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-        {
-            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
-            {
-                Object displayInfoListener = displayInfoCallbackMap.get(wrapper.getSubscriptionId());
-                if (displayInfoListener instanceof TelephonyCallback)
-                {
-                    wrapper.getTelephonyManager().unregisterTelephonyCallback((TelephonyCallback) displayInfoListener);
-                }
-            }
-        }
+        unregisterDisplayInfoCallbacks();
 
         if (surveyService != null) surveyService.updateLocationListener();
+    }
+
+    /**
+     * Registers each SIM's display info callback (the override network type, the service state and
+     * the bandwidths behind the cellular details hero and pills). API 31+ only.
+     */
+    private void registerDisplayInfoCallbacks()
+    {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+
+        for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+        {
+            Object displayInfoListener = displayInfoCallbackMap.get(wrapper.getSubscriptionId());
+            if (displayInfoListener instanceof TelephonyCallback)
+            {
+                wrapper.getTelephonyManager().registerTelephonyCallback(executorService, (TelephonyCallback) displayInfoListener);
+            }
+        }
+    }
+
+    /**
+     * Unregisters the display info callbacks {@link #registerDisplayInfoCallbacks()} registered.
+     */
+    private void unregisterDisplayInfoCallbacks()
+    {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+
+        for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+        {
+            Object displayInfoListener = displayInfoCallbackMap.get(wrapper.getSubscriptionId());
+            if (displayInfoListener instanceof TelephonyCallback)
+            {
+                wrapper.getTelephonyManager().unregisterTelephonyCallback((TelephonyCallback) displayInfoListener);
+            }
+        }
     }
 
     /**
@@ -1187,34 +1113,20 @@ public class CellularController extends AController
      *               status listeners. If {@code true} listeners are registered, otherwise they
      *               are unregistered.
      */
-    private void toggleCellularConfig(boolean enable, LogTypeState types)
+    private void toggleCellularConfig(boolean enable)
     {
         if (surveyService == null) return;
 
         cellularLoggingEnabled.set(enable);
         if (enable)
         {
-            if (types != null)
-            {
-                if (types.geoPackage)
-                {
-                    surveyService.registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                }
-                if (types.csv)
-                {
-                    surveyService.registerCellularSurveyRecordListener(nrCsvLogger);
-                    surveyService.registerCellularSurveyRecordListener(lteCsvLogger);
-                    surveyService.registerCellularSurveyRecordListener(umtsCsvLogger);
-                    surveyService.registerCellularSurveyRecordListener(cdmaCsvLogger);
-                    surveyService.registerCellularSurveyRecordListener(gsmCsvLogger);
-                }
-            } else
-            {
-                throw new IllegalArgumentException("LogTypeState cannot be null when enabling cellular logging");
-            }
+            surveyService.registerCellularSurveyRecordListener(nrCsvLogger);
+            surveyService.registerCellularSurveyRecordListener(lteCsvLogger);
+            surveyService.registerCellularSurveyRecordListener(umtsCsvLogger);
+            surveyService.registerCellularSurveyRecordListener(cdmaCsvLogger);
+            surveyService.registerCellularSurveyRecordListener(gsmCsvLogger);
         } else
         {
-            surveyService.unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
             surveyService.unregisterCellularSurveyRecordListener(nrCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(lteCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(umtsCsvLogger);

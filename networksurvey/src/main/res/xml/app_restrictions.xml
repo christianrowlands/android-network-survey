@@ -1,9 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
 <restrictions xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- The survey setup: one three-way choice per record type and destination, plus auto start.
+         "user" (the default) leaves the item to the person using the phone. See SurveyMdmKeys. -->
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_survey_record_type_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_cellular"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_cellular_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_survey_record_type_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_phone_state"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_phone_state_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_survey_record_type_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_wifi"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_wifi_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_survey_record_type_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_bluetooth"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_bluetooth_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_survey_record_type_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_gnss"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_gnss_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_survey_record_type_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_cdr"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_cdr_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_destination_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="destination_log_files"
+        android:restrictionType="choice"
+        android:title="@string/mdm_destination_log_files_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_destination_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="destination_ns_analytics"
+        android:restrictionType="choice"
+        android:title="@string/mdm_destination_ns_analytics_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_destination_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="destination_mqtt"
+        android:restrictionType="choice"
+        android:title="@string/mdm_destination_mqtt_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_destination_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="destination_grpc"
+        android:restrictionType="choice"
+        android:title="@string/mdm_destination_grpc_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_destination_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="destination_community"
+        android:restrictionType="choice"
+        android:title="@string/mdm_destination_community_title" />
+
+    <restriction
+        android:defaultValue="user"
+        android:description="@string/mdm_auto_start_survey_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="auto_start_survey"
+        android:restrictionType="choice"
+        android:title="@string/mdm_auto_start_survey_title" />
+
     <restriction
         android:defaultValue="true"
-        android:description="@string/mqtt_start_on_boot_description"
+        android:description="@string/mdm_deprecated_mqtt_start_on_boot_description"
         android:key="mqtt_start_on_boot"
         android:restrictionType="bool"
         android:title="@string/mqtt_start_on_boot_title" />
@@ -92,35 +202,35 @@
 
     <restriction
         android:defaultValue="true"
-        android:description="@string/cellular_stream_description"
+        android:description="@string/mdm_deprecated_stream_description"
         android:key="cellular_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/cellular_stream_title" />
 
     <restriction
         android:defaultValue="true"
-        android:description="@string/phone_state_stream_description"
+        android:description="@string/mdm_deprecated_stream_description"
         android:key="phone_state_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/phone_state_stream_title" />
 
     <restriction
         android:defaultValue="true"
-        android:description="@string/wifi_stream_description"
+        android:description="@string/mdm_deprecated_stream_description"
         android:key="wifi_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/wifi_stream_title" />
 
     <restriction
         android:defaultValue="false"
-        android:description="@string/bluetooth_stream_description"
+        android:description="@string/mdm_deprecated_stream_description"
         android:key="bluetooth_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/bluetooth_stream_title" />
 
     <restriction
         android:defaultValue="false"
-        android:description="@string/gnss_stream_description"
+        android:description="@string/mdm_deprecated_stream_description"
         android:key="gnss_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/gnss_stream_title" />
@@ -160,50 +270,43 @@
         android:title="@string/log_rollover_title" />
 
     <restriction
-        android:defaultValue="0"
-        android:description="@string/log_file_description"
-        android:key="log_file_type"
-        android:restrictionType="integer"
-        android:title="@string/log_file_title" />
-
-    <restriction
         android:defaultValue="true"
-        android:description="@string/auto_start_cellular_logging_description"
+        android:description="@string/mdm_deprecated_auto_start_description"
         android:key="auto_start_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_cellular_logging_title" />
 
     <restriction
         android:defaultValue="false"
-        android:description="@string/auto_start_phone_state_logging_description"
+        android:description="@string/mdm_deprecated_auto_start_description"
         android:key="auto_start_phone_state_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_phone_state_logging_title" />
 
     <restriction
         android:defaultValue="true"
-        android:description="@string/auto_start_wifi_logging_description"
+        android:description="@string/mdm_deprecated_auto_start_description"
         android:key="auto_start_wifi_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_wifi_logging_title" />
 
     <restriction
         android:defaultValue="false"
-        android:description="@string/auto_start_bluetooth_logging_description"
+        android:description="@string/mdm_deprecated_auto_start_description"
         android:key="auto_start_bluetooth_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_bluetooth_logging_title" />
 
     <restriction
         android:defaultValue="false"
-        android:description="@string/auto_start_gnss_logging_description"
+        android:description="@string/mdm_deprecated_auto_start_description"
         android:key="auto_start_gnss_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_gnss_logging_title" />
 
     <restriction
         android:defaultValue="false"
-        android:description="@string/auto_start_cdr_logging_description"
+        android:description="@string/mdm_deprecated_auto_start_description"
         android:key="auto_start_cdr_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_cdr_logging_title" />

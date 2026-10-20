@@ -97,8 +97,10 @@ object NewTowerNotificationHelper {
 
         val count = sessionCount.incrementAndGet()
 
+        // A tap opens the Map tab, where the serving-cell card tags the tower NEW
         val intent = Intent(context, NetworkSurveyActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP, true)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,

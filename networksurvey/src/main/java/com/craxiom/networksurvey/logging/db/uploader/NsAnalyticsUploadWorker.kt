@@ -14,6 +14,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.data.api.RecordBatch
@@ -149,7 +150,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 reportProgress(
                     progress,
                     100,
-                    "Uploading batch ${batchIndex + 1} of $totalBatches...",
+                    applicationContext.getString(R.string.ns_analytics_upload_batch, batchIndex + 1, totalBatches),
                     totalRecordsUploaded
                 )
 
@@ -465,7 +466,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 reportProgress(
                     progressAfter,
                     100,
-                    "Completed batch ${batchIndex + 1} of $totalBatches",
+                    applicationContext.getString(R.string.ns_analytics_upload_batch_done, batchIndex + 1, totalBatches),
                     totalRecordsUploaded
                 )
             }
@@ -559,7 +560,6 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         }
     }
 
-
     /**
      * Check device status after detecting deregistration error.
      * This clears local credentials if device is indeed deregistered.
@@ -644,6 +644,9 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
 
             /** Network is not available */
             data object NoNetwork : TriggerResult()
+
+            /** Enqueued while offline; it runs once the phone is back online */
+            data class WaitingForNetwork(val workId: UUID) : TriggerResult()
 
             /** Upload blocked by MDM policy */
             data object MdmBlocked : TriggerResult()
@@ -831,11 +834,17 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
 
         /**
          * Trigger immediate upload.
+         * @param waitForNetwork True to enqueue the upload even while offline, so it runs as soon
+         *        as the phone is back online (a survey stop, the Survey screen's Upload now); false
+         *        to report [TriggerResult.NoNetwork] instead, for a screen that says so right away.
          * @return [TriggerResult] indicating the outcome of the trigger attempt.
-         *         If successful, returns [TriggerResult.Started] with the work ID for observation.
+         *         If successful, returns [TriggerResult.Started] with the work ID for observation,
+         *         or [TriggerResult.WaitingForNetwork] when it was enqueued while offline.
          */
+        @JvmStatic
+        @JvmOverloads
         @Synchronized
-        fun triggerImmediateUpload(context: Context): TriggerResult {
+        fun triggerImmediateUpload(context: Context, waitForNetwork: Boolean = false): TriggerResult {
             // Check if NS Analytics is allowed via MDM
             if (!MdmUtils.isNsAnalyticsAllowed(context)) {
                 Timber.w("NS Analytics immediate upload prevented by MDM policy")
@@ -867,7 +876,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             val hasNetwork =
                 capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
 
-            if (!hasNetwork) {
+            if (!hasNetwork && !waitForNetwork) {
                 Timber.d("No network connection available")
                 return TriggerResult.NoNetwork
             }
@@ -886,8 +895,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 ExistingWorkPolicy.REPLACE,  // Replace any stuck immediate work
                 uploadRequest
             )
-            Timber.i("Triggered immediate NS Analytics upload")
-            return TriggerResult.Started(uploadRequest.id)
+            Timber.i("Triggered immediate NS Analytics upload (online=%s)", hasNetwork)
+            return if (hasNetwork) TriggerResult.Started(uploadRequest.id) else TriggerResult.WaitingForNetwork(uploadRequest.id)
         }
     }
 }

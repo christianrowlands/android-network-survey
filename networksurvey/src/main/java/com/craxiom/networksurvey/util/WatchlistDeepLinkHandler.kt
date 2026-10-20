@@ -3,6 +3,8 @@ package com.craxiom.networksurvey.util
 import android.content.Intent
 import android.net.Uri
 import android.util.Base64
+import androidx.annotation.StringRes
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.model.WatchlistImportEntry
@@ -47,17 +49,28 @@ object WatchlistDeepLinkHandler {
     /** The only payload schema version this app understands. */
     const val SUPPORTED_VERSION = 1
 
-    const val ERROR_NO_DATA = "This link has no watchlist data"
-    const val ERROR_TOO_LARGE = "This watchlist link is too large"
-    const val ERROR_UNREADABLE = "This watchlist link could not be read"
-    const val ERROR_UNSUPPORTED_VERSION = "This watchlist link needs a newer app version"
-    const val ERROR_NO_NETWORKS = "This link contains no networks"
-    const val ERROR_NO_VALID_NETWORKS = "This link contains no valid networks"
-    const val ERROR_TOO_MANY = "This link contains too many networks"
-    const val ERROR_INVALID_BSSID = "This link contains an invalid BSSID"
-    const val ERROR_SSID_TOO_LONG = "This link contains an SSID that is too long"
-    const val ERROR_LABEL_TOO_LONG = "This link contains a label that is too long"
-    const val ERROR_NAME_TOO_LONG = "This link has a list name that is too long"
+    @StringRes
+    val ERROR_NO_DATA = R.string.watchlist_link_no_data
+    @StringRes
+    val ERROR_TOO_LARGE = R.string.watchlist_link_too_large
+    @StringRes
+    val ERROR_UNREADABLE = R.string.watchlist_link_unreadable
+    @StringRes
+    val ERROR_UNSUPPORTED_VERSION = R.string.watchlist_link_newer_version
+    @StringRes
+    val ERROR_NO_NETWORKS = R.string.watchlist_link_no_networks
+    @StringRes
+    val ERROR_NO_VALID_NETWORKS = R.string.watchlist_link_no_valid_networks
+    @StringRes
+    val ERROR_TOO_MANY = R.string.watchlist_link_too_many
+    @StringRes
+    val ERROR_INVALID_BSSID = R.string.watchlist_link_invalid_bssid
+    @StringRes
+    val ERROR_SSID_TOO_LONG = R.string.watchlist_link_ssid_too_long
+    @StringRes
+    val ERROR_LABEL_TOO_LONG = R.string.watchlist_link_label_too_long
+    @StringRes
+    val ERROR_NAME_TOO_LONG = R.string.watchlist_link_name_too_long
 
     private val BSSID_REGEX = Regex("^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
 
@@ -66,7 +79,7 @@ object WatchlistDeepLinkHandler {
     /** Result of parsing a watchlist import deep link. */
     sealed class Result {
         data class Success(val importSet: WatchlistImportSet) : Result()
-        data class Error(val message: String) : Result()
+        data class Error(@StringRes val messageRes: Int) : Result()
         data object NotApplicable : Result()
     }
 
@@ -135,7 +148,7 @@ object WatchlistDeepLinkHandler {
             when (val outcome = validateEntry(raw)) {
                 is EntryOutcome.Valid -> validated.add(outcome.entry)
                 is EntryOutcome.Drop -> Unit // entry has no identity; skip it
-                is EntryOutcome.Reject -> return Result.Error(outcome.message)
+                is EntryOutcome.Reject -> return Result.Error(outcome.messageRes)
             }
         }
         if (validated.isEmpty()) {
@@ -167,7 +180,7 @@ object WatchlistDeepLinkHandler {
     private sealed class EntryOutcome {
         data class Valid(val entry: WatchlistImportEntry) : EntryOutcome()
         data object Drop : EntryOutcome()
-        data class Reject(val message: String) : EntryOutcome()
+        data class Reject(@StringRes val messageRes: Int) : EntryOutcome()
     }
 
     /** Normalize and validate a single entry, mirroring the rules in WatchlistViewModel.addEntry. */

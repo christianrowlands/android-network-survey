@@ -40,6 +40,7 @@ import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
 import com.craxiom.networksurvey.ui.common.NsInfoCard
 import com.craxiom.networksurvey.ui.common.NsSectionLabel
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
+import com.craxiom.networksurvey.ui.common.nsContentWidth
 
 /**
  * The Watchlist management screen: a header status, an info card, and a list of watched networks
@@ -122,6 +123,7 @@ fun WatchlistScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .nsContentWidth()
         ) {
             WatchlistStatusHeader(
                 enabled = uiState.watchlistEnabled,

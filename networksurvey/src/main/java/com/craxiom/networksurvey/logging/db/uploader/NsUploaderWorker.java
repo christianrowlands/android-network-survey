@@ -10,6 +10,7 @@ import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
@@ -25,6 +26,7 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 import com.craxiom.networksurvey.logging.db.uploader.beacondb.BeaconDbUploadClient;
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDCsvFormatter;
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDUploadClient;
+import com.craxiom.networksurvey.util.OpenCelliDSigning;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,7 +49,6 @@ import timber.log.Timber;
  */
 public class NsUploaderWorker extends Worker
 {
-    public static final String SERVICE_FULL_NAME = NsUploaderWorker.class.getCanonicalName();
     public static final String WORKER_TAG = "NS_UPLOADER_WORKER";
     public static final MediaType MEDIA_TYPE_CSV = MediaType.parse("text/csv; charset=UTF-8");
 
@@ -101,7 +102,8 @@ public class NsUploaderWorker extends Worker
 
             // Read work input parameters
             isOpenCellIdUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, false);
-            anonymousUploadToOcid = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, false);
+            anonymousUploadToOcid = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD,
+                    OpenCelliDSigning.isAnonymous(getApplicationContext()));
             isBeaconDBUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, false);
             boolean isRetryEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, false);
 
@@ -135,7 +137,7 @@ public class NsUploaderWorker extends Worker
                 }
 
                 int progress = (int) (100.0 * i / partsCount);
-                reportProgress(progress, PROGRESS_MAX_VALUE, "Uploading records...");
+                reportProgress(progress, PROGRESS_MAX_VALUE, getApplicationContext().getString(R.string.upload_progress_records));
 
                 uploadResultBundle.merge(processUploadBatch(LOCATIONS_PER_PART, isBeaconDBUploadEnabled));
                 if (!uploadResultBundle.isAllSuccess())
@@ -143,7 +145,7 @@ public class NsUploaderWorker extends Worker
                     if (isRetryEnabled && uploadResultBundle.isRetryableError())
                     {
                         Timber.d("Upload failed, retry enabled.");
-                        reportProgress(progress, PROGRESS_MAX_VALUE, "An error occurred, will retry later");
+                        reportProgress(progress, PROGRESS_MAX_VALUE, getApplicationContext().getString(R.string.uploader_enqueued));
                         return Result.retry();
                     } else
                     {
@@ -153,7 +155,7 @@ public class NsUploaderWorker extends Worker
                 }
 
                 // Progress update
-                reportProgress((i + 1) * 100 / partsCount, PROGRESS_MAX_VALUE, "Uploading records...");
+                reportProgress((i + 1) * 100 / partsCount, PROGRESS_MAX_VALUE, getApplicationContext().getString(R.string.upload_progress_records));
             }
 
             SurveyedPointStore.onCommunityUploadCompleted(database.surveyedPointDao(), uploadStartTime, uploadResultBundle);

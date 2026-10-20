@@ -1,10 +1,12 @@
 package com.craxiom.networksurvey.data
 
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.LibraryAcknowledgment
 import com.craxiom.networksurvey.model.LibraryCategory
 
 /**
- * Repository providing acknowledgment data for open source libraries used in Network Survey.
+ * Repository providing acknowledgment data for open source libraries used in Network Survey. Names,
+ * authors and licenses are proper names and stay as written; descriptions are translatable.
  */
 class AcknowledgmentsRepository {
 
@@ -18,7 +20,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "GPSTest",
                     author = "Sean J. Barbeau",
-                    description = "GNSS UI components and satellite visualization code were adapted from the GPSTest open source Android app. This includes the sky view, signal strength charts, and satellite status displays.",
+                    description = R.string.ack_desc_gpstest,
                     sourceUrl = "https://github.com/barbeau/gpstest",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -31,7 +33,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Dagger/Hilt",
                     author = "Google",
-                    description = "Dependency injection framework for Android",
+                    description = R.string.ack_desc_dagger_hilt,
                     sourceUrl = "https://github.com/google/dagger",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -42,7 +44,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Room",
                     author = "Google",
-                    description = "Database abstraction layer over SQLite",
+                    description = R.string.ack_desc_room,
                     sourceUrl = "https://developer.android.com/jetpack/androidx/releases/room",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -53,7 +55,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Retrofit",
                     author = "Square",
-                    description = "Type-safe HTTP client for Android",
+                    description = R.string.ack_desc_retrofit,
                     sourceUrl = "https://github.com/square/retrofit",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -64,7 +66,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "gRPC",
                     author = "Google",
-                    description = "High performance RPC framework",
+                    description = R.string.ack_desc_grpc,
                     sourceUrl = "https://github.com/grpc/grpc-java",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -75,7 +77,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "MQTT Library",
                     author = "Craxiom",
-                    description = "MQTT client library for IoT messaging",
+                    description = R.string.ack_desc_mqtt_library,
                     sourceUrl = "https://github.com/craxiom/android-mqtt",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -86,21 +88,10 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Network Survey Messaging",
                     author = "Craxiom",
-                    description = "Protobuf messaging library for wireless survey data",
+                    description = R.string.ack_desc_network_survey_messaging,
                     sourceUrl = "https://github.com/christianrowlands/network-survey-messaging",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
-                    category = LibraryCategory.CORE_LIBRARIES
-                )
-            )
-            add(
-                LibraryAcknowledgment(
-                    name = "GeoPackage Android",
-                    author = "National Geospatial-Intelligence Agency",
-                    description = "GeoPackage implementation for Android",
-                    sourceUrl = "https://github.com/ngageoint/geopackage-android",
-                    licenseName = "MIT License",
-                    licenseUrl = "https://opensource.org/licenses/MIT",
                     category = LibraryCategory.CORE_LIBRARIES
                 )
             )
@@ -110,7 +101,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Jetpack Compose",
                     author = "Google",
-                    description = "Modern declarative UI toolkit for Android",
+                    description = R.string.ack_desc_jetpack_compose,
                     sourceUrl = "https://developer.android.com/jetpack/compose",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -121,7 +112,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Material Design Components",
                     author = "Google",
-                    description = "Material Design 3 components and theming",
+                    description = R.string.ack_desc_material_design_components,
                     sourceUrl = "https://github.com/material-components/material-components-android",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -132,7 +123,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "MapLibre GL",
                     author = "MapLibre",
-                    description = "Open-source map rendering engine",
+                    description = R.string.ack_desc_maplibre_gl,
                     sourceUrl = "https://github.com/maplibre/maplibre-gl-native",
                     licenseName = "BSD 2-Clause License",
                     licenseUrl = "https://opensource.org/licenses/BSD-2-Clause",
@@ -143,30 +134,8 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Vico Charts",
                     author = "Patryk Goworowski and Patrick Michalik",
-                    description = "Compose chart library for data visualization",
+                    description = R.string.ack_desc_vico_charts,
                     sourceUrl = "https://github.com/patrykandpatrick/vico",
-                    licenseName = "Apache License 2.0",
-                    licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
-                    category = LibraryCategory.UI_LIBRARIES
-                )
-            )
-            add(
-                LibraryAcknowledgment(
-                    name = "RoundedProgressBar",
-                    author = "Mack Hartley",
-                    description = "Customizable circular progress bars",
-                    sourceUrl = "https://github.com/MackHartley/RoundedProgressBar",
-                    licenseName = "Apache License 2.0",
-                    licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
-                    category = LibraryCategory.UI_LIBRARIES
-                )
-            )
-            add(
-                LibraryAcknowledgment(
-                    name = "Android FlexboxLayout",
-                    author = "Google",
-                    description = "Flexible box layout for Android",
-                    sourceUrl = "https://github.com/google/flexbox-layout",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
                     category = LibraryCategory.UI_LIBRARIES
@@ -178,7 +147,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Timber",
                     author = "Jake Wharton",
-                    description = "Logger with a small, extensible API",
+                    description = R.string.ack_desc_timber,
                     sourceUrl = "https://github.com/JakeWharton/timber",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -189,7 +158,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Apache Commons CSV",
                     author = "Apache Software Foundation",
-                    description = "Library for reading and writing CSV files",
+                    description = R.string.ack_desc_apache_commons_csv,
                     sourceUrl = "https://github.com/apache/commons-csv",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -200,7 +169,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "SnakeYAML",
                     author = "SnakeYAML Contributors",
-                    description = "YAML processor for Java",
+                    description = R.string.ack_desc_snakeyaml,
                     sourceUrl = "https://bitbucket.org/snakeyaml/snakeyaml",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +180,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "ZXing",
                     author = "ZXing Authors",
-                    description = "Barcode and QR code scanning library",
+                    description = R.string.ack_desc_zxing,
                     sourceUrl = "https://github.com/zxing/zxing",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -222,7 +191,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Code Scanner",
                     author = "Yuriy Budiyev",
-                    description = "QR and barcode scanner based on ZXing",
+                    description = R.string.ack_desc_code_scanner,
                     sourceUrl = "https://github.com/yuriy-budiyev/code-scanner",
                     licenseName = "MIT License",
                     licenseUrl = "https://opensource.org/licenses/MIT",
@@ -233,7 +202,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Protobuf",
                     author = "Google",
-                    description = "Protocol buffer serialization",
+                    description = R.string.ack_desc_protobuf,
                     sourceUrl = "https://github.com/protocolbuffers/protobuf",
                     licenseName = "BSD 3-Clause License",
                     licenseUrl = "https://opensource.org/licenses/BSD-3-Clause",
@@ -244,7 +213,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "Gson",
                     author = "Google",
-                    description = "JSON serialization/deserialization library",
+                    description = R.string.ack_desc_gson,
                     sourceUrl = "https://github.com/google/gson",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
@@ -255,7 +224,7 @@ class AcknowledgmentsRepository {
                 LibraryAcknowledgment(
                     name = "WorkManager",
                     author = "Google",
-                    description = "Background task scheduling library",
+                    description = R.string.ack_desc_workmanager,
                     sourceUrl = "https://developer.android.com/jetpack/androidx/releases/work",
                     licenseName = "Apache License 2.0",
                     licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",

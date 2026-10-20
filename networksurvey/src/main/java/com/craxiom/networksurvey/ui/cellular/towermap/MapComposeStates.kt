@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.parcelize.Parcelize
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.maps.MapLibreMap
@@ -121,9 +120,6 @@ fun rememberCameraPositionState(
 ): CameraPositionState = rememberSaveable(key, saver = CameraPositionState.Saver) {
     CameraPositionState().apply(init)
 }
-
-/** Local provider for camera state. */
-internal val LocalCameraPositionState = staticCompositionLocalOf { CameraPositionState() }
 
 // Dummy enums for CameraMode & Reason, map to MapLibre internals.
 enum class CameraMode {

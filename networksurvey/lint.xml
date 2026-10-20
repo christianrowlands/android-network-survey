@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- The adaptive launcher icons sit beside the launcher PNGs on purpose: the PNGs are kept for
+         anything that reads a bitmap icon out of the APK. Both are generated from the same icon
+         source, so they always show the same art. -->
+    <issue id="IconXmlAndPng">
+        <ignore regexp="mipmap-anydpi/ic_launcher(_round)?\.xml" />
+    </issue>
+</lint>

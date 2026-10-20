@@ -42,28 +42,13 @@ public class DilutionOfPrecision
         return mPositionDop;
     }
 
-    public void setPositionDop(double positionDop)
-    {
-        this.mPositionDop = positionDop;
-    }
-
     public double getHorizontalDop()
     {
         return mHorizontalDop;
     }
 
-    public void setHorizontalDop(double horizontalDop)
-    {
-        this.mHorizontalDop = horizontalDop;
-    }
-
     public double getVerticalDop()
     {
         return mVerticalDop;
-    }
-
-    public void setVerticalDop(double verticalDop)
-    {
-        this.mVerticalDop = verticalDop;
     }
 }

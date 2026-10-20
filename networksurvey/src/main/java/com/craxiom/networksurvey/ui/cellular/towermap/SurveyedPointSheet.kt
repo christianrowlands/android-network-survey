@@ -137,7 +137,7 @@ fun SurveyedPointSheet(
 
 @Composable
 private fun peekLine(point: SurveyedPointEntity): String {
-    val ago = getRelativeTimeString(point.time / MILLIS_PER_SECOND)
+    val ago = relativeTimeText(point.time / MILLIS_PER_SECOND, midSentence = true)
     return when (point.observedMask) {
         SurveyedPointEntity.OBSERVED_CELLULAR -> {
             val tech = techLabel(SurveyedPointFeatures.techOf(point.protocol, point.nrScg))

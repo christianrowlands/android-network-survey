@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.messaging.wifi.WifiBandwidth;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
@@ -111,19 +110,6 @@ public class WifiUtilsTest
         assertEquals("WPA2", WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WPA2));
         assertEquals("WPA3", WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WPA3));
         assertEquals("", WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.UNRECOGNIZED));
-    }
-
-    @Test
-    public void validateCipherSuiteString()
-    {
-        assertEquals("Unknown", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.UNKNOWN));
-        assertEquals("WEP-40", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.WEP_40));
-        assertEquals("TKIP", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.TKIP));
-        assertEquals("CCMP", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.CCMP));
-        assertEquals("WEP-104", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.WEP_104));
-        assertEquals("Open", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.OPEN));
-        assertEquals("WEP", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.WEP));
-        assertEquals("", WifiBeaconMessageConstants.getCipherSuiteString(CipherSuite.UNRECOGNIZED));
     }
 
     @Test

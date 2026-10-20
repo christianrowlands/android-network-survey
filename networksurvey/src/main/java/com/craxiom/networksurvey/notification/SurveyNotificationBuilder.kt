@@ -10,18 +10,26 @@ import com.craxiom.mqttlibrary.connection.ConnectionState
 import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.StatusLevel
+import com.craxiom.networksurvey.survey.status.StatusWord
+import com.craxiom.networksurvey.ui.survey.DestinationStatusText
+import com.craxiom.networksurvey.ui.survey.SurveyEventMessages
+import com.craxiom.networksurvey.ui.survey.model.toAttentionItem
+import com.craxiom.networksurvey.ui.survey.components.labelRes
 
 /**
  * Builds the single ongoing survey notification from a [SurveyNotificationState].
  *
  * Layout rules, in plain terms:
- *  - The title carries the state: Surveys Paused, No records for N min, Survey Active, or
- *    Survey Inactive, in that priority order.
+ *  - The title carries the state in the Survey screen's words: Paused, No records for N min,
+ *    Recording, or Ready, in that priority order.
  *  - The collapsed text is the most important health line if there is one (battery, network
  *    interrupted, MQTT dropping, connecting), otherwise the list of destinations records are
- *    going to (Log files, MQTT, gRPC, OpenCelliD & BeaconDB, NS Analytics).
- *  - The expanded text adds every applicable health line, the destinations, and the protocols
- *    being scanned.
+ *    going to (Log files, MQTT stream, gRPC stream, Community databases, NS Analytics).
+ *  - The expanded text adds every applicable health line, the destinations, the record types
+ *    being scanned, and "Using your own settings" while the organization override is on.
  *  - Elapsed time is shown with the OS chronometer so it never needs a re-post.
  *
  * Nothing here composes sentences. Every line is either a string resource or a list joined with
@@ -42,6 +50,7 @@ class SurveyNotificationBuilder(private val context: Context) {
             addAll(healthLines)
             if (destinations != null) add(destinations)
             protocolsLine(state)?.let { add(it) }
+            if (state.overrideOn) add(context.getString(R.string.survey_notification_override))
         }
 
         val builder = NotificationCompat.Builder(context, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
@@ -51,7 +60,7 @@ class SurveyNotificationBuilder(private val context: Context) {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setContentIntent(dashboardIntent())
+            .setContentIntent(surveyScreenIntent())
 
         if (collapsedText != null) {
             builder.setContentText(collapsedText)
@@ -75,12 +84,12 @@ class SurveyNotificationBuilder(private val context: Context) {
      */
     fun title(state: SurveyNotificationState): String {
         return when {
-            state.paused -> context.getString(R.string.queue_paused_title)
+            state.paused -> context.getString(R.string.survey_badge_paused)
             state.stalledMinutes != null -> context.resources.getQuantityString(
-                R.plurals.notification_stall_title, state.stalledMinutes, state.stalledMinutes
+                R.plurals.survey_plate_stall_title, state.stalledMinutes, state.stalledMinutes
             )
-            state.anyOutputActive -> context.getString(R.string.scanning_active)
-            else -> context.getString(R.string.scanning_inactive)
+            state.anyOutputActive -> context.getString(R.string.survey_badge_recording)
+            else -> context.getString(R.string.survey_state_ready)
         }
     }
 
@@ -98,39 +107,52 @@ class SurveyNotificationBuilder(private val context: Context) {
             add(context.getString(R.string.mqtt_drop_mode_title))
             add(context.getString(R.string.mqtt_drop_mode_subtitle))
         }
-        if (state.mqttState == ConnectionState.CONNECTING) {
-            add(connectingLine(R.string.notification_dest_mqtt))
+        state.destinationStatuses.forEach { (destination, status) ->
+            if (needsHealthLine(destination, status, state)) add(healthLine(destination, status))
         }
-        if (state.grpcState == ConnectionState.CONNECTING) {
-            add(connectingLine(R.string.notification_dest_grpc))
-        }
+        state.leftOut.forEach { add(SurveyEventMessages.itemText(context.resources, it.toAttentionItem())) }
     }
+
+    /**
+     * Records that aren't arriving or are held on the phone get a line; a pause and MQTT dropping
+     * already have their own lines above.
+     */
+    private fun needsHealthLine(destination: Destination, status: DestinationStatus, state: SurveyNotificationState): Boolean =
+        (status.level == StatusLevel.HELD || status.level == StatusLevel.NOT_ARRIVING) &&
+            status.word != StatusWord.PAUSED &&
+            !(destination == Destination.MQTT && status.word == StatusWord.DROPPING && state.mqttDropping)
+
+    private fun healthLine(destination: Destination, status: DestinationStatus): String = context.getString(
+        R.string.notification_health_connecting,
+        context.getString(destination.labelRes),
+        DestinationStatusText.word(context.resources, status.word),
+    )
 
     /**
      * The fixed-order list of places records are going, or null when nothing is running.
      */
     fun destinationsLine(state: SurveyNotificationState): String? {
         val names = buildList {
-            if (state.fileLogging) add(context.getString(R.string.notification_dest_log_files))
-            if (state.mqttActive) add(context.getString(R.string.notification_dest_mqtt))
-            if (state.grpcActive) add(context.getString(R.string.notification_dest_grpc))
-            if (state.communitySurvey) add(context.getString(R.string.notification_dest_community))
-            if (state.nsAnalytics) add(context.getString(R.string.ns_analytics))
+            if (state.fileLogging) add(context.getString(R.string.survey_dest_log_files))
+            if (state.mqttActive) add(context.getString(R.string.survey_dest_mqtt))
+            if (state.grpcActive) add(context.getString(R.string.survey_dest_grpc))
+            if (state.communitySurvey) add(context.getString(R.string.survey_dest_community))
+            if (state.nsAnalytics) add(context.getString(R.string.survey_dest_ns_analytics))
         }
         return joinOrNull(names)
     }
 
     /**
-     * The protocols being scanned, in dashboard order, or null when nothing is being scanned.
+     * The record types being scanned, in the Survey screen's order, or null when nothing is being scanned.
      */
     fun protocolsLine(state: SurveyNotificationState): String? {
         val names = buildList {
-            if (state.scanningCellular) add(context.getString(R.string.cellular_title))
-            if (state.phoneStateActive) add(context.getString(R.string.phone_state_title))
-            if (state.scanningWifi) add(context.getString(R.string.wifi_title))
-            if (state.scanningBluetooth) add(context.getString(R.string.bluetooth_title))
-            if (state.scanningGnss) add(context.getString(R.string.gnss_title))
-            if (state.cdrActive) add(context.getString(R.string.cdr_title))
+            if (state.scanningCellular) add(context.getString(R.string.survey_type_cellular))
+            if (state.phoneStateActive) add(context.getString(R.string.survey_type_phone_state))
+            if (state.scanningWifi) add(context.getString(R.string.survey_type_wifi))
+            if (state.scanningBluetooth) add(context.getString(R.string.survey_type_bluetooth))
+            if (state.scanningGnss) add(context.getString(R.string.survey_type_gnss))
+            if (state.cdrActive) add(context.getString(R.string.survey_type_cdr))
         }
         val joined = joinOrNull(names) ?: return null
         return context.getString(R.string.notification_protocols_line, joined)
@@ -141,20 +163,13 @@ class SurveyNotificationBuilder(private val context: Context) {
         return if (state.paused || state.stalledMinutes != null) R.drawable.ic_pause else R.drawable.ic_notification_survey
     }
 
-    private fun connectingLine(destinationRes: Int): String {
-        return context.getString(
-            R.string.notification_health_connecting,
-            context.getString(destinationRes),
-            context.getString(R.string.mqtt_connecting)
-        )
-    }
-
     private fun joinOrNull(names: List<String>): String? {
         if (names.isEmpty()) return null
         return names.joinToString(context.getString(R.string.notification_list_separator))
     }
 
-    private fun dashboardIntent(): PendingIntent {
+    /** Opens the app on the Survey screen (the extra keeps its historical name). */
+    private fun surveyScreenIntent(): PendingIntent {
         val intent = Intent(context, NetworkSurveyActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD, true)

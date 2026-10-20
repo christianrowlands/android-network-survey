@@ -52,6 +52,8 @@ public class NsAnalyticsConstants
     public static final int MAX_BATCH_SIZE = 1000; // Maximum records per upload batch
     public static final int MAX_RETRY_COUNT = 3;
     public static final long CLEANUP_AGE_DAYS = 7; // Clean up uploaded records after 7 days
+    /** How often a running survey asks the server whether this phone is still in its workspace. */
+    public static final long REGISTRATION_CHECK_INTERVAL_MS = 5 * 60 * 1000L;
 
     // Quota pause re-check timing (used when uploads are paused due to a 402 quota-exceeded response)
     public static final long DEFAULT_QUOTA_RETRY_AFTER_SECONDS = 86400L; // 24 hours, matches the server Retry-After hint
@@ -111,6 +113,14 @@ public class NsAnalyticsConstants
     // Deep Link Configuration
     public static final String NS_ANALYTICS_DEEP_LINK_HOST = "networksurvey.app";
     public static final String NS_ANALYTICS_DEEP_LINK_PATH = "/app/register";
+
+    // The NS Analytics web app, where a workspace is created and a phone's QR code is made
+    public static final String NS_ANALYTICS_WEB_HOST = "analytics.networksurvey.app";
+    public static final String NS_ANALYTICS_WEB_URL = "https://" + NS_ANALYTICS_WEB_HOST;
+    // The NS Analytics page on the Network Survey website, for people deciding whether to use it
+    public static final String NS_ANALYTICS_LEARN_MORE_URL = "https://networksurvey.app/analytics";
+    // Opens the web app on one workspace
+    public static final String NS_ANALYTICS_WEB_WORKSPACE_PARAM = "w";
 
     // Query Parameter Keys for Deep Link
     public static final String DEEP_LINK_PARAM_TOKEN = "token";

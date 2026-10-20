@@ -49,8 +49,6 @@ jobs:
     steps:
       - name: Checkout the code
         uses: actions/checkout@v6
-        with:
-          ref: develop
 
       - name: Extract NS Messaging API version
         id: messaging_version
@@ -171,7 +169,6 @@ jobs:
         with:
           artifacts: "networksurvey/build/outputs/apk/cdr/release/*.apk,networksurvey/build/outputs/apk/regular/release/*.apk"
           token: ${{ secrets.GH_TOKEN }}
-          tag: ${{ steps.version.outputs.content }}
           commit: ${{ github.sha }}
           body: |
             ## What's Changed
@@ -198,7 +195,7 @@ jobs:
 
             The **regular-release** APK is the same as what can be found on the Google Play Store which contains the tracking library Google Analytics. The **cdr-release** APK is the same as the regular-release APK, but with full CDR support (See README.md for more details) and it also does NOT contain ANY tracking libraries such as Google Analytics.
           generateReleaseNotes: true
-          draft: true
+          draft: false
 
       - name: Release app to internal track
         uses: r0adkll/upload-google-play@v1

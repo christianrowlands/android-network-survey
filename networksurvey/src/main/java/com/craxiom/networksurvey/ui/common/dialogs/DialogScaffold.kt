@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.common.dialogs
 
+import com.craxiom.networksurvey.ui.common.DISABLED_ALPHA
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -111,7 +112,7 @@ internal fun LabeledCheckbox(
             color = if (enabled) {
                 MaterialTheme.colorScheme.onSurface
             } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA)
             },
         )
     }

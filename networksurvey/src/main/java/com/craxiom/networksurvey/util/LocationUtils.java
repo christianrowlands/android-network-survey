@@ -18,56 +18,12 @@ package com.craxiom.networksurvey.util;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
-import android.os.SystemClock;
 
 /**
  * Originally from the GPS Test open source Android app.  https://github.com/barbeau/gpstest
  */
 public class LocationUtils
 {
-    /**
-     * Returns the human-readable details of a Location (provider, lat/long, accuracy, timestamp)
-     *
-     * @return the details of a Location (provider, lat/long, accuracy, timestamp) in a string
-     */
-    public static String printLocationDetails(Location loc)
-    {
-        if (loc == null)
-        {
-            return "";
-        }
-
-        long timeDiff;
-        double timeDiffSec;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
-        {
-            timeDiff = SystemClock.elapsedRealtimeNanos() - loc.getElapsedRealtimeNanos();
-            // Convert to seconds
-            timeDiffSec = timeDiff / 1E9;
-        } else
-        {
-            timeDiff = System.currentTimeMillis() - loc.getTime();
-            timeDiffSec = timeDiff / 1E3;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(loc.getProvider());
-        sb.append(' ');
-        sb.append(loc.getLatitude());
-        sb.append(',');
-        sb.append(loc.getLongitude());
-        if (loc.hasAccuracy())
-        {
-            sb.append(' ');
-            sb.append(loc.getAccuracy());
-        }
-        sb.append(", ");
-        sb.append(String.format("%.0f", timeDiffSec) + " second(s) ago");
-
-        return sb.toString();
-    }
-
     /**
      * @return A location provider to use for getting locations.
      */

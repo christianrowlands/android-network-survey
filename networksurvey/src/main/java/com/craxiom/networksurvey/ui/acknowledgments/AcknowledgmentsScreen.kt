@@ -28,12 +28,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.LibraryAcknowledgment
 import androidx.core.net.toUri
 
@@ -62,12 +64,12 @@ private fun AcknowledgmentsContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Acknowledgments") },
+                title = { Text(text = stringResource(R.string.acknowledgments_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Navigate back"
+                            contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
                 }
@@ -88,7 +90,7 @@ private fun AcknowledgmentsContent(
             // Special Acknowledgments
             if (uiState.specialAcknowledgments.isNotEmpty()) {
                 item {
-                    CategoryHeader("Special Acknowledgments")
+                    CategoryHeader(stringResource(R.string.ack_special))
                 }
                 items(uiState.specialAcknowledgments) { library ->
                     LibraryCard(library = library, isSpecial = true)
@@ -98,7 +100,7 @@ private fun AcknowledgmentsContent(
             // Core Libraries
             if (uiState.coreLibraries.isNotEmpty()) {
                 item {
-                    CategoryHeader("Core Libraries")
+                    CategoryHeader(stringResource(R.string.ack_core))
                 }
                 items(uiState.coreLibraries) { library ->
                     LibraryCard(library = library)
@@ -108,7 +110,7 @@ private fun AcknowledgmentsContent(
             // UI Libraries
             if (uiState.uiLibraries.isNotEmpty()) {
                 item {
-                    CategoryHeader("UI Libraries")
+                    CategoryHeader(stringResource(R.string.ack_ui))
                 }
                 items(uiState.uiLibraries) { library ->
                     LibraryCard(library = library)
@@ -118,7 +120,7 @@ private fun AcknowledgmentsContent(
             // Utility Libraries
             if (uiState.utilityLibraries.isNotEmpty()) {
                 item {
-                    CategoryHeader("Utility Libraries")
+                    CategoryHeader(stringResource(R.string.ack_utility))
                 }
                 items(uiState.utilityLibraries) { library ->
                     LibraryCard(library = library)
@@ -147,16 +149,14 @@ private fun HeaderCard() {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Open Source Acknowledgments",
+                text = stringResource(R.string.ack_header_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Network Survey is built with the help of many excellent open source libraries. " +
-                        "We gratefully acknowledge the contributions of the developers and communities " +
-                        "who create and maintain these projects.",
+                text = stringResource(R.string.ack_header_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -220,7 +220,7 @@ private fun LibraryCard(
                         }
                     )
                     Text(
-                        text = "by ${library.author}",
+                        text = stringResource(R.string.ack_by_author, library.author),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isSpecial) {
                             MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
@@ -234,7 +234,7 @@ private fun LibraryCard(
             // Description
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = library.description,
+                text = stringResource(library.description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isSpecial) {
                     MaterialTheme.colorScheme.onSecondaryContainer

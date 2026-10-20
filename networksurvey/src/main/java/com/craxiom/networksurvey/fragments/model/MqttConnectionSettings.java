@@ -35,8 +35,6 @@ public record MqttConnectionSettings(
         @SerializedName("phone_state_stream_enabled") Boolean phoneStateStreamEnabled
 ) implements Serializable, Parcelable
 {
-    public static final String KEY = "mqttConnectionSettings";
-
     public static final Creator<MqttConnectionSettings> CREATOR = new Creator<>()
     {
         @Override

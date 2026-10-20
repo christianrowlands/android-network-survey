@@ -43,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
@@ -52,11 +54,9 @@ import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.util.CalculationUtils
 import com.craxiom.networksurvey.util.MeasurementFormatter
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.PlmnColorMapper
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 
 /**
  * Represents the state of the tower bottom sheet.
@@ -147,7 +147,7 @@ private fun TowerListView(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "${towers.size} Towers at Location",
+                text = pluralStringResource(R.plurals.tower_list_title, towers.size, towers.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -243,19 +243,23 @@ private fun TowerListRow(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "MCC-MNC: ${tower.mcc}-${tower.mnc}",
+                    text = stringResource(
+                        R.string.label_value_pair,
+                        stringResource(R.string.mcc_mnc_label),
+                        stringResource(R.string.mcc_mnc_value, tower.mcc.toString(), tower.mnc.toString()),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Cell ID: ${tower.cid}",
+                    text = stringResource(R.string.label_value_pair, stringResource(R.string.calculator_cell_id), tower.cid.toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val lteIds = getLteIds(tower)
                 if (lteIds != null) {
                     Text(
-                        text = "eNB: ${lteIds.first} · Sector: ${lteIds.second}",
+                        text = stringResource(R.string.survey_point_enb_sector, lteIds.first, lteIds.second),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -265,7 +269,7 @@ private fun TowerListRow(
 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = "View details",
+            contentDescription = stringResource(R.string.tower_list_view_details),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
@@ -302,7 +306,7 @@ private fun TowerDetailView(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to list",
+                        contentDescription = stringResource(R.string.tower_detail_back),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -316,7 +320,7 @@ private fun TowerDetailView(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Tower Information",
+                text = stringResource(R.string.tower_detail_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -378,7 +382,7 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionHeader("Network Identity")
+            SectionHeader(stringResource(R.string.tower_detail_identity))
             ProtocolBadge(tower.radio)
         }
 
@@ -413,9 +417,12 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                                 )
                             }
                             Spacer(modifier = Modifier.width(2.dp))
-                            CompactInfoItem("MCC-MNC", "${tower.mcc}-${tower.mnc}")
+                            CompactInfoItem(
+                                stringResource(R.string.mcc_mnc_label),
+                                stringResource(R.string.mcc_mnc_value, tower.mcc.toString(), tower.mnc.toString()),
+                            )
                         }
-                        CompactInfoItem("Area", tower.area.toString())
+                        CompactInfoItem(stringResource(R.string.survey_point_area), tower.area.toString())
                     }
 
                     Row(
@@ -423,10 +430,11 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Cell ID: ",
+                            text = stringResource(R.string.calculator_cell_id),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.width(NsTheme.spacing.xs))
                         Text(
                             text = tower.cid.toString(),
                             style = MaterialTheme.typography.bodyLarge,
@@ -440,8 +448,8 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            CompactInfoItem("eNB ID", lteIds.first.toString())
-                            CompactInfoItem("Sector ID", lteIds.second.toString())
+                            CompactInfoItem(stringResource(R.string.enb_id_label), lteIds.first.toString())
+                            CompactInfoItem(stringResource(R.string.sector_id_label), lteIds.second.toString())
                         }
                     }
 
@@ -451,10 +459,11 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "PCS/PCI: ",
+                                text = stringResource(R.string.pcs_pci_label),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            Spacer(modifier = Modifier.width(NsTheme.spacing.xs))
                             Text(
                                 text = tower.unit.toString(),
                                 style = MaterialTheme.typography.bodySmall
@@ -468,10 +477,10 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             CompactInfoItem(
-                                "Range",
+                                stringResource(R.string.tower_detail_range),
                                 MeasurementFormatter.formatRange(context, tower.range)
                             )
-                            CompactInfoItem("Samples", tower.samples.toString())
+                            CompactInfoItem(stringResource(R.string.tower_detail_samples), tower.samples.toString())
                         }
                     }
                 }
@@ -483,7 +492,7 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
 @Composable
 private fun LocationSection(tower: Tower) {
     Column {
-        SectionHeader("Location")
+        SectionHeader(stringResource(R.string.tower_detail_location))
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -504,8 +513,8 @@ private fun LocationSection(tower: Tower) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${String.format("%.6f", tower.lat)}, ${
-                            String.format("%.6f", tower.lon)
+                        text = "${String.format(Locale.ROOT, "%.6f", tower.lat)}, ${
+                            String.format(Locale.ROOT, "%.6f", tower.lon)
                         }",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
@@ -522,7 +531,7 @@ private fun LocationSection(tower: Tower) {
 @Composable
 private fun CommentsSection(comments: String) {
     Column {
-        SectionHeader("Comments")
+        SectionHeader(stringResource(R.string.tower_detail_comments))
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -544,7 +553,7 @@ private fun CommentsSection(comments: String) {
 @Composable
 private fun MetadataSection(tower: Tower) {
     Column {
-        SectionHeader("Additional Information")
+        SectionHeader(stringResource(R.string.tower_detail_more))
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -563,7 +572,7 @@ private fun MetadataSection(tower: Tower) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Source",
+                            text = stringResource(R.string.tower_detail_source),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -571,20 +580,20 @@ private fun MetadataSection(tower: Tower) {
                     }
 
                     if (tower.source != TowerSource.BTSearch.apiName) {
-                        TimestampRow("First Seen", tower.createdAt)
-                        TimestampRow("Updated", tower.updatedAt)
+                        TimestampRow(stringResource(R.string.tower_detail_first_seen), tower.createdAt)
+                        TimestampRow(stringResource(R.string.tower_detail_updated), tower.updatedAt)
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Changeable",
+                                text = stringResource(R.string.tower_detail_changeable),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = if (tower.changeable == 1) "Yes" else "No",
+                                text = stringResource(if (tower.changeable == 1) R.string.tower_detail_yes else R.string.tower_detail_no),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = if (tower.changeable == 1)
@@ -594,156 +603,12 @@ private fun MetadataSection(tower: Tower) {
                             )
                         }
                     } else {
-                        TimestampRow("Updated", tower.updatedAt)
+                        TimestampRow(stringResource(R.string.tower_detail_updated), tower.updatedAt)
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-internal fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(bottom = 2.dp)
-    )
-}
-
-@Composable
-internal fun CompactInfoItem(label: String, value: String) {
-    Column {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = MaterialTheme.typography.labelSmall.fontSize * 0.9f
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-internal fun ProtocolBadge(protocol: String) {
-    val (bgColor, textColor) = when (protocol.uppercase()) {
-        "NR" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-        "LTE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-        "UMTS" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
-        "GSM" -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-        "CDMA" -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
-    }
-
-    Surface(
-        color = bgColor,
-        shape = RoundedCornerShape(4.dp)
-    ) {
-        Text(
-            text = protocol.uppercase(),
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = textColor
-        )
-    }
-}
-
-@Composable
-private fun SourceBadge(source: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(4.dp)
-    ) {
-        Text(
-            text = source,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            color = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    }
-}
-
-@Composable
-internal fun TimestampRow(label: String, timestamp: Long) {
-    val relativeTime = getRelativeTimeString(timestamp)
-    val exactTime = formatDateTime(timestamp)
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
-            Text(
-                text = relativeTime,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = exactTime,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
-internal fun getRelativeTimeString(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val time = timestamp * 1000
-    val diff = now - time
-
-    return when {
-        diff < TimeUnit.MINUTES.toMillis(1) -> "Just now"
-        diff < TimeUnit.HOURS.toMillis(1) -> {
-            val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
-            if (minutes == 1L) "1 min ago" else "$minutes mins ago"
-        }
-
-        diff < TimeUnit.DAYS.toMillis(1) -> {
-            val hours = TimeUnit.MILLISECONDS.toHours(diff)
-            if (hours == 1L) "1 hour ago" else "$hours hours ago"
-        }
-
-        diff < TimeUnit.DAYS.toMillis(7) -> {
-            val days = TimeUnit.MILLISECONDS.toDays(diff)
-            if (days == 1L) "Yesterday" else "$days days ago"
-        }
-
-        diff < TimeUnit.DAYS.toMillis(30) -> {
-            val weeks = TimeUnit.MILLISECONDS.toDays(diff) / 7
-            if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
-        }
-
-        diff < TimeUnit.DAYS.toMillis(365) -> {
-            val months = TimeUnit.MILLISECONDS.toDays(diff) / 30
-            if (months == 1L) "1 month ago" else "$months months ago"
-        }
-
-        else -> {
-            val years = TimeUnit.MILLISECONDS.toDays(diff) / 365
-            if (years == 1L) "1 year ago" else "$years years ago"
-        }
-    }
-}
-
-internal fun formatDateTime(timestamp: Long): String {
-    val date = Date(timestamp * 1000)
-    val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-    return sdf.format(date)
 }
 
 /**

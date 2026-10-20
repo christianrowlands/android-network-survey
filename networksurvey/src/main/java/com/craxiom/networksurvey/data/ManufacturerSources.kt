@@ -51,10 +51,6 @@ data class ManufacturerSources(
         return resolved.all { it.equals(first, ignoreCase = true) }
     }
 
-    /** True when no source yielded a usable vendor string. */
-    fun allUnknown(): Boolean =
-        companyIdVendor.isNullOrBlank() && uuidVendor.isNullOrBlank() && ouiVendor.isNullOrBlank()
-
     /** Count of sources that resolved to a non-blank vendor string. */
     fun resolvedCount(): Int {
         var n = 0

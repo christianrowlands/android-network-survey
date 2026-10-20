@@ -4,7 +4,6 @@ package com.craxiom.networksurvey.ui.wifi.model
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.messaging.wifi.WifiBandwidth
-import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import kotlinx.coroutines.flow.MutableStateFlow

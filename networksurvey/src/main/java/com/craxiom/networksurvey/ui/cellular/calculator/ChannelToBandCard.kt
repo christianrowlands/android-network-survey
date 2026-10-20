@@ -1,23 +1,19 @@
 package com.craxiom.networksurvey.ui.cellular.calculator
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.cellular.CalculatorError
+import com.craxiom.networksurvey.ui.cellular.CalculatorField
+import com.craxiom.networksurvey.ui.cellular.CalculatorResults
 import com.craxiom.networksurvey.ui.cellular.bands.BandFormatting
 import com.craxiom.networksurvey.ui.cellular.model.ChannelLookup
+import com.craxiom.networksurvey.ui.common.NsTextAction
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * Turns a channel number into the band or bands that contain it, plus the frequency.
@@ -40,60 +36,32 @@ fun ChannelToBandCard(
     onValueChange: (String) -> Unit,
     onBrowseBands: (String) -> Unit,
 ) {
-    Column {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            isError = lookup?.outOfRange == true,
-        )
-        Spacer(Modifier.height(8.dp))
-
-        lookup?.frequencyMhz?.let {
-            Text(
-                text = stringResource(R.string.calculator_frequency) + ": " +
-                        BandFormatting.mhz(it) + " " + stringResource(R.string.band_unit_mhz),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(start = 8.dp),
-            )
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.m)) {
+        CalculatorField(label = label, value = value, isError = lookup?.outOfRange == true, onValueChange = onValueChange)
 
         if (lookup?.outOfRange == true) {
-            Text(
-                text = stringResource(R.string.calculator_channel_out_of_range, "%,d".format(maxChannel)),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(start = 8.dp),
-            )
+            CalculatorError(label, maxChannel.toLong())
         } else if (lookup != null) {
-            if (lookup.hasBand) {
+            val frequency = lookup.frequencyMhz?.let { stringResource(R.string.mhz_value_label, BandFormatting.mhz(it)) }.orEmpty()
+            val bands = if (lookup.hasBand) lookup.bandNumbers.joinToString(" / ") { "$bandPrefix$it" } else ""
+            CalculatorResults(
+                stringResource(R.string.calculator_frequency) to frequency,
+                stringResource(R.string.band_group_number) to bands,
+            )
+            if (lookup.hasBand && lookup.isAmbiguous) {
                 Text(
-                    text = stringResource(R.string.band_group_number) + ": " +
-                            lookup.bandNumbers.joinToString(" / ") { "$bandPrefix$it" },
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(R.string.calculator_ambiguous_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (lookup.isAmbiguous) {
-                    Text(
-                        text = stringResource(R.string.calculator_ambiguous_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 8.dp, top = 4.dp),
-                    )
-                }
-            } else {
+            } else if (!lookup.hasBand) {
                 Text(
                     text = stringResource(R.string.calculator_no_band),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 8.dp),
                 )
             }
-            TextButton(onClick = { onBrowseBands(value) }) {
-                Text(stringResource(R.string.band_browse_all))
-            }
+            NsTextAction(stringResource(R.string.band_browse_all), { onBrowseBands(value) })
         }
     }
 }

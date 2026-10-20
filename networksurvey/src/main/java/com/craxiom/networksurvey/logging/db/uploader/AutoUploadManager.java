@@ -7,11 +7,7 @@ import android.os.Looper;
 
 import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
-import androidx.work.Constraints;
 import androidx.work.Data;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.NetworkType;
-import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
@@ -44,6 +40,7 @@ public class AutoUploadManager implements IUploadRecordCountListener
     private final Context context;
     private final BatteryMonitor batteryMonitor;
     private final IUploadRecordCountListener delegate;
+    private final Runnable onHealthChanged;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final AtomicInteger pendingRecordCount = new AtomicInteger(0);
@@ -68,14 +65,42 @@ public class AutoUploadManager implements IUploadRecordCountListener
      *
      * @param context        The application context.
      * @param batteryMonitor The battery monitor to check battery state, or null if unavailable.
-     * @param delegate       The original upload record count listener to forward callbacks to.
+     * @param delegate        The original upload record count listener to forward callbacks to.
+     * @param onHealthChanged Called after an automatic upload finishes, so the survey state that shows
+     *                        {@link #getConsecutiveFailureCount()} and the retry time is republished.
      */
     public AutoUploadManager(Context context, BatteryMonitor batteryMonitor,
-                             IUploadRecordCountListener delegate)
+                             IUploadRecordCountListener delegate, Runnable onHealthChanged)
     {
         this.context = context.getApplicationContext();
         this.batteryMonitor = batteryMonitor;
         this.delegate = delegate;
+        this.onHealthChanged = onHealthChanged;
+    }
+
+    /**
+     * @return The automatic uploads that failed in a row since the last success.
+     */
+    public int getConsecutiveFailureCount()
+    {
+        return consecutiveFailureCount;
+    }
+
+    /**
+     * @return When automatic upload tries again after repeated failures, or 0 if it isn't waiting.
+     */
+    public long getRetryAtMs()
+    {
+        final long until = circuitBreakerCooldownUntil;
+        return until > System.currentTimeMillis() ? until : 0L;
+    }
+
+    /**
+     * @return True if OpenCelliD refused the API key, so automatic upload stopped sending to it.
+     */
+    public boolean isOpenCelliDKeyRejected()
+    {
+        return ocidCooldownUntil == Long.MAX_VALUE;
     }
 
     @Override
@@ -169,41 +194,7 @@ public class AutoUploadManager implements IUploadRecordCountListener
     {
         Timber.i("Auto-upload triggered with %d pending records", pendingRecordCount.get());
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean uploadToOcid = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID,
-                NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID);
-        boolean anonymousOcid = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, false);
-        boolean uploadToBeaconDb = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB,
-                NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB);
-        boolean retry = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED,
-                NetworkSurveyConstants.DEFAULT_UPLOAD_RETRY_ENABLED);
-
-        boolean wifiOnly = PreferenceUtils.isAutoUploadWifiOnly(context);
-
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(wifiOnly ? NetworkType.UNMETERED : NetworkType.CONNECTED)
-                .setRequiresBatteryNotLow(true)
-                .build();
-
-        Data inputData = new Data.Builder()
-                .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOcid)
-                .putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymousOcid)
-                .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDb)
-                .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry)
-                .putString(NsUploaderWorker.INPUT_SOURCE, NsUploaderWorker.SOURCE_AUTO)
-                .build();
-
-        OneTimeWorkRequest uploadWorkRequest = new OneTimeWorkRequest.Builder(NsUploaderWorker.class)
-                .addTag(NsUploaderWorker.WORKER_TAG)
-                .setInputData(inputData)
-                .setConstraints(constraints)
-                .build();
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-                NetworkSurveyConstants.COMMUNITY_UPLOAD_UNIQUE_WORK_NAME,
-                ExistingWorkPolicy.KEEP,
-                uploadWorkRequest
-        );
+        AutoUploadRequest.enqueue(context);
 
         pendingRecordCount.set(0);
         lastAutoUploadTimestamp = System.currentTimeMillis();
@@ -280,6 +271,8 @@ public class AutoUploadManager implements IUploadRecordCountListener
                         circuitBreakerCooldownUntil, backoffMs);
             }
         }
+
+        if (onHealthChanged != null && workInfo.getState().isFinished()) onHealthChanged.run();
     }
 
     /**

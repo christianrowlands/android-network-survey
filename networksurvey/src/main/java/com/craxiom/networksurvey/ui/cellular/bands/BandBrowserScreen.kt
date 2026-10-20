@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,15 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.BandMatchGroup
 import com.craxiom.networksurvey.data.band.BandReading
 import com.craxiom.networksurvey.ui.cellular.model.BandBrowserViewModel
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsLazyPanelItem
+import com.craxiom.networksurvey.ui.common.nsContentWidth
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * The browsable reference of every LTE and 5G NR operating band.
@@ -93,43 +91,41 @@ fun BandBrowserScreen(viewModel: BandBrowserViewModel, modifier: Modifier = Modi
             // Without this, a query that matches nothing renders exactly like an empty field:
             // the plain catalogue, with no hint that the value meant anything at all.
             if (query.isNotBlank() && matches.isEmpty()) {
-                item(key = "no-match") { NoMatch(query) }
+                item(key = "no-match") { Box(Modifier.nsContentWidth()) { NoMatch(query) } }
             }
 
             matches.forEach { group ->
                 item(key = "group-${group.reading}-${group.value}") {
-                    MatchGroupHeader(group)
+                    Box(Modifier.nsContentWidth()) { MatchGroupHeader(group) }
                 }
-                items(group.bands, key = { "m-${group.reading}-${it.technology}-${it.number}" }) {
-                    BandRow(it, onClick = { viewModel.selectBand(it) })
+                itemsIndexed(group.bands, key = { _, band -> "m-${group.reading}-${band.technology}-${band.number}" }) { index, band ->
+                    NsLazyPanelItem(index = index, count = group.bands.size) {
+                        BandRow(band, onClick = { viewModel.selectBand(band) })
+                    }
                 }
             }
 
             item(key = "catalogue-header") {
-                SectionLabel(
-                    stringResource(R.string.band_catalogue_header) + "  ·  " +
-                            pluralStringResource(
-                                R.plurals.band_count,
-                                catalogue.size,
-                                catalogue.size,
-                            )
-                )
+                Box(Modifier.nsContentWidth()) {
+                    SectionLabel(pluralStringResource(R.plurals.band_count, catalogue.size, catalogue.size))
+                }
             }
             if (catalogue.isEmpty()) {
                 item(key = "empty") {
                     Text(
                         text = stringResource(R.string.band_empty),
-                        style = TextStyle(fontSize = 13.sp),
-                        color = WifiTokens.InkFaint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .nsContentWidth()
                             .padding(24.dp),
                     )
                 }
             }
-            items(catalogue, key = { "c-${it.technology}-${it.number}" }) { band ->
-                BandRow(band, onClick = { viewModel.selectBand(band) })
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            itemsIndexed(catalogue, key = { _, band -> "c-${band.technology}-${band.number}" }) { index, band ->
+                NsLazyPanelItem(index = index, count = catalogue.size) {
+                    BandRow(band, onClick = { viewModel.selectBand(band) })
+                }
             }
         }
     }
@@ -156,22 +152,22 @@ private fun MatchGroupHeader(group: BandMatchGroup) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .padding(horizontal = NsTheme.spacing.screenGutter, vertical = NsTheme.spacing.xs)
+            .clip(NsTheme.shapes.panel)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = NsTheme.spacing.panelPaddingHorizontal, vertical = NsTheme.spacing.s),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
             text = label,
-            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-            color = WifiTokens.SsidAccent,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.primary,
         )
         group.frequencyMhz?.let {
             Text(
                 text = BandFormatting.mhz(it) + " " + stringResource(R.string.band_unit_mhz),
-                style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium),
-                color = WifiTokens.Ink,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
         if (group.bands.isEmpty()) {
@@ -180,8 +176,8 @@ private fun MatchGroupHeader(group: BandMatchGroup) {
                     if (group.reading == BandReading.FREQUENCY) R.string.band_group_no_band_frequency
                     else R.string.band_group_no_band
                 ),
-                style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkFaint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -191,8 +187,8 @@ private fun MatchGroupHeader(group: BandMatchGroup) {
 private fun NoMatch(query: String) {
     Text(
         text = stringResource(R.string.band_no_match, query),
-        style = TextStyle(fontSize = 13.sp),
-        color = WifiTokens.InkFaint,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -203,8 +199,8 @@ private fun NoMatch(query: String) {
 private fun SectionLabel(text: String) {
     Text(
         text = text.uppercase(),
-        style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp),
-        color = WifiTokens.InkFaint,
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp),
     )
 }

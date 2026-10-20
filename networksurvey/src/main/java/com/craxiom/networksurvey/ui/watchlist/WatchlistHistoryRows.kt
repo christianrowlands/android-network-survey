@@ -44,8 +44,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
@@ -96,7 +97,7 @@ internal fun WatchlistHistoryGroupRow(
                 Text(
                     text = group.entry.label ?: group.entry.ssid ?: group.entry.bssid ?: "",
                     style = MaterialTheme.typography.titleMedium,
-                    color = WifiTokens.SsidAccent
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = subtitle,
@@ -109,7 +110,7 @@ internal fun WatchlistHistoryGroupRow(
                     text = group.bestRssi.toString(),
                     style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
                     fontWeight = FontWeight.Bold,
-                    color = group.bestRssi.toWifiSignalCategory().color
+                    color = group.bestRssi.toWifiSignalCategory().textColor
                 )
                 Text(
                     text = stringResource(R.string.watchlist_history_best_dbm),
@@ -143,7 +144,7 @@ internal fun HistorySortChip(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(999.dp))
-                .background(WifiTokens.SsidSoft)
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .clickable(
                     onClickLabel = stringResource(R.string.watchlist_history_sort_action),
                     role = Role.Button,
@@ -156,12 +157,12 @@ internal fun HistorySortChip(
                 text = stringResource(labelRes),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = WifiTokens.SsidAccent
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Icon(
                 Icons.Default.ArrowDropDown,
                 contentDescription = null,
-                tint = WifiTokens.SsidAccent,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -199,7 +200,7 @@ internal fun WatchlistNetworkRow(
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, role = Role.Button, onClick = onClick)
-            .background(if (selected) WifiTokens.SsidSoft else Color.Transparent)
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             // Interactive row: keep at least the minimum touch-target height in both states so
             // selecting does not change the row height.
             .heightIn(min = 48.dp)
@@ -211,7 +212,7 @@ internal fun WatchlistNetworkRow(
             modifier = Modifier
                 .width(3.dp)
                 .fillMaxHeight()
-                .background(if (selected) WifiTokens.SsidAccent else Color.Transparent)
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
         )
         Row(
             modifier = Modifier
@@ -225,8 +226,8 @@ internal fun WatchlistNetworkRow(
                 modifier = Modifier
                     .size(11.dp)
                     .clip(CircleShape)
-                    .background(runCatching { Color(android.graphics.Color.parseColor(entry.colorHex)) }
-                        .getOrDefault(WifiTokens.SsidAccent))
+                    .background(runCatching { Color(entry.colorHex.toColorInt()) }
+                        .getOrDefault(MaterialTheme.colorScheme.primary))
             )
             Text(
                 text = entry.name,
@@ -256,12 +257,12 @@ internal fun WatchlistNetworkRow(
                         text = stringResource(R.string.watchlist_history_view_sightings),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = WifiTokens.SsidAccent
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = WifiTokens.SsidAccent,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                 }

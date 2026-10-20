@@ -2,35 +2,71 @@ package com.craxiom.networksurvey.ui.wifi.model
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.os.Build
+import android.os.SystemClock
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.ui.signals.ScanConditions
+import com.craxiom.networksurvey.ui.signals.ScanListenerRegistration
+import com.craxiom.networksurvey.util.PreferenceUtils
 import com.craxiom.networksurvey.util.WifiBand
 import com.craxiom.networksurvey.util.WifiUtils
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import timber.log.Timber
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 /**
  * View model for the redesigned Wi-Fi list. Owns the raw scan wrapper list, the user's
  * mode/sort/expansion state, and derives the display-ready item list for the Compose layer.
+ * Activity scoped, so the Signals app bar's filter sheet and the list share it and the list
+ * survives sub-tab switches.
+ *
+ * The record listener is registered only while the screen is bound to the service
+ * ([onServiceChanged]) and the phone can scan ([WifiScanState.READY]); registering starts the
+ * service's Wi-Fi scanning, which without the permission or with scanning off fails silently and
+ * leaves the list stale. Scans arrive on the survey executor and are applied on the main thread.
  *
  * Group-by-SSID mode is the default (handoff). Sort options (6) match the existing
  * [R.array.wifi_network_sort_options]:
  *  0: Signal (descending), 1: SSID, 2: BSSID, 3: Channel, 4: Frequency, 5: Security
  */
-@HiltViewModel
-class WifiListViewModel @Inject constructor(
+class WifiListViewModel internal constructor(
     application: Application,
-) : AndroidViewModel(application) {
+    environment: WifiEnvironment,
+    private val throttleProbe: WifiThrottleProbe,
+    private val scanRateMs: () -> Long,
+    clock: () -> Long,
+    private val mainDispatcher: CoroutineDispatcher,
+    private val sdk: Int,
+) : AndroidViewModel(application), IWifiSurveyRecordListener {
+
+    constructor(application: Application) : this(
+        application = application,
+        environment = AndroidWifiEnvironment(application),
+        throttleProbe = AndroidWifiThrottleProbe(application),
+        scanRateMs = {
+            PreferenceUtils.getScanRatePreferenceMs(
+                NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS,
+                application,
+            ).toLong()
+        },
+        clock = SystemClock::elapsedRealtime,
+        mainDispatcher = Dispatchers.Main,
+        sdk = Build.VERSION.SDK_INT,
+    )
 
     private val preferences: SharedPreferences =
         PreferenceManager.getDefaultSharedPreferences(application)
@@ -66,17 +102,111 @@ class WifiListViewModel @Inject constructor(
     private val initialSortIndex =
         preferences.getInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, 0)
 
+    private val conditions = ScanConditions(
+        context = application,
+        actions = WifiEnvironment.ACTIONS,
+        read = environment::scanState,
+        onBroadcast = ::applyScanState,
+    )
+
+    private val scanGap = WifiScanGap(clock)
+    private var throttleDismissed = false
+
+    private val registration = ScanListenerRegistration(
+        register = { it.registerWifiSurveyRecordListener(this) },
+        unregister = { it.unregisterWifiSurveyRecordListener(this) },
+        onUnregistered = scanGap::reset,
+    )
+
     private val _uiState = MutableStateFlow(
         WifiListUiState(
             mode = initialMode,
             sortIndex = initialSortIndex,
+            scanState = conditions.state.value,
         )
     )
     val uiState: StateFlow<WifiListUiState> = _uiState.asStateFlow()
 
-    /** Called by the Fragment on each scan callback. No-op while updates are paused. */
-    fun onScanResults(wrappers: List<WifiRecordWrapper>) {
+    /** Called with the bound service, and with null before the screen unbinds. */
+    fun onServiceChanged(service: NetworkSurveyService?) {
+        registration.onServiceChanged(service, conditions.state.value == WifiScanState.READY)
+        // Only Android 9 and 10 measure the gap between scans
+        if (sdk < Build.VERSION_CODES.R) scanGap.watchSurveyPauses(viewModelScope, service?.surveyStateFlow)
+    }
+
+    /**
+     * Re-reads whether the phone can scan (on resume and after a permission answer) and whether
+     * Android throttles scans, and registers or unregisters to match.
+     */
+    fun refresh() {
+        conditions.refresh()
+        applyScanState()
+        checkThrottling(scanGapMs = null)
+    }
+
+    /** Hides the throttling warning until the app is restarted. */
+    fun dismissThrottleWarning() {
+        throttleDismissed = true
+        _uiState.update { it.copy(throttleWarning = null) }
+    }
+
+    /** Excluded networks show in the list, marked, so the user can see what is left out. */
+    override fun wantsExcludedRecords(): Boolean = true
+
+    override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: List<WifiRecordWrapper>) {
+        viewModelScope.launch(mainDispatcher) {
+            // A scan in flight when the screen unregistered is not news.
+            if (registration.isRegistered) onScanResults(wifiBeaconRecords)
+        }
+    }
+
+    /**
+     * Look up the raw wrapper for a BSSID. Callers need this to build the Parcelable
+     * [com.craxiom.networksurvey.model.WifiNetwork] when navigating to Details.
+     */
+    fun wrapperFor(bssid: String): WifiRecordWrapper? = wrappersByBssid[bssid]
+
+    /** @return The networks on screen, to draw the spectrum's first frame without waiting for a scan. */
+    fun seedRecords(): List<WifiRecordWrapper> = wrappersByBssid.values.toList()
+
+    /**
+     * Freezes the rows on screen, or shows them live again; scans arriving while paused are dropped.
+     * Rows frozen through a block are cleared when the list resumes while still blocked.
+     */
+    fun togglePaused() {
+        scanGap.reset()
+        _uiState.update { it.copy(updatesPaused = !it.updatesPaused) }
+        if (!_uiState.value.updatesPaused && _uiState.value.scanState != WifiScanState.READY) clearRows()
+    }
+
+    override fun onCleared() {
+        registration.release()
+        conditions.close()
+    }
+
+    /** A blocked list drops its rows (paused ones stay frozen), so none come back stale when it clears. */
+    private fun applyScanState() {
+        val scanState = conditions.state.value
+        _uiState.update { it.copy(scanState = scanState) }
+        registration.update(scanState == WifiScanState.READY)
+        if (scanState != WifiScanState.READY && !_uiState.value.updatesPaused) clearRows()
+    }
+
+    /** Forgets every network and the scan count; the filter, sort, mode and open groups stay. */
+    private fun clearRows() {
+        wrappersByBssid.clear()
+        displayCache.clear()
+        latestSortedDisplays = emptyList()
+        latestFilteredDisplays = emptyList()
+        latestGroups = emptyList()
+        _uiState.update { it.copy(items = emptyList(), scanNumber = 0, apCount = 0, visibleApCount = 0) }
+    }
+
+    /** Applies one scan on the main thread. No-op while updates are paused. */
+    private fun onScanResults(wrappers: List<WifiRecordWrapper>) {
         if (_uiState.value.updatesPaused) return
+        // Android 11+ reports the throttle setting itself, read on resume; 9 and 10 only show it in the gaps.
+        if (sdk < Build.VERSION_CODES.R) checkThrottling(scanGap.measure())
         val current = _uiState.value
         rebuildDisplays(wrappers, current.sortIndex)
         _uiState.value = current.copy(
@@ -89,19 +219,15 @@ class WifiListViewModel @Inject constructor(
     }
 
     /**
-     * Look up the raw wrapper for a BSSID. Callers need this to build the Parcelable
-     * [com.craxiom.networksurvey.model.WifiNetwork] when navigating to Details.
+     * Android 11+ can say whether it throttles, so its warning follows the setting; on Android 9 and
+     * 10 a warning stays until dismissed, since only a slow scan reveals the throttle.
      */
-    fun wrapperFor(bssid: String): WifiRecordWrapper? = wrappersByBssid[bssid]
-
-    fun setScanStatus(statusId: Int) {
-        _uiState.update { it.copy(scanStatusId = statusId) }
-    }
-
-    fun togglePaused(): Boolean {
-        val next = !_uiState.value.updatesPaused
-        _uiState.update { it.copy(updatesPaused = next) }
-        return next
+    private fun checkThrottling(scanGapMs: Long?) {
+        if (throttleDismissed) return
+        val warning = WifiThrottling.warning(sdk, throttleProbe.read(), scanGapMs, scanRateMs())
+        if (warning != null || sdk >= Build.VERSION_CODES.R) {
+            _uiState.update { it.copy(throttleWarning = warning) }
+        }
     }
 
     fun setMode(mode: WifiListMode) {
@@ -204,32 +330,7 @@ class WifiListViewModel @Inject constructor(
      * cheap because they work off these cached displays.
      */
     private fun rebuildDisplays(wrappers: List<WifiRecordWrapper>, sortIndex: Int) {
-        // Drop empty-BSSID wrappers (scanner invariant violation; legacy adapter also couldn't
-        // navigate to them) and de-duplicate by BSSID so LazyColumn keys never collide. Scanners
-        // can emit the same BSSID across sub-scans or via MBSSID merges; a collision crashes the
-        // list with IllegalStateException: Key was already used.
-        val seen = HashSet<String>(wrappers.size)
-        val dedupedWrappers = mutableListOf<WifiRecordWrapper>()
-        var emptyBssidDropped = 0
-        var duplicateBssidDropped = 0
-        for (wrapper in wrappers) {
-            val bssid = wrapper.wifiBeaconRecord.data.bssid
-            if (bssid.isNullOrBlank()) {
-                emptyBssidDropped++
-                continue
-            }
-            if (!seen.add(bssid)) {
-                duplicateBssidDropped++
-                continue
-            }
-            dedupedWrappers += wrapper
-        }
-        if (emptyBssidDropped > 0) {
-            Timber.w("Dropped %d Wi-Fi wrappers with empty BSSID", emptyBssidDropped)
-        }
-        if (duplicateBssidDropped > 0) {
-            Timber.d("Dropped %d duplicate-BSSID Wi-Fi wrappers in scan", duplicateBssidDropped)
-        }
+        val dedupedWrappers = dedupeByBssid(wrappers)
 
         // Replace the wrapper map with the freshest wrappers for this scan.
         wrappersByBssid.clear()

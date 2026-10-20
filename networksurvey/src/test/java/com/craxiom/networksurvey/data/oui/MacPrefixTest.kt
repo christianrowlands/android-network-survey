@@ -49,12 +49,6 @@ class MacPrefixTest {
     }
 
     @Test
-    fun `normalize produces uppercase colon form`() {
-        assertEquals("AA:BB:CC:DD:EE:FF", MacPrefix.normalize("aa-bb-cc-dd-ee-ff"))
-        assertEquals("00:01:02:03:04:05", MacPrefix.normalize("000102030405"))
-    }
-
-    @Test
     fun `maskToPrefix 24 bits keeps top three octets`() {
         val full = 0xAABBCCDDEEFFL
         assertEquals(0xAABBCC000000L, MacPrefix.maskToPrefix(full, MacPrefix.MA_L))
@@ -99,20 +93,8 @@ class MacPrefixTest {
     }
 
     @Test
-    fun `isMulticast true when least-significant bit of first byte set`() {
-        assertTrue(MacPrefix.isMulticast(0x01005E112233L)) // IPv4 multicast
-        assertTrue(MacPrefix.isMulticast(0xFFFFFFFFFFFFL)) // broadcast
-    }
-
-    @Test
-    fun `isMulticast false for unicast MACs`() {
-        assertFalse(MacPrefix.isMulticast(0xA87EEA112233L))
-    }
-
-    @Test
-    fun `broadcast MAC reports both LAA and multicast`() {
+    fun `broadcast MAC reports LAA`() {
         val broadcast = 0xFFFFFFFFFFFFL
         assertTrue(MacPrefix.isLocallyAdministered(broadcast))
-        assertTrue(MacPrefix.isMulticast(broadcast))
     }
 }

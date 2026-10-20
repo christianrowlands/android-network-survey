@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
-import android.util.Log
 import androidx.core.location.LocationListenerCompat
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.gpstest.util.hasPermission
@@ -21,8 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
 import timber.log.Timber
-
-private const val TAG = "SharedLocationManager"
 
 /**
  * Wraps the LocationManager in callbackFlow
@@ -46,7 +43,6 @@ class SharedLocationManager(
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         // Use LocationListenerCompat to avoid crashes on API Level 30 and lower (#627)
         val callback = LocationListenerCompat { location ->
-            //Log.d(TAG, "New location: ${location.toNotificationTitle()}")
             // Send the new location to the Flow observers
             trySend(location)
         }
@@ -55,9 +51,7 @@ class SharedLocationManager(
             !context.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         ) close()
 
-        Log.d(
-            TAG,
-            "Starting location updates with minTime=${
+        Timber.d("Starting location updates with minTime=${
                 minTimeMillis(
                     context,
                     prefs
@@ -88,12 +82,12 @@ class SharedLocationManager(
 
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception in location flow: $e")
+            Timber.e(e, "Exception in location flow")
             close(e) // in case of exception, close the Flow
         }
 
         awaitClose {
-            Log.d(TAG, "Stopping location updates")
+            Timber.d("Stopping location updates")
             _receivingLocationUpdates.value = false
             locationManager.removeUpdates(callback) // clean up when Flow collection ends
         }

@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -38,10 +39,14 @@ public class QrCodeShareFragment extends Fragment
         View view = inflater.inflate(R.layout.fragment_qr_code_share, container, false);
 
         ImageView imageView = view.findViewById(R.id.ivQrCode);
+        TextView passwordWarning = view.findViewById(R.id.tvPasswordWarning);
 
         SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         MqttConnectionSettings mqttConnectionSettings = viewModel.getMqttConnectionSettings();
         if (mqttConnectionSettings == null) return view;
+
+        final String password = mqttConnectionSettings.mqttPassword();
+        passwordWarning.setVisibility(password == null || password.isEmpty() ? View.GONE : View.VISIBLE);
 
         // Removing the device name because if two devices use the same MQTT client ID, then neither will be able to connect
         String mqttConnectionSettingsJson = new Gson().toJson(mqttConnectionSettings.withoutDeviceName());
@@ -54,8 +59,8 @@ public class QrCodeShareFragment extends Fragment
             imageView.setImageBitmap(bitmap);
         } else
         {
-            // QR code generation failed - show error and navigate back
-            showQrCodeErrorDialog(viewModel, mqttConnectionSettings);
+            // QR code generation failed - show error and go back to the broker
+            showQrCodeErrorDialog();
         }
 
         return view;
@@ -80,19 +85,16 @@ public class QrCodeShareFragment extends Fragment
     }
 
     /**
-     * Shows an error dialog when QR code generation fails and navigates back to the MQTT
-     * connection screen when the user dismisses the dialog.
-     *
-     * @param viewModel              The SharedViewModel for navigation
-     * @param mqttConnectionSettings The current MQTT settings to preserve
+     * Shows an error dialog when QR code generation fails and goes back to the broker editor when
+     * the user dismisses the dialog.
      */
-    private void showQrCodeErrorDialog(SharedViewModel viewModel, MqttConnectionSettings mqttConnectionSettings)
+    private void showQrCodeErrorDialog()
     {
         FragmentActivity activity = getActivity();
         if (activity == null) return;
 
         FragmentDialogs.showQrCodeTooLargeError(getParentFragmentManager(),
-                () -> viewModel.triggerNavigationToMqttConnection(mqttConnectionSettings));
+                () -> activity.getOnBackPressedDispatcher().onBackPressed());
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.util
 
 import android.net.Uri
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -81,7 +82,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Missing registration token", error.message)
+        assertEquals(R.string.ns_analytics_link_no_token, error.messageRes)
     }
 
     @Test
@@ -92,7 +93,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Missing workspace ID", error.message)
+        assertEquals(R.string.ns_analytics_link_no_workspace, error.messageRes)
     }
 
     @Test
@@ -103,7 +104,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Missing API URL", error.message)
+        assertEquals(R.string.ns_analytics_link_no_server, error.messageRes)
     }
 
     @Test
@@ -114,7 +115,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Missing registration token", error.message)
+        assertEquals(R.string.ns_analytics_link_no_token, error.messageRes)
     }
 
     @Test
@@ -125,7 +126,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Missing workspace ID", error.message)
+        assertEquals(R.string.ns_analytics_link_no_workspace, error.messageRes)
     }
 
     // === Invalid URLs ===
@@ -138,7 +139,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Invalid API URL: must use HTTPS", error.message)
+        assertEquals(R.string.ns_analytics_link_not_https, error.messageRes)
     }
 
     @Test
@@ -150,7 +151,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Invalid API URL format", error.message)
+        assertEquals(R.string.ns_analytics_link_bad_server, error.messageRes)
     }
 
     @Test
@@ -162,7 +163,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL too long", error.message)
+        assertEquals(R.string.ns_analytics_link_server_too_long, error.messageRes)
     }
 
     // === SSRF Prevention ===
@@ -175,7 +176,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -186,7 +187,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -197,7 +198,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -208,7 +209,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -219,7 +220,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -230,7 +231,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -259,7 +260,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     @Test
@@ -270,7 +271,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("API URL cannot be an internal address", error.message)
+        assertEquals(R.string.ns_analytics_link_local_server, error.messageRes)
     }
 
     // === Non-Applicable URIs ===
@@ -428,7 +429,7 @@ class NsAnalyticsDeepLinkHandlerTest {
 
         assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
         val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
-        assertEquals("Workspace name too long", error.message)
+        assertEquals(R.string.ns_analytics_link_name_too_long, error.messageRes)
     }
 
     @Test

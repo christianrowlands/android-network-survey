@@ -26,7 +26,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.content.ContextCompat
 import com.craxiom.networksurvey.gpstest.util.hasPermission
 import kotlinx.coroutines.CoroutineScope
@@ -38,9 +37,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
-
-private const val TAG = "SharedGnssStatusManager"
 
 /**
  * Wraps the GnssStatus updates in callbackFlow
@@ -53,10 +51,6 @@ class SharedGnssStatusManager(
     externalScope: CoroutineScope,
     prefs: SharedPreferences
 ) {
-    // State of GnssStatus
-    private val _statusState = MutableStateFlow<GnssStatusState>(GnssStatusState.Stopped)
-    val statusState: StateFlow<GnssStatusState> = _statusState
-
     // State of ongoing GNSS fix
     private val _fixState = MutableStateFlow<FixState>(FixState.NotAcquired)
     val fixState: StateFlow<FixState> = _fixState
@@ -70,14 +64,6 @@ class SharedGnssStatusManager(
     private val _gnssStatusUpdates = callbackFlow {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val callback: GnssStatus.Callback = object : GnssStatus.Callback() {
-            override fun onStarted() {
-                _statusState.value = GnssStatusState.Started
-            }
-
-            override fun onStopped() {
-                _statusState.value = GnssStatusState.Stopped
-            }
-
             override fun onFirstFix(ttffMillis: Int) {
                 _firstFixState.value = FirstFixState.Acquired(ttffMillis)
                 _fixState.value = FixState.Acquired
@@ -90,7 +76,6 @@ class SharedGnssStatusManager(
                 } else {
                     _fixState.value = FixState.NotAcquired
                 }
-                //Log.d(TAG, "New gnssStatus: ${status}")
                 // Send the new location to the Flow observers
                 trySend(status)
             }
@@ -100,7 +85,7 @@ class SharedGnssStatusManager(
             !context.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         ) close()
 
-        Log.d(TAG, "Starting GnssStatus updates")
+        Timber.d("Starting GnssStatus updates")
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -115,12 +100,12 @@ class SharedGnssStatusManager(
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception in location flow: $e")
+            Timber.e(e, "Exception in location flow")
             close(e) // in case of exception, close the Flow
         }
 
         awaitClose {
-            Log.d(TAG, "Stopping GnssStatus updates")
+            Timber.d("Stopping GnssStatus updates")
             locationManager.unregisterGnssStatusCallback(callback) // clean up when Flow collection ends
             _fixState.value = FixState.NotAcquired
             _firstFixState.value = FirstFixState.NotAcquired
@@ -158,12 +143,6 @@ private fun checkHaveFix(context: Context, location: Location, prefs: SharedPref
         // We have a GNSS fix
         FixState.Acquired
     }
-}
-
-// Started/stopped states
-sealed class GnssStatusState {
-    object Started : GnssStatusState()
-    object Stopped : GnssStatusState()
 }
 
 // GNSS ongoing fix acquired states

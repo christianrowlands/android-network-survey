@@ -1,9 +1,14 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
 /**
- * A simple data class for combining the gNB ID length options along with the corresponding bit shifting count.
+ * One gNB ID length choice: [gnbBitCount] bits of the 36-bit NCI are the gNB ID and the rest
+ * ([sectorBitCount]) the sector ID.
  */
-data class GnbIdLengthOption(
-    val label: String,
-    val gnbBitCount: Int
-)
+data class GnbIdLengthOption(val gnbBitCount: Int) {
+    val sectorBitCount: Int
+        get() = NCI_BITS - gnbBitCount
+
+    private companion object {
+        const val NCI_BITS = 36
+    }
+}

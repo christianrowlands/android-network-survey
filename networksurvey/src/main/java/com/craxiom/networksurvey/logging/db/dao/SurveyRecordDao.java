@@ -148,28 +148,4 @@ public interface SurveyRecordDao
         deleteAllNrRecords();
         deleteAllWifiRecords();
     }
-
-    @Query("SELECT COUNT(*) FROM gsm_survey_records")
-    int getGsmRecordCount();
-
-    @Query("SELECT COUNT(*) FROM cdma_survey_records")
-    int getCdmaRecordCount();
-
-    @Query("SELECT COUNT(*) FROM umts_survey_records")
-    int getUmtsRecordCount();
-
-    @Query("SELECT COUNT(*) FROM lte_survey_records")
-    int getLteRecordCount();
-
-    @Query("SELECT COUNT(*) FROM nr_survey_records")
-    int getNrRecordCount();
-
-    @Query("SELECT COUNT(*) FROM wifi_survey_records")
-    int getWifiRecordCount();
-
-    @Transaction
-    default int getTotalRecordCount()
-    {
-        return getGsmRecordCount() + getCdmaRecordCount() + getUmtsRecordCount() + getLteRecordCount() + getNrRecordCount() + getWifiRecordCount();
-    }
 }

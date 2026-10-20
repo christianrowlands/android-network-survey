@@ -15,15 +15,12 @@
  */
 package com.craxiom.networksurvey.gpstest.util
 
-import android.annotation.SuppressLint
 import android.location.GnssStatus
 import android.location.Location
 import android.os.Build
 import com.craxiom.networksurvey.gpstest.model.GnssType
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus
 import com.craxiom.networksurvey.gpstest.model.SbasType
-import com.craxiom.networksurvey.gpstest.ui.gnss.model.Satellite
-import com.craxiom.networksurvey.gpstest.ui.gnss.model.SatelliteGroup
 import com.craxiom.networksurvey.gpstest.ui.gnss.model.SatelliteMetadata
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.CF_UNKNOWN
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.CF_UNSUPPORTED
@@ -67,13 +64,15 @@ object SatelliteUtil {
     }
 
     /**
-     * Returns a map with the provided status list grouped into satellites
-     * @return a [SatelliteGroup] with the provided status list grouped into satellites in a Map. The key
-     * to the map is the combination of constellation and ID created using
-     * [SatelliteUtils.createGnssSatelliteKey()]. Various other metadata is also included.
+     * Counts the provided signals and the satellites they come from. Signals are grouped into
+     * satellites by the combination of constellation and ID ([SatelliteUtils.createGnssSatelliteKey]),
+     * so a satellite heard on two frequencies counts once.
+     *
+     * @return the signal and satellite counts and the other metadata of the provided status list
      */
-    fun List<SatelliteStatus>.toSatelliteGroup(): SatelliteGroup {
-        val satellites: MutableMap<String, Satellite> = HashMap()
+    fun List<SatelliteStatus>.toSatelliteMetadata(): SatelliteMetadata {
+        // Each satellite's signals, keyed by carrier frequency label
+        val satellites: MutableMap<String, MutableMap<String, SatelliteStatus>> = HashMap()
         var numSignalsUsed = 0
         var numSignalsInView = 0
         var numSatsUsed = 0
@@ -90,7 +89,7 @@ object SatelliteUtil {
         var isNonPrimaryCarrierFreqInUse = false
 
         if (this.isEmpty()) {
-            return SatelliteGroup(satellites, SatelliteMetadata())
+            return SatelliteMetadata()
         }
         for (s in this) {
             if (s.usedInFix) {
@@ -141,8 +140,7 @@ object SatelliteUtil {
                 // Create new satellite and add signal
                 satStatuses = HashMap()
                 satStatuses[carrierLabel] = s
-                val sat = Satellite(key, satStatuses)
-                satellites[key] = sat
+                satellites[key] = satStatuses
                 if (s.usedInFix) {
                     numSatsUsed++
                 }
@@ -151,8 +149,7 @@ object SatelliteUtil {
                 }
             } else {
                 // Add signal to existing satellite
-                val sat = satellites[key]
-                satStatuses = sat!!.status as MutableMap<String, SatelliteStatus>
+                satStatuses = satellites.getValue(key)
                 if (!satStatuses.containsKey(carrierLabel)) {
                     // We found another frequency for this satellite
                     satStatuses[carrierLabel] = s
@@ -186,26 +183,23 @@ object SatelliteUtil {
                 }
             }
         }
-        return SatelliteGroup(
-            satellites,
-            SatelliteMetadata(
-                numSignalsInView,
-                numSignalsUsed,
-                this.size,
-                numSatsInView,
-                numSatsUsed,
-                satellites.size,
-                supportedGnss,
-                supportedGnssCfs,
-                supportedSbas,
-                supportedSbasCfs,
-                unknownCarrierStatuses,
-                duplicateCarrierStatuses,
-                isDualFrequencyPerSatInView,
-                isDualFrequencyPerSatInUse,
-                isNonPrimaryCarrierFreqInView,
-                isNonPrimaryCarrierFreqInUse
-            )
+        return SatelliteMetadata(
+            numSignalsInView,
+            numSignalsUsed,
+            this.size,
+            numSatsInView,
+            numSatsUsed,
+            satellites.size,
+            supportedGnss,
+            supportedGnssCfs,
+            supportedSbas,
+            supportedSbasCfs,
+            unknownCarrierStatuses,
+            duplicateCarrierStatuses,
+            isDualFrequencyPerSatInView,
+            isDualFrequencyPerSatInUse,
+            isNonPrimaryCarrierFreqInView,
+            isNonPrimaryCarrierFreqInUse
         )
     }
 
@@ -215,7 +209,7 @@ object SatelliteUtil {
      * @return true if the speed accuracy is supported for this location, false if it does not
      */
     fun Location.isSpeedAccuracySupported(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && hasSpeedAccuracy()
+        return hasSpeedAccuracy()
     }
 
     /**
@@ -224,7 +218,7 @@ object SatelliteUtil {
      * @return true if the bearing accuracy is supported for this location, false if it does not
      */
     fun Location.isBearingAccuracySupported(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && hasBearingAccuracy()
+        return hasBearingAccuracy()
     }
 
     /**
@@ -235,7 +229,7 @@ object SatelliteUtil {
      * has vertical accuracy information, false if it does not
      */
     fun Location.isVerticalAccuracySupported(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && hasVerticalAccuracy()
+        return hasVerticalAccuracy()
     }
 
     /**
@@ -251,7 +245,7 @@ object SatelliteUtil {
 
     /**
      * Returns the Global Navigation Satellite System (GNSS) for a satellite given the GnssStatus
-     * constellation type.  Note that getSbasConstellationType() should be used to get the particular
+     * constellation type.  Note that [toSbasType] should be used to get the particular
      * SBAS constellation type
      *
      * @return GnssType for the given GnssStatus constellation type
@@ -267,24 +261,6 @@ object SatelliteUtil {
             GnssStatus.CONSTELLATION_SBAS -> GnssType.SBAS
             GnssStatus.CONSTELLATION_UNKNOWN -> GnssType.UNKNOWN
             else -> GnssType.UNKNOWN
-        }
-    }
-
-    /**
-     * Returns the Android system GnssStatus.getConstellationType() for our GnssType enumeration
-     * @return GnssStatus.getConstellationType() for a given GnssType
-     */
-    @SuppressLint("InlinedApi")
-    fun GnssType.toGnssStatusConstellationType(): Int {
-        return when (this) {
-            GnssType.NAVSTAR -> GnssStatus.CONSTELLATION_GPS
-            GnssType.GLONASS -> GnssStatus.CONSTELLATION_GLONASS
-            GnssType.BEIDOU -> GnssStatus.CONSTELLATION_BEIDOU
-            GnssType.QZSS -> GnssStatus.CONSTELLATION_QZSS
-            GnssType.GALILEO -> GnssStatus.CONSTELLATION_GALILEO
-            GnssType.IRNSS -> GnssStatus.CONSTELLATION_IRNSS
-            GnssType.SBAS -> GnssStatus.CONSTELLATION_SBAS
-            GnssType.UNKNOWN -> GnssStatus.CONSTELLATION_UNKNOWN
         }
     }
 

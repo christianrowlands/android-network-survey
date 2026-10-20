@@ -94,18 +94,6 @@ class ManufacturerSourcesTest {
     }
 
     @Test
-    fun `allUnknown true when no source resolved`() {
-        val sources = ManufacturerSources(null, "", "  ", OuiStatus.UNKNOWN)
-        assertTrue(sources.allUnknown())
-    }
-
-    @Test
-    fun `allUnknown false when any source has vendor`() {
-        val sources = ManufacturerSources("Apple, Inc.", null, null, OuiStatus.UNKNOWN)
-        assertFalse(sources.allUnknown())
-    }
-
-    @Test
     fun `resolvedCount counts non-blank vendors`() {
         val sources = ManufacturerSources(
             companyIdVendor = "Apple, Inc.",

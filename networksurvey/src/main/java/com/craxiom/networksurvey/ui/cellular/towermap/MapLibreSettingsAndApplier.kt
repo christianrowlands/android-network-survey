@@ -1,10 +1,7 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
-import android.content.Context
 import androidx.compose.runtime.AbstractApplier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
@@ -21,9 +18,6 @@ data class MapUiSettings(
     val scrollGesturesEnabled: Boolean = true,
     val tiltGesturesEnabled: Boolean = true,
     val zoomGesturesEnabled: Boolean = true,
-    val logoGravity: Int = 0,
-    val attributionGravity: Int = 0,
-    val attributionTintColor: Color = Color.Unspecified,
     /**
      * Whether the MapLibre attribution ("i") control is shown. Off by default (most maps hide it and
      * position it elsewhere); the Watchlist maps opt in and place it via [UiSettings] margins.
@@ -43,18 +37,7 @@ data class MapLocationSettings(
     val accuracyColor: Color = Color.Cyan,
     val pulseEnabled: Boolean = true,
     val pulseColor: Color = Color.Magenta
-) {
-    fun toOptions(context: Context): LocationComponentOptions =
-        LocationComponentOptions.builder(context)
-            .backgroundTintColor(backgroundTintColor.toArgb())
-            .foregroundTintColor(foregroundTintColor.toArgb())
-            .backgroundStaleTintColor(backgroundStaleTintColor.toArgb())
-            .foregroundStaleTintColor(foregroundStaleTintColor.toArgb())
-            .accuracyColor(accuracyColor.toArgb())
-            .pulseEnabled(pulseEnabled)
-            .pulseColor(pulseColor.toArgb())
-            .build()
-}
+)
 
 /**
  * Marker interface for nodes in MapApplier's tree.

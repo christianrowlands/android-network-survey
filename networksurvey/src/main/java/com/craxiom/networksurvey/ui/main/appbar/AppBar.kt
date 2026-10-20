@@ -1,78 +1,54 @@
 package com.craxiom.networksurvey.ui.main.appbar
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
-import kotlinx.coroutines.launch
+import com.craxiom.networksurvey.ui.common.nsContentWidth
 
+/**
+ * The top bar of a top-level tab (Survey, Signals, Map, More): the tab's title and its actions,
+ * with no navigation icon. Its insets cover a landscape display cutout as well as the status bar.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppBar(
-    drawerState: DrawerState? = null,
-    navigationIcon: (@Composable () -> Unit)? = null,
-    @StringRes title: Int? = null,
-    appBarActions: List<AppBarAction>? = null
-) {
+fun TabTopBar(title: String, actions: List<AppBarAction> = emptyList()) {
     TopAppBar(
         title = {
-            title?.let {
-                Text(
-                    text = stringResource(id = title),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
         },
-        actions = {
-            appBarActions?.let {
-                for (appBarAction in it) {
-                    AppBarAction(appBarAction)
-                }
-            }
-        },
-        navigationIcon = {
-            if (drawerState != null && navigationIcon == null) {
-                DrawerIcon(drawerState = drawerState)
-            } else {
-                navigationIcon?.invoke()
-            }
-        },
+        actions = { actions.forEach { AppBarAction(it) } },
+        windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+        // The title and actions line up with the tab's capped content column in landscape
+        modifier = Modifier.nsContentWidth(),
     )
-}
-
-@Composable
-private fun DrawerIcon(drawerState: DrawerState) {
-    val coroutineScope = rememberCoroutineScope()
-    IconButton(onClick = {
-        coroutineScope.launch {
-            drawerState.open()
-        }
-    }) {
-        Icon(
-            Icons.Rounded.Menu,
-            tint = MaterialTheme.colorScheme.onBackground,
-            contentDescription = stringResource(id = R.string.drawer_menu_description)
-        )
-    }
 }
 
 @Composable
@@ -106,6 +82,7 @@ fun AppBarAction(appBarAction: AppBarAction) {
     }
 }
 
+/** The top bar of a page above the tabs: Back, the title and the page's actions. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TitleBar(
@@ -139,7 +116,7 @@ private fun BackIcon(onBackClick: () -> Unit) {
         Icon(
             Icons.AutoMirrored.Rounded.ArrowBack,
             tint = MaterialTheme.colorScheme.onBackground,
-            contentDescription = "Back button"
+            contentDescription = stringResource(R.string.back_button_description)
         )
     }
 }

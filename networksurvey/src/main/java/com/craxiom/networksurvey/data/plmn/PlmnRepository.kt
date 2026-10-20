@@ -18,7 +18,7 @@ import java.io.IOException
  * carry a TTL so they age out within a session, and the entire cache is cleared when a new
  * response reports a different `datasetVersion` (the backend updated its dataset mid-session).
  *
- * No persistent cache layer in v1 — the dataset is small and the screen is stateless across
+ * No persistent cache layer in v1: the dataset is small and the screen is stateless across
  * sessions per the PLMN lookup design brief.
  */
 class PlmnRepository private constructor(
@@ -175,8 +175,7 @@ class PlmnRepository private constructor(
     }
 }
 
-/** Sample helper for tests / display: convenience extension to derive a PLMN row's display name. */
-fun PlmnRecord.displayName(): String =
+/** A PLMN row's display name: the brand, else the operator, else null (shown as "Unknown"). */
+fun PlmnRecord.displayName(): String? =
     brand?.takeIf { it.isNotBlank() }
         ?: operator?.takeIf { it.isNotBlank() }
-        ?: "Unknown"

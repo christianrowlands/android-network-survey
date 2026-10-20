@@ -19,16 +19,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.BandTechnology
 import com.craxiom.networksurvey.data.band.CellularBand
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * One band in the browsable list.
@@ -71,27 +69,23 @@ fun BandRow(band: CellularBand, onClick: () -> Unit, modifier: Modifier = Modifi
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = band.designator,
-                    style = TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                    ),
-                    color = if (band.resolvesLiveCells) WifiTokens.SsidAccent
-                    else WifiTokens.InkFaint,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
+                    color = if (band.resolvesLiveCells) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 band.name?.let {
                     Text(
                         text = it,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = WifiTokens.Ink,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 10.dp),
                     )
                 }
             }
             Text(
                 text = secondLine(band),
-                style = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkFaint,
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -99,25 +93,21 @@ fun BandRow(band: CellularBand, onClick: () -> Unit, modifier: Modifier = Modifi
             BandFormatting.range(band.primaryMhz)?.let {
                 Text(
                     text = it,
-                    style = TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                    color = WifiTokens.Ink,
+                    style = NsTheme.textStyles.mono,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.End,
                 )
                 Text(
                     text = stringResource(R.string.band_unit_mhz),
-                    style = TextStyle(fontSize = 11.sp),
-                    color = WifiTokens.InkFaint,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (!band.resolvesLiveCells) {
                 Text(
                     text = stringResource(R.string.band_chip_reference_only),
-                    style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Medium),
-                    color = WifiTokens.InkFaint,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

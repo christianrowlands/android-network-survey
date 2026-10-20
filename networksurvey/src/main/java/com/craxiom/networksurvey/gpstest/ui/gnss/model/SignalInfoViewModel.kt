@@ -31,27 +31,30 @@ import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.model.DilutionOfPrecision
 import com.craxiom.networksurvey.gpstest.model.GnssType
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus
-import com.craxiom.networksurvey.gpstest.model.SbasType
 import com.craxiom.networksurvey.gpstest.ui.gnss.data.FirstFixState
 import com.craxiom.networksurvey.gpstest.ui.gnss.data.FixState
 import com.craxiom.networksurvey.gpstest.ui.gnss.data.LocationRepository
+import com.craxiom.networksurvey.gpstest.ui.status.GnssTrendHistory
+import com.craxiom.networksurvey.gpstest.ui.status.GnssTrends
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.getCarrierFrequencyLabel
-import com.craxiom.networksurvey.gpstest.util.FormatUtils.formatTtff
 import com.craxiom.networksurvey.gpstest.util.GpsTestUtil
+import com.craxiom.networksurvey.gpstest.util.SignalKeys
 import com.craxiom.networksurvey.gpstest.util.MathUtils
 import com.craxiom.networksurvey.util.NmeaUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
-import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.toSatelliteGroup
+import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.toSatelliteMetadata
 import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.toSatelliteStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.util.concurrent.TimeUnit
 
 /**
  * The age at which cached AGC values are considered stale and no longer applied to the status rows.
@@ -103,18 +106,6 @@ class SignalInfoViewModel @Inject constructor(
     private val _filteredSbasStatuses = MutableLiveData<List<SatelliteStatus>>()
     val filteredSbasStatuses: LiveData<List<SatelliteStatus>> = _filteredSbasStatuses
 
-    // All satellites BEFORE filtering
-    private val _allSatellitesGroup = MutableLiveData<SatelliteGroup>()
-    val allSatellitesGroup: LiveData<SatelliteGroup> = _allSatellitesGroup
-
-    // GNSS Satellites AFTER applying filter
-    private val _filteredGnssSatellites = MutableLiveData<Map<String, Satellite>>()
-    val filteredGnssSatellites: LiveData<Map<String, Satellite>> = _filteredGnssSatellites
-
-    // SBAS Satellites AFTER applying filter
-    private val _filteredSbasSatellites = MutableLiveData<Map<String, Satellite>>()
-    val filteredSbasSatellites: LiveData<Map<String, Satellite>> = _filteredSbasSatellites
-
     // Satellite metadata AFTER applying filter
     private val _filteredSatelliteMetadata = MutableLiveData<SatelliteMetadata>()
     val filteredSatelliteMetadata: LiveData<SatelliteMetadata> = _filteredSatelliteMetadata
@@ -122,8 +113,8 @@ class SignalInfoViewModel @Inject constructor(
     private val _location = MutableLiveData<Location>()
     val location: LiveData<Location> = _location
 
-    private val _ttff = MutableLiveData("")
-    val ttff: LiveData<String> = _ttff
+    private val _ttff = MutableLiveData<Long?>(null)
+    val ttff: LiveData<Long?> = _ttff
 
     private val _altitudeMsl = MutableLiveData<Double>()
     val altitudeMsl: LiveData<Double> = _altitudeMsl
@@ -133,6 +124,15 @@ class SignalInfoViewModel @Inject constructor(
 
     private val _fixState = MutableLiveData<FixState>(FixState.NotAcquired)
     val fixState: LiveData<FixState> = _fixState
+
+    // The last two minutes of AGC and C/N0, for the Status page's trend lines
+    private val trendHistory = GnssTrendHistory()
+    private val _trends = MutableLiveData(GnssTrends.EMPTY)
+    val trends: LiveData<GnssTrends> = _trends
+
+    // The satellite sort, an index into the sort_sats array
+    private val _sortIndex = MutableLiveData(PreferenceUtils.getSatSortIndex(prefs))
+    val sortIndex: LiveData<Int> = _sortIndex
 
     private var started = false
 
@@ -163,7 +163,6 @@ class SignalInfoViewModel @Inject constructor(
             .onEach {
                 //Log.d(TAG, "SignalInfoViewModel location: ${it.toNotificationTitle()}")
                 _location.value = it
-                setGotFirstFix(true)
             }
             .launchIn(viewModelScope)
     }
@@ -297,9 +296,27 @@ class SignalInfoViewModel @Inject constructor(
     @ExperimentalCoroutinesApi
     @VisibleForTesting
     fun updateStatus(context: Context, status: List<SatelliteStatus>, prefs: SharedPreferences) {
+        SignalKeys.assign(status)
         applyAgc(status)
+        val now = SystemClock.elapsedRealtime()
+        trendHistory.record(now, status)
+        _trends.value = trendHistory.snapshot(now)
+        publishStatus(context, status, prefs)
+    }
+
+    /**
+     * Sorts the satellites by the [index] of the sort_sats array, saves it, and re-sorts the
+     * satellites already shown straight away instead of at the next GnssStatus.
+     */
+    fun setSort(context: Context, index: Int, prefs: SharedPreferences) {
+        PreferenceUtils.setSatSortIndex(prefs, index)
+        _sortIndex.value = index
+        publishStatus(context, _allStatuses.value.orEmpty(), prefs)
+    }
+
+    /** Filters and sorts [status] by the user's choices and publishes the lists the pages show. */
+    private fun publishStatus(context: Context, status: List<SatelliteStatus>, prefs: SharedPreferences) {
         _allStatuses.value = status
-        _allSatellitesGroup.value = status.toSatelliteGroup()
 
         // Get filter set by user in UI
         val filter = PreferenceUtils.gnssFilter(context, prefs)
@@ -331,7 +348,7 @@ class SignalInfoViewModel @Inject constructor(
         isGnss: Boolean,
         prefs: SharedPreferences
     ): List<SatelliteStatus> {
-        return when (PreferenceUtils.getSatSortOrderFromPreferences(context, prefs)) {
+        return when (PreferenceUtils.getSatSortIndex(prefs)) {
             0 -> {
                 // Sort by Constellation
                 if (isGnss) {
@@ -452,34 +469,31 @@ class SignalInfoViewModel @Inject constructor(
         this._filteredGnssStatuses.value = gnssStatuses
         this._filteredSbasStatuses.value = sbasStatuses
 
-        val gnssSatellites = gnssStatuses.toSatelliteGroup()
-        this._filteredGnssSatellites.value = gnssSatellites.satellites
-        val sbasSatellites = sbasStatuses.toSatelliteGroup()
-        this._filteredSbasSatellites.value = sbasSatellites.satellites
+        val gnss = gnssStatuses.toSatelliteMetadata()
+        val sbas = sbasStatuses.toSatelliteMetadata()
 
         _filteredSatelliteMetadata.value = SatelliteMetadata(
-            gnssSatellites.satelliteMetadata.numSignalsInView + sbasSatellites.satelliteMetadata.numSignalsInView,
-            gnssSatellites.satelliteMetadata.numSignalsUsed + sbasSatellites.satelliteMetadata.numSignalsUsed,
-            gnssSatellites.satelliteMetadata.numSignalsTotal + sbasSatellites.satelliteMetadata.numSignalsTotal,
-            gnssSatellites.satelliteMetadata.numSatsInView + sbasSatellites.satelliteMetadata.numSatsInView,
-            gnssSatellites.satelliteMetadata.numSatsUsed + sbasSatellites.satelliteMetadata.numSatsUsed,
-            gnssSatellites.satelliteMetadata.numSatsTotal + sbasSatellites.satelliteMetadata.numSatsTotal,
-            gnssSatellites.satelliteMetadata.supportedGnss,
-            gnssSatellites.satelliteMetadata.supportedGnssCfs,
-            sbasSatellites.satelliteMetadata.supportedSbas,
-            sbasSatellites.satelliteMetadata.supportedSbasCfs,
-            gnssSatellites.satelliteMetadata.unknownCarrierStatuses + sbasSatellites.satelliteMetadata.unknownCarrierStatuses,
-            gnssSatellites.satelliteMetadata.duplicateCarrierStatuses + sbasSatellites.satelliteMetadata.duplicateCarrierStatuses,
-            gnssSatellites.satelliteMetadata.isDualFrequencyPerSatInView or sbasSatellites.satelliteMetadata.isDualFrequencyPerSatInView,
-            gnssSatellites.satelliteMetadata.isDualFrequencyPerSatInUse or sbasSatellites.satelliteMetadata.isDualFrequencyPerSatInUse,
-            gnssSatellites.satelliteMetadata.isNonPrimaryCarrierFreqInView or sbasSatellites.satelliteMetadata.isNonPrimaryCarrierFreqInView,
-            gnssSatellites.satelliteMetadata.isNonPrimaryCarrierFreqInUse or sbasSatellites.satelliteMetadata.isNonPrimaryCarrierFreqInUse
+            gnss.numSignalsInView + sbas.numSignalsInView,
+            gnss.numSignalsUsed + sbas.numSignalsUsed,
+            gnss.numSignalsTotal + sbas.numSignalsTotal,
+            gnss.numSatsInView + sbas.numSatsInView,
+            gnss.numSatsUsed + sbas.numSatsUsed,
+            gnss.numSatsTotal + sbas.numSatsTotal,
+            gnss.supportedGnss,
+            gnss.supportedGnssCfs,
+            sbas.supportedSbas,
+            sbas.supportedSbasCfs,
+            gnss.unknownCarrierStatuses + sbas.unknownCarrierStatuses,
+            gnss.duplicateCarrierStatuses + sbas.duplicateCarrierStatuses,
+            gnss.isDualFrequencyPerSatInView or sbas.isDualFrequencyPerSatInView,
+            gnss.isDualFrequencyPerSatInUse or sbas.isDualFrequencyPerSatInUse,
+            gnss.isNonPrimaryCarrierFreqInView or sbas.isNonPrimaryCarrierFreqInView,
+            gnss.isNonPrimaryCarrierFreqInUse or sbas.isNonPrimaryCarrierFreqInUse
         )
     }
 
     private fun onGnssFirstFix(ttffMillis: Int) {
-        _ttff.value = formatTtff(ttffMillis)
-        setGotFirstFix(true)
+        _ttff.value = if (ttffMillis == 0) null else TimeUnit.MILLISECONDS.toSeconds(ttffMillis.toLong())
     }
 
     private fun onGnssFixAcquired() {
@@ -544,132 +558,34 @@ class SignalInfoViewModel @Inject constructor(
     }
 
     /**
-     * Returns true if this device is viewing multiple signals from the same satellite, false if it is not
-     *
-     * @return true if this device is viewing multiple signals from the same satellite, false if it is not
+     * The phone's heading (the first value, degrees clockwise from north; true north when the GNSS
+     * setting asks for it), for the sky plot to turn with the phone. Collect it only while the plot
+     * shows: the sensor runs while collected.
      */
-    val isDualFrequencyPerSatInView: Boolean
-        get() = allSatellitesGroup.value?.satelliteMetadata?.isDualFrequencyPerSatInView ?: false
-
-    /**
-     * Returns true if this device is using multiple signals from the same satellite, false if it is not
-     *
-     * @return true if this device is using multiple signals from the same satellite, false if it is not
-     */
-    val isDualFrequencyPerSatInUse: Boolean
-        get() = allSatellitesGroup.value?.satelliteMetadata?.isDualFrequencyPerSatInUse ?: false
-
-    /**
-     * Returns true if a non-primary carrier frequency is in view by at least one satellite, or false if
-     * only primary carrier frequencies are in view
-     *
-     * @return true if a non-primary carrier frequency is in use by at least one satellite, or false if
-     * only primary carrier frequencies are in view
-     */
-    val isNonPrimaryCarrierFreqInView: Boolean
-        get() = allSatellitesGroup.value?.satelliteMetadata?.isNonPrimaryCarrierFreqInView ?: false
-
-    /**
-     * Returns true if a non-primary carrier frequency is in use by at least one satellite, or false if
-     * only primary carrier frequencies are in use
-     *
-     * @return true if a non-primary carrier frequency is in use by at least one satellite, or false if
-     * only primary carrier frequencies are in use
-     */
-    val isNonPrimaryCarrierFreqInUse: Boolean
-        get() = allSatellitesGroup.value?.satelliteMetadata?.isNonPrimaryCarrierFreqInUse ?: false
-
-    private var gotFirstFix = false
-
-    /**
-     * Returns a map of status keys (created using SatelliteUtils.createGnssStatusKey()) to the status that
-     * has been detected as having duplicate carrier frequency data with another signal
-     *
-     * @return a map of status keys (created using SatelliteUtils.createGnssStatusKey()) to the status that
-     * has been detected as having duplicate carrier frequency data with another signal
-     */
-    val duplicateCarrierStatuses: Map<String, SatelliteStatus>
-        get() = allSatellitesGroup.value?.satelliteMetadata?.duplicateCarrierStatuses ?: emptyMap()
-
-    /**
-     * Returns a map of status keys (created using SatelliteUtils.createGnssStatusKey()) to the status that
-     * has been detected with an unknown GNSS frequency
-     *
-     * @return a map of status keys (created using SatelliteUtils.createGnssStatusKey()) to the status that
-     * has been detected with an unknown GNSS frequency
-     */
-    val unknownCarrierStatuses: Map<String, SatelliteStatus>
-        get() = allSatellitesGroup.value?.satelliteMetadata?.unknownCarrierStatuses ?: emptyMap()
-
-    /**
-     * Returns a set of GNSS types that are supported by the device
-     * @return a set of GNSS types that are supported by the device
-     */
-    fun getSupportedGnss(): Set<GnssType> {
-        return allSatellitesGroup.value?.satelliteMetadata?.supportedGnss ?: emptySet()
-    }
-
-    /**
-     * Returns a set of SBAS types that are supported by the device
-     * @return a set of SBAS types that are supported by the device
-     */
-    fun getSupportedSbas(): Set<SbasType> {
-        return allSatellitesGroup.value?.satelliteMetadata?.supportedSbas ?: emptySet()
-    }
-
-    /**
-     * Returns a set of GNSS carrier frequency labels that are supported by the device
-     * @return a set of GNSS carrier frequency labels that are supported by the device
-     */
-    fun getSupportedGnssCfs(): Set<String> {
-        return allSatellitesGroup.value?.satelliteMetadata?.supportedGnssCfs ?: emptySet()
-    }
-
-    /**
-     * Returns a set of SBAS carrier frequency labels that are supported by the device
-     * @return a set of SBAS carrier frequency labels that are supported by the device
-     */
-    fun getSupportedSbasCfs(): Set<String> {
-        return allSatellitesGroup.value?.satelliteMetadata?.supportedSbasCfs ?: emptySet()
-    }
-
-    /**
-     * Returns true if this view model has observed a GNSS fix first, false if it has not
-     * @return true if this view model has observed a GNSS fix first, false if it has not
-     */
-    fun gotFirstFix(): Boolean {
-        return gotFirstFix
-    }
-
-    /**
-     * Sets if the view model has observed a first GNSS fix during this execution
-     * @param value true if the model has observed a first GNSS fix during this execution, false if it has not
-     */
-    private fun setGotFirstFix(value: Boolean) {
-        gotFirstFix = value
-    }
+    @ExperimentalCoroutinesApi
+    fun headingUpdates(): Flow<Orientation> = repository.getSensorUpdates()
 
     fun reset() {
+        // Cleared too, so a view started again waits for satellites instead of showing the last ones
+        _allStatuses.value = emptyList()
+        _filteredStatuses.value = emptyList()
         _filteredGnssStatuses.value = emptyList()
         _filteredSbasStatuses.value = emptyList()
-        _filteredGnssSatellites.value = emptyMap()
-        _filteredSbasSatellites.value = emptyMap()
         _location.value = Location("reset")
-        _ttff.value = ""
+        _ttff.value = null
         _altitudeMsl.value = Double.NaN
         _dop.value = DilutionOfPrecision(Double.NaN, Double.NaN, Double.NaN)
         _filteredSatelliteMetadata.value = SatelliteMetadata()
         _fixState.value = FixState.NotAcquired
-        _allSatellitesGroup.value = SatelliteGroup(emptyMap(), SatelliteMetadata())
-        gotFirstFix = false
         clearAgc()
+        trendHistory.clear()
+        _trends.value = GnssTrends.EMPTY
     }
 
     /**
      * Called when the lifecycle of the observer is ended
      */
     override fun onCleared() {
-        super.onCleared()
         reset()
     }
 }

@@ -24,6 +24,7 @@ import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWatchlistListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.util.DeviceNameStamper;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -132,12 +133,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        // Set the device name using the pre-computed effective device name
-        if (effectiveDeviceName != null)
-        {
-            final GsmRecord.Builder recordBuilder = gsmRecord.toBuilder();
-            gsmRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        gsmRecord = DeviceNameStamper.stamp(gsmRecord, effectiveDeviceName);
 
         publishMessage(MQTT_GSM_MESSAGE_TOPIC, gsmRecord);
     }
@@ -147,12 +143,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        // Set the device name using the pre-computed effective device name
-        if (effectiveDeviceName != null)
-        {
-            final CdmaRecord.Builder recordBuilder = cdmaRecord.toBuilder();
-            cdmaRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        cdmaRecord = DeviceNameStamper.stamp(cdmaRecord, effectiveDeviceName);
 
         publishMessage(MQTT_CDMA_MESSAGE_TOPIC, cdmaRecord);
     }
@@ -162,12 +153,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        // Set the device name using the pre-computed effective device name
-        if (effectiveDeviceName != null)
-        {
-            final UmtsRecord.Builder recordBuilder = umtsRecord.toBuilder();
-            umtsRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        umtsRecord = DeviceNameStamper.stamp(umtsRecord, effectiveDeviceName);
 
         publishMessage(MQTT_UMTS_MESSAGE_TOPIC, umtsRecord);
     }
@@ -177,12 +163,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        // Set the device name using the pre-computed effective device name
-        if (effectiveDeviceName != null)
-        {
-            final LteRecord.Builder recordBuilder = lteRecord.toBuilder();
-            lteRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        lteRecord = DeviceNameStamper.stamp(lteRecord, effectiveDeviceName);
 
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
     }
@@ -192,11 +173,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        if (effectiveDeviceName != null)
-        {
-            final NrRecord.Builder recordBuilder = nrRecord.toBuilder();
-            nrRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        nrRecord = DeviceNameStamper.stamp(nrRecord, effectiveDeviceName);
 
         publishMessage(MQTT_NR_MESSAGE_TOPIC, nrRecord);
     }
@@ -208,11 +185,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
 
         wifiBeaconRecords.forEach(wifiRecord -> {
             WifiBeaconRecord wifiBeaconRecord = wifiRecord.getWifiBeaconRecord();
-            if (effectiveDeviceName != null)
-            {
-                final WifiBeaconRecord.Builder recordBuilder = wifiBeaconRecord.toBuilder();
-                wifiBeaconRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-            }
+            wifiBeaconRecord = DeviceNameStamper.stamp(wifiBeaconRecord, effectiveDeviceName);
             publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
         });
     }
@@ -222,12 +195,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        // Set the device name using the pre-computed effective device name
-        if (effectiveDeviceName != null)
-        {
-            final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();
-            bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        bluetoothRecord = DeviceNameStamper.stamp(bluetoothRecord, effectiveDeviceName);
 
         publishMessage(MQTT_BLUETOOTH_MESSAGE_TOPIC, bluetoothRecord);
     }
@@ -238,11 +206,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         if (dropMessages.get()) return;
 
         bluetoothRecords.forEach(bluetoothRecord -> {
-            if (effectiveDeviceName != null)
-            {
-                final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();
-                bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-            }
+            bluetoothRecord = DeviceNameStamper.stamp(bluetoothRecord, effectiveDeviceName);
             publishMessage(MQTT_BLUETOOTH_MESSAGE_TOPIC, bluetoothRecord);
         });
     }
@@ -252,11 +216,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        if (effectiveDeviceName != null)
-        {
-            final GnssRecord.Builder gnssRecordBuilder = gnssRecord.toBuilder();
-            gnssRecord = gnssRecordBuilder.setData(gnssRecordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        gnssRecord = DeviceNameStamper.stamp(gnssRecord, effectiveDeviceName);
 
         publishMessage(MQTT_GNSS_MESSAGE_TOPIC, gnssRecord);
     }
@@ -266,11 +226,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        if (effectiveDeviceName != null)
-        {
-            final DeviceStatus.Builder deviceStatusBuilder = deviceStatus.toBuilder();
-            deviceStatus = deviceStatusBuilder.setData(deviceStatusBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        deviceStatus = DeviceNameStamper.stamp(deviceStatus, effectiveDeviceName);
 
         publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, deviceStatus);
     }
@@ -280,11 +236,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        if (effectiveDeviceName != null)
-        {
-            final PhoneState.Builder messageBuilder = phoneState.toBuilder();
-            phoneState = messageBuilder.setData(messageBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        phoneState = DeviceNameStamper.stamp(phoneState, effectiveDeviceName);
 
         // There are historical reasons as to why the phone state message rides on the device status topic
         // Might change this to its own topic in the NS Messaging API version 3 as a breaking change
@@ -296,11 +248,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         if (dropMessages.get()) return;
 
-        if (effectiveDeviceName != null)
-        {
-            final WatchlistMatch.Builder recordBuilder = watchlistMatch.toBuilder();
-            watchlistMatch = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        watchlistMatch = DeviceNameStamper.stamp(watchlistMatch, effectiveDeviceName);
 
         publishMessage(MQTT_WATCHLIST_MATCH_MESSAGE_TOPIC, watchlistMatch);
     }
@@ -312,11 +260,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         // infrequent config events, not the cause of queue backpressure. The MQTT library can still drop
         // a message when its streaming queue limit is exceeded; a backend is healed by the snapshot
         // published on the next watchlist change or (re)connect.
-        if (effectiveDeviceName != null)
-        {
-            final WatchlistEntryUpdate.Builder recordBuilder = watchlistEntryUpdate.toBuilder();
-            watchlistEntryUpdate = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
-        }
+        watchlistEntryUpdate = DeviceNameStamper.stamp(watchlistEntryUpdate, effectiveDeviceName);
 
         publishMessage(MQTT_WATCHLIST_ENTRY_MESSAGE_TOPIC, watchlistEntryUpdate);
     }

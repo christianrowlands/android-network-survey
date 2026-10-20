@@ -66,8 +66,8 @@ internal fun ProviderColorOverrideRow(
     onDelete: () -> Unit
 ) {
     val overrideColor = PlmnColorMapper.getColorByIndex(entry.paletteIndex)
-    val overrideName = PlmnColorMapper.PALETTE_NAMES[entry.paletteIndex]
-    val defaultName = PlmnColorMapper.PALETTE_NAMES[entry.defaultPaletteIndex]
+    val overrideName = stringResource(PlmnColorMapper.PALETTE_NAMES[entry.paletteIndex])
+    val defaultName = stringResource(PlmnColorMapper.PALETTE_NAMES[entry.defaultPaletteIndex])
 
     Card(
         modifier = Modifier
@@ -94,9 +94,11 @@ internal fun ProviderColorOverrideRow(
                     style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace)
                 )
                 Text(
-                    text = "$overrideName  ·  ${
-                        stringResource(R.string.provider_color_default_label, defaultName)
-                    }",
+                    text = stringResource(
+                        R.string.dot_join,
+                        overrideName,
+                        stringResource(R.string.provider_color_default_label, defaultName),
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

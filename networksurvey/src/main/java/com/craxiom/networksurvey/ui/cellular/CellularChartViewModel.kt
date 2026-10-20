@@ -1,10 +1,8 @@
 package com.craxiom.networksurvey.ui.cellular
 
-
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.ui.ASignalChartViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 private const val INITIAL_CELL_ID = -1
 
@@ -13,19 +11,10 @@ private const val INITIAL_CELL_ID = -1
  */
 class CellularChartViewModel : ASignalChartViewModel() {
 
-    private val _chartTitle = MutableStateFlow("RSSI")
-    val chartTitle = _chartTitle.asStateFlow()
-
     private var cellularProtocol = CellularProtocol.NONE
     private var servingCellId = INITIAL_CELL_ID
 
-    override fun getMarkerLabel(): String {
-        return "Serving Cell Change"
-    }
-
-    fun setChartTitle(title: String) {
-        _chartTitle.value = title
-    }
+    override fun getMarkerLabel(): Int = R.string.chart_serving_cell_change
 
     /**
      * Sets the cellular protocol to use for the chart. If the protocol is already set to the given
@@ -43,10 +32,8 @@ class CellularChartViewModel : ASignalChartViewModel() {
      * given ID, then this method does nothing. Otherwise, it adds a marker to the chart indicating
      * a serving cell change occurred.
      *
-     * The reason we are handling adding the marker here is because in the observer of
-     * {@link CellularViewModel#getCellId} in {@link NetworkDetailsFragment} is notified when the
-     * observer is added, which happens when the fragment is created. This means that a serving cell
-     * change marker is added every time the fragment is switched to, which is not what we want.
+     * The chart outlives the screen (one per SIM, kept by the Cellular view model), so it remembers
+     * the last cell itself; returning to the screen therefore never adds a marker of its own.
      */
     fun setServingCellId(cellId: Int) {
         if (servingCellId == cellId) return

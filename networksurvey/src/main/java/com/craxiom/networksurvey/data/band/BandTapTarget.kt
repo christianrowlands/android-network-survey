@@ -18,7 +18,7 @@ data class BandTapTarget(
     val isEmpty: Boolean get() = bandNumbers.isEmpty()
 
     companion object {
-        /** Convenience for the Java callers on the details screen. */
+        /** Convenience for Java callers and tests. */
         @JvmStatic
         fun of(technology: BandTechnology, vararg bands: Int) =
             BandTapTarget(technology, bands.toList())

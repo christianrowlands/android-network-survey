@@ -1,11 +1,18 @@
 package com.craxiom.networksurvey.ui.cellular
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -15,7 +22,7 @@ import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointSourceFilter
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointTimeFilter
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointUploadFilter
 import com.craxiom.networksurvey.ui.cellular.towermap.MILLIS_PER_SECOND
-import com.craxiom.networksurvey.ui.cellular.towermap.getRelativeTimeString
+import com.craxiom.networksurvey.ui.cellular.towermap.relativeTimeText
 
 /**
  * The three filters that narrow the survey points layer, as one value so the sheet, the on-map
@@ -107,10 +114,7 @@ private fun latestSurveyStartedLabel(
     latestSurveyStart: Long?,
 ): String? {
     if (option != SurveyedPointTimeFilter.LATEST_SURVEY || latestSurveyStart == null) return null
-    // getRelativeTimeString returns standalone, capitalized phrases ("Just now", "Yesterday"),
-    // which read wrong once embedded mid-sentence.
-    val relative = getRelativeTimeString(latestSurveyStart / MILLIS_PER_SECOND)
-        .replaceFirstChar { it.lowercase() }
+    val relative = relativeTimeText(latestSurveyStart / MILLIS_PER_SECOND, midSentence = true)
     return stringResource(R.string.survey_points_filter_latest_survey_started, relative)
 }
 
@@ -121,4 +125,56 @@ private fun GroupLabel(textRes: Int, top: Dp = 8.dp) {
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(top = top, bottom = 4.dp)
     )
+}
+
+/**
+ * One filter option. [supportingText] adds a second line under the label, indented to line up with
+ * it, for an option that needs to say more than its name does.
+ */
+@Composable
+internal fun FilterRadioRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    supportingText: String? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = onClick)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(4.dp))
+        Column {
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+internal fun surveyedTimeFilterLabel(filter: SurveyedPointTimeFilter): Int = when (filter) {
+    SurveyedPointTimeFilter.ANY -> R.string.survey_points_filter_any
+    SurveyedPointTimeFilter.LAST_HOUR -> R.string.survey_points_filter_last_hour
+    SurveyedPointTimeFilter.LAST_7_DAYS -> R.string.survey_points_filter_last_7_days
+    SurveyedPointTimeFilter.LATEST_SURVEY -> R.string.survey_points_filter_latest_survey
+}
+
+internal fun surveyedSourceFilterLabel(filter: SurveyedPointSourceFilter): Int = when (filter) {
+    SurveyedPointSourceFilter.BOTH -> R.string.survey_points_filter_both
+    SurveyedPointSourceFilter.COMMUNITY -> R.string.survey_point_destination_community
+    SurveyedPointSourceFilter.NS_ANALYTICS -> R.string.survey_point_destination_ns
+}
+
+internal fun surveyedUploadFilterLabel(filter: SurveyedPointUploadFilter): Int = when (filter) {
+    SurveyedPointUploadFilter.ANY -> R.string.survey_points_filter_sent_any
+    SurveyedPointUploadFilter.NOT_SENT -> R.string.survey_points_legend_pending
+    SurveyedPointUploadFilter.SENT -> R.string.survey_points_legend_uploaded
 }

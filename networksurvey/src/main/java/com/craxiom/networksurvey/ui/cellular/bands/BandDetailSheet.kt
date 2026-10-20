@@ -22,16 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.BandTechnology
 import com.craxiom.networksurvey.data.band.CellularBand
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * Everything known about one band, opened by tapping a row or a search result.
@@ -165,18 +163,14 @@ private fun Header(band: CellularBand) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = band.designator,
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                ),
-                color = WifiTokens.SsidAccent,
+                style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
             )
             band.name?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.titleMedium,
-                    color = WifiTokens.Ink,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(start = 12.dp),
                 )
             }
@@ -191,8 +185,8 @@ private fun Header(band: CellularBand) {
             )
             Text(
                 text = subtitle(band),
-                style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkFaint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
@@ -213,16 +207,16 @@ private fun Field(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Text(
             text = label,
-            style = TextStyle(fontSize = 13.sp),
-            color = WifiTokens.InkFaint,
+            style = NsTheme.textStyles.compact,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             // Weighted rather than a fixed width so the value keeps room on a narrow screen or
             // at a large font scale, where a fixed label column squeezed it to nothing.
             modifier = Modifier.weight(0.45f),
         )
         Text(
             text = value,
-            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
-            color = WifiTokens.Ink,
+            style = NsTheme.textStyles.mono.copy(fontWeight = FontWeight.Normal),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .weight(0.55f)
                 .padding(start = 8.dp),
@@ -234,8 +228,8 @@ private fun Field(label: String, value: String) {
 private fun Explainer(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 12.sp),
-        color = WifiTokens.InkMuted,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))

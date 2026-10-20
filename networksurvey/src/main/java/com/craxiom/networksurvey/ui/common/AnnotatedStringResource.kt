@@ -6,12 +6,13 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.style.URLSpan
 import android.text.style.UnderlineSpan
+import android.util.Patterns
 import androidx.annotation.StringRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -30,8 +31,7 @@ import androidx.compose.ui.text.style.TextDecoration
  */
 @Composable
 fun annotatedStringResource(@StringRes id: Int): AnnotatedString {
-    val context = LocalContext.current
-    val styled = context.resources.getText(id)
+    val styled = LocalResources.current.getText(id)
     val linkColor = MaterialTheme.colorScheme.primary
     return remember(id, styled, linkColor) {
         styledCharSequenceToAnnotatedString(styled, linkColor)
@@ -78,20 +78,40 @@ fun styledCharSequenceToAnnotatedString(text: CharSequence, linkColor: Color): A
                 is ForegroundColorSpan ->
                     addStyle(SpanStyle(color = Color(span.foregroundColor)), start, end)
 
-                is URLSpan -> addLink(
-                    LinkAnnotation.Url(
-                        url = span.url,
-                        styles = TextLinkStyles(
-                            SpanStyle(
-                                color = linkColor,
-                                textDecoration = TextDecoration.Underline,
-                            ),
-                        ),
-                    ),
-                    start,
-                    end,
-                )
+                is URLSpan -> addLink(link(span.url, linkColor), start, end)
             }
         }
     }
 }
+
+/**
+ * Turns the web addresses written out in plain [text] (for example "https://example.com/help" in a
+ * translated message) into clickable links.
+ */
+fun annotateUrls(text: String, linkColor: Color): AnnotatedString = buildAnnotatedString {
+    append(text)
+    val matcher = Patterns.WEB_URL.matcher(text)
+    while (matcher.find()) {
+        val url = matcher.group()
+        val target = if (url.startsWith("http://") || url.startsWith("https://")) url else "https://$url"
+        addLink(link(target, linkColor), matcher.start(), matcher.end())
+    }
+}
+
+/**
+ * Makes the first [linkText] in [text] a link to [url] that calls [onClick] when tapped, so the
+ * caller decides how to open it. [text] stays plain when [linkText] is not in it, for example in a
+ * translation that dropped the placeholder.
+ */
+fun annotateLink(text: String, linkText: String, url: String, linkColor: Color, onClick: (String) -> Unit): AnnotatedString =
+    buildAnnotatedString {
+        append(text)
+        val start = text.indexOf(linkText)
+        if (start >= 0) addLink(link(url, linkColor) { onClick(url) }, start, start + linkText.length)
+    }
+
+private fun link(url: String, linkColor: Color, onClick: (() -> Unit)? = null) = LinkAnnotation.Url(
+    url = url,
+    styles = TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)),
+    linkInteractionListener = onClick?.let { { _ -> it() } },
+)

@@ -1,39 +1,32 @@
 package com.craxiom.networksurvey.ui.wifi.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.theme.WifiTokens
-import com.craxiom.networksurvey.ui.util.copyTextToClipboard
+import com.craxiom.networksurvey.ui.common.NetworkTagVariant
+import com.craxiom.networksurvey.ui.common.NsBandChip
+import com.craxiom.networksurvey.ui.common.NsNetworkTag
+import com.craxiom.networksurvey.ui.common.NsRssiColumn
+import com.craxiom.networksurvey.ui.common.classifySecurity
+import com.craxiom.networksurvey.ui.common.securityLabelText
+import com.craxiom.networksurvey.ui.manufacturer.WifiManufacturerLabelText
+import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
-import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
  * "Variant A – Calm Data" row for the flat Wi-Fi list.
@@ -42,126 +35,85 @@ import com.craxiom.networksurvey.util.toWifiSignalCategory
  *  1. SSID (accent) + optional Passpoint pill. dBm (signal-colored, tabular) on the right.
  *  2. BSSID (monospace) · vendor/status text. Meter bar on the right.
  *  3. Band chip + Security tag + Standard tag, spanning full width (wraps at large text sizes).
+ *
+ * The row is one TalkBack item that reads the name, tags and signal before the BSSID; a tap opens
+ * the details, and a long press on the SSID or the BSSID copies it (also offered as TalkBack
+ * actions).
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WifiRowA(
     ap: WifiAccessPointDisplay,
     onClick: () -> Unit,
+    onCopySsid: (() -> Unit)?,
+    onCopyBssid: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val ssidClipLabel = stringResource(R.string.ssid_clip_label)
-    val ssidCopiedToast = stringResource(R.string.ssid_copied)
-    val bssidClipLabel = stringResource(R.string.bssid_clip_label)
-    val bssidCopiedToast = stringResource(R.string.bssid_copied)
-    val onSsidLongPress: (() -> Unit)? = if (ap.ssidIsHidden) {
-        null
-    } else {
-        { copyTextToClipboard(context, ssidClipLabel, ap.ssid, ssidCopiedToast) }
-    }
-    val onBssidLongPress = {
-        copyTextToClipboard(context, bssidClipLabel, ap.bssid, bssidCopiedToast)
-    }
-
-    // Line 3 (chips) lives in an outer Column row so it can span the full row width and wrap
-    // at large system text sizes. Lines 1 + 2 stay in a constrained Row with the signal column.
+    val vendorLabel = rememberWifiManufacturerLabelText(ap.bssid)
     Column(
         modifier = modifier
-            .combinedClickable(onClick = onClick)
-            .heightIn(min = 48.dp)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(3.dp),
+            .wifiRowSemantics(
+                spoken = spokenAccessPoint(ap, vendorLabel),
+                clickLabel = stringResource(R.string.wifi_row_open_details),
+                onClick = onClick,
+                copyActions = copyActions(onCopySsid, onCopyBssid),
+            )
+            .heightIn(min = NsTheme.spacing.touchTarget)
+            .padding(horizontal = NsTheme.spacing.screenGutter, vertical = NsTheme.spacing.m),
+        verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clearAndSetSemantics {},
+            horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.m),
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs),
             ) {
-                TopSsidRow(ap, onClick = onClick, onSsidLongPress = onSsidLongPress)
-                BssidVendorRow(ap, onClick = onClick, onBssidLongPress = onBssidLongPress)
-            }
-            CappedSignalCellDensity { SignalColumn(ap) }
-        }
-        Spacer(Modifier.height(2.dp))
-        ChipsRow(ap)
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun TopSsidRow(
-    ap: WifiAccessPointDisplay,
-    onClick: () -> Unit,
-    onSsidLongPress: (() -> Unit)?,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (ap.ssidIsHidden) {
-            val hiddenDescription = stringResource(R.string.wifi_hidden_network_a11y)
-            Text(
-                text = stringResource(R.string.wifi_hidden_ssid_placeholder),
-                style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.HiddenSsid,
-                fontStyle = FontStyle.Italic,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .semantics { contentDescription = hiddenDescription },
-            )
-        } else {
-            Text(
-                text = ap.ssid,
-                style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.SsidAccent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .combinedClickable(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
+                ) {
+                    WifiSsidText(
+                        ssid = ap.ssid,
+                        hidden = ap.ssidIsHidden,
                         onClick = onClick,
-                        onLongClick = onSsidLongPress,
-                    ),
-            )
+                        onLongPress = onCopySsid,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (ap.passpoint) {
+                        NsNetworkTag(text = stringResource(R.string.wifi_tag_passpoint), variant = NetworkTagVariant.Passpoint)
+                    }
+                }
+                BssidVendorRow(ap, vendorLabel, onClick = onClick, onBssidLongPress = onCopyBssid)
+            }
+            NsRssiColumn(rssi = ap.rssi)
         }
-        if (ap.passpoint) {
-            NetworkTag(
-                text = stringResource(R.string.wifi_tag_passpoint),
-                variant = NetworkTagVariant.Passpoint,
-            )
-        }
+        ChipsRow(ap, Modifier.clearAndSetSemantics {})
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChipsRow(ap: WifiAccessPointDisplay) {
+private fun ChipsRow(ap: WifiAccessPointDisplay, modifier: Modifier = Modifier) {
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
+        verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs),
         itemVerticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         ap.band?.let { band ->
-            BandChip(band = band, channel = ap.channel)
+            NsBandChip(band = band, channel = ap.channel)
         }
         if (ap.encryptionLabel.isNotBlank()) {
-            NetworkTag(
-                text = ap.encryptionLabel,
+            NsNetworkTag(
+                text = securityLabelText(ap.encryptionLabel),
                 variant = NetworkTagVariant.Security(classifySecurity(ap.encryptionLabel)),
             )
         }
         if (ap.standardLabel.isNotBlank()) {
-            NetworkTag(
-                text = ap.standardLabel,
-                variant = NetworkTagVariant.Standard,
-            )
+            NsNetworkTag(text = ap.standardLabel, variant = NetworkTagVariant.Standard)
         }
         if (ap.isExcluded) {
             ExcludedTag()
@@ -176,31 +128,42 @@ private fun ChipsRow(ap: WifiAccessPointDisplay) {
 @Composable
 internal fun ExcludedTag(modifier: Modifier = Modifier) {
     val excludedDescription = stringResource(R.string.wifi_details_excluded_from_survey)
-    NetworkTag(
+    NsNetworkTag(
         text = stringResource(R.string.wifi_tag_excluded),
         variant = NetworkTagVariant.Excluded,
         modifier = modifier.semantics { contentDescription = excludedDescription },
     )
 }
 
+/** @return The row's copy actions: the SSID's (when visible) and the BSSID's. */
 @Composable
-private fun SignalColumn(ap: WifiAccessPointDisplay) {
-    Column(
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.widthIn(min = 76.dp),
-    ) {
-        val color = ap.rssi?.toWifiSignalCategory()?.color ?: LocalContentColor.current
-        Text(
-            text = if (ap.rssi != null) "${ap.rssi} dBm" else "--",
-            style = TextStyle(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.End
-            ),
-            color = color,
-        )
-        SignalMeter(rssi = ap.rssi)
-    }
+internal fun copyActions(onCopySsid: (() -> Unit)?, onCopyBssid: (() -> Unit)?): List<WifiCopyAction> {
+    val resources = LocalResources.current
+    return listOfNotNull(
+        onCopySsid?.let { WifiCopyAction(resources.getString(R.string.wifi_row_copy_ssid), it) },
+        onCopyBssid?.let { WifiCopyAction(resources.getString(R.string.bssid_copy_content_description), it) },
+    )
 }
 
+/** @return What TalkBack reads for an access point row, the BSSID last. */
+@Composable
+internal fun spokenAccessPoint(
+    ap: WifiAccessPointDisplay,
+    vendorLabel: WifiManufacturerLabelText,
+    includeName: Boolean = true,
+): String {
+    val resources = LocalResources.current
+    val name = if (ap.ssidIsHidden) resources.getString(R.string.wifi_hidden_network_a11y) else ap.ssid
+    return listOfNotNull(
+        name.takeIf { includeName },
+        resources.getString(R.string.wifi_tag_passpoint).takeIf { ap.passpoint && includeName },
+        spokenBand(ap.band, ap.channel),
+        ap.bandwidthLabel.takeIf { !includeName && it.isNotBlank() },
+        securityLabelText(ap.encryptionLabel).takeIf { includeName && it.isNotBlank() },
+        ap.standardLabel.takeIf { it.isNotBlank() },
+        resources.getString(R.string.wifi_details_excluded_from_survey).takeIf { ap.isExcluded },
+        spokenSignal(ap.rssi),
+        vendorLabel.text,
+        ap.bssid,
+    ).joinToString(", ")
+}

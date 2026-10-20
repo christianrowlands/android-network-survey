@@ -1,188 +1,81 @@
 package com.craxiom.networksurvey.ui.main
 
-import android.content.Intent
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.rememberDrawerState
+import android.view.WindowManager
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.fragments.BLUETOOTH_DATA_KEY
-import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
-import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorNavArgs
-import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
-import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
-import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
-import com.craxiom.networksurvey.ui.main.appdrawer.DrawerEntry
+import com.craxiom.networksurvey.ui.bluetooth.details.BLUETOOTH_DATA_KEY
+import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
+import com.craxiom.networksurvey.ui.common.findComponentActivity
+import com.craxiom.networksurvey.ui.onboarding.OnboardingChoice
+import com.craxiom.networksurvey.ui.onboarding.OnboardingScreen
+import com.craxiom.networksurvey.ui.onboarding.OnboardingViewModel
+import com.craxiom.networksurvey.ui.onboarding.UpgradeWelcomeScreen
 import com.craxiom.networksurvey.ui.theme.NsTheme
-import com.craxiom.networksurvey.util.BatteryOptimizationHelper
-import com.craxiom.networksurvey.util.MdmUtils
 import timber.log.Timber
 
-
+/**
+ * The activity's whole UI: first run on a fresh install, then the page graph (the tabs at its root,
+ * every other page above them), the startup dialogs, the navigation requests from the Java fragments and deep links, and keeping the
+ * screen on while a survey records, whichever screen is showing.
+ */
 @Composable
 fun MainCompose(
     mainNavController: NavHostController = rememberNavController(),
-    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
-    appVersion: String,
-    deepLinkViewModel: DeepLinkViewModel = viewModel()
+    deepLinkViewModel: DeepLinkViewModel = viewModel(),
 ) {
     val context = LocalContext.current
 
     val viewModel = viewModel<SharedViewModel>()
-    // Ensure we use activity context for proper intent launching
+    val onboardingViewModel = viewModel<OnboardingViewModel>()
     val activity = context as? android.app.Activity
-    val batteryOptimizationHelper = remember {
-        BatteryOptimizationHelper(activity ?: context)
-    }
-    var showBatteryDialog by remember { mutableStateOf(false) }
 
-    // Observe navigation events using modern Compose StateFlow pattern
-    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
-    LaunchedEffect(navigationEvent) {
-        navigationEvent?.let { event ->
-            when (event) {
-                is NavigationEvent.UploadSettings -> {
-                    mainNavController.navigate(NavOption.UploadSettings.name)
-                }
-
-                is NavigationEvent.TowerMapSettings -> {
-                    mainNavController.navigate(NavOption.TowerMapSettings.name)
-                }
-
-                is NavigationEvent.SurveyMonitorMap -> {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        SurveyMonitorNavArgs.INITIAL_TAB_KEY,
-                        SurveyMonitorNavArgs.TAB_MAP
-                    )
-                    mainNavController.navigate(NavDrawerOption.SurveyMonitor.name) {
-                        popUpTo(NavDrawerOption.None.name)
-                    }
-                }
-
-                is NavigationEvent.SsidExclusionList -> {
-                    mainNavController.navigate(NavOption.SsidExclusionList.name)
-                }
-
-                is NavigationEvent.Watchlist -> {
-                    mainNavController.navigate(NavDrawerOption.Watchlist.name)
-                }
-
-                is NavigationEvent.Acknowledgments -> {
-                    mainNavController.navigate(NavOption.Acknowledgments.name)
-                }
-
-                is NavigationEvent.ProviderColorOverrides -> {
-                    mainNavController.navigate(NavOption.ProviderColorOverrides.name)
-                }
-
-                is NavigationEvent.QrCodeScanner -> {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        MqttConnectionSettings.KEY,
-                        event.mqttConnectionSettings
-                    )
-                    mainNavController.navigate(NavOption.QrCodeScanner.name)
-                }
-
-                is NavigationEvent.QrCodeShare -> {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        MqttConnectionSettings.KEY,
-                        event.mqttConnectionSettings
-                    )
-                    mainNavController.navigate(NavOption.QrCodeShare.name)
-                }
-
-                is NavigationEvent.TowerMap -> {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        ServingCellInfo.KEY,
-                        event.servingCellInfo
-                    )
-                    mainNavController.navigate(NavOption.TowerMap.name)
-                }
-
-                is NavigationEvent.WifiDetails -> {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        WifiNetwork.KEY,
-                        event.wifiNetwork
-                    )
-                    mainNavController.navigate(NavOption.WifiDetails.name)
-                }
-
-                is NavigationEvent.BluetoothDetails -> {
-                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                        BLUETOOTH_DATA_KEY,
-                        event.bluetoothData
-                    )
-                    mainNavController.navigate(NavOption.BluetoothDetails.name)
-                }
-
-                is NavigationEvent.MqttConnection -> {
-                    event.mqttConnectionSettings?.let { settings ->
-                        mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                            MqttConnectionSettings.KEY,
-                            settings
-                        )
-                    }
-                    mainNavController.navigate(NavDrawerOption.MqttBrokerConnection.name)
-                }
-
-                is NavigationEvent.Settings -> {
-                    mainNavController.navigate(NavDrawerOption.Settings.name)
-                }
-
-                is NavigationEvent.NsAnalyticsConnection -> {
-                    // Navigate back from QR scanner to NS Analytics connection screen
-                    mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
-                        popUpTo(NavDrawerOption.None.name)
-                    }
-                }
-            }
-            // Clear the event after handling to prevent re-processing
-            viewModel.clearNavigationEvent()
-        }
-    }
-
-    // Observe dialog events using modern Compose StateFlow pattern
-    val dialogEvent by viewModel.dialogEvent.collectAsStateWithLifecycle()
-    LaunchedEffect(dialogEvent) {
-        dialogEvent?.let { event ->
-            when (event) {
-                is DialogEvent.BatteryOptimization -> {
-                    if (batteryOptimizationHelper.shouldPromptForBatteryOptimization()) {
-                        showBatteryDialog = true
-                    }
-                }
-            }
-            // Clear the event after handling
-            viewModel.clearDialogEvent()
-        }
-    }
+    // Bound with the activity's lifecycle; it only reads the published survey state.
+    val surveyStatusViewModel = viewModel<SurveyStatusViewModel>()
+    ServiceConnectionHandler(surveyStatusViewModel::onServiceChanged)
+    val keepScreenOn by surveyStatusViewModel.keepScreenOn.collectAsStateWithLifecycle()
+    KeepScreenOnWhileRecording(keepScreenOn)
+    // The graph is set while the NavHost composes, after these effects first run; a navigation
+    // request that arrives first (a cold-start deep link) waits for it.
+    val graphReady = mainNavController.currentBackStackEntryAsState().value != null
+    NavigationEventEffect(viewModel, mainNavController, deepLinkViewModel, graphReady)
 
     NsTheme {
-        // Show battery optimization dialog on first launch
-        LaunchedEffect(Unit) {
-            if (batteryOptimizationHelper.shouldShowFirstTimePrompt()) {
-                showBatteryDialog = true
+        // First run replaces the tabs until it is finished or skipped. The NavHost is not composed
+        // meanwhile, so graphReady stays false and any deep link or navigation request waits for it.
+        val onboarding by onboardingViewModel.visible.collectAsStateWithLifecycle()
+        if (onboarding) {
+            OnboardingScreen(onboardingViewModel) { choice ->
+                // A deep link that arrived during first run wins over the walkthrough
+                if (choice == OnboardingChoice.NS_ANALYTICS && deepLinkViewModel.navigationDestination.value == null) {
+                    deepLinkViewModel.navigateToPage(NavDrawerOption.NsAnalyticsConnection.name)
+                }
             }
+            return@NsTheme
+        }
+        // An upgraded phone gets a one-time welcome instead
+        val welcome by onboardingViewModel.welcome.collectAsStateWithLifecycle()
+        if (welcome) {
+            UpgradeWelcomeScreen(onboardingViewModel)
+            return@NsTheme
         }
 
         val deepLinkDestination by deepLinkViewModel.navigationDestination.collectAsStateWithLifecycle()
-        LaunchedEffect(deepLinkDestination) {
+        LaunchedEffect(deepLinkDestination, graphReady) {
+            if (!graphReady) return@LaunchedEffect
             deepLinkDestination?.let { destination ->
                 Timber.i("Navigating to %s from deep link", destination)
                 if (destination == NavDrawerOption.None.name) {
@@ -199,268 +92,93 @@ fun MainCompose(
             }
         }
 
-        // Render the activity-driven startup permission/GPS/GNSS dialogs using the shared
+        // Render the activity-driven background location and GNSS dialogs using the shared
         // Compose dialog components.
         val startupActions = activity as? StartupDialogActions
         if (startupActions != null) {
             StartupDialogs(actions = startupActions, viewModel = viewModel)
         }
 
-        // Show battery dialog when triggered, but never on top of a startup permission dialog so the
-        // user resolves permissions first.
-        val startupDialog by viewModel.startupDialog.collectAsStateWithLifecycle()
-        if (showBatteryDialog && startupDialog == null) {
-            BatteryOptimizationDialog(
-                onDismiss = { showBatteryDialog = false },
-                onGoToSettings = {
-                    showBatteryDialog = false
-                    batteryOptimizationHelper.openBatteryOptimizationSettings()
-                },
-                batteryOptimizationHelper = batteryOptimizationHelper
-            )
-        }
-
-        Scaffold { paddingValues ->
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                gesturesEnabled = drawerState.isOpen,
-                drawerContent = {
-                    AppDrawerContent(
-                        appVersion = appVersion,
-                        drawerState = drawerState,
-                        menuItems = DrawerParams.drawerButtons(context),
-                        externalLinks = DrawerParams.externalDrawerLinks,
-                        defaultPick = NavDrawerOption.None
-                    ) { onUserPickedOption ->
-                        when (onUserPickedOption) {
-                            NavDrawerOption.None -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-
-                            NavDrawerOption.NsAnalyticsConnection -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.ServerConnection -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.MqttBrokerConnection -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.CellularCalculators -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.SurveyMonitor -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.OuiLookup -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.PlmnLookup -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.Watchlist -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.Settings -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.UserManual -> {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://networksurvey.app/manual".toUri()
-                                )
-                                context.startActivity(intent)
-                            }
-
-                            NavDrawerOption.MessagingDocs -> {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://messaging.networksurvey.app/".toUri()
-                                )
-                                context.startActivity(intent)
-                            }
-
-                            NavDrawerOption.ReportAnIssue -> {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://github.com/christianrowlands/android-network-survey/issues/new/choose".toUri()
-                                )
-                                context.startActivity(intent)
-                            }
-
-                            NavDrawerOption.GitHub -> {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://github.com/christianrowlands/android-network-survey".toUri()
-                                )
-                                context.startActivity(intent)
-                            }
-                        }
-                    }
-                }
+        // Each page draws its own Scaffold and handles the system bars itself.
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            NavHost(
+                mainNavController,
+                startDestination = NavRoutes.MainRoute.name
             ) {
-                NavHost(
-                    mainNavController,
-                    startDestination = NavRoutes.MainRoute.name
-                ) {
-                    mainGraph(
-                        drawerState, paddingValues = paddingValues,
-                        mainNavController = mainNavController,
-                        sharedViewModel = viewModel
-                    )
-                }
+                mainGraph(
+                    mainNavController = mainNavController,
+                    sharedViewModel = viewModel
+                )
             }
         }
     }
 }
 
+/**
+ * Keeps the screen on while [keepScreenOn], whichever screen is showing, through the activity
+ * window's FLAG_KEEP_SCREEN_ON. The window flag is applied by the window manager at once, where a
+ * view's keepScreenOn is only folded into the window on its next traversal: after the activity
+ * paused and resumed (a notification tap), that traversal missed the change and the screen stayed
+ * on after Stop. Only this effect sets the window flag; the map keeps the screen on through its own
+ * view, so neither can clear the other.
+ */
+@Composable
+private fun KeepScreenOnWhileRecording(keepScreenOn: Boolean) {
+    val window = LocalContext.current.findComponentActivity()?.window ?: return
+    DisposableEffect(window, keepScreenOn) {
+        if (keepScreenOn) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose { window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+    }
+}
+
+/** Opens the page a [NavigationEvent] asks for, then clears the event. */
+@Composable
+private fun NavigationEventEffect(
+    viewModel: SharedViewModel,
+    mainNavController: NavHostController,
+    deepLinkViewModel: DeepLinkViewModel,
+    graphReady: Boolean,
+) {
+    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
+    LaunchedEffect(navigationEvent, graphReady) {
+        if (!graphReady) return@LaunchedEffect
+        val event = navigationEvent ?: return@LaunchedEffect
+        when (event) {
+            NavigationEvent.UploadSettings -> mainNavController.navigate(NavOption.UploadSettings.name)
+            NavigationEvent.TowerMapSettings -> mainNavController.navigate(NavOption.TowerMapSettings.name)
+            NavigationEvent.MapTab -> deepLinkViewModel.navigateToHomeTab(MainScreens.Map.route)
+            NavigationEvent.Watchlist -> mainNavController.navigate(NavDrawerOption.Watchlist.name)
+            NavigationEvent.QrCodeShare -> mainNavController.navigate(NavOption.QrCodeShare.name)
+            is NavigationEvent.WifiDetails -> {
+                mainNavController.currentBackStackEntry?.savedStateHandle?.set(WifiNetwork.KEY, event.wifiNetwork)
+                mainNavController.navigate(NavOption.WifiDetails.name)
+            }
+
+            is NavigationEvent.BluetoothDetails -> {
+                mainNavController.currentBackStackEntry?.savedStateHandle?.set(BLUETOOTH_DATA_KEY, event.bluetoothData)
+                mainNavController.navigate(NavOption.BluetoothDetails.name)
+            }
+
+            NavigationEvent.MqttConnection -> mainNavController.navigate(NavDrawerOption.MqttBrokerConnection.name)
+            NavigationEvent.Settings -> mainNavController.navigate(NavDrawerOption.Settings.name)
+            NavigationEvent.GrpcConnection -> mainNavController.navigate(NavDrawerOption.ServerConnection.name)
+            NavigationEvent.CommunityDatabases -> mainNavController.navigate(NavOption.CommunityDatabases.name)
+            NavigationEvent.OrganizationSettings -> mainNavController.navigate(NavOption.OrganizationSettings.name)
+            NavigationEvent.LogFiles -> mainNavController.navigate(NavOption.LogFiles.name)
+            // Back from the QR scanner to the NS Analytics page
+            NavigationEvent.NsAnalyticsConnection -> mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
+                popUpTo(NavDrawerOption.None.name)
+            }
+        }
+        // Clear the event after handling to prevent re-processing
+        viewModel.clearNavigationEvent()
+    }
+}
+
 enum class NavRoutes {
     MainRoute,
-}
-
-object DrawerParams {
-    private val nsAnalyticsItem = AppDrawerItemInfo(
-        NavDrawerOption.NsAnalyticsConnection,
-        R.string.ns_analytics,
-        R.drawable.ic_ns_analytics,
-        R.string.ns_analytics_description
-    )
-
-    private val mqttItem = AppDrawerItemInfo(
-        NavDrawerOption.MqttBrokerConnection,
-        R.string.mqtt_connection_title_full,
-        R.drawable.ic_cloud_connection,
-        R.string.device_status_stream_description
-    )
-
-    private val grpcItem = AppDrawerItemInfo(
-        NavDrawerOption.ServerConnection,
-        R.string.grpc_connection_title,
-        R.drawable.connection_icon,
-        R.string.grpc_connection_description
-    )
-
-    private val cellularCalculatorsItem = AppDrawerItemInfo(
-        NavDrawerOption.CellularCalculators,
-        R.string.cellular_tools,
-        R.drawable.ic_spectrum,
-        R.string.cellular_tools_description
-    )
-
-    private val plmnLookupItem = AppDrawerItemInfo(
-        NavDrawerOption.PlmnLookup,
-        R.string.plmn_lookup_drawer_title,
-        R.drawable.ic_plmn_lookup,
-        R.string.plmn_lookup_drawer_description
-    )
-
-    private val ouiLookupItem = AppDrawerItemInfo(
-        NavDrawerOption.OuiLookup,
-        R.string.oui_lookup_drawer_title,
-        R.drawable.ic_oui_lookup,
-        R.string.oui_lookup_drawer_description
-    )
-
-    private val watchlistItem = AppDrawerItemInfo(
-        NavDrawerOption.Watchlist,
-        R.string.watchlist_title,
-        R.drawable.ic_watchlist,
-        R.string.watchlist_info
-    )
-
-    private val settingsItem = AppDrawerItemInfo(
-        NavDrawerOption.Settings,
-        R.string.settings,
-        R.drawable.ic_settings,
-        R.string.device_status_stream_description
-    )
-
-    fun drawerButtons(context: android.content.Context): List<DrawerEntry<NavDrawerOption>> {
-        val nsAnalyticsAllowed = MdmUtils.isNsAnalyticsAllowed(context)
-
-        val entries = mutableListOf<DrawerEntry<NavDrawerOption>>()
-
-        // Streaming & Cloud section
-        entries += DrawerEntry.Header(R.string.nav_section_streaming)
-        if (nsAnalyticsAllowed) {
-            entries += DrawerEntry.Item(nsAnalyticsItem)
-        }
-        entries += DrawerEntry.Item(mqttItem)
-        entries += DrawerEntry.Item(grpcItem)
-
-        // Reference Tools section
-        entries += DrawerEntry.Header(R.string.nav_section_tools)
-        entries += DrawerEntry.Item(cellularCalculatorsItem)
-        entries += DrawerEntry.Item(plmnLookupItem)
-        entries += DrawerEntry.Item(ouiLookupItem)
-        entries += DrawerEntry.Item(watchlistItem)
-
-        // Bottom: Settings (unheadered, before external links divider)
-        entries += DrawerEntry.Item(settingsItem)
-
-        return entries
-    }
-
-    val externalDrawerLinks = arrayListOf(
-        AppDrawerItemInfo(
-            NavDrawerOption.UserManual,
-            R.string.manual,
-            R.drawable.ic_user_manual,
-            R.string.manual
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.MessagingDocs,
-            R.string.messaging_docs,
-            R.drawable.ic_schema,
-            R.string.messaging_docs
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.ReportAnIssue,
-            R.string.report_issue,
-            R.drawable.ic_bug,
-            R.string.report_issue
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.GitHub,
-            R.string.github,
-            R.drawable.ic_github,
-            R.string.github
-        )
-    )
-}
-
-@Preview
-@Composable
-fun MainActivityPreview() {
-    MainCompose(appVersion = "1.0.0")
 }

@@ -49,6 +49,7 @@ import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
@@ -113,9 +114,12 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.ConstellationFreqKey;
 import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
+import com.craxiom.networksurvey.model.TowerKey;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
+import com.craxiom.networksurvey.survey.model.RecordType;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
+import com.craxiom.networksurvey.ui.activesurvey.NewTowerRegistry;
 import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
 import com.craxiom.networksurvey.util.CellularBandwidthUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
@@ -204,7 +208,7 @@ public class SurveyRecordProcessor
     private NetworkSurveyService networkSurveyService;
     private final SsidExclusionManager ssidExclusionManager;
     private final TowerDetectionJavaWrapper towerDetectionWrapper;
-    private String lastServingCellKey = null;
+    private volatile TowerKey lastServingCellKey = null;
 
     private final AtomicInteger cellularRecordNumber = new AtomicInteger(1);
     private final AtomicInteger cellularGroupNumber = new AtomicInteger(0); // This will be incremented to 1 the first time it is used.
@@ -278,16 +282,6 @@ public class SurveyRecordProcessor
     private String getMissionId()
     {
         return networkSurveyService != null ? networkSurveyService.getMissionIdForRecords() : "";
-    }
-
-    /**
-     * Get the SSID exclusion manager for managing excluded WiFi networks.
-     *
-     * @return The SsidExclusionManager instance
-     */
-    public SsidExclusionManager getSsidExclusionManager()
-    {
-        return ssidExclusionManager;
     }
 
     void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
@@ -2349,7 +2343,6 @@ public class SurveyRecordProcessor
 
         if (scanRecord != null)
         {
-            //ParserUtils.bluetoothAdvertisingLogging(scanRecord);
             List<String> uuid16Services = null;
             List<ParcelUuid> serviceUuids = scanRecord.getServiceUuids();
             if (null != serviceUuids && !serviceUuids.isEmpty())
@@ -2676,22 +2669,6 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * @param telephonyManager The manager to use to get the voice network type.
-     * @return The Current Network type for voice calls. This method checks the Android permissions
-     * first, and returns {@link NetworkType#UNKNOWN} if the permission has not been granted.
-     * @since 1.11
-     */
-    private NetworkType getVoiceNetworkType(TelephonyManager telephonyManager)
-    {
-        NetworkType networkType = NetworkType.UNKNOWN;
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
-        {
-            networkType = NetworkType.forNumber(telephonyManager.getVoiceNetworkType());
-        }
-        return networkType;
-    }
-
-    /**
      * Extracts the current cell information from the service state and sets it on the provided
      * CDR event.
      */
@@ -2944,8 +2921,7 @@ public class SurveyRecordProcessor
     {
         if (gsmRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -2968,8 +2944,7 @@ public class SurveyRecordProcessor
     {
         if (cdmaRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -2992,8 +2967,7 @@ public class SurveyRecordProcessor
     {
         if (umtsRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -3012,12 +2986,12 @@ public class SurveyRecordProcessor
      *
      * @param lteRecord The new LTE Survey Record to send to the listeners.
      */
-    private void notifyLteRecordListeners(LteRecord lteRecord)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyLteRecordListeners(LteRecord lteRecord)
     {
         if (lteRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
@@ -3041,8 +3015,7 @@ public class SurveyRecordProcessor
     {
         if (nrRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
 
         cellularSurveyRecordListeners.forEach(l -> {
             try
@@ -3064,16 +3037,11 @@ public class SurveyRecordProcessor
      * @param subscriptionId  The subscription ID (aka SIM ID) that the records are associated with.
      * @since 1.6.0
      */
-    private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords, int subscriptionId)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords, int subscriptionId)
     {
-        // Increment session record count for each record
-        if (networkSurveyService != null && cellularRecords != null)
-        {
-            for (int i = 0; i < cellularRecords.size(); i++)
-            {
-                networkSurveyService.incrementSurveySessionRecordCount();
-            }
-        }
+        // The records in this batch were already counted, one by one, when each per-protocol
+        // listener notify ran, so they are not counted again here.
 
         cellularSurveyRecordListeners.forEach(l -> {
             try
@@ -3116,18 +3084,12 @@ public class SurveyRecordProcessor
      */
     private void checkForNewTowers(List<CellularRecordWrapper> cellularRecords)
     {
+        if (cellularRecords == null || cellularRecords.isEmpty()) return;
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         boolean newTowerAlertsEnabled = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false);
-
-        if (!newTowerAlertsEnabled || cellularRecords == null || cellularRecords.isEmpty())
-        {
-            return;
-        }
-
-        if (networkSurveyService == null || !networkSurveyService.isUploadScanningActive())
-        {
-            return;
-        }
+        boolean uploadRunning = networkSurveyService != null && networkSurveyService.isUploadScanningActive();
+        if (!NewTowerRegistry.shouldCheck(newTowerAlertsEnabled, uploadRunning)) return;
 
         // Find the serving cell
         for (CellularRecordWrapper cellularRecord : cellularRecords)
@@ -3141,115 +3103,43 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Forgets the last serving cell checked, so the next upload session checks the cell the phone
+     * is already on. The tower service's answers stay cached, so a cell checked recently does not
+     * alert again.
+     */
+    void resetNewTowerDetection()
+    {
+        lastServingCellKey = null;
+    }
+
+    /**
      * Check if the serving cell is a new tower and fire notification if needed.
      *
      * @param cellularRecord The serving cell record to check
      */
     private void checkServingCellForNewTower(CellularRecordWrapper cellularRecord)
     {
-        final CellularProtocol protocol = cellularRecord.cellularProtocol;
-        final GeneratedMessage record = cellularRecord.cellularRecord;
+        final TowerKey key = TowerKey.from(cellularRecord);
 
-        String cellKey;
-        String mcc;
-        String mnc;
-        int area;
-        long cellId;
-        String radio;
+        // Only a cell that can be identified, and only when it differs from the last one checked
+        if (key == null || key.equals(lastServingCellKey)) return;
+        lastServingCellKey = key;
 
-        switch (protocol)
-        {
-            case LTE:
-                LteRecord lte = (LteRecord) record;
-                LteRecordData lteData = lte.getData();
-                String[] lteMccMnc = NsUtils.extractMccMncStrings(lteData.hasPlmn(),
-                        lteData.hasPlmn() ? lteData.getPlmn().getValue() : null,
-                        lteData.hasMcc() ? lteData.getMcc().getValue() : 0,
-                        lteData.hasMnc() ? lteData.getMnc().getValue() : 0);
-                mcc = lteMccMnc[0];
-                mnc = lteMccMnc[1];
-                area = lteData.hasTac() ? lteData.getTac().getValue() : 0;
-                cellId = lteData.hasEci() ? lteData.getEci().getValue() : 0L;
-                radio = CellularProtocol.LTE.name();
-                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                break;
+        towerDetectionWrapper.checkIfTowerIsNewAsync(
+                key.getMcc(), key.getMnc(), key.getArea(), key.getCellId(), key.getRadio(),
+                (Boolean isNewTower) -> {
+                    if (isNewTower)
+                    {
+                        Timber.i("New tower detected: %s", key);
 
-            case NR:
-                NrRecord nr = (NrRecord) record;
-                NrRecordData nrData = nr.getData();
-                String[] nrMccMnc = NsUtils.extractMccMncStrings(nrData.hasPlmn(),
-                        nrData.hasPlmn() ? nrData.getPlmn().getValue() : null,
-                        nrData.hasMcc() ? nrData.getMcc().getValue() : 0,
-                        nrData.hasMnc() ? nrData.getMnc().getValue() : 0);
-                mcc = nrMccMnc[0];
-                mnc = nrMccMnc[1];
-                area = nrData.hasTac() ? nrData.getTac().getValue() : 0;
-                cellId = nrData.hasNci() ? nrData.getNci().getValue() : 0L;
-                radio = CellularProtocol.NR.name();
-                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                break;
-
-            case GSM:
-                GsmRecord gsm = (GsmRecord) record;
-                GsmRecordData gsmData = gsm.getData();
-                String[] gsmMccMnc = NsUtils.extractMccMncStrings(gsmData.hasPlmn(),
-                        gsmData.hasPlmn() ? gsmData.getPlmn().getValue() : null,
-                        gsmData.hasMcc() ? gsmData.getMcc().getValue() : 0,
-                        gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0);
-                mcc = gsmMccMnc[0];
-                mnc = gsmMccMnc[1];
-                area = gsmData.hasLac() ? gsmData.getLac().getValue() : 0;
-                cellId = gsmData.hasCi() ? gsmData.getCi().getValue() : 0L;
-                radio = CellularProtocol.GSM.name();
-                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                break;
-
-            case UMTS:
-                UmtsRecord umts = (UmtsRecord) record;
-                UmtsRecordData umtsData = umts.getData();
-                String[] umtsMccMnc = NsUtils.extractMccMncStrings(umtsData.hasPlmn(),
-                        umtsData.hasPlmn() ? umtsData.getPlmn().getValue() : null,
-                        umtsData.hasMcc() ? umtsData.getMcc().getValue() : 0,
-                        umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0);
-                mcc = umtsMccMnc[0];
-                mnc = umtsMccMnc[1];
-                area = umtsData.hasLac() ? umtsData.getLac().getValue() : 0;
-                cellId = umtsData.hasCid() ? umtsData.getCid().getValue() : 0L;
-                radio = CellularProtocol.UMTS.name();
-                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                break;
-
-            default:
-                return;
-        }
-
-        // Check if this is a different cell than the last one
-        if (!cellKey.equals(lastServingCellKey) && !mcc.isEmpty() && !"0".equals(mcc) && cellId > 0)
-        {
-            lastServingCellKey = cellKey;
-
-            final String finalMcc = mcc;
-            final String finalMnc = mnc;
-            final int finalArea = area;
-            final long finalCellId = cellId;
-            final String finalRadio = radio;
-
-            towerDetectionWrapper.checkIfTowerIsNewAsync(
-                    mcc, mnc, area, cellId, radio,
-                    (Boolean isNewTower) -> {
-                        if (isNewTower)
-                        {
-                            Timber.i("New tower detected: %s-%s-%s-%s (%s)",
-                                    finalMcc, finalMnc, finalArea, finalCellId, finalRadio);
-
-                            NewTowerNotificationHelper.INSTANCE.showNewTowerNotification(
-                                    context,
-                                    finalMcc, finalMnc, finalArea, finalCellId, finalRadio
-                            );
-                        }
+                        NewTowerRegistry.add(key);
+                        NewTowerNotificationHelper.INSTANCE.showNewTowerNotification(
+                                context,
+                                key.getMcc(), key.getMnc(), key.getArea(), key.getCellId(), key.getRadio()
+                        );
                     }
-            );
-        }
+                }
+        );
     }
 
     /**
@@ -3258,7 +3148,8 @@ public class SurveyRecordProcessor
      * @param wifiBeaconRecords The new list 802.11 Beacon Survey Records to send to the listeners.
      * @since 0.1.2
      */
-    private void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords)
     {
         if (wifiBeaconRecords == null || wifiBeaconRecords.isEmpty()) return;
 
@@ -3267,13 +3158,10 @@ public class SurveyRecordProcessor
                 .filter(record -> !record.isExcluded())
                 .collect(Collectors.toList());
 
-        // Increment session record count for non-excluded records only
+        // Count non-excluded records only
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < nonExcludedRecords.size(); i++)
-            {
-                networkSurveyService.incrementSurveySessionRecordCount();
-            }
+            networkSurveyService.onRecordsProcessed(RecordType.WIFI, nonExcludedRecords.size());
         }
 
         // Send ALL records (including excluded) to listeners that want them (UI display and the
@@ -3315,12 +3203,12 @@ public class SurveyRecordProcessor
      * @param bluetoothRecord The new Bluetooth Survey Record to send to the listeners.
      * @since 1.0.0
      */
-    private void notifyBluetoothRecordListeners(BluetoothRecord bluetoothRecord)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyBluetoothRecordListeners(BluetoothRecord bluetoothRecord)
     {
         if (bluetoothRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.BLUETOOTH, 1);
 
         for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
         {
@@ -3344,13 +3232,9 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
 
-        // Increment session record count for each record
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < bluetoothRecords.size(); i++)
-            {
-                networkSurveyService.incrementSurveySessionRecordCount();
-            }
+            networkSurveyService.onRecordsProcessed(RecordType.BLUETOOTH, bluetoothRecords.size());
         }
 
         for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
@@ -3371,12 +3255,12 @@ public class SurveyRecordProcessor
      * @param gnssRecord The new GNSS Survey Record to send to the listeners.
      * @since 0.3.0
      */
-    private void notifyGnssRecordListeners(GnssRecord gnssRecord)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyGnssRecordListeners(GnssRecord gnssRecord)
     {
         if (gnssRecord == null) return;
 
-        // Increment session record count
-        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.GNSS, 1);
 
         for (IGnssSurveyRecordListener listener : gnssSurveyRecordListeners)
         {
@@ -3406,6 +3290,8 @@ public class SurveyRecordProcessor
      */
     private void notifyCdrListeners(CdrEvent cdrEvent)
     {
+        if (networkSurveyService != null && cdrEvent != null) networkSurveyService.onRecordsProcessed(RecordType.CDR, 1);
+
         for (ICdrEventListener listener : cdrListeners)
         {
             try
@@ -3557,9 +3443,12 @@ public class SurveyRecordProcessor
      *
      * @param phoneState The new Phone State Message to send to the listeners.
      */
-    private void notifyPhoneStateListeners(PhoneState phoneState)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyPhoneStateListeners(PhoneState phoneState)
     {
         if (phoneState == null) return;
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.PHONE_STATE, 1);
+
         for (IPhoneStateListener listener : phoneStateListeners)
         {
             try

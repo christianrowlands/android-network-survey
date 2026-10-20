@@ -1,34 +1,36 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointColorMode
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointFeatures
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointKind
+import com.craxiom.networksurvey.ui.common.NsIconAction
+import com.craxiom.networksurvey.ui.common.NsTextAction
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.SignalBuckets
 import java.text.NumberFormat
 
@@ -122,8 +124,9 @@ fun SurveyedPointsPill(
 }
 
 /**
- * The Layers sheet row for the survey points layer: checkbox, live count, and a one-line
- * summary of the current encoding with a "Change" button that opens the options sheet.
+ * The Layers sheet row for the survey points layer: a switch row with the live count, the About
+ * button and, when on, a one-line summary of the current encoding with a "Change" button that
+ * opens the options sheet. Sits in the sheet's overlay row group.
  */
 @Composable
 fun SurveyPointsLayerSummary(
@@ -135,59 +138,49 @@ fun SurveyPointsLayerSummary(
     onChange: () -> Unit,
     onAbout: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(selected = checked, onClick = { onCheckedChange(!checked) })
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
-        Spacer(modifier = Modifier.width(8.dp))
-        Column(modifier = Modifier.padding(top = 12.dp).weight(1f)) {
-            Text(
-                text = stringResource(R.string.survey_points_layer_title),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            if (count > 0) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = NsTheme.spacing.rowMinHeight)
+                .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+                .padding(vertical = NsTheme.spacing.s),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = pluralStringResource(
-                        R.plurals.survey_points_count,
-                        count,
-                        NumberFormat.getInstance().format(count)
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.survey_points_layer_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
-                if (checked) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(
-                                R.string.survey_points_summary,
-                                mode.label(),
-                                kind.label()
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        TextButton(onClick = onChange) { Text(stringResource(R.string.survey_points_change)) }
-                    }
-                }
-            } else {
                 Text(
-                    text = stringResource(R.string.survey_points_empty),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = if (count > 0) {
+                        pluralStringResource(R.plurals.survey_points_count, count, NumberFormat.getInstance().format(count))
+                    } else {
+                        stringResource(R.string.survey_points_empty)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            NsIconAction(R.drawable.ic_info, stringResource(R.string.survey_points_about_title), onAbout)
+            // The row carries the semantics, so the switch itself is not a second target
+            Switch(checked = checked, onCheckedChange = null)
         }
-        IconButton(onClick = onAbout, modifier = Modifier.padding(top = 4.dp)) {
-            Icon(
-                imageVector = Icons.Outlined.Info,
-                contentDescription = stringResource(R.string.survey_points_about_title),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        if (checked && count > 0) {
+            Row(
+                modifier = Modifier.padding(bottom = NsTheme.spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.survey_points_summary, mode.label(), kind.label()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                NsTextAction(stringResource(R.string.survey_points_change), onChange)
+            }
         }
     }
 }
-

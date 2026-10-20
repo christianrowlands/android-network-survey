@@ -7,7 +7,7 @@ import androidx.annotation.Nullable;
 
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.logging.db.uploader.RequestResult;
-import com.craxiom.networksurvey.logging.db.uploader.UploadConstants;
+import com.craxiom.networksurvey.logging.db.uploader.UploadEndpoints;
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ public interface OpenCelliDUploadClient
                 .build();
 
         return new Retrofit.Builder()
-                .baseUrl(UploadConstants.OPENCELLID_URL)
+                .baseUrl(UploadEndpoints.getOpenCelliDBaseUrl())
                 .client(client)
                 .build()
                 .create(OpenCelliDUploadClient.class);

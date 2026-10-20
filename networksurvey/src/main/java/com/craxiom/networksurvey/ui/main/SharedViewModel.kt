@@ -6,12 +6,11 @@ import com.craxiom.messaging.BluetoothRecordData
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
-import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
+import com.craxiom.networksurvey.ui.mqtt.MqttMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -21,39 +20,19 @@ import javax.inject.Inject
 sealed class NavigationEvent {
     data object UploadSettings : NavigationEvent()
     data object TowerMapSettings : NavigationEvent()
-    data object SurveyMonitorMap : NavigationEvent()
-    data class QrCodeScanner(val mqttConnectionSettings: MqttConnectionSettings) : NavigationEvent()
-    data class QrCodeShare(val mqttConnectionSettings: MqttConnectionSettings) : NavigationEvent()
-    data class TowerMap(val servingCellInfo: ServingCellInfo) : NavigationEvent()
+    data object MapTab : NavigationEvent()
+    data object QrCodeShare : NavigationEvent()
     data class WifiDetails(val wifiNetwork: WifiNetwork) : NavigationEvent()
     data class BluetoothDetails(val bluetoothData: BluetoothRecordData) : NavigationEvent()
-    data object SsidExclusionList : NavigationEvent()
     data object Watchlist : NavigationEvent()
-    data object Acknowledgments : NavigationEvent()
-    data object ProviderColorOverrides : NavigationEvent()
-    data class MqttConnection(val mqttConnectionSettings: MqttConnectionSettings?) :
-        NavigationEvent()
+    data object MqttConnection : NavigationEvent()
 
     data object Settings : NavigationEvent()
     data object NsAnalyticsConnection : NavigationEvent()
-}
-
-/**
- * Sealed class representing dialog events.
- */
-sealed class DialogEvent {
-    data object BatteryOptimization : DialogEvent()
-}
-
-/**
- * The startup permission/location dialogs that the [NetworkSurveyActivity][com.craxiom.networksurvey.NetworkSurveyActivity]
- * drives. Only one is shown at a time; the activity owns the permission decision logic and sets the
- * current dialog here so it can be rendered by the shared Compose dialog components.
- */
-sealed class StartupDialog {
-    data object PermissionRationale : StartupDialog()
-    data object BackgroundLocationRationale : StartupDialog()
-    data object EnableGps : StartupDialog()
+    data object GrpcConnection : NavigationEvent()
+    data object CommunityDatabases : NavigationEvent()
+    data object OrganizationSettings : NavigationEvent()
+    data object LogFiles : NavigationEvent()
 }
 
 @HiltViewModel
@@ -64,13 +43,15 @@ class SharedViewModel @Inject constructor(application: Application) :
     private val _navigationEvent = MutableStateFlow<NavigationEvent?>(null)
     val navigationEvent: StateFlow<NavigationEvent?> = _navigationEvent.asStateFlow()
 
-    // Dialog events using StateFlow
-    private val _dialogEvent = MutableStateFlow<DialogEvent?>(null)
-    val dialogEvent: StateFlow<DialogEvent?> = _dialogEvent.asStateFlow()
-
     // The currently visible startup permission/location dialog (driven by the activity)
-    private val _startupDialog = MutableStateFlow<StartupDialog?>(null)
-    val startupDialog: StateFlow<StartupDialog?> = _startupDialog.asStateFlow()
+    private val _backgroundLocationRationaleVisible = MutableStateFlow(false)
+
+    /**
+     * True while the background location explanation shows. The activity raises it on launch while
+     * auto start is on and the permission is missing, and Settings raises it when auto start is
+     * turned on; it is drawn by the shared Compose dialog components.
+     */
+    val backgroundLocationRationaleVisible: StateFlow<Boolean> = _backgroundLocationRationaleVisible.asStateFlow()
 
     // Whether the GNSS raw-measurement failure dialog is visible
     private val _gnssFailureDialogVisible = MutableStateFlow(false)
@@ -83,82 +64,79 @@ class SharedViewModel @Inject constructor(application: Application) :
     val latestServingCellInfo: ServingCellInfo?
         get() = _latestServingCellInfo
 
-    @Volatile
-    private var _wifiNetworkList: WifiNetworkInfoList? = null
-    val wifiNetworkList: WifiNetworkInfoList?
-        get() = _wifiNetworkList
-
-    // MQTT connection settings - kept for backward compatibility with Java fragments
-    // TODO: Remove this field once all Java fragments (MqttConnectionFragment) are migrated to Compose
-    //  The data is already included in NavigationEvent.QrCodeScanner/QrCodeShare/MqttConnection
+    // The broker the QR code share screen (a Java fragment) shows
     @Volatile
     private var _mqttConnectionSettings: MqttConnectionSettings? = null
     val mqttConnectionSettings: MqttConnectionSettings?
         get() = _mqttConnectionSettings
+
+    // A broker the QR code scanner read, waiting for the MQTT page to add it
+    private val _scannedMqttSettings = MutableStateFlow<MqttConnectionSettings?>(null)
+    val scannedMqttSettings: StateFlow<MqttConnectionSettings?> = _scannedMqttSettings.asStateFlow()
+
+    // A message for the Survey screen from a page that returns to it (for example "Connected to ...")
+    private val _surveyMessage = MutableStateFlow<String?>(null)
+    val surveyMessage: StateFlow<String?> = _surveyMessage.asStateFlow()
+
+    // What the broker editor tells the MQTT page when it closes
+    private val _mqttEditorMessage = MutableStateFlow<MqttMessage?>(null)
+    val mqttEditorMessage: StateFlow<MqttMessage?> = _mqttEditorMessage.asStateFlow()
 
     // Navigation trigger functions
     fun triggerNavigationToUploadSettings() {
         _navigationEvent.value = NavigationEvent.UploadSettings
     }
 
-    fun triggerNavigationToSurveyMonitorMap() {
-        _navigationEvent.value = NavigationEvent.SurveyMonitorMap
+    /** Selects the Map tab, closing the page that asked (Community's "See on map"). */
+    fun triggerNavigationToMapTab() {
+        _navigationEvent.value = NavigationEvent.MapTab
     }
 
     fun triggerNavigationToTowerMapSettings() {
         _navigationEvent.value = NavigationEvent.TowerMapSettings
     }
 
-    fun triggerNavigationToSsidExclusionList() {
-        _navigationEvent.value = NavigationEvent.SsidExclusionList
-    }
-
     fun triggerNavigationToWatchlist() {
         _navigationEvent.value = NavigationEvent.Watchlist
     }
 
-    fun triggerNavigationToAcknowledgments() {
-        _navigationEvent.value = NavigationEvent.Acknowledgments
-    }
-
-    fun triggerNavigationToProviderColorOverrides() {
-        _navigationEvent.value = NavigationEvent.ProviderColorOverrides
-    }
-
-    fun triggerNavigationToQrCodeScanner(mqttConnectionSettings: MqttConnectionSettings) {
-        _mqttConnectionSettings = mqttConnectionSettings
-        _navigationEvent.value = NavigationEvent.QrCodeScanner(mqttConnectionSettings)
-    }
-
     fun triggerNavigationToQrCodeShare(mqttConnectionSettings: MqttConnectionSettings) {
         _mqttConnectionSettings = mqttConnectionSettings
-        _navigationEvent.value = NavigationEvent.QrCodeShare(mqttConnectionSettings)
+        _navigationEvent.value = NavigationEvent.QrCodeShare
+    }
+
+    /** Called by the QR code scanner with the broker it read; the MQTT page adds it. */
+    fun onMqttQrCodeScanned(settings: MqttConnectionSettings) {
+        _scannedMqttSettings.value = settings
+    }
+
+    fun consumeScannedMqttSettings() {
+        _scannedMqttSettings.value = null
+    }
+
+    /** Called by the broker editor as it closes, with the message the MQTT page shows. */
+    fun postMqttEditorMessage(message: MqttMessage) {
+        _mqttEditorMessage.value = message
+    }
+
+    fun consumeMqttEditorMessage() {
+        _mqttEditorMessage.value = null
+    }
+
+    /**
+     * Leaves [message] for the Survey screen, which shows it once it is back on screen. A pending
+     * message survives the navigation, unlike the Survey screen's own one-shot events.
+     */
+    fun postSurveyMessage(message: String) {
+        _surveyMessage.value = message
+    }
+
+    fun consumeSurveyMessage() {
+        _surveyMessage.value = null
     }
 
     fun updateLatestServingCellInfo(servingCellInfo: ServingCellInfo) {
         _latestServingCellInfo = servingCellInfo
-    }
-
-    /**
-     * Triggers navigation to the Tower Map screen with the latest serving cell info.
-     * @return true if navigation was triggered, false if no serving cell info is available
-     */
-    fun triggerNavigationToTowerMap(): Boolean {
-        return _latestServingCellInfo?.let {
-            _navigationEvent.value = NavigationEvent.TowerMap(it)
-            true
-        } ?: run {
-            Timber.w("Cannot navigate to Tower Map - no serving cell info available")
-            false
-        }
-    }
-
-    /**
-     * Updates the WiFi network list.
-     * @param wifiNetworkInfoList The current WiFi network information list
-     */
-    fun updateWifiNetworkInfoList(wifiNetworkInfoList: WifiNetworkInfoList) {
-        _wifiNetworkList = wifiNetworkInfoList
     }
 
     fun triggerNavigationToWifiDetails(wifiNetwork: WifiNetwork) {
@@ -170,29 +148,31 @@ class SharedViewModel @Inject constructor(application: Application) :
     }
 
     fun triggerNavigationToMqttConnection() {
-        _mqttConnectionSettings = null
-        _navigationEvent.value = NavigationEvent.MqttConnection(null)
-    }
-
-    /**
-     * Triggers navigation to the MQTT Connection screen with pre-filled settings.
-     * @param mqttConnectionSettings Optional MQTT connection settings to pre-fill
-     */
-    fun triggerNavigationToMqttConnection(mqttConnectionSettings: MqttConnectionSettings?) {
-        _mqttConnectionSettings = mqttConnectionSettings
-        _navigationEvent.value = NavigationEvent.MqttConnection(mqttConnectionSettings)
+        _navigationEvent.value = NavigationEvent.MqttConnection
     }
 
     fun triggerNavigationToSettings() {
         _navigationEvent.value = NavigationEvent.Settings
     }
 
-    fun triggerBatteryOptimizationDialog() {
-        _dialogEvent.value = DialogEvent.BatteryOptimization
+    fun triggerNavigationToGrpcConnection() {
+        _navigationEvent.value = NavigationEvent.GrpcConnection
+    }
+
+    fun triggerNavigationToCommunityDatabases() {
+        _navigationEvent.value = NavigationEvent.CommunityDatabases
     }
 
     fun triggerNavigationToNsAnalyticsConnection() {
         _navigationEvent.value = NavigationEvent.NsAnalyticsConnection
+    }
+
+    fun triggerNavigationToOrganizationSettings() {
+        _navigationEvent.value = NavigationEvent.OrganizationSettings
+    }
+
+    fun triggerNavigationToLogFiles() {
+        _navigationEvent.value = NavigationEvent.LogFiles
     }
 
     /**
@@ -203,26 +183,14 @@ class SharedViewModel @Inject constructor(application: Application) :
         _navigationEvent.value = null
     }
 
-    /**
-     * Clear the current dialog event after it has been handled.
-     */
-    fun clearDialogEvent() {
-        _dialogEvent.value = null
+    /** Shows the background location explanation. */
+    fun showBackgroundLocationRationale() {
+        _backgroundLocationRationaleVisible.value = true
     }
 
-    /**
-     * Show the given startup permission/location dialog. Setting a new value replaces any currently
-     * shown startup dialog; in practice the activity only requests one at a time.
-     */
-    fun showStartupDialog(dialog: StartupDialog) {
-        _startupDialog.value = dialog
-    }
-
-    /**
-     * Clear the current startup dialog after it has been handled.
-     */
-    fun clearStartupDialog() {
-        _startupDialog.value = null
+    /** Clears the background location explanation after it has been handled. */
+    fun clearBackgroundLocationRationale() {
+        _backgroundLocationRationaleVisible.value = false
     }
 
     /**

@@ -29,19 +29,17 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.data.plmn.displayName
 import com.craxiom.networksurvey.ui.plmn.PlmnGroup
 import com.craxiom.networksurvey.ui.plmn.isoToFlag
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 
 private const val CHEVRON_ANIM_MS = 180
@@ -95,7 +93,7 @@ fun PlmnRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = openLabel,
-                tint = WifiTokens.InkMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -114,7 +112,7 @@ private fun LeftBlock(record: PlmnRecord, modifier: Modifier = Modifier) {
 private fun TopNameRow(record: PlmnRecord) {
     val brand = record.brand?.takeIf { it.isNotBlank() }
     val operator = record.operator?.takeIf { it.isNotBlank() }
-    val primary = record.displayName()
+    val primary = record.displayName() ?: stringResource(R.string.unknown)
     val secondary = if (brand != null && operator != null &&
         !brand.trim().equals(operator.trim(), ignoreCase = true)
     ) {
@@ -129,19 +127,20 @@ private fun TopNameRow(record: PlmnRecord) {
     ) {
         Text(
             text = primary,
-            style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-            color = WifiTokens.SsidAccent,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
         )
         if (secondary != null) {
+            // The legal name gives way first: the brand name is what people look for
             Text(
                 text = secondary,
-                style = TextStyle(fontSize = 11.5.sp),
-                color = WifiTokens.InkFaint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }
@@ -156,13 +155,13 @@ private fun CountryRow(record: PlmnRecord) {
     ) {
         Text(
             text = isoToFlag(record.iso),
-            style = TextStyle(fontSize = 14.sp),
+            style = MaterialTheme.typography.bodyMedium,
         )
         if (country.isNotBlank()) {
             Text(
                 text = country,
-                style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkMuted,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -172,16 +171,16 @@ private fun CountryRow(record: PlmnRecord) {
             FaintMonoDot()
             Text(
                 text = it,
-                style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkFaint,
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         record.tadig?.takeIf { it.isNotBlank() }?.let {
             FaintMonoDot()
             Text(
                 text = it,
-                style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkFaint,
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -191,8 +190,8 @@ private fun CountryRow(record: PlmnRecord) {
 private fun FaintMonoDot() {
     Text(
         text = "·",
-        style = TextStyle(fontSize = 11.sp),
-        color = WifiTokens.InkFaint,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -205,19 +204,13 @@ private fun RightBlock(mcc: String, mnc: String, plmn: String) {
     ) {
         Text(
             text = "$mcc-$mnc",
-            style = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.End,
-                fontFeatureSettings = "tnum",
-            ),
+            style = NsTheme.textStyles.mono.copy(fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End),
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.plmn_lookup_plmn_label, plmn),
-            style = TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkFaint,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -281,7 +274,7 @@ fun PlmnGroupRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = expandLabel,
-                tint = WifiTokens.InkMuted,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.rotate(rotation),
             )
         }
@@ -307,12 +300,12 @@ private fun GroupParentLeftBlock(group: PlmnGroup, modifier: Modifier = Modifier
         ) {
             Text(
                 text = isoToFlag(group.iso),
-                style = TextStyle(fontSize = 14.sp),
+                style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                text = country.ifBlank { "—" },
-                style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
-                color = WifiTokens.SsidAccent,
+                text = country.ifBlank { stringResource(R.string.unknown) },
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -332,8 +325,8 @@ private fun OperatorsCountPill(count: Int) {
     ) {
         Text(
             text = pluralStringResource(R.plurals.plmn_lookup_n_operators, count, count),
-            style = TextStyle(fontSize = 11.sp),
-            color = WifiTokens.InkMuted,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

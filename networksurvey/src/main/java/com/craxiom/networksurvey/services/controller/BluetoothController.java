@@ -24,8 +24,6 @@ import androidx.core.app.ActivityCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.BluetoothCsvLogger;
-import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.NsCrashReporter;
@@ -128,7 +126,6 @@ public class BluetoothController extends AController
     private final SurveyRecordProcessor surveyRecordProcessor;
     private final Handler uiThreadHandler;
 
-    private final BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private final BluetoothCsvLogger bluetoothCsvLogger;
     private volatile int bluetoothScanRateMs;
     private BleScanCallbackImpl bluetoothScanCallback;
@@ -144,7 +141,6 @@ public class BluetoothController extends AController
         this.surveyRecordProcessor = surveyRecordProcessor;
         this.uiThreadHandler = uiThreadHandler;
 
-        bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(surveyService, serviceLooper);
         bluetoothCsvLogger = new BluetoothCsvLogger(surveyService);
     }
 
@@ -156,7 +152,6 @@ public class BluetoothController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (bluetoothLoggingEnabled)
         {
-            bluetoothSurveyRecordLogger.onDestroy();
             bluetoothCsvLogger.onDestroy();
 
             // Cancel any pending tasks
@@ -211,6 +206,22 @@ public class BluetoothController extends AController
         }
     }
 
+    /**
+     * How long a live view should keep showing a device it has not heard from again. A device is
+     * only reported again once {@link #DUPLICATE_WINDOW_MS} has passed (or its signal moved by more
+     * than {@link #RSSI_CHANGE_THRESHOLD}), and that report waits for the next scan cycle, so a
+     * device that never moves can go two cycles plus the duplicate window between reports. Anything
+     * shorter makes steady devices drop out of the list and come back.
+     *
+     * @param scanRateMs The configured Bluetooth scan interval.
+     * @return The time after its last report at which a device can be treated as gone.
+     */
+    public static long displayRetentionMs(long scanRateMs)
+    {
+        final long cycleMs = Math.max(scanRateMs, BLE_SCAN_DURATION_MS + CLASSIC_SCAN_DURATION_MS + CLASSIC_DISCOVERY_BUFFER_MS);
+        return 2 * cycleMs + DUPLICATE_WINDOW_MS;
+    }
+
     public boolean isLoggingEnabled()
     {
         return bluetoothLoggingEnabled.get();
@@ -228,7 +239,6 @@ public class BluetoothController extends AController
 
     public void onRolloverPreferenceChanged()
     {
-        bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
         bluetoothCsvLogger.onSharedPreferenceChanged();
     }
 
@@ -238,26 +248,7 @@ public class BluetoothController extends AController
      */
     public void onMdmPreferenceChanged()
     {
-        bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
         bluetoothCsvLogger.onMdmPreferenceChanged();
-    }
-
-    public void onLogFileTypePreferenceChanged()
-    {
-        synchronized (bluetoothLoggingEnabled)
-        {
-            if (bluetoothLoggingEnabled.get())
-            {
-                final boolean originalLoggingState = bluetoothLoggingEnabled.get();
-                toggleLogging(false);
-                toggleLogging(true);
-                final boolean newLoggingState = bluetoothLoggingEnabled.get();
-                if (originalLoggingState != newLoggingState)
-                {
-                    Timber.i("Logging state changed from %s to %s", originalLoggingState, newLoggingState);
-                }
-            }
-        }
     }
 
     /**
@@ -296,38 +287,25 @@ public class BluetoothController extends AController
             boolean successful = false;
             if (enable)
             {
-                // First check to see if Bluetooth is enabled
-                final boolean bluetoothEnabled = isBluetoothEnabledAndPermissionsGranted(true);
-                if (!bluetoothEnabled) return null;
+                // The survey only asks for Bluetooth when it is ready, and retries once it comes on,
+                // so this never prompts from the service (a boot or Intent API start has no screen)
+                if (!isBluetoothReady()) return null;
 
-                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
-                if (types.geoPackage)
-                {
-                    successful = bluetoothSurveyRecordLogger.enableLogging(true);
-                }
-                if (types.csv)
-                {
-                    successful = bluetoothCsvLogger.enableLogging(true);
-                }
+                successful = bluetoothCsvLogger.enableLogging(true);
 
                 if (successful)
                 {
-                    toggleBtConfig(true, types);
+                    toggleBtConfig(true);
                 } else
                 {
-                    // at least one of the loggers failed to toggle;
-                    // disable all of them and set local config to false
-                    bluetoothSurveyRecordLogger.enableLogging(false);
+                    // the logger failed to toggle; disable it and set local config to false
                     bluetoothCsvLogger.enableLogging(false);
-                    toggleBtConfig(false, null);
+                    toggleBtConfig(false);
                 }
             } else
             {
-                // If we are disabling logging, then we need to disable both geoPackage and CSV just
-                // in case the user changed the setting after they started logging.
-                bluetoothSurveyRecordLogger.enableLogging(false);
                 bluetoothCsvLogger.enableLogging(false);
-                toggleBtConfig(false, null);
+                toggleBtConfig(false);
                 successful = true;
             }
 
@@ -544,50 +522,37 @@ public class BluetoothController extends AController
         toggleLogging(false);
     }
 
-    private void toggleBtConfig(boolean enable, LogTypeState types)
+    private void toggleBtConfig(boolean enable)
     {
         if (surveyService == null) return;
 
         bluetoothLoggingEnabled.set(enable);
         if (enable)
         {
-            if (types != null)
-            {
-                if (types.geoPackage)
-                {
-                    surveyService.registerBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
-                }
-                if (types.csv)
-                {
-                    surveyService.registerBluetoothSurveyRecordListener(bluetoothCsvLogger);
-                }
-            } else
-            {
-                throw new IllegalArgumentException("LogTypeState cannot be null when enabling Bluetooth logging");
-            }
+            surveyService.registerBluetoothSurveyRecordListener(bluetoothCsvLogger);
         } else
         {
-            surveyService.unregisterBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
             surveyService.unregisterBluetoothSurveyRecordListener(bluetoothCsvLogger);
         }
     }
 
     /**
-     * Checks to see if the Bluetooth adapter is present, if Bluetooth is enabled, and if the
-     * proper permissions are granted.
-     * <p>
-     * After the check to see if Bluetooth is enabled, if Bluetooth is currently disabled and {@code promptEnable} is
-     * true, the user is then prompted to turn on Bluetooth.  Even if the user turns on Bluetooth, this method will
-     * still return false since the call to enable Bluetooth is asynchronous.
+     * @return True if the Bluetooth scan and connect permissions are granted. Never prompts.
+     */
+    public boolean hasBluetoothPermissions()
+    {
+        return hasBtConnectPermission() && hasBtScanPermission();
+    }
+
+    /**
+     * Checks whether the Bluetooth radio is on and the permissions are granted, without prompting
+     * the user. Used to validate a survey before it starts.
      *
-     * @param promptEnable If true, and Bluetooth is currently disabled, the user will be presented with a UI to turn on
-     *                     Bluetooth.
-     * @return True if Bluetooth is enabled, false if it is not. Also returns false if the
-     * permissions are not granted.
+     * @return True if Bluetooth can be scanned right now.
      */
     @SuppressLint("MissingPermission")
     // Permissions are checked in the first part of this method call
-    private boolean isBluetoothEnabledAndPermissionsGranted(boolean promptEnable)
+    public boolean isBluetoothReady()
     {
         NetworkSurveyService surveyServiceLocal = surveyService;
         if (surveyServiceLocal == null) return false;
@@ -601,33 +566,7 @@ public class BluetoothController extends AController
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) return false;
 
-        boolean isEnabled = true;
-
-        if (!bluetoothAdapter.isEnabled())
-        {
-            isEnabled = false;
-
-            if (promptEnable)
-            {
-                Timber.i("Bluetooth is disabled, prompting the user to enable it");
-
-                uiThreadHandler.post(() -> Toast.makeText(surveyServiceLocal.getApplicationContext(), surveyServiceLocal.getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
-                serviceHandler.post(() -> {
-                    try
-                    {
-                        final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                        enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        surveyServiceLocal.startActivity(enableBtIntent);
-                    } catch (Exception e)
-                    {
-                        // An IllegalStateException can occur when the fragment is no longer attached to the activity
-                        Timber.e(e, "Could not kick off the Bluetooth Enable Intent");
-                    }
-                });
-            }
-        }
-
-        return isEnabled;
+        return bluetoothAdapter.isEnabled();
     }
 
     /**

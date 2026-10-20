@@ -16,12 +16,8 @@
 
 package com.craxiom.networksurvey.gpstest.util
 
-import android.os.Build
-import androidx.annotation.VisibleForTesting
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 /**
  * Utilities for comparing two locations to measure error
@@ -36,18 +32,9 @@ class DateTimeUtils {
          * is valid, and false if it is not
          */
         fun isTimeValid(time: Long): Boolean {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // If the GPS time is less than five days different than system clock time, consider it valid
-                Duration.between(Instant.ofEpochMilli(time), Instant.now())
-                    .toDays() < NUM_DAYS_TIME_VALID
-            } else {
-                isTimeValidLegacy(time)
-            }
-        }
-
-        @VisibleForTesting
-        fun isTimeValidLegacy(time: Long): Boolean {
-            return TimeUnit.MILLISECONDS.toDays(abs(System.currentTimeMillis() - time)) < NUM_DAYS_TIME_VALID
+            // If the GPS time is less than five days different than system clock time, consider it valid
+            return Duration.between(Instant.ofEpochMilli(time), Instant.now())
+                .toDays() < NUM_DAYS_TIME_VALID
         }
     }
 }

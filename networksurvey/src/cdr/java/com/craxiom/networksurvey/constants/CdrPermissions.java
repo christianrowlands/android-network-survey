@@ -12,6 +12,9 @@ import android.os.Build;
  */
 public class CdrPermissions
 {
+    /** True because this build can read SMS and MMS events. */
+    public static final boolean LOGS_TEXT_MESSAGES = true;
+
     public static final String[] CDR_REQUIRED_PERMISSIONS;
     public static final String[] CDR_OPTIONAL_PERMISSIONS = {
             Manifest.permission.READ_CALL_LOG,

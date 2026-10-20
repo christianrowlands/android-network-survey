@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -24,23 +22,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.common.HelpItem
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.common.NsCardHeader
+import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.util.WifiUtils
 
 private const val STANDARD_PREFIX = "802.11"
 
 /**
  * Radio card: Channel / Frequency / Bandwidth / Standard in a 2x2 grid.
- * Each cell renders the meaningful number prominently (Bold, 22sp, bright Ink) with
+ * Each cell renders the meaningful number prominently (bold titleLarge, bright ink) with
  * the unit or secondary part (e.g. "MHz", "(38)") dimmed and smaller so the eye lands
  * on the data. The Standard cell inverts the pattern: the constant "802.11" prefix is
  * dimmed and the variant suffix (e.g. "be") is emphasized, with a stacked Wi-Fi
@@ -51,14 +48,15 @@ private const val STANDARD_PREFIX = "802.11"
 fun WifiRadioCard(network: WifiNetwork, modifier: Modifier = Modifier) {
     var showInfoDialog by remember { mutableStateOf(false) }
 
-    DetailsCardFrame(modifier = modifier) {
-        CardHeader(
+    NsDetailsCardFrame(modifier = modifier) {
+        NsCardHeader(
             text = stringResource(R.string.wifi_details_radio),
             trailingContent = {
                 IconButton(onClick = { showInfoDialog = true }) {
                     Icon(
-                        Icons.Default.Info,
+                        painterResource(R.drawable.ic_info),
                         contentDescription = stringResource(R.string.wifi_radio_info_content_description),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -81,7 +79,7 @@ fun WifiRadioCard(network: WifiNetwork, modifier: Modifier = Modifier) {
                 RadioStatCell(
                     label = stringResource(R.string.wifi_details_frequency),
                     primary = network.frequency?.toString().orEmpty(),
-                    suffix = network.frequency?.let { "MHz" },
+                    suffix = network.frequency?.let { stringResource(R.string.band_unit_mhz) },
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -159,7 +157,7 @@ private fun RadioInfoDialog(onDismiss: () -> Unit) {
 private fun WifiGenerationPill(label: String) {
     Text(
         text = label,
-        style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium),
+        style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onTertiaryContainer,
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
@@ -172,9 +170,9 @@ private fun WifiGenerationPill(label: String) {
 private fun RadioStatCell(
     label: String,
     primary: String,
+    modifier: Modifier = Modifier,
     suffix: String? = null,
     prefix: String? = null,
-    modifier: Modifier = Modifier,
     belowContent: (@Composable () -> Unit)? = null,
 ) {
     val isBlank = primary.isBlank()
@@ -184,33 +182,29 @@ private fun RadioStatCell(
     ) {
         Text(
             text = label.uppercase(),
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.06.em,
-            ),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             if (!isBlank && prefix != null) {
                 Text(
                     text = prefix,
-                    style = TextStyle(fontSize = 12.sp),
-                    color = WifiTokens.InkFaint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.alignByBaseline(),
                 )
             }
             Text(
                 text = if (isBlank) "-" else primary,
-                style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold),
-                color = WifiTokens.Ink,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.alignByBaseline(),
             )
             if (!isBlank && suffix != null) {
                 Text(
                     text = suffix,
-                    style = TextStyle(fontSize = 12.sp),
-                    color = WifiTokens.InkFaint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.alignByBaseline(),
                 )
             }

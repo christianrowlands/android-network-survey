@@ -50,6 +50,36 @@ object NsAnalyticsNotificationHelper {
      *        Falls back to a generic message when null/blank.
      */
     fun showUploadsPausedNotification(context: Context, message: String?) {
+        // Collapsed view shows the generic text; the expanded (BigText) view shows the backend
+        // quota message when available.
+        val text = context.getString(R.string.ns_analytics_paused_notification_text)
+        show(
+            context,
+            title = context.getString(R.string.ns_analytics_paused_notification_title),
+            text = text,
+            bigText = if (message.isNullOrBlank()) text else message,
+        )
+    }
+
+    /**
+     * Says that NS Analytics no longer accepts this phone (removed from the workspace, or its
+     * registration is no longer valid), so the running survey no longer sends records there. Shown
+     * whoever started the survey, since the screen may be closed.
+     *
+     * @param surveyStopped True when NS Analytics was all the survey had, so it stopped.
+     */
+    fun showRemovedFromWorkspaceNotification(context: Context, surveyStopped: Boolean) {
+        show(
+            context,
+            title = context.getString(R.string.ns_analytics_removed_notification_title),
+            text = context.getString(
+                if (surveyStopped) R.string.ns_analytics_removed_notification_text_stopped else R.string.ns_analytics_removed_notification_text
+            ),
+        )
+    }
+
+    /** Posts the one NS Analytics notification; a tap opens the NS Analytics page. */
+    private fun show(context: Context, title: String, text: String, bigText: String = text) {
         createNotificationChannel(context)
 
         // Route the tap to the NS Analytics screen. The activity reads this extra in both
@@ -66,19 +96,11 @@ object NsAnalyticsNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val bodyText = if (message.isNullOrBlank()) {
-            context.getString(R.string.ns_analytics_paused_notification_text)
-        } else {
-            message
-        }
-
-        // Collapsed view shows the generic text; the expanded (BigText) view shows the backend
-        // quota message when available.
         val notification = NotificationCompat.Builder(context, NsAnalyticsConstants.NS_ANALYTICS_NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_upload_24)
-            .setContentTitle(context.getString(R.string.ns_analytics_paused_notification_title))
-            .setContentText(context.getString(R.string.ns_analytics_paused_notification_text))
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bodyText))
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
@@ -89,13 +111,13 @@ object NsAnalyticsNotificationHelper {
         try {
             NotificationManagerCompat.from(context)
                 .notify(NsAnalyticsConstants.NS_ANALYTICS_NOTIFICATION_ID, notification)
-            Timber.i("Showed NS Analytics uploads-paused notification")
+            Timber.i("Showed the NS Analytics notification: %s", title)
         } catch (e: SecurityException) {
-            // POST_NOTIFICATIONS not granted (Android 13+). The in-app banner is the guaranteed
-            // feedback, so this is non-fatal.
-            Timber.w(e, "Notification permission denied; relying on in-app paused banner")
+            // POST_NOTIFICATIONS not granted (Android 13+). The NS Analytics page shows the same
+            // state, so this is non-fatal.
+            Timber.w(e, "Notification permission denied; relying on the NS Analytics page")
         } catch (e: Exception) {
-            Timber.e(e, "Error showing NS Analytics uploads-paused notification")
+            Timber.e(e, "Error showing the NS Analytics notification")
         }
     }
 

@@ -33,10 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.cellular.MapButton
-import com.craxiom.networksurvey.ui.cellular.TopAppBarOverlay
+import com.craxiom.networksurvey.ui.map.MapButton
+import com.craxiom.networksurvey.ui.map.TopAppBarOverlay
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /** SavedStateHandle key for handing the watched-network id to the sighting-details screen. */
 const val WATCHLIST_ENTRY_ID_KEY = "watchlist_entry_id"
@@ -145,7 +144,7 @@ fun WatchlistHistoryDetailScreen(
                 Text(
                     text = uiState.title,
                     style = MaterialTheme.typography.titleLarge,
-                    color = WifiTokens.SsidAccent,
+                    color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

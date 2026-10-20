@@ -65,25 +65,9 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideSharedNavMessageManager(
-        @ApplicationContext context: Context,
-        prefs: SharedPreferences,
-    ): SharedNavMessageManager =
-        SharedNavMessageManager(context, GlobalScope, prefs)
-
-    @Provides
-    @Singleton
     fun provideSharedMeasurementsManager(
         prefs: SharedPreferences,
         @ApplicationContext context: Context
     ): SharedGnssMeasurementManager =
         SharedGnssMeasurementManager(prefs, context, GlobalScope)
-
-    @Provides
-    @Singleton
-    fun provideSharedAntennaManager(
-        @ApplicationContext context: Context,
-        prefs: SharedPreferences,
-    ): SharedAntennaManager =
-        SharedAntennaManager(context, GlobalScope, prefs)
 }

@@ -8,15 +8,16 @@ import com.craxiom.networksurvey.data.band.BandTapTarget;
  * the 5G data alongside the LTE anchor, and on 5G SA with NR carrier aggregation it is an NR
  * SCell. On NSA the NR leg detaches within seconds of data going idle, so instead of vanishing the
  * card can also render the last-seen cell dimmed with an Idle badge (see {@code idle}). Kept as a
- * record over immutable display values so the ViewModel's distinct-until-changed setter works via
- * value equality. A null view state hides the card.
+ * record over immutable display values so that an unchanged card compares equal. A null view state
+ * hides the card. Built by
+ * {@link com.craxiom.networksurvey.ui.cellular.details.model.NrSecondaryCellResolver}.
  * <p>
- * The ticking "Last seen ..." age deliberately lives outside this record, in its own LiveData, so
- * that holding the card idle does not rebuild and re-render the whole card body once per scan.
+ * The "Last seen ..." age deliberately lives outside this record, so that a card held idle stays
+ * equal from scan to scan.
  *
  * @param band      The formatted NR band display value (e.g. "n77 (TD 3700)"), or an empty string.
  * @param bandTapTarget The band numbers behind {@code band}, for opening the band reference.
- * @param frequency The formatted frequency display value (e.g. "3709.920 MHz"), or an empty string.
+ * @param frequency The frequency in MHz without its unit (e.g. "3709.920"), or an empty string.
  * @param pci       The formatted PCI display value including the PSS/SSS breakdown, or an empty string.
  * @param narfcn    The NARFCN display value, or an empty string.
  * @param ssRsrp    The SS-RSRP value in dBm, or null when not reported.

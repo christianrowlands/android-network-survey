@@ -163,6 +163,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Shares CSV log files from the Log files page -->
+        <provider
+            android:name=".logging.LogFileProvider"
+            android:authorities="${applicationId}.logfiles"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/log_file_paths" />
+        </provider>
 
     </application>
 

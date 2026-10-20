@@ -97,42 +97,6 @@ class TowerDetectionManager(
     }
 
     /**
-     * Load towers for a specific area into the cache.
-     * This can be used to pre-populate the cache to reduce API calls.
-     */
-    suspend fun preloadAreaTowers(
-        mcc: String,
-        mnc: String,
-        area: Int,
-        bbox: String,
-        radio: String
-    ) = withContext(Dispatchers.IO) {
-        try {
-            Timber.d("Preloading towers for area: MCC=$mcc, MNC=$mnc, Area=$area")
-            val response = api.getTowers(bbox, radio, mcc, mnc, "ns")
-
-            if (response.isSuccessful) {
-                response.body()?.cells?.forEach { tower ->
-                    if (tower.area == area) {
-                        val cacheEntry = TowerCacheEntity().apply {
-                            this.mcc = tower.mcc
-                            this.mnc = tower.mnc
-                            this.area = tower.area
-                            this.cid = tower.cid
-                            this.timestamp = System.currentTimeMillis()
-                            this.radio = tower.radio
-                        }
-                        towerCacheDao.insert(cacheEntry)
-                    }
-                }
-                Timber.d("Preloaded ${response.body()?.cells?.size ?: 0} towers for area")
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Error preloading area towers")
-        }
-    }
-
-    /**
      * Clean up old cache entries to prevent database growth.
      */
     private suspend fun cleanupOldCacheEntries() {
@@ -144,18 +108,6 @@ class TowerDetectionManager(
             }
         } catch (e: Exception) {
             Timber.e(e, "Error cleaning up tower cache")
-        }
-    }
-
-    /**
-     * Clear all cache entries.
-     */
-    suspend fun clearCache() = withContext(Dispatchers.IO) {
-        try {
-            towerCacheDao.clearCache()
-            Timber.d("Tower cache cleared")
-        } catch (e: Exception) {
-            Timber.e(e, "Error clearing tower cache")
         }
     }
 }

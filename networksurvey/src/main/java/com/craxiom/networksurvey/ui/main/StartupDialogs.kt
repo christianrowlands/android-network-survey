@@ -21,20 +21,19 @@ import com.craxiom.networksurvey.ui.preview.NsPreview
 import com.craxiom.networksurvey.ui.preview.PreviewDayNight
 
 /**
- * The actions the host activity performs in response to the startup permission/location dialogs.
- * The activity keeps ownership of the permission decision logic (requesting permissions, opening
- * settings, persisting a denial) and implements this interface so the Compose dialogs can invoke it.
+ * The actions the host activity performs in response to the background location and GNSS failure
+ * dialogs. The activity keeps ownership of the permission decision logic (requesting the
+ * permission, persisting a denial) and implements this interface so the Compose dialogs can invoke
+ * it. First run explains the launch permissions, so there is no launch rationale dialog any more.
  */
 interface StartupDialogActions {
-    fun onPermissionRationaleAcknowledged()
-    fun onEnableGpsConfirmed()
     fun onBackgroundLocationConfirmed()
     fun onBackgroundLocationDenied()
     fun onGnssFailureAcknowledged(rememberDecision: Boolean)
 }
 
 /**
- * Renders the startup permission, GPS, and GNSS-failure dialogs using the shared Compose dialog
+ * Renders the background location and GNSS failure dialogs using the shared Compose dialog
  * components. Visibility is driven by [SharedViewModel] state that the host activity sets, and the
  * dialog actions are delegated back to the activity through [StartupDialogActions].
  */
@@ -43,39 +42,19 @@ fun StartupDialogs(
     actions: StartupDialogActions,
     viewModel: SharedViewModel,
 ) {
-    val startupDialog by viewModel.startupDialog.collectAsStateWithLifecycle()
+    val backgroundLocationVisible by viewModel.backgroundLocationRationaleVisible.collectAsStateWithLifecycle()
     val gnssFailureVisible by viewModel.gnssFailureDialogVisible.collectAsStateWithLifecycle()
 
-    when (startupDialog) {
-        StartupDialog.PermissionRationale -> NsConfirmationDialog(
-            title = stringResource(R.string.permissions_rationale_title),
-            message = stringResource(R.string.permissions_rationale),
-            confirmText = stringResource(android.R.string.ok),
-            onConfirm = actions::onPermissionRationaleAcknowledged,
-            onDismiss = viewModel::clearStartupDialog,
-            dismissText = null,
-        )
-
-        StartupDialog.BackgroundLocationRationale -> NsConfirmationDialog(
+    if (backgroundLocationVisible) {
+        NsConfirmationDialog(
             title = stringResource(R.string.background_location_permission_rationale_title),
             message = stringResource(R.string.background_location_permission_rationale),
             confirmText = stringResource(R.string.open_settings),
             onConfirm = actions::onBackgroundLocationConfirmed,
-            onDismiss = viewModel::clearStartupDialog,
+            onDismiss = viewModel::clearBackgroundLocationRationale,
             dismissText = stringResource(R.string.deny_permission),
             onCancel = actions::onBackgroundLocationDenied,
         )
-
-        StartupDialog.EnableGps -> NsConfirmationDialog(
-            title = stringResource(R.string.enable_gps_title),
-            message = stringResource(R.string.enable_gps_message),
-            confirmText = stringResource(R.string.enable_gps_positive_button),
-            onConfirm = actions::onEnableGpsConfirmed,
-            onDismiss = viewModel::clearStartupDialog,
-            dismissText = stringResource(R.string.enable_gps_negative_button),
-        )
-
-        null -> Unit
     }
 
     if (gnssFailureVisible) {

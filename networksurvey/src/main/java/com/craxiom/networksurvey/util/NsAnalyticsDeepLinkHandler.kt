@@ -2,6 +2,8 @@ package com.craxiom.networksurvey.util
 
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.data.api.NsAnalyticsQrData
 import timber.log.Timber
@@ -25,7 +27,7 @@ object NsAnalyticsDeepLinkHandler {
      */
     sealed class DeepLinkResult {
         data class Success(val qrData: NsAnalyticsQrData) : DeepLinkResult()
-        data class Error(val message: String) : DeepLinkResult()
+        data class Error(@StringRes val messageRes: Int) : DeepLinkResult()
         data object NotApplicable : DeepLinkResult()
     }
 
@@ -79,29 +81,29 @@ object NsAnalyticsDeepLinkHandler {
         // Validate workspace name length if provided
         if (workspaceName != null && workspaceName.length > MAX_WORKSPACE_NAME_LENGTH) {
             Timber.w("Deep link workspace_name exceeds max length: %d", workspaceName.length)
-            return DeepLinkResult.Error("Workspace name too long")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_name_too_long)
         }
 
         // Validate required parameters
         if (token.isNullOrBlank()) {
             Timber.w("Deep link missing required parameter: token")
-            return DeepLinkResult.Error("Missing registration token")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_no_token)
         }
 
         if (workspaceId.isNullOrBlank()) {
             Timber.w("Deep link missing required parameter: workspace_id")
-            return DeepLinkResult.Error("Missing workspace ID")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_no_workspace)
         }
 
         if (apiUrl.isNullOrBlank()) {
             Timber.w("Deep link missing required parameter: api_url")
-            return DeepLinkResult.Error("Missing API URL")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_no_server)
         }
 
         // Validate API URL format
         if (!apiUrl.startsWith("https://")) {
             Timber.w("Deep link has invalid api_url: %s", apiUrl)
-            return DeepLinkResult.Error("Invalid API URL: must use HTTPS")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_not_https)
         }
 
         // Validate URL is parseable (URI is stricter than URL and consistent across platforms)
@@ -109,12 +111,12 @@ object NsAnalyticsDeepLinkHandler {
             java.net.URI(apiUrl)
         } catch (e: Exception) {
             Timber.w("Deep link has malformed api_url: %s", apiUrl)
-            return DeepLinkResult.Error("Invalid API URL format")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_bad_server)
         }
 
         // Block internal/private addresses (SSRF prevention)
         val host = parsedUri.host?.lowercase()
-            ?: return DeepLinkResult.Error("Invalid API URL format")
+            ?: return DeepLinkResult.Error(R.string.ns_analytics_link_bad_server)
         if (host == "localhost" ||
             host.matches(Regex("^127\\.\\d+\\.\\d+\\.\\d+$")) ||
             host.matches(Regex("^10\\.\\d+\\.\\d+\\.\\d+$")) ||
@@ -123,13 +125,13 @@ object NsAnalyticsDeepLinkHandler {
             host.matches(Regex("^169\\.254\\.\\d+\\.\\d+$"))
         ) {
             Timber.w("Deep link has blocked internal api_url: %s", apiUrl)
-            return DeepLinkResult.Error("API URL cannot be an internal address")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_local_server)
         }
 
         // Validate max length
         if (apiUrl.length > MAX_API_URL_LENGTH) {
             Timber.w("Deep link api_url exceeds max length: %d", apiUrl.length)
-            return DeepLinkResult.Error("API URL too long")
+            return DeepLinkResult.Error(R.string.ns_analytics_link_server_too_long)
         }
 
         val qrData = NsAnalyticsQrData(

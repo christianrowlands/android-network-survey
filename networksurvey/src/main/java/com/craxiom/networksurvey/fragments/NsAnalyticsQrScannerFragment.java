@@ -66,26 +66,21 @@ public class NsAnalyticsQrScannerFragment extends Fragment
                     // Stop the scanner to freeze on the successful scan
                     codeScanner.stopPreview();
 
-                    // Show success message
-                    Toast.makeText(context, "QR code scanned successfully", Toast.LENGTH_SHORT).show();
-
-                    // Navigate back to NS Analytics connection screen
-                    // Using a slight delay to let the user see the success message
-                    new android.os.Handler().postDelayed(() -> {
-                        requireActivity().onBackPressed();
-                    }, 500);
+                    // Back to the NS Analytics page, which asks to confirm the workspace
+                    requireActivity().getOnBackPressedDispatcher().onBackPressed();
                 } else if (parseResult instanceof DeepLinkResult.Error)
                 {
-                    String errorMessage = ((DeepLinkResult.Error) parseResult).getMessage();
-                    Timber.w("QR code validation failed: %s", errorMessage);
-                    Toast.makeText(context, "Invalid QR code: " + errorMessage, Toast.LENGTH_LONG).show();
+                    int reasonRes = ((DeepLinkResult.Error) parseResult).getMessageRes();
+                    String errorMessage = context.getString(reasonRes);
+                    Timber.w("QR code validation failed: %s", context.getResources().getResourceEntryName(reasonRes));
+                    Toast.makeText(context, context.getString(R.string.ns_analytics_qr_invalid, errorMessage), Toast.LENGTH_LONG).show();
                     // Continue scanning for valid QR codes
                     codeScanner.startPreview();
                 } else
                 {
                     // DeepLinkResult.NotApplicable - not a valid NS Analytics URL
                     Timber.w("Scanned QR code is not an NS Analytics registration URL: %s", result.getText());
-                    Toast.makeText(context, "Not a valid NS Analytics QR code", Toast.LENGTH_LONG).show();
+                    Toast.makeText(context, R.string.ns_analytics_qr_not_nsa, Toast.LENGTH_LONG).show();
                     // Continue scanning for valid QR codes
                     codeScanner.startPreview();
                 }

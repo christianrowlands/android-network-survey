@@ -54,11 +54,6 @@ interface Api {
         @Query("cid") cid: Long
     ): Response<TowerResponse>
 
-    @GET("v2/oui")
-    suspend fun getOui(
-        @Query("mac") mac: String
-    ): Response<OuiLookupResponse>
-
     @POST("v2/oui/batch")
     suspend fun getOuiBatch(
         @Body request: OuiBatchRequest
@@ -154,9 +149,8 @@ data class MapTilerKeyResponse(
 /**
  * Single OUI lookup result item from the tower service.
  *
- * Returned both as the body of [Api.getOui] (inside [OuiLookupResponse.result]) and as each
- * element of [OuiBatchResponse.results]. The server always responds 200. Classification flows
- * through the [isUnknown] / [reason] fields.
+ * Returned as each element of [OuiBatchResponse.results]. The server always responds 200.
+ * Classification flows through the [isUnknown] / [reason] fields.
  *
  * String and boxed-Int fields are declared nullable because Gson bypasses Kotlin's non-null
  * checks at deserialization; a server that unexpectedly omits a field or sends `null` would
@@ -170,14 +164,6 @@ data class OuiLookupResult(
     @SerializedName("is_multicast") val isMulticast: Boolean = false,
     @SerializedName("is_unknown") val isUnknown: Boolean = false,
     @SerializedName("reason") val reason: String? = null
-)
-
-/**
- * Response body for the single-MAC OUI endpoint (`GET /v2/oui`).
- */
-data class OuiLookupResponse(
-    @SerializedName("dataset_version") val datasetVersion: String? = null,
-    @SerializedName("result") val result: OuiLookupResult? = null
 )
 
 /**

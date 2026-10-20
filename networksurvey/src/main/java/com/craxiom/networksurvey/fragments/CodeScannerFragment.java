@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.fragments;
 
-import static com.craxiom.networksurvey.util.PreferenceUtils.populatePrefsFromMqttConnectionSettings;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -23,8 +21,8 @@ import com.google.gson.Gson;
 import timber.log.Timber;
 
 /**
- * Fragment responsible for QR code scanning. Leverages an open source code scanning library from
- * Yuriy Budiev.
+ * Scans an MQTT broker QR code and hands it to the MQTT page, which adds it as a broker profile.
+ * Leverages an open source code scanning library from Yuriy Budiev.
  *
  * @since 1.7.0
  */
@@ -45,32 +43,42 @@ public class CodeScannerFragment extends Fragment
         CodeScannerView scannerView = root.findViewById(R.id.scanner_view);
         codeScanner = new CodeScanner(activity, scannerView);
         codeScanner.setDecodeCallback(result -> activity.runOnUiThread(() -> {
-            if (!result.getText().isEmpty())
+            final MqttConnectionSettings settings = parseBrokerCode(result.getText());
+            if (settings == null)
             {
-                try
-                {
-                    MqttConnectionSettings mqttConnectionSettings = new Gson().fromJson(result.getText(), MqttConnectionSettings.class);
-                    populatePrefsFromMqttConnectionSettings(mqttConnectionSettings, getContext());
-
-                    final String scanSuccess = "Successfully scanned the MQTT settings";
-                    Toast.makeText(getContext(), scanSuccess, Toast.LENGTH_SHORT).show();
-
-                    SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-                    viewModel.triggerNavigationToMqttConnection(mqttConnectionSettings);
-                } catch (Exception e)
-                {
-                    Timber.i(e, "Failed to read the MQTT settings");
-                    final String scanFailed = "Failed to read the MQTT settings";
-                    Toast.makeText(getContext(), scanFailed, Toast.LENGTH_SHORT).show();
-
-                    SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-                    viewModel.triggerNavigationToMqttConnection(viewModel.getMqttConnectionSettings());
-                }
+                Toast.makeText(activity, R.string.mqtt_qr_not_broker, Toast.LENGTH_LONG).show();
+                codeScanner.startPreview();
+                return;
             }
+
+            // The MQTT page adds the broker and says what happened.
+            SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+            viewModel.onMqttQrCodeScanned(settings);
+            requireActivity().getOnBackPressedDispatcher().onBackPressed();
         }));
 
         scannerView.setOnClickListener(view -> codeScanner.startPreview());
         return root;
+    }
+
+    /**
+     * @return The broker in a scanned code, or null if the code is not an MQTT broker code (it is not
+     * the broker JSON, or it has no host).
+     */
+    @Nullable
+    private static MqttConnectionSettings parseBrokerCode(String text)
+    {
+        if (text == null || text.isEmpty()) return null;
+        try
+        {
+            final MqttConnectionSettings settings = new Gson().fromJson(text, MqttConnectionSettings.class);
+            if (settings == null || settings.host() == null || settings.host().trim().isEmpty()) return null;
+            return settings;
+        } catch (Exception e)
+        {
+            Timber.i(e, "The scanned code is not an MQTT broker code");
+            return null;
+        }
     }
 
     @Override

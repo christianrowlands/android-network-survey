@@ -28,6 +28,10 @@ data class SatelliteStatus(
     var hasAgc: Boolean = false
     var agcDb: Float = NO_DATA
 
+    // One signal's identity across scans, unique within a list even when the phone reports the same
+    // satellite and carrier twice. Set by SignalKeys.assign; the rows and the trend history use it.
+    var signalKey: String = ""
+
     // The generated data class equals/hashCode only cover the primary constructor properties,
     // which lets Compose skip recompositions when only a body property (such as agcDb) changes.
     // Include every property so equality reflects everything displayed in the UI.
@@ -48,7 +52,8 @@ data class SatelliteStatus(
                 hasBasebandCn0DbHz == other.hasBasebandCn0DbHz &&
                 basebandCn0DbHz == other.basebandCn0DbHz &&
                 hasAgc == other.hasAgc &&
-                agcDb == other.agcDb
+                agcDb == other.agcDb &&
+                signalKey == other.signalKey
     }
 
     override fun hashCode(): Int {
@@ -67,6 +72,7 @@ data class SatelliteStatus(
         result = 31 * result + basebandCn0DbHz.hashCode()
         result = 31 * result + hasAgc.hashCode()
         result = 31 * result + agcDb.hashCode()
+        result = 31 * result + signalKey.hashCode()
         return result
     }
 

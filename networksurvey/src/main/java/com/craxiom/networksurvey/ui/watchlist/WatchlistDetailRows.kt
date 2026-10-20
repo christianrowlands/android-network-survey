@@ -41,8 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity
-import com.craxiom.networksurvey.ui.theme.WifiTokens
-import com.craxiom.networksurvey.ui.wifi.components.SignalMeter
+import com.craxiom.networksurvey.ui.common.NsSignalMeter
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
@@ -97,7 +97,7 @@ internal fun DetailSortChip(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(999.dp))
-                .background(WifiTokens.SsidSoft)
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .clickable(
                     onClickLabel = stringResource(R.string.watchlist_detail_sort_action),
                     role = Role.Button,
@@ -110,12 +110,12 @@ internal fun DetailSortChip(
                 text = stringResource(labelRes),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = WifiTokens.SsidAccent
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Icon(
                 Icons.Default.ArrowDropDown,
                 contentDescription = null,
-                tint = WifiTokens.SsidAccent,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -152,7 +152,7 @@ internal fun SightingRow(
         hit.timestamp,
         DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH or DateUtils.FORMAT_SHOW_TIME
     )
-    val background = if (selected) WifiTokens.SsidSoft else Color.Transparent
+    val background = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
 
     Row(
         modifier = Modifier
@@ -167,7 +167,7 @@ internal fun SightingRow(
             modifier = Modifier
                 .width(3.dp)
                 .fillMaxHeight()
-                .background(if (selected) WifiTokens.SsidAccent else Color.Transparent)
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
         )
         Column(
             modifier = Modifier
@@ -183,9 +183,9 @@ internal fun SightingRow(
                     text = stringResource(R.string.watchlist_signal_dbm, hit.rssi),
                     style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     fontWeight = FontWeight.SemiBold,
-                    color = hit.rssi.toWifiSignalCategory().color
+                    color = hit.rssi.toWifiSignalCategory().textColor
                 )
-                SignalMeter(rssi = hit.rssi, width = 80.dp)
+                NsSignalMeter(rssi = hit.rssi, width = 80.dp)
                 Text(
                     text = whenText,
                     style = MaterialTheme.typography.bodySmall,

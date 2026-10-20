@@ -3,30 +3,34 @@
     <!-- Strings in this file should NOT be translated -->
     <string name="app_name">Network Survey</string>
 
+    <!-- Bluetooth technologies, as the Bluetooth specification names them -->
+    <string name="bluetooth_tech_le">LE</string>
+    <string name="bluetooth_tech_classic">BR/EDR</string>
+
+    <!-- Shown in place of a signal reading the record does not carry -->
+    <string name="signal_none">--</string>
+
     <!-- Values and units display - Status -->
     <string name="lat_or_lon">%1$.7f\u00B0</string>
-    <string name="gps_lat_dms_value">%1$s\t\u2007%2$02d\u00B0 %3$2d\' %4$05.2f\"</string>
-    <string name="gps_lon_dms_value">%1$s\t%2$03d\u00B0 %3$2d\' %4$05.2f\"</string>
-    <string name="gps_lat_ddm_value">%1$s\t\u2007%2$02d\u00B0 %3$06.3f</string>
-    <string name="gps_lon_ddm_value">%1$s\t%2$03d\u00B0 %3$06.3f</string>
     <string name="gps_altitude_value_meters">%1$.1f m</string>
     <string name="gps_accuracy_value_meters">%1$.1f m</string>
-    <string name="gps_hor_and_vert_accuracy_value_meters">%1$.1f/%2$.1f m</string>
     <string name="gps_speed_value_kilometers_hour">%1$.1f km/h</string>
     <string name="gps_speed_acc_value_km_hour">%1$.1f km/h</string>
     <!-- Imperial unit format strings -->
     <string name="gps_altitude_value_feet">%1$.1f ft</string>
     <string name="gps_accuracy_value_feet">%1$.1f ft</string>
-    <string name="gps_hor_and_vert_accuracy_value_feet">%1$.1f/%2$.1f ft</string>
     <string name="gps_speed_value_mph">%1$.1f mph</string>
     <string name="gps_speed_acc_value_mph">%1$.1f mph</string>
     <string name="gps_bearing_value">%1$.1f\u00B0</string>
     <string name="gps_bearing_acc_value">%1$.1f\u00B0</string>
-    <string name="gps_num_sats_value">%1$d/%2$d/%3$d</string>
+    <string name="gps_num_sats_value">%1$d/%2$d</string>
     <string name="pdop_value">%1$.1f</string>
     <string name="hvdop_value">%1$.1f/%2$.1f</string>
-    <string name="gps_elevation_column_value">%1$.1f\u00B0</string>
-    <string name="gps_azimuth_column_value">%1$.1f\u00B0</string>
+    <!-- The location's horizontal accuracy on the Location card, such as "±3.2 m" -->
+    <string name="gnss_accuracy_short">±%1$s</string>
+    <!-- The satellite table's column headers that are the same in every language -->
+    <string name="gnss_col_id">ID</string>
+    <string name="gnss_col_cn0">C/N0</string>
 
     <!-- Values and units display - Sky View -->
     <string name="sky_legend_cn0_low">10</string>
@@ -34,10 +38,9 @@
     <string name="sky_legend_cn0_middle">27</string>
     <string name="sky_legend_cn0_middle_high">36</string>
     <string name="sky_legend_cn0_high">45</string>
-    <string name="sky_legend_cn0_units">(dB-Hz)</string>
+    <string name="sky_legend_cn0_units">dB-Hz</string>
 
     <!-- Preference keys -->
-    <string name="pref_key_default_sat_sort">preference_default_sat_sort</string>
     <string name="pref_key_default_sat_filter">preference_default_sat_filter</string>
     <string name="pref_key_gps_min_time">gps_min_time</string>
     <string name="pref_key_gps_min_distance">gps_min_distance</string>
@@ -48,12 +51,9 @@
 
     <!-- Device capabilities -->
     <string name="capability_key_raw_measurements">capability_key_raw_measurements</string>
-    <string name="capability_key_nav_messages">capability_key_nav_messages</string>
     <string name="capability_key_nmea">capability_key_nmea</string>
     <string name="capability_key_measurement_automatic_gain_control">capability_key_measurement_automatic_gain_control</string>
     <string name="capability_key_measurement_delta_range">capability_key_measurement_delta_range</string>
-    <string name="capability_key_num_antenna">capability_key_num_antenna</string>
-    <string name="capability_key_antenna_cf">capability_key_antenna_cf</string>
 
     <!-- Supported language codes, must stay in-order with language_entries -->
     <string-array name="language_values">
@@ -71,9 +71,6 @@
         <item>pl</item>
         <item>fr</item>
     </string-array>
-
-    <!-- Coordinate formats -->
-    <string name="preferences_coordinate_format_dd_key">dd</string>
 
     <!-- Cellular parameter acronyms -->
     <string name="arfcn_label">ARFCN</string>
@@ -118,12 +115,6 @@
     <string name="plmn_info_mcc_label">MCC</string>
     <string name="plmn_info_mnc_label">MNC</string>
 
-    <!-- GNSS / SBAS / CF flag acronyms -->
-    <string name="gnss_flag_image_label">GNSS</string>
-    <string name="sbas_flag_image_label">SBAS</string>
-    <string name="cf_column_label">CF</string>
-    <string name="gps_agc_column_label">AGC</string>
-
     <!-- Upload service / brand names -->
     <string name="opencellid_upload">OpenCelliD:</string>
     <string name="beacondb_upload">BeaconDB:</string>
@@ -134,4 +125,36 @@
     <string name="band_unit_khz">kHz</string>
     <string name="band_fr1">FR1</string>
     <string name="band_fr2">FR2</string>
+
+    <!-- An example host for the gRPC server field; a reserved example domain, so it never resolves. -->
+    <string name="grpc_host_placeholder">grpc.example.net</string>
+
+    <!-- Values of the three-way survey setup MDM restrictions (SurveyMdmKeys). Never change them. -->
+    <string-array name="mdm_survey_choice_values">
+        <item>user</item>
+        <item>on</item>
+        <item>off</item>
+    </string-array>
+    <string name="networksurvey_domain">networksurvey.app</string>
+    <!-- Sort and location source options that are the same in every language -->
+    <string name="sort_sats_agc">AGC</string>
+    <string name="wifi_sort_ssid">SSID</string>
+    <string name="wifi_sort_bssid">BSSID</string>
+    <string name="location_source_gnss">GNSS</string>
+
+    <!-- Tower data sources, by name -->
+    <string name="tower_source_opencellid">OpenCelliD</string>
+    <string name="lac_tac_label">LAC/TAC</string>
+
+    <!-- Calculator terms and the gNB and sector bit split ("22 bits + 14 bits") -->
+    <string name="nci_label">NCI</string>
+    <string name="gnb_id_label">gNB ID</string>
+    <string name="pss_label">PSS</string>
+    <string name="sss_label">SSS</string>
+    <string name="calculator_bit_split">%1$s + %2$s</string>
+    <string name="pcs_pci_label">PCS/PCI</string>
+
+    <!-- Joins: two parts with a middle dot, and a color name marked as the default -->
+    <string name="dot_join">%1$s · %2$s</string>
+    <string name="provider_color_default_marker">%1$s*</string>
 </resources>

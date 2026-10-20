@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug builds only. Release builds have no network security config and keep
+    usesCleartextTraffic="false" from the main manifest.
+
+    The instrumented destination tests run MockWebServer on the phone's own loopback, so cleartext
+    is allowed to localhost and nowhere else. The debug-overrides block trusts user-installed CAs so a
+    self-signed test broker can be used for the manual TLS check.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

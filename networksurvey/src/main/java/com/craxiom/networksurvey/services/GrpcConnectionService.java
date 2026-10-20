@@ -1,14 +1,12 @@
 package com.craxiom.networksurvey.services;
 
 import android.annotation.SuppressLint;
-import android.app.IntentService;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -39,9 +37,8 @@ import com.craxiom.messaging.grpc.StatusUpdateReply;
 import com.craxiom.messaging.grpc.UmtsSurveyResponse;
 import com.craxiom.messaging.grpc.WifiBeaconSurveyResponse;
 import com.craxiom.messaging.grpc.WirelessSurveyGrpc;
-import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
-import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
@@ -50,17 +47,21 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.survey.model.RecordType;
+import com.craxiom.networksurvey.util.DeviceNameStamper;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -92,34 +93,40 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private static final AtomicReference<ConnectionState> connectionState =
             new AtomicReference<>(ConnectionState.DISCONNECTED);
 
+    /** The last connection attempt that failed, or null since the last success or disconnect. */
+    private static final AtomicReference<ConnectionFailure> lastFailure = new AtomicReference<>(null);
+
+    /** What the record queues hold, and the connection's connecting and connected history. */
+    private static final StreamQueueHealth QUEUE_HEALTH = new StreamQueueHealth();
+
     private static final String ACTION_CONNECT = "com.craxiom.networksurvey.services.action.connect";
+    private static final String ACTION_SWITCH_SERVER = "com.craxiom.networksurvey.services.action.switch_server";
     private static final String ACTION_DISCONNECT = "com.craxiom.networksurvey.services.action.disconnect";
 
     private static final String HOST_PARAMETER = "com.craxiom.networksurvey.services.extra.host";
     private static final String PORT_PARAMETER = "com.craxiom.networksurvey.services.extra.port";
     private static final String DEVICE_NAME_PARAMETER = "com.craxiom.networksurvey.services.extra.devicename";
+    private static final String RECORD_TYPES_PARAMETER = "com.craxiom.networksurvey.services.extra.record_types";
+    private static final String ACTION_UPDATE_STREAM_TYPES = "com.craxiom.networksurvey.services.action.update_stream_types";
 
-    private ConnectionServiceBinder connectionServiceBinder;
     private final Handler uiThreadHandler;
     private final SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
     private final ScheduledExecutorService executorService;
 
-    private final ConcurrentLinkedQueue<DeviceStatus> deviceStatusQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<PhoneState> phoneStateQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<GsmRecord> gsmRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<CdmaRecord> cdmaRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<UmtsRecord> umtsRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<LteRecord> lteRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<NrRecord> nrRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<WifiBeaconRecord> wifiBeaconRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<BluetoothRecord> bluetoothRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<GnssRecord> gnssRecordQueue = new ConcurrentLinkedQueue<>();
+    private final StreamRecordQueue<DeviceStatus> deviceStatusQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<PhoneState> phoneStateQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<GsmRecord> gsmRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<CdmaRecord> cdmaRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<UmtsRecord> umtsRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<LteRecord> lteRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<NrRecord> nrRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<WifiBeaconRecord> wifiBeaconRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<BluetoothRecord> bluetoothRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<GnssRecord> gnssRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
 
     // Cached streaming queue limit value
     private volatile int streamingQueueLimit = 0;
-
-    private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
     // New connection approach
     private GrpcTask<DeviceStatus, StatusUpdateReply> deviceStatusGrpcTask;
@@ -141,19 +148,38 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     private volatile boolean userCanceled = false;
 
+    /** True once the "can't reach the server" Toast was shown for the current connect request. */
+    private volatile boolean unreachableToastShown = false;
+
     private String host = null;
     private Integer portNumber = null;
-    private String deviceName = "";
-    private boolean cellularStreamEnabled = false;
-    private boolean phoneStateStreamEnabled = false;
-    private boolean wifiStreamEnabled = false;
-    private boolean bluetoothStreamEnabled = false;
-    private boolean gnssStreamEnabled = false;
-    private boolean deviceStatusStreamEnabled = false;
+
+    /** The name set on every message sent to the server; empty sends no name. */
+    private volatile String deviceName = "";
+
+    /** The record types requested for this connection. Device status is always streamed. */
+    private volatile Set<RecordType> requestedStreamTypes = EnumSet.noneOf(RecordType.class);
+
+    /** The record types that currently have an open gRPC stream. */
+    private final Set<RecordType> activeStreamTypes = EnumSet.noneOf(RecordType.class);
+
+    /** The record types whose listener is registered; kept while the connection reconnects. */
+    private final EnumSet<RecordType> registeredListenerTypes = EnumSet.noneOf(RecordType.class);
+
+    /**
+     * Incremented on every connect and disconnect request. A connection attempt that finishes after
+     * a newer request (for example the survey was stopped while the handshake was in flight) is
+     * discarded instead of reporting CONNECTED, so it can never roll a new Mission ID after a stop.
+     */
+    private final AtomicInteger connectionGeneration = new AtomicInteger(0);
+
+    private WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub;
+
+    /** True once {@link #completeConnectionSetup()} has run for the current connection. */
+    private boolean connectionSetupComplete = false;
 
     public GrpcConnectionService()
     {
-        connectionServiceBinder = new ConnectionServiceBinder(this);
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
         surveyServiceConnection = new SurveyServiceConnection();
@@ -176,35 +202,114 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Starts this service to connect to a remote gRPC server with the given parameters. If
-     * the service is already performing a task this action will be queued.
+     * @return The last connection attempt that failed, or null if the connection has succeeded or
+     * was turned off since.
+     */
+    public static ConnectionFailure getLastFailure()
+    {
+        return lastFailure.get();
+    }
+
+    /**
+     * @return How many records are waiting to be sent, whether any are being thrown away, and when
+     * the connection started connecting.
+     */
+    public static StreamQueueHealth getQueueHealth()
+    {
+        return QUEUE_HEALTH;
+    }
+
+    /**
+     * Starts this service to connect to a remote gRPC server streaming the given record types.
      *
      * @param context            The context to use to create the service intent.
      * @param connectionSettings The connection settings to use to connect to the gRPC server.
+     * @param recordTypes        The record types to stream.
      */
-    public static void connectToGrpcServer(Context context, GrpcConnectionSettings connectionSettings)
+    public static void connectToGrpcServer(Context context, GrpcConnectionSettings connectionSettings,
+                                           Collection<RecordType> recordTypes)
     {
         Timber.d("Creating the ACTION_CONNECT intent to kick off the gRPC connection");
 
-        Intent intent = new Intent(context, GrpcConnectionService.class);
-        intent.setAction(ACTION_CONNECT);
-        intent.putExtra(HOST_PARAMETER, connectionSettings.getHost());
-        intent.putExtra(PORT_PARAMETER, connectionSettings.getPort());
-        intent.putExtra(DEVICE_NAME_PARAMETER, connectionSettings.getDeviceName());
-        intent.putExtra(NetworkSurveyConstants.PROPERTY_GRPC_CELLULAR_STREAM_ENABLED, connectionSettings.getCellularStreamEnabled());
-        intent.putExtra(NetworkSurveyConstants.PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED, connectionSettings.getPhoneStateStreamEnabled());
-        intent.putExtra(NetworkSurveyConstants.PROPERTY_GRPC_WIFI_STREAM_ENABLED, connectionSettings.getWifiStreamEnabled());
-        intent.putExtra(NetworkSurveyConstants.PROPERTY_GRPC_BLUETOOTH_STREAM_ENABLED, connectionSettings.getBluetoothStreamEnabled());
-        intent.putExtra(NetworkSurveyConstants.PROPERTY_GRPC_GNSS_STREAM_ENABLED, connectionSettings.getGnssStreamEnabled());
-        intent.putExtra(NetworkSurveyConstants.PROPERTY_GRPC_DEVICE_STATUS_STREAM_ENABLED, connectionSettings.getDeviceStatusStreamEnabled());
+        Intent intent = serverIntent(context, ACTION_CONNECT, connectionSettings);
+        intent.putExtra(RECORD_TYPES_PARAMETER, toWireNames(recordTypes));
+
+        // Report CONNECTING right away rather than when the service gets to the intent, so a Stop in
+        // between sees the connection and stops it, and a second start does not connect twice.
+        if (connectionState.compareAndSet(ConnectionState.DISCONNECTED, ConnectionState.CONNECTING))
+        {
+            QUEUE_HEALTH.onConnectRequested(System.currentTimeMillis());
+        }
         context.startService(intent);
     }
 
     /**
-     * Starts this service to perform action Baz with the given parameters. If
-     * the service is already performing a task this action will be queued.
+     * Moves a running gRPC connection to the saved server without ending the survey: the stream
+     * reconnects to the new host and port (retrying until it is reachable) and the Mission ID is
+     * kept. A new device name alone applies without reconnecting. Does nothing when no connection
+     * is running or one is being turned off; requests are handled in order, so a switch sent after a
+     * disconnect never brings the connection back.
      *
-     * @see IntentService
+     * @param context            The context to use to create the service intent.
+     * @param connectionSettings The saved gRPC server settings.
+     */
+    public static void switchServer(Context context, GrpcConnectionSettings connectionSettings)
+    {
+        // Sending the intent with nothing running would start an idle service.
+        if (connectionState.get() == ConnectionState.DISCONNECTED) return;
+
+        context.startService(serverIntent(context, ACTION_SWITCH_SERVER, connectionSettings));
+    }
+
+    private static Intent serverIntent(Context context, String action, GrpcConnectionSettings connectionSettings)
+    {
+        final Intent intent = new Intent(context, GrpcConnectionService.class);
+        intent.setAction(action);
+        intent.putExtra(HOST_PARAMETER, connectionSettings.getHost());
+        intent.putExtra(PORT_PARAMETER, connectionSettings.getPort());
+        intent.putExtra(DEVICE_NAME_PARAMETER, connectionSettings.getDeviceName());
+        return intent;
+    }
+
+    /**
+     * Changes the record types streamed over the current gRPC connection without reconnecting.
+     *
+     * @param context     The context to use to create the service intent.
+     * @param recordTypes The record types to stream from now on.
+     */
+    public static void updateStreamTypes(Context context, Collection<RecordType> recordTypes)
+    {
+        // Nothing to update without a connection, and sending the intent would start an idle service.
+        if (connectionState.get() == ConnectionState.DISCONNECTED) return;
+
+        Intent intent = new Intent(context, GrpcConnectionService.class);
+        intent.setAction(ACTION_UPDATE_STREAM_TYPES);
+        intent.putExtra(RECORD_TYPES_PARAMETER, toWireNames(recordTypes));
+        context.startService(intent);
+    }
+
+    private static String[] toWireNames(Collection<RecordType> recordTypes)
+    {
+        return recordTypes.stream().map(RecordType::getWireName).toArray(String[]::new);
+    }
+
+    private static Set<RecordType> fromWireNames(String[] wireNames)
+    {
+        final Set<RecordType> types = EnumSet.noneOf(RecordType.class);
+        if (wireNames == null) return types;
+        for (String wireName : wireNames)
+        {
+            final RecordType type = RecordType.fromWireName(wireName);
+            if (type != null) types.add(type);
+        }
+        return types;
+    }
+
+    /**
+     * Starts this service to disconnect from the gRPC server. The service stops itself once the
+     * connection is closed.
+     *
+     * @param context The context to use to create the service intent.
      */
     public static void disconnectFromGrpcServer(Context context)
     {
@@ -253,23 +358,49 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 final String host = intent.getStringExtra(HOST_PARAMETER);
                 final int port = intent.getIntExtra(PORT_PARAMETER, -1);
                 final String deviceName = intent.getStringExtra(DEVICE_NAME_PARAMETER);
-                final boolean cellularStreamEnabled = intent.getBooleanExtra(NetworkSurveyConstants.PROPERTY_GRPC_CELLULAR_STREAM_ENABLED, false);
-                final boolean phoneStateStreamEnabled = intent.getBooleanExtra(NetworkSurveyConstants.PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED, false);
-                final boolean wifiStreamEnabled = intent.getBooleanExtra(NetworkSurveyConstants.PROPERTY_GRPC_WIFI_STREAM_ENABLED, false);
-                final boolean bluetoothStreamEnabled = intent.getBooleanExtra(NetworkSurveyConstants.PROPERTY_GRPC_BLUETOOTH_STREAM_ENABLED, false);
-                final boolean gnssStreamEnabled = intent.getBooleanExtra(NetworkSurveyConstants.PROPERTY_GRPC_GNSS_STREAM_ENABLED, false);
-                final boolean deviceStatusStreamEnabled = intent.getBooleanExtra(NetworkSurveyConstants.PROPERTY_GRPC_DEVICE_STATUS_STREAM_ENABLED, false);
+                final String[] recordTypes = intent.getStringArrayExtra(RECORD_TYPES_PARAMETER);
                 if (host == null || port == -1 || deviceName == null)
                 {
                     Timber.e("A valid hostname (%s) and port (%d) is required to connect to a gRPC server", host, port);
+                    notifyConnectionStateChange(ConnectionState.DISCONNECTED);
                 } else
                 {
                     userCanceled = false;
-                    connectToGrpcServer(host, port, deviceName, false, cellularStreamEnabled, phoneStateStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
+                    unreachableToastShown = false;
+                    lastFailure.set(null);
+                    QUEUE_HEALTH.onConnectRequested(System.currentTimeMillis());
+                    requestedStreamTypes = fromWireNames(recordTypes);
+                    this.deviceName = deviceName;
+                    final int generation = connectionGeneration.incrementAndGet();
+                    // A connection that is still open (or waiting to retry) is replaced, not leaked.
+                    uiThreadHandler.removeCallbacksAndMessages(null);
+                    if (channel != null || wirelessSurveyStub != null) disconnectFromGrpcServer(false);
+                    // Keeps trying until the server answers, like MQTT, holding the records meanwhile
+                    connectToGrpcServer(host, port, true, generation);
+                    listenForRequestedRecords();
+                }
+            } else if (ACTION_SWITCH_SERVER.equals(action))
+            {
+                switchServer(intent.getStringExtra(HOST_PARAMETER), intent.getIntExtra(PORT_PARAMETER, -1),
+                        intent.getStringExtra(DEVICE_NAME_PARAMETER));
+            } else if (ACTION_UPDATE_STREAM_TYPES.equals(action))
+            {
+                final Set<RecordType> types = fromWireNames(intent.getStringArrayExtra(RECORD_TYPES_PARAMETER));
+                requestedStreamTypes = types;
+                if (isConnected())
+                {
+                    applyStreamTypes(types);
+                } else
+                {
+                    // While connecting, hold records of the new types too, and drop the removed ones.
+                    retainOnly(types);
                 }
             } else if (ACTION_DISCONNECT.equals(action))
             {
                 userCanceled = true;
+                connectionGeneration.incrementAndGet();
+                uiThreadHandler.removeCallbacksAndMessages(null);
+                lastFailure.set(null);
                 disconnectFromGrpcServer(true);
             }
         }
@@ -280,7 +411,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public IBinder onBind(Intent intent)
     {
-        return connectionServiceBinder;
+        // Nothing binds to this service; it is driven by intents from the survey service.
+        return null;
     }
 
     @Override
@@ -293,14 +425,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             getApplicationContext().unbindService(surveyServiceConnection);
         }
 
+        uiThreadHandler.removeCallbacksAndMessages(null);
         disconnectFromGrpcServer(true);
-
-        // Clear the binder reference to prevent memory leaks
-        if (connectionServiceBinder != null)
-        {
-            connectionServiceBinder.onDestroy();
-            connectionServiceBinder = null;
-        }
 
         super.onDestroy();
     }
@@ -308,169 +434,122 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
-        if (isConnected() && deviceStatus != null)
+        if (deviceStatus != null && accepts(null, deviceStatusGrpcTask))
         {
-            if (deviceStatusGrpcTask != null && deviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                if (canQueueAccept(deviceStatusQueue))
-                {
-                    deviceStatusQueue.add(deviceStatus);
-                }
-            }
+            deviceStatusQueue.offer(DeviceNameStamper.stamp(deviceStatus, deviceName));
         }
     }
 
     @Override
     public void onPhoneState(PhoneState phoneState)
     {
-        if (isConnected() && phoneState != null && phoneStateGrpcTask != null && phoneStateGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (phoneState != null && accepts(RecordType.PHONE_STATE, phoneStateGrpcTask))
         {
-            if (canQueueAccept(phoneStateQueue))
-            {
-                phoneStateQueue.add(phoneState);
-            }
+            phoneStateQueue.offer(DeviceNameStamper.stamp(phoneState, deviceName));
         }
     }
 
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        if (isConnected() && gsmRecord != null)
+        if (gsmRecord != null && accepts(RecordType.CELLULAR, gsmRecordGrpcTask))
         {
-            if (gsmRecordGrpcTask != null && gsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                if (canQueueAccept(gsmRecordQueue))
-                {
-                    gsmRecordQueue.add(gsmRecord);
-                }
-            }
+            gsmRecordQueue.offer(DeviceNameStamper.stamp(gsmRecord, deviceName));
         }
     }
 
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-        if (isConnected() && cdmaRecord != null)
+        if (cdmaRecord != null && accepts(RecordType.CELLULAR, cdmaRecordGrpcTask))
         {
-            if (cdmaRecordGrpcTask != null && cdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                if (canQueueAccept(cdmaRecordQueue))
-                {
-                    cdmaRecordQueue.add(cdmaRecord);
-                }
-            }
+            cdmaRecordQueue.offer(DeviceNameStamper.stamp(cdmaRecord, deviceName));
         }
     }
 
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-        if (isConnected() && umtsRecord != null)
+        if (umtsRecord != null && accepts(RecordType.CELLULAR, umtsRecordGrpcTask))
         {
-            if (umtsRecordGrpcTask != null && umtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                if (canQueueAccept(umtsRecordQueue))
-                {
-                    umtsRecordQueue.add(umtsRecord);
-                }
-            }
+            umtsRecordQueue.offer(DeviceNameStamper.stamp(umtsRecord, deviceName));
         }
     }
 
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        if (isConnected() && lteRecord != null)
+        if (lteRecord != null && accepts(RecordType.CELLULAR, lteRecordGrpcTask))
         {
-            if (lteRecordGrpcTask != null && lteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                if (canQueueAccept(lteRecordQueue))
-                {
-                    lteRecordQueue.add(lteRecord);
-                }
-            }
+            lteRecordQueue.offer(DeviceNameStamper.stamp(lteRecord, deviceName));
         }
     }
 
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
-        if (isConnected() && nrRecord != null && nrRecordGrpcTask != null && nrRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (nrRecord != null && accepts(RecordType.CELLULAR, nrRecordGrpcTask))
         {
-            if (canQueueAccept(nrRecordQueue))
-            {
-                nrRecordQueue.add(nrRecord);
-            }
+            nrRecordQueue.offer(DeviceNameStamper.stamp(nrRecord, deviceName));
         }
     }
 
     @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        if (isConnected() && wifiBeaconRecordGrpcTask != null && wifiBeaconRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (wifiBeaconRecords != null && accepts(RecordType.WIFI, wifiBeaconRecordGrpcTask))
         {
-            if (canQueueAccept(wifiBeaconRecordQueue))
-            {
-                wifiBeaconRecordQueue.addAll(
-                        wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
-            }
+            wifiBeaconRecordQueue.offerAll(wifiBeaconRecords.stream()
+                    .map(wrapper -> DeviceNameStamper.stamp(wrapper.getWifiBeaconRecord(), deviceName))
+                    .collect(Collectors.toList()));
         }
     }
 
     @Override
     public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
-        if (isConnected() && bluetoothRecordGrpcTask != null && bluetoothRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (bluetoothRecord != null && accepts(RecordType.BLUETOOTH, bluetoothRecordGrpcTask))
         {
-            if (canQueueAccept(bluetoothRecordQueue))
-            {
-                bluetoothRecordQueue.add(bluetoothRecord);
-            }
+            bluetoothRecordQueue.offer(DeviceNameStamper.stamp(bluetoothRecord, deviceName));
         }
     }
 
     @Override
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
-        if (isConnected() && bluetoothRecordGrpcTask != null && bluetoothRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (bluetoothRecords != null && accepts(RecordType.BLUETOOTH, bluetoothRecordGrpcTask))
         {
-            if (canQueueAccept(bluetoothRecordQueue))
-            {
-                bluetoothRecordQueue.addAll(bluetoothRecords);
-            }
+            bluetoothRecordQueue.offerAll(bluetoothRecords.stream()
+                    .map(record -> DeviceNameStamper.stamp(record, deviceName))
+                    .collect(Collectors.toList()));
         }
     }
 
     @Override
     public void onGnssSurveyRecord(GnssRecord gnssRecord)
     {
-        if (isConnected() && gnssRecord != null && gnssRecordGrpcTask != null && gnssRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (gnssRecord != null && accepts(RecordType.GNSS, gnssRecordGrpcTask))
         {
-            if (canQueueAccept(gnssRecordQueue))
-            {
-                gnssRecordQueue.add(gnssRecord);
-            }
+            gnssRecordQueue.offer(DeviceNameStamper.stamp(gnssRecord, deviceName));
         }
     }
 
     /**
-     * Adds an {@link IConnectionStateListener} so that it will be notified of all future connection state changes.
+     * Whether a record is kept for the server. Records are kept while the connection is up and
+     * while it is connecting or reconnecting, so they are sent once it connects. A stream the server
+     * doesn't implement (its task finished while connected) takes no records.
      *
-     * @param connectionStateListener The listener to add.
+     * @param type The record type, or null for device status, which every connection carries.
+     * @param task The stream task the record would be sent on, or null if it hasn't opened yet.
      */
-    public void registerConnectionStateListener(IConnectionStateListener connectionStateListener)
+    private boolean accepts(RecordType type, GrpcTask<?, ?> task)
     {
-        grpcConnectionListeners.add(connectionStateListener);
-    }
+        if (type != null && !requestedStreamTypes.contains(type)) return false;
 
-    /**
-     * Removes an {@link IConnectionStateListener} so that it will no longer be notified of connection state changes.
-     *
-     * @param connectionStateListener The listener to remove.
-     */
-    public void unregisterConnectionStateListener(IConnectionStateListener connectionStateListener)
-    {
-        grpcConnectionListeners.remove(connectionStateListener);
+        final ConnectionState state = connectionState.get();
+        if (state == ConnectionState.CONNECTING) return true;
+        if (state != ConnectionState.CONNECTED) return false;
+        return task == null || task.getStatus() != AsyncTask.Status.FINISHED;
     }
 
     /**
@@ -485,38 +564,17 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Checks if a queue can accept more items based on the streaming queue limit.
-     * If the limit is 0 (disabled), always returns true.
-     *
-     * @param queue The queue to check.
-     * @return True if the queue can accept more items, false if it has reached the limit.
-     */
-    private boolean canQueueAccept(ConcurrentLinkedQueue<?> queue)
-    {
-        if (streamingQueueLimit <= 0) return true; // Limit disabled
-        final int currentSize = queue.size();
-        if (currentSize >= streamingQueueLimit)
-        {
-            Timber.w("gRPC streaming queue full (%d >= %d), dropping message", currentSize, streamingQueueLimit);
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * Connect to a gRPC server by establishing the {@link ManagedChannel}, and then kick off the appropriate tasks so
-     * that streaming is started.
+     * that streaming is started. The device name comes from {@link #deviceName}.
      *
      * @param host               The Host Name or IP Address of the remote gRPC server.
      * @param port               The Port Number of the gRPC server.
-     * @param deviceName         The name that represents this device to the gRPC server.
      * @param reconnectOnFailure True if the a reconnection should be performed if the connection fails, false if
      *                           only a single connection attempt should be made.
+     * @param generation         The {@link #connectionGeneration} this attempt belongs to. If a newer connect or
+     *                           disconnect request arrives before the handshake completes, the attempt is discarded.
      */
-    private void connectToGrpcServer(String host, int port, String deviceName, boolean reconnectOnFailure,
-                                     boolean cellularStreamEnabled, boolean phoneStateStreamEnabled,
-                                     boolean wifiStreamEnabled, boolean bluetoothStreamEnabled,
-                                     boolean gnssStreamEnabled, boolean deviceStatusStreamEnabled)
+    private void connectToGrpcServer(String host, int port, boolean reconnectOnFailure, int generation)
     {
         try
         {
@@ -524,13 +582,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
             this.host = host;
             portNumber = port;
-            this.deviceName = deviceName;
-            this.cellularStreamEnabled = cellularStreamEnabled;
-            this.phoneStateStreamEnabled = phoneStateStreamEnabled;
-            this.wifiStreamEnabled = wifiStreamEnabled;
-            this.bluetoothStreamEnabled = bluetoothStreamEnabled;
-            this.gnssStreamEnabled = gnssStreamEnabled;
-            this.deviceStatusStreamEnabled = deviceStatusStreamEnabled;
 
             notifyConnectionStateChange(ConnectionState.CONNECTING);
 
@@ -539,217 +590,445 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 {
                     Thread.currentThread().setName("gRPC Connection Thread");
                     final Context applicationContext = getApplicationContext();
-                    channel = AndroidChannelBuilder.forAddress(host, port)
+                    // The channel stays local to this attempt until it is accepted, so a stale attempt
+                    // can never close the channel of a newer one.
+                    final ManagedChannel attemptChannel = AndroidChannelBuilder.forAddress(host, port)
                             .usePlaintext()
                             .context(applicationContext)
                             .build();
 
-                    if (!startConnection())
+                    final boolean handshakeAccepted = startConnection(attemptChannel);
+                    if (isStaleAttempt(generation))
                     {
-                        final String errorMessage = "Unable to connect to the Network Survey Server";
-                        Timber.w(errorMessage);
-                        uiThreadHandler.post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
-                        final boolean attemptReconnection = !userCanceled && reconnectOnFailure;
-                        disconnectFromGrpcServer(!attemptReconnection);
-                        if (attemptReconnection)
-                        {
-                            uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
-                        }
+                        // The survey was stopped (or a newer connection requested) while the handshake was in
+                        // flight. Neither reporting CONNECTED nor tearing down is this attempt's job anymore.
+                        Timber.i("Discarding a gRPC connection attempt that finished after it was canceled");
+                        attemptChannel.shutdownNow();
                         return;
                     }
 
-                    notifyConnectionStateChange(ConnectionState.CONNECTED);
-
-                    // Notify NetworkSurveyService to re-evaluate MQTT backpressure mode since
-                    // gRPC is now an active output (if MQTT is paused due to backpressure, it
-                    // should switch to drop mode and resume scanning)
-                    if (networkSurveyService != null)
+                    if (!handshakeAccepted)
                     {
-                        networkSurveyService.reevaluateMqttBackpressureMode();
+                        attemptChannel.shutdownNow();
+                        Timber.w("Unable to connect to the gRPC server %s:%d", host, port);
+                        onConnectionAttemptFailed(host, port, reconnectOnFailure, generation);
+                        return;
                     }
 
-                    final String message = "Connected to the Network Survey Server!";
-                    Timber.i(message);
-                    uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
-
-                    final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
-
-                    if (cellularStreamEnabled)
+                    synchronized (this)
                     {
-                        gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
-                        gsmRecordGrpcTask.executeOnExecutor(executorService);
+                        if (isStaleAttempt(generation))
+                        {
+                            Timber.i("Discarding a gRPC connection that completed after it was canceled");
+                            attemptChannel.shutdownNow();
+                            return;
+                        }
+                        channel = attemptChannel;
+                        wirelessSurveyStub = WirelessSurveyGrpc.newStub(attemptChannel);
+                        lastFailure.set(null);
 
-                        cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
-                        cdmaRecordGrpcTask.executeOnExecutor(executorService);
-
-                        umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
-                        umtsRecordGrpcTask.executeOnExecutor(executorService);
-
-                        lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
-                        lteRecordGrpcTask.executeOnExecutor(executorService);
-
-                        nrRecordGrpcTask = new GrpcTask<>(this, nrRecordQueue, wirelessSurveyStub::streamNrSurvey);
-                        nrRecordGrpcTask.executeOnExecutor(executorService);
-
-                        networkSurveyService.registerCellularSurveyRecordListener(this);
+                        // Reported under the same lock as the stale check, so a stop cannot land in
+                        // between and have this attempt roll a Mission ID after it.
+                        notifyConnectionStateChange(ConnectionState.CONNECTED);
                     }
 
-                    if (wifiStreamEnabled)
-                    {
-                        wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
-                        wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
+                    Timber.i("Connected to the gRPC server %s:%d", host, port);
+                    uiThreadHandler.post(() -> Toast.makeText(applicationContext, R.string.grpc_connected_toast, Toast.LENGTH_SHORT).show());
 
-                        networkSurveyService.registerWifiSurveyRecordListener(this);
-                    }
-
-                    if (bluetoothStreamEnabled)
-                    {
-                        bluetoothRecordGrpcTask = new GrpcTask<>(this, bluetoothRecordQueue, wirelessSurveyStub::streamBluetoothSurvey);
-                        bluetoothRecordGrpcTask.executeOnExecutor(executorService);
-
-                        networkSurveyService.registerBluetoothSurveyRecordListener(this);
-                    }
-
-                    if (gnssStreamEnabled)
-                    {
-                        gnssRecordGrpcTask = new GrpcTask<>(this, gnssRecordQueue, wirelessSurveyStub::streamGnssSurvey);
-                        gnssRecordGrpcTask.executeOnExecutor(executorService);
-
-                        networkSurveyService.registerGnssSurveyRecordListener(this);
-                    }
-
-                    if (deviceStatusStreamEnabled)
-                    {
-                        deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
-                                statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                        deviceStatusGrpcTask.executeOnExecutor(executorService);
-
-                        networkSurveyService.registerDeviceStatusListener(this);
-                    }
-
-                    if (phoneStateStreamEnabled)
-                    {
-                        phoneStateGrpcTask = new GrpcTask<>(this, phoneStateQueue, wirelessSurveyStub::streamPhoneState);
-                        phoneStateGrpcTask.executeOnExecutor(executorService);
-
-                        networkSurveyService.registerPhoneStateListener(this);
-                    }
+                    // If the survey service is not bound yet, the bind callback finishes the setup.
+                    completeConnectionSetup();
                 } catch (Throwable t)
                 {
                     Timber.e(t, "An exception occurred in the gRPC connection thread");
-
-                    final boolean attemptReconnect = !userCanceled && reconnectOnFailure;
-
-                    disconnectFromGrpcServer(!attemptReconnect);
-
-                    if (attemptReconnect)
-                    {
-                        uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
-                    }
+                    if (isStaleAttempt(generation)) return;
+                    onConnectionAttemptFailed(host, port, reconnectOnFailure, generation);
                 }
             }).start();
         } catch (Throwable e)
         {
             Timber.e(e, "An exception occurred when trying to connect to the remote gRPC server");
+            onConnectionAttemptFailed(host, port, reconnectOnFailure, generation);
+        }
+    }
 
-            final boolean attemptReconnect = !userCanceled && reconnectOnFailure;
+    /**
+     * Records a failed connection attempt so the gRPC page can say which server could not be
+     * reached, then either schedules another attempt or turns the connection off.
+     */
+    private void onConnectionAttemptFailed(String host, int port, boolean reconnectOnFailure, int generation)
+    {
+        lastFailure.set(new ConnectionFailure(host, port, System.currentTimeMillis()));
+        if (!unreachableToastShown)
+        {
+            // Once per connect request; the Survey screen keeps showing the failure after that.
+            unreachableToastShown = true;
+            uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), R.string.grpc_unreachable_toast, Toast.LENGTH_SHORT).show());
+        }
 
-            disconnectFromGrpcServer(!attemptReconnect);
+        final boolean attemptReconnect = !userCanceled && reconnectOnFailure;
+        disconnectFromGrpcServer(!attemptReconnect);
+        if (attemptReconnect)
+        {
+            // The failure is not a state change, so tell the survey service to republish it.
+            if (networkSurveyService != null) networkSurveyService.updateServiceNotification();
+            uiThreadHandler.postDelayed(() -> reconnectToGrpcServer(generation), RECONNECTION_ATTEMPT_BACKOFF_TIME);
+        }
+    }
 
-            if (attemptReconnect)
+    /**
+     * Moves the running connection to a new server without reporting a disconnect, so the survey
+     * session and the Mission ID continue. A new device name alone is applied in place.
+     */
+    private void switchServer(String newHost, int newPort, String newDeviceName)
+    {
+        final ConnectionState state = connectionState.get();
+        if (userCanceled || newHost == null || newPort == -1
+                || state == ConnectionState.DISCONNECTED || state == ConnectionState.DISCONNECTING)
+        {
+            Timber.i("Ignoring a gRPC server switch because no connection is running");
+            return;
+        }
+
+        deviceName = newDeviceName == null ? "" : newDeviceName;
+        if (newHost.equals(host) && Integer.valueOf(newPort).equals(portNumber)) return;
+
+        Timber.i("Switching the gRPC connection to %s:%d", newHost, newPort);
+        final int generation = connectionGeneration.incrementAndGet();
+        // Retries scheduled for the old server would otherwise connect to it again.
+        uiThreadHandler.removeCallbacksAndMessages(null);
+        lastFailure.set(null);
+        unreachableToastShown = false;
+        disconnectFromGrpcServer(false);
+        connectToGrpcServer(newHost, newPort, true, generation);
+    }
+
+    /**
+     * @return True if a newer connect or disconnect request has arrived since the attempt with
+     * {@code generation} started, or the user canceled the connection.
+     */
+    private boolean isStaleAttempt(int generation)
+    {
+        return userCanceled || generation != connectionGeneration.get();
+    }
+
+    /**
+     * Finishes setting up a connection once both the handshake has succeeded and the survey service
+     * is bound: reports the connection to the survey service (which starts the survey session),
+     * opens the device status stream and the record streams. Safe to call twice; it runs from the
+     * connection thread and again from the bind callback, whichever comes last does the work.
+     */
+    private synchronized void completeConnectionSetup()
+    {
+        if (!isConnected() || wirelessSurveyStub == null || networkSurveyService == null || connectionSetupComplete)
+        {
+            return;
+        }
+        connectionSetupComplete = true;
+
+        // The CONNECTED notification may have run before the survey service was bound, so it is
+        // reported here as well; a second report is harmless (the Mission ID only rolls once).
+        networkSurveyService.onGrpcConnectionStateChanged(true);
+        networkSurveyService.updateServiceNotification();
+
+        // gRPC is now an active output, so MQTT backpressure may switch from pausing to dropping.
+        networkSurveyService.reevaluateMqttBackpressureMode();
+
+        startDeviceStatusStream();
+        applyStreamTypes(requestedStreamTypes);
+    }
+
+    /**
+     * Opens a gRPC stream for every record type in [types] that does not have one, closes the stream
+     * of every type no longer in it, and registers the record listeners to match.
+     *
+     * @param types The record types to stream from now on.
+     */
+    private synchronized void applyStreamTypes(Set<RecordType> types)
+    {
+        if (wirelessSurveyStub == null || networkSurveyService == null)
+        {
+            Timber.w("Can't apply the gRPC stream types because the connection is not ready");
+            return;
+        }
+
+        for (RecordType type : RecordType.values())
+        {
+            final boolean wanted = types.contains(type);
+            final boolean active = activeStreamTypes.contains(type);
+            if (wanted && !active)
             {
-                uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
+                if (startStream(type)) activeStreamTypes.add(type);
+            } else if (!wanted && active)
+            {
+                stopStream(type);
+                activeStreamTypes.remove(type);
+            }
+        }
+        syncListeners(types);
+
+        Timber.i("gRPC is streaming %s", activeStreamTypes);
+    }
+
+    /**
+     * Registers this service as the record listener for every streamable type in [types] and
+     * unregisters it from the others. The listeners stay registered while the connection
+     * reconnects, so the survey keeps scanning in between.
+     */
+    private synchronized void syncListeners(Set<RecordType> types)
+    {
+        if (networkSurveyService == null) return;
+
+        for (RecordType type : RecordType.values())
+        {
+            final boolean wanted = types.contains(type);
+            final boolean registered = registeredListenerTypes.contains(type);
+            if (wanted && !registered)
+            {
+                if (registerListener(type)) registeredListenerTypes.add(type);
+            } else if (!wanted && registered)
+            {
+                unregisterListener(type);
+                registeredListenerTypes.remove(type);
             }
         }
     }
 
     /**
-     * Disconnect from the gRPC server if it is connected.  If it is not connected, then do nothing.
+     * While the connection is down, stops holding records of the types not in [types] (their
+     * queued records are thrown away, as they would be if the stream closed) and starts listening
+     * for the new ones. Streams open on the next connect.
+     */
+    private synchronized void retainOnly(Set<RecordType> types)
+    {
+        for (RecordType type : RecordType.values())
+        {
+            if (!types.contains(type)) stopStream(type);
+        }
+        syncListeners(types);
+    }
+
+    /**
+     * Starts listening for the requested records as soon as a connection is requested, so records
+     * produced while it connects are held and sent once it does. Without the survey service bound
+     * yet, the bind callback does this.
+     */
+    private synchronized void listenForRequestedRecords()
+    {
+        final ConnectionState state = connectionState.get();
+        if (networkSurveyService == null || state == ConnectionState.DISCONNECTED || state == ConnectionState.DISCONNECTING)
+        {
+            return;
+        }
+        networkSurveyService.registerDeviceStatusListener(this);
+        syncListeners(requestedStreamTypes);
+    }
+
+    /**
+     * Opens the gRPC streams for one record type.
      *
-     * @param stopService True if the service should be stopped after disconnecting from the gRCP server, false otherwise.
+     * @return True if the record type is supported over gRPC and its stream was opened.
+     */
+    private boolean startStream(RecordType type)
+    {
+        final WirelessSurveyGrpc.WirelessSurveyStub stub = wirelessSurveyStub;
+        switch (type)
+        {
+            case CELLULAR:
+                gsmRecordGrpcTask = startTask(gsmRecordQueue, stub::streamGsmSurvey);
+                cdmaRecordGrpcTask = startTask(cdmaRecordQueue, stub::streamCdmaSurvey);
+                umtsRecordGrpcTask = startTask(umtsRecordQueue, stub::streamUmtsSurvey);
+                lteRecordGrpcTask = startTask(lteRecordQueue, stub::streamLteSurvey);
+                nrRecordGrpcTask = startTask(nrRecordQueue, stub::streamNrSurvey);
+                return true;
+            case PHONE_STATE:
+                phoneStateGrpcTask = startTask(phoneStateQueue, stub::streamPhoneState);
+                return true;
+            case WIFI:
+                wifiBeaconRecordGrpcTask = startTask(wifiBeaconRecordQueue, stub::streamWifiBeaconSurvey);
+                return true;
+            case BLUETOOTH:
+                bluetoothRecordGrpcTask = startTask(bluetoothRecordQueue, stub::streamBluetoothSurvey);
+                return true;
+            case GNSS:
+                gnssRecordGrpcTask = startTask(gnssRecordQueue, stub::streamGnssSurvey);
+                return true;
+            default:
+                // CDR is files only.
+                return false;
+        }
+    }
+
+    /** Closes the gRPC streams for one record type. */
+    private void stopStream(RecordType type)
+    {
+        switch (type)
+        {
+            case CELLULAR:
+                gsmRecordGrpcTask = cancelTask(gsmRecordGrpcTask, gsmRecordQueue, true);
+                cdmaRecordGrpcTask = cancelTask(cdmaRecordGrpcTask, cdmaRecordQueue, true);
+                umtsRecordGrpcTask = cancelTask(umtsRecordGrpcTask, umtsRecordQueue, true);
+                lteRecordGrpcTask = cancelTask(lteRecordGrpcTask, lteRecordQueue, true);
+                nrRecordGrpcTask = cancelTask(nrRecordGrpcTask, nrRecordQueue, true);
+                break;
+            case PHONE_STATE:
+                phoneStateGrpcTask = cancelTask(phoneStateGrpcTask, phoneStateQueue, true);
+                break;
+            case WIFI:
+                wifiBeaconRecordGrpcTask = cancelTask(wifiBeaconRecordGrpcTask, wifiBeaconRecordQueue, true);
+                break;
+            case BLUETOOTH:
+                bluetoothRecordGrpcTask = cancelTask(bluetoothRecordGrpcTask, bluetoothRecordQueue, true);
+                break;
+            case GNSS:
+                gnssRecordGrpcTask = cancelTask(gnssRecordGrpcTask, gnssRecordQueue, true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Registers this service as the listener for one record type.
+     *
+     * @return True if the record type is streamed over gRPC.
+     */
+    private boolean registerListener(RecordType type)
+    {
+        switch (type)
+        {
+            case CELLULAR:
+                networkSurveyService.registerCellularSurveyRecordListener(this);
+                return true;
+            case PHONE_STATE:
+                networkSurveyService.registerPhoneStateListener(this);
+                return true;
+            case WIFI:
+                networkSurveyService.registerWifiSurveyRecordListener(this);
+                return true;
+            case BLUETOOTH:
+                networkSurveyService.registerBluetoothSurveyRecordListener(this);
+                return true;
+            case GNSS:
+                networkSurveyService.registerGnssSurveyRecordListener(this);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /** Unregisters this service as the listener for one record type. */
+    private void unregisterListener(RecordType type)
+    {
+        switch (type)
+        {
+            case CELLULAR:
+                networkSurveyService.unregisterCellularSurveyRecordListener(this);
+                break;
+            case PHONE_STATE:
+                networkSurveyService.unregisterPhoneStateListener(this);
+                break;
+            case WIFI:
+                networkSurveyService.unregisterWifiSurveyRecordListener(this);
+                break;
+            case BLUETOOTH:
+                networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
+                break;
+            case GNSS:
+                networkSurveyService.unregisterGnssSurveyRecordListener(this);
+                break;
+            default:
+                break;
+        }
+    }
+
+    /** Opens the device status stream, which every gRPC connection carries. */
+    private void startDeviceStatusStream()
+    {
+        if (deviceStatusGrpcTask == null)
+        {
+            final ManagedChannel connectedChannel = channel;
+            deviceStatusGrpcTask = startTask(deviceStatusQueue,
+                    statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(connectedChannel).statusUpdate(statusUpdateReplyStreamObserver));
+        }
+        if (networkSurveyService != null) networkSurveyService.registerDeviceStatusListener(this);
+    }
+
+    /** Starts a stream task that belongs to the current connection generation. */
+    private <MessageType, Reply> GrpcTask<MessageType, Reply> startTask(StreamRecordQueue<MessageType> queue,
+                                                                        Function<StreamObserver<Reply>, StreamObserver<MessageType>> call)
+    {
+        final GrpcTask<MessageType, Reply> task = new GrpcTask<>(this, queue, call, connectionGeneration.get());
+        task.executeOnExecutor(executorService);
+        return task;
+    }
+
+    /**
+     * Cancels a stream task, and clears its queue unless the connection is coming back.
+     *
+     * @param clearQueue False to keep the queued records for the reconnected stream.
+     * @return Always null, so the caller can clear its task field in one statement.
+     */
+    private static <T> T cancelTask(GrpcTask<?, ?> task, StreamRecordQueue<?> queue, boolean clearQueue)
+    {
+        if (task != null) task.cancel(true);
+        if (clearQueue) queue.clear();
+        return null;
+    }
+
+    /**
+     * Closes the connection to the gRPC server. A reconnect ({@code stopService} false) keeps the
+     * record listeners registered and the queued records, so the survey keeps scanning while the
+     * connection comes back and nothing recorded in between is lost.
+     *
+     * @param stopService True if the connection is turned off and the service stopped, false if
+     *                    another connection attempt follows.
      */
     private void disconnectFromGrpcServer(boolean stopService)
     {
-        if (stopService) notifyConnectionStateChange(ConnectionState.DISCONNECTING);
-
-        if (networkSurveyService != null)
+        if (stopService)
         {
-            networkSurveyService.unregisterDeviceStatusListener(this);
-            networkSurveyService.unregisterPhoneStateListener(this);
-            networkSurveyService.unregisterCellularSurveyRecordListener(this);
-            networkSurveyService.unregisterWifiSurveyRecordListener(this);
-            networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
-            networkSurveyService.unregisterGnssSurveyRecordListener(this);
-        } else
-        {
-            Timber.w("NetworkSurveyService is null when disconnecting from the gRPC server, cannot unregister listeners");
+            notifyConnectionStateChange(ConnectionState.DISCONNECTING);
+            unregisterAllListeners();
         }
 
-        if (deviceStatusGrpcTask != null)
-        {
-            deviceStatusGrpcTask.cancel(true);
-            deviceStatusGrpcTask = null;
-        }
-        if (phoneStateGrpcTask != null)
-        {
-            phoneStateGrpcTask.cancel(true);
-            phoneStateGrpcTask = null;
-        }
-        if (gsmRecordGrpcTask != null)
-        {
-            gsmRecordGrpcTask.cancel(true);
-            gsmRecordGrpcTask = null;
-        }
-        if (cdmaRecordGrpcTask != null)
-        {
-            cdmaRecordGrpcTask.cancel(true);
-            cdmaRecordGrpcTask = null;
-        }
-        if (umtsRecordGrpcTask != null)
-        {
-            umtsRecordGrpcTask.cancel(true);
-            umtsRecordGrpcTask = null;
-        }
-        if (lteRecordGrpcTask != null)
-        {
-            lteRecordGrpcTask.cancel(true);
-            lteRecordGrpcTask = null;
-        }
-        if (nrRecordGrpcTask != null)
-        {
-            nrRecordGrpcTask.cancel(true);
-            nrRecordGrpcTask = null;
-        }
-        if (wifiBeaconRecordGrpcTask != null)
-        {
-            wifiBeaconRecordGrpcTask.cancel(true);
-            wifiBeaconRecordGrpcTask = null;
-        }
-        if (bluetoothRecordGrpcTask != null)
-        {
-            bluetoothRecordGrpcTask.cancel(true);
-            bluetoothRecordGrpcTask = null;
-        }
-        if (gnssRecordGrpcTask != null)
-        {
-            gnssRecordGrpcTask.cancel(true);
-            gnssRecordGrpcTask = null;
-        }
+        deviceStatusGrpcTask = cancelTask(deviceStatusGrpcTask, deviceStatusQueue, stopService);
+        phoneStateGrpcTask = cancelTask(phoneStateGrpcTask, phoneStateQueue, stopService);
+        gsmRecordGrpcTask = cancelTask(gsmRecordGrpcTask, gsmRecordQueue, stopService);
+        cdmaRecordGrpcTask = cancelTask(cdmaRecordGrpcTask, cdmaRecordQueue, stopService);
+        umtsRecordGrpcTask = cancelTask(umtsRecordGrpcTask, umtsRecordQueue, stopService);
+        lteRecordGrpcTask = cancelTask(lteRecordGrpcTask, lteRecordQueue, stopService);
+        nrRecordGrpcTask = cancelTask(nrRecordGrpcTask, nrRecordQueue, stopService);
+        wifiBeaconRecordGrpcTask = cancelTask(wifiBeaconRecordGrpcTask, wifiBeaconRecordQueue, stopService);
+        bluetoothRecordGrpcTask = cancelTask(bluetoothRecordGrpcTask, bluetoothRecordQueue, stopService);
+        gnssRecordGrpcTask = cancelTask(gnssRecordGrpcTask, gnssRecordQueue, stopService);
 
-        deviceStatusQueue.clear();
-        phoneStateQueue.clear();
-        gsmRecordQueue.clear();
-        cdmaRecordQueue.clear();
-        umtsRecordQueue.clear();
-        lteRecordQueue.clear();
-        nrRecordQueue.clear();
-        wifiBeaconRecordQueue.clear();
-        bluetoothRecordQueue.clear();
-        gnssRecordQueue.clear();
+        synchronized (this)
+        {
+            activeStreamTypes.clear();
+            wirelessSurveyStub = null;
+            connectionSetupComplete = false;
+        }
 
         shutdownChannel(!stopService);
 
         if (stopService) stopService();
+    }
+
+    /** Unregisters this service from every record and device status stream of the survey service. */
+    private synchronized void unregisterAllListeners()
+    {
+        registeredListenerTypes.clear();
+        if (networkSurveyService == null)
+        {
+            Timber.w("NetworkSurveyService is null when disconnecting from the gRPC server, cannot unregister listeners");
+            return;
+        }
+        networkSurveyService.unregisterDeviceStatusListener(this);
+        networkSurveyService.unregisterPhoneStateListener(this);
+        networkSurveyService.unregisterCellularSurveyRecordListener(this);
+        networkSurveyService.unregisterWifiSurveyRecordListener(this);
+        networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
+        networkSurveyService.unregisterGnssSurveyRecordListener(this);
     }
 
     /**
@@ -758,12 +1037,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      *
      * @return True if the handshake is successful, false otherwise.
      */
-    private boolean startConnection()
+    private boolean startConnection(ManagedChannel attemptChannel)
     {
         try
         {
             final ConnectionHandshakeGrpc.ConnectionHandshakeBlockingStub blockingStub = ConnectionHandshakeGrpc
-                    .newBlockingStub(channel).withDeadlineAfter(10, TimeUnit.SECONDS);
+                    .newBlockingStub(attemptChannel).withDeadlineAfter(10, TimeUnit.SECONDS);
 
             final ConnectionReply connectionReply = blockingStub.startConnection(ConnectionRequest.newBuilder().build());
 
@@ -790,19 +1069,28 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Used to reconnect to the gRPC server using the last known connection settings.
+     * Reconnects to the gRPC server using the last known connection settings, unless a newer
+     * connect, switch or disconnect request replaced the connection that asked for it.
+     *
+     * @param generation The {@link #connectionGeneration} of the connection that failed.
      */
-    private void reconnectToGrpcServer()
+    private void reconnectToGrpcServer(int generation)
     {
+        if (isStaleAttempt(generation))
+        {
+            Timber.i("Skipping a gRPC reconnect for a connection that was replaced or turned off");
+            return;
+        }
         if (host == null || portNumber == null)
         {
             Timber.e("Can't reconnect to the last gRPC server because the host or port is null");
+            return;
         }
 
         Timber.i("Reconnecting to the gRPC server");
 
-        connectToGrpcServer(host, portNumber, deviceName, true, cellularStreamEnabled,
-                phoneStateStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
+        // A new generation, so the other streams of the same failed connection do not reconnect too.
+        connectToGrpcServer(host, portNumber, true, connectionGeneration.incrementAndGet());
     }
 
     /**
@@ -836,15 +1124,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     private void stopService()
     {
-        if (networkSurveyService != null)
-        {
-            networkSurveyService.unregisterDeviceStatusListener(this);
-            networkSurveyService.unregisterPhoneStateListener(this);
-            networkSurveyService.unregisterCellularSurveyRecordListener(this);
-            networkSurveyService.unregisterWifiSurveyRecordListener(this);
-            networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
-            networkSurveyService.unregisterGnssSurveyRecordListener(this);
-        }
+        unregisterAllListeners();
 
         Timber.i("About to call stopSelf for the GrpcConnectionService");
 
@@ -860,7 +1140,14 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         Timber.i("gRPC Connection State Changed.  oldConnectionState=%s, newConnectionState=%s", connectionState.get(), newConnectionState);
 
-        connectionState.set(newConnectionState);
+        final ConnectionState oldConnectionState = connectionState.getAndSet(newConnectionState);
+        if (newConnectionState == ConnectionState.CONNECTING && oldConnectionState != ConnectionState.CONNECTING)
+        {
+            QUEUE_HEALTH.onConnecting(System.currentTimeMillis());
+        } else if (newConnectionState == ConnectionState.CONNECTED)
+        {
+            QUEUE_HEALTH.onConnected();
+        }
 
         // gRPC streaming is a mission relevant survey. Signal the survey session so the Mission ID
         // rolls when the connection starts and the session ends when it really disconnects. The
@@ -880,44 +1167,22 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         // The connection state is shown in the survey notification owned by the NetworkSurveyService.
         if (networkSurveyService != null) networkSurveyService.updateServiceNotification();
-
-        for (IConnectionStateListener listener : grpcConnectionListeners)
-        {
-            try
-            {
-                listener.onConnectionStateChange(newConnectionState);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a gRPC Connection State Listener because of an exception");
-            }
-        }
     }
 
     /**
-     * Class used for the client Binder.  Because we know this service always runs in the same process as its clients,
-     * we don't need to deal with IPC.
-     * <p>
-     * This is a static inner class to prevent memory leaks. The binder can be retained by the Android system
-     * after the service is destroyed, and if it holds an implicit reference to the outer class (non-static),
-     * it will prevent the service from being garbage collected.
+     * A connection attempt that failed: which server, and when.
      */
-    public static class ConnectionServiceBinder extends Binder
+    public static final class ConnectionFailure
     {
-        private GrpcConnectionService service;
+        public final String host;
+        public final int port;
+        public final long timeMs;
 
-        public ConnectionServiceBinder(GrpcConnectionService service)
+        public ConnectionFailure(String host, int port, long timeMs)
         {
-            this.service = service;
-        }
-
-        public GrpcConnectionService getService()
-        {
-            return service;
-        }
-
-        public void onDestroy()
-        {
-            service = null;
+            this.host = host;
+            this.port = port;
+            this.timeMs = timeMs;
         }
     }
 
@@ -931,17 +1196,21 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private class GrpcTask<MessageType, Reply> extends AsyncTask<Void, Void, Boolean>
     {
         private final WeakReference<GrpcConnectionService> serviceWeakReference;
-        private final ConcurrentLinkedQueue<MessageType> messageQueue;
+        private final StreamRecordQueue<MessageType> messageQueue;
         private final Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall;
+
+        /** The connection this stream belongs to; a stream of a replaced connection never reconnects. */
+        private final int generation;
 
         private Throwable failed;
 
-        private GrpcTask(GrpcConnectionService serviceWeakReference, ConcurrentLinkedQueue<MessageType> queue,
-                         Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall)
+        private GrpcTask(GrpcConnectionService serviceWeakReference, StreamRecordQueue<MessageType> queue,
+                         Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall, int generation)
         {
             this.serviceWeakReference = new WeakReference<>(serviceWeakReference);
             messageQueue = queue;
             this.asyncStubCall = asyncStubCall;
+            this.generation = generation;
         }
 
         @Override
@@ -1019,6 +1288,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 // Mark the end of the stream
                 outgoingMessageStream.onCompleted();
 
+                // A canceled stream belongs to a connection being replaced or turned off; waiting up
+                // to a minute for its server here would hold a pool thread the new streams need.
+                if (isCancelled()) return false;
+
                 // Receiving happens asynchronously
                 if (!finishLatch.await(1, TimeUnit.MINUTES))
                 {
@@ -1033,8 +1306,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 return false;
             } catch (Throwable e)
             {
+                // Not "unimplemented": reconnect, so this record type's stream doesn't end silently
+                // while the connection still reports CONNECTED.
                 Timber.e(e, "The connection to the remote gRPC server closed with an exception");
-                return true;
+                return false;
             }
         }
 
@@ -1050,12 +1325,19 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             if (unimplemented) return;
 
             GrpcConnectionService grpcConnectionService = serviceWeakReference.get();
-            if (grpcConnectionService != null)
-            {
-                grpcConnectionService.disconnectFromGrpcServer(userCanceled);
+            if (grpcConnectionService == null) return;
 
-                if (!userCanceled) grpcConnectionService.reconnectToGrpcServer();
+            // The connection was switched, reconnected or turned off after this stream started, so
+            // tearing down now would close the newer connection's streams.
+            if (generation != grpcConnectionService.connectionGeneration.get())
+            {
+                Timber.i("Ignoring the end of a gRPC stream that belonged to a replaced connection");
+                return;
             }
+
+            grpcConnectionService.disconnectFromGrpcServer(userCanceled);
+
+            if (!userCanceled) grpcConnectionService.reconnectToGrpcServer(generation);
         }
     }
 
@@ -1070,6 +1352,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             Timber.i("%s service connected", name);
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = (NetworkSurveyService) binder.getService();
+
+            listenForRequestedRecords();
+
+            // The handshake can finish before this bind does (a cold start on a fast network), in
+            // which case the connection setup was deferred until now.
+            completeConnectionSetup();
         }
 
         @Override

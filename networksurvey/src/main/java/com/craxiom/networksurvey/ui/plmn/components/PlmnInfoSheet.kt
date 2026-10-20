@@ -19,18 +19,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.HelpItem
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Educational bottom sheet for the PLMN lookup and details screens.
  *
  * Explains the terms that show up in result rows and on the details page: PLMN, MCC, MNC,
- * the Brand vs Operator distinction, and TADIG. Uses a local [PlmnHelpSection] (instead of
- * the shared [com.craxiom.networksurvey.ui.common.HelpSection]) because that helper emits
- * its title + spacer + content as sibling composables; combined with the outer Column's
- * `Arrangement.spacedBy(...)`, the title ends up further from its own content than from the
- * previous section. [PlmnHelpSection] wraps each title+content pair in its own Column so the
- * outer arrangement only governs inter-section spacing.
+ * the Brand vs Operator distinction, and TADIG. [PlmnHelpSection] wraps each title+content
+ * pair in its own Column so the outer Column's `Arrangement.spacedBy(...)` only governs
+ * inter-section spacing.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,7 +100,7 @@ private fun PlmnHelpSection(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = WifiTokens.SsidAccent,
+            color = MaterialTheme.colorScheme.primary,
         )
         content()
     }

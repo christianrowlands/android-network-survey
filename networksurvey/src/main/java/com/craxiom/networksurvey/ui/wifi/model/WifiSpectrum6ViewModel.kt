@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.ui.wifi.model
 
 import androidx.lifecycle.viewModelScope
-import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.craxiom.networksurvey.util.WifiUtils.START_OF_6_GHZ_RANGE
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import kotlinx.coroutines.launch

@@ -231,15 +231,6 @@ public class WifiUtils
         };
     }
 
-    private static int getF0IndexFor320MHz(int channelNumber)
-    {
-        return switch (channelNumber)
-        {
-            case 1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61 -> 31;
-            default -> -1;
-        };
-    }
-
     private static int get6GhzCenterChannelFor40Mhz(int channelNumber)
     {
         return switch (channelNumber)

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The only files LogFileProvider shares: the CSV log files under Downloads/NetworkSurveyData. -->
+<paths>
+    <external-path
+        name="log_files"
+        path="Download/NetworkSurveyData/" />
+</paths>

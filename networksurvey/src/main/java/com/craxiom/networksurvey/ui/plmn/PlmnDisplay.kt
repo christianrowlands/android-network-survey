@@ -63,12 +63,12 @@ fun sortGroups(groups: List<PlmnGroup>, key: PlmnSortKey): List<PlmnGroup> = whe
         val countryComparator: Comparator<PlmnGroup> =
             compareBy(nullsLast<String>(), { group: PlmnGroup -> group.country })
         groups.sortedWith(
-            countryComparator.thenBy { it.records.first().displayName().lowercase() }
+            countryComparator.thenBy(nullsLast()) { it.records.first().displayName()?.lowercase() }
         )
     }
 
     PlmnSortKey.Provider -> groups.sortedWith(
-        compareBy { it.records.first().displayName().lowercase() }
+        compareBy(nullsLast()) { it.records.first().displayName()?.lowercase() }
     )
 }
 

@@ -13,9 +13,6 @@ import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.view.View;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -47,48 +44,6 @@ public class NsUtils
     }
 
     /**
-     * Converts an RFC3339 formatted timestamp to Unix Epoch time. More specifically, it converts a date time string in
-     * the {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} format to Unix Epoch time.
-     *
-     * @param dateTimeString The date time string in {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} format.
-     * @return The Unix Epoch time in milliseconds.
-     * @since 0.2.1
-     */
-    public static long getEpochFromRfc3339(String dateTimeString)
-    {
-        try
-        {
-            return ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant().toEpochMilli();
-        } catch (Exception e)
-        {
-            Timber.e(e, "Could not convert the String date/time to Epoch");
-            return 0;
-        }
-    }
-
-    /**
-     * Returns a human readable string representing how long ago the provided time difference was.
-     */
-    public static String getTimeAgo(long timeDiff)
-    {
-        String timeAgo;
-        if (timeDiff < 60000)
-        {
-            timeAgo = "Just now";
-        } else if (timeDiff < 3600000)
-        {
-            timeAgo = (timeDiff / 60000) + " min ago";
-        } else if (timeDiff < 86400000)
-        {
-            timeAgo = (timeDiff / 3600000) + " hours ago";
-        } else
-        {
-            timeAgo = (timeDiff / 86400000) + " days ago";
-        }
-        return timeAgo;
-    }
-
-    /**
      * Copies the provided location string to the clipboard.
      *
      * @param location the location string to copy to the clipboard.
@@ -100,37 +55,6 @@ public class NsUtils
         {
             ClipData clip = ClipData.newPlainText(Application.get().getString(R.string.pref_file_location_output_title), location);
             clipboard.setPrimaryClip(clip);
-        }
-    }
-
-    /**
-     * Wires up long-press-to-copy on the provided views. When long-pressed, copies the
-     * TextView's text to the clipboard and shows a toast on pre-Android 12 devices.
-     *
-     * @param views the views to attach long-press-to-copy listeners to.
-     */
-    public static void setupCopyOnLongPress(View... views)
-    {
-        for (View view : views)
-        {
-            view.setOnLongClickListener(v -> {
-                if (v instanceof TextView)
-                {
-                    String text = ((TextView) v).getText().toString();
-                    if (!text.isEmpty())
-                    {
-                        copyToClipboard(text);
-                        // Android 12+ shows a system clipboard toast automatically
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
-                        {
-                            Toast.makeText(Application.get(),
-                                    Application.get().getString(R.string.value_copied_to_clipboard),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }
-                return true;
-            });
         }
     }
 
@@ -195,58 +119,6 @@ public class NsUtils
     }
 
     /**
-     * Removes leading and trailing characters ("[" and "]") from the provided input, respectively.
-     * If the input size is less than 2, then an empty string is returned
-     *
-     * @param input The input string to trim
-     * @return the input string with leading and trailing characters ("[" and "]") from the provided input, respectively
-     */
-    public static String trimEnds(String input)
-    {
-        if (input.length() < 2)
-        {
-            return "";
-        }
-        return input.substring(1, input.length() - 1);
-    }
-
-    /**
-     * Replaces the term "NAVSTAR" with "GPS" for the provided input
-     *
-     * @param input
-     * @return the input string with the term "NAVSTAR" replaced with "GPS"
-     */
-    public static String replaceNavstar(String input)
-    {
-        return input.replace("NAVSTAR", "GPS");
-    }
-
-    /**
-     * Serializes the provided two-dimensional array of doubles to a String
-     * (for example, for logging GnssAntennaInfo to CSV files). Example:
-     * [11.22 33.44 55.66 77.88; 10.2 30.4 50.6 70.8; 12.2 34.4 56.6 78.8]
-     *
-     * @param data an array to be serialized
-     * @return the serialized version of the provided array as a String
-     */
-    public static String serialize(double[][] data)
-    {
-        StringBuilder builder = new StringBuilder(70); // Based on Pixel 5 GnssAntennaInfo
-        builder.append("[");
-        for (double[] i : data)
-        {
-            for (double j : i)
-            {
-                builder.append(j);
-                builder.append(" ");
-            }
-            builder.replace(builder.length() - 1, builder.length(), "; ");
-        }
-        builder.replace(builder.length() - 2, builder.length(), "]");
-        return builder.toString();
-    }
-
-    /**
      * @return The NS App version name (with any flavor suffix), or an empty string if it could not be determined.
      */
     public static String getAppVersionName(Context context)
@@ -291,6 +163,19 @@ public class NsUtils
             }
         }
         return false;
+    }
+
+    /**
+     * @return True if the phone is on a network that isn't metered (typically Wi-Fi), the kind an
+     * upload limited to Wi-Fi waits for.
+     */
+    public static boolean isOnUnmeteredNetwork(Context context)
+    {
+        if (!hasPermission(context, Manifest.permission.ACCESS_NETWORK_STATE)) return false;
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.getActiveNetwork());
+        return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
     }
 
     public static boolean hasPermission(Context context, String permission)

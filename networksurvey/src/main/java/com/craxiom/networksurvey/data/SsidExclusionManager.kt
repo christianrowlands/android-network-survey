@@ -117,15 +117,6 @@ class SsidExclusionManager @Inject constructor(
         return getExcludedSsids().size >= MAX_EXCLUSION_LIST_SIZE
     }
 
-    /**
-     * Gets the current number of excluded SSIDs.
-     *
-     * @return The count of excluded SSIDs
-     */
-    fun getExcludedCount(): Int {
-        return getExcludedSsids().size
-    }
-
     private fun saveExcludedSsids(ssids: Set<String>) {
         sharedPreferences.edit {
             putStringSet(KEY_EXCLUDED_SSIDS, ssids)

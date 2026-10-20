@@ -22,13 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.SpectrumGroup
-import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /**
  * Explains the two things about this screen that are not self evident: what the colours mean, and
@@ -53,7 +50,7 @@ fun BandHelpSheet(onDismiss: () -> Unit) {
             Text(
                 text = stringResource(R.string.band_help_title),
                 style = MaterialTheme.typography.titleLarge,
-                color = WifiTokens.Ink,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             SpectrumGroup.entries.forEach { group ->
@@ -67,8 +64,8 @@ fun BandHelpSheet(onDismiss: () -> Unit) {
                     )
                     Text(
                         text = BandFormatting.spectrumLabel(group),
-                        style = TextStyle(fontSize = 13.sp),
-                        color = WifiTokens.Ink,
+                        style = NsTheme.textStyles.compact,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(start = 10.dp),
                     )
                 }
@@ -84,7 +81,7 @@ fun BandHelpSheet(onDismiss: () -> Unit) {
 private fun Paragraph(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Normal),
-        color = WifiTokens.InkMuted,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

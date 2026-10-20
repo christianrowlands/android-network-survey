@@ -20,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsHeroStatusCard
-import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Row composables for the SSID Exclusion List screen, extracted to keep [SsidExclusionListScreen]
@@ -63,7 +62,7 @@ internal fun SsidExclusionRow(ssid: String, onDelete: () -> Unit) {
             Text(
                 text = ssid,
                 style = MaterialTheme.typography.titleMedium,
-                color = WifiTokens.SsidAccent,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onDelete) {

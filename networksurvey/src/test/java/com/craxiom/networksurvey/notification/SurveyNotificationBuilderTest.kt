@@ -3,8 +3,13 @@ package com.craxiom.networksurvey.notification
 import android.app.Notification
 import android.content.Context
 import androidx.core.app.NotificationCompat
-import org.robolectric.RuntimeEnvironment
 import com.craxiom.mqttlibrary.connection.ConnectionState
+import com.craxiom.networksurvey.survey.engine.SkipReason
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.LeftOutItem
+import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
 /**
  * One test per row of the survey notification state table: title, collapsed text, expanded text,
@@ -43,7 +49,7 @@ class SurveyNotificationBuilderTest {
     fun idleService_showsSurveyInactiveWithNoTextOrChronometer() {
         val n = builder.build(SurveyNotificationState())
 
-        assertEquals("Survey Inactive", title(n))
+        assertEquals("Ready", title(n))
         assertNull(text(n))
         assertNull(bigText(n))
         assertFalse(chronometer(n))
@@ -59,12 +65,28 @@ class SurveyNotificationBuilderTest {
             )
         )
 
-        assertEquals("Survey Active", title(n))
+        assertEquals("Recording", title(n))
         assertEquals("Log files", text(n))
-        assertEquals("Log files\nScanning: Cellular, Phone State, Wi-Fi, GNSS", bigText(n))
+        assertEquals("Log files\nScanning: Cellular, Phone state, Wi-Fi, GNSS", bigText(n))
         assertTrue(chronometer(n))
         assertEquals(sessionStart, n.`when`)
         assertEquals(R.drawable.ic_notification_survey, icon(n))
+    }
+
+    @Test
+    fun leftOutItems_getALineEach() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true, scanningCellular = true, sessionStartMs = sessionStart,
+                leftOut = listOf(
+                    LeftOutItem.Type(RecordType.BLUETOOTH, SkipReason.RADIO_OFF),
+                    LeftOutItem.Dest(Destination.MQTT, SkipReason.NOT_CONFIGURED),
+                ),
+            )
+        )
+        val expanded = bigText(n)!!
+        assertTrue(expanded, expanded.contains("Bluetooth is off, so Bluetooth isn't being recorded"))
+        assertTrue(expanded, expanded.contains("MQTT stream isn't set up"))
     }
 
     @Test
@@ -73,21 +95,47 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(mqttState = ConnectionState.CONNECTED, scanningCellular = true, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Survey Active", title(n))
-        assertEquals("MQTT", text(n))
-        assertEquals("MQTT\nScanning: Cellular", bigText(n))
+        assertEquals("Recording", title(n))
+        assertEquals("MQTT stream", text(n))
+        assertEquals("MQTT stream\nScanning: Cellular", bigText(n))
         assertTrue(chronometer(n))
     }
 
     @Test
     fun mqttConnecting_showsConnectingLineCollapsedAndDestinationsExpanded() {
         val n = builder.build(
-            SurveyNotificationState(mqttState = ConnectionState.CONNECTING, fileLogging = true, scanningCellular = true, sessionStartMs = sessionStart)
+            SurveyNotificationState(
+                mqttState = ConnectionState.CONNECTING, fileLogging = true, scanningCellular = true, sessionStartMs = sessionStart,
+                destinationStatuses = mapOf(
+                    Destination.LOG_FILES to DestinationStatus(StatusWord.SAVING),
+                    Destination.MQTT to DestinationStatus(StatusWord.CONNECTING),
+                ),
+            )
         )
 
-        assertEquals("Survey Active", title(n))
-        assertEquals("MQTT: Attempting to Connect", text(n))
-        assertEquals("MQTT: Attempting to Connect\nLog files, MQTT\nScanning: Cellular", bigText(n))
+        assertEquals("Recording", title(n))
+        assertEquals("MQTT stream: Connecting", text(n))
+        assertEquals("MQTT stream: Connecting\nLog files, MQTT stream\nScanning: Cellular", bigText(n))
+    }
+
+    @Test
+    fun aStreamThatCantConnect_saysSo_andHealthyOrPausedDestinationsGetNoLine() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true, mqttState = ConnectionState.CONNECTING, grpcState = ConnectionState.CONNECTED,
+                communitySurvey = true, sessionStartMs = sessionStart,
+                destinationStatuses = mapOf(
+                    Destination.LOG_FILES to DestinationStatus(StatusWord.SAVING),
+                    Destination.MQTT to DestinationStatus(StatusWord.CANT_CONNECT),
+                    Destination.GRPC to DestinationStatus(StatusWord.LIVE),
+                    Destination.COMMUNITY to DestinationStatus(StatusWord.COLLECTING),
+                ),
+            )
+        )
+
+        assertEquals("MQTT stream: Can't connect", text(n))
+        assertFalse(bigText(n).orEmpty().contains("gRPC stream:"))
+        assertFalse(bigText(n).orEmpty().contains("Community databases:"))
     }
 
     @Test
@@ -96,7 +144,7 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(fileLogging = true, mqttState = ConnectionState.CONNECTED, scanningCellular = true, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Log files, MQTT", text(n))
+        assertEquals("Log files, MQTT stream", text(n))
     }
 
     @Test
@@ -108,9 +156,13 @@ class SurveyNotificationBuilderTest {
             )
         )
 
-        assertEquals("Survey Active", title(n))
-        assertEquals("MQTT Messages Dropping", text(n))
-        assertEquals("MQTT Messages Dropping\nFile Logging Continues\nLog files, MQTT\nScanning: Cellular", bigText(n))
+        assertEquals("Recording", title(n))
+        assertEquals(context.getString(R.string.mqtt_drop_mode_title), text(n))
+        assertEquals(
+            context.getString(R.string.mqtt_drop_mode_title) + "\n" + context.getString(R.string.mqtt_drop_mode_subtitle) +
+                "\nLog files, MQTT stream\nScanning: Cellular",
+            bigText(n),
+        )
         assertEquals(R.drawable.ic_notification_survey, icon(n))
     }
 
@@ -120,9 +172,9 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(mqttState = ConnectionState.CONNECTED, pausedForBackpressure = true, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Surveys Paused", title(n))
+        assertEquals("Paused", title(n))
         assertEquals("Network interrupted", text(n))
-        assertEquals("Network interrupted\nMQTT", bigText(n))
+        assertEquals("Network interrupted\nMQTT stream", bigText(n))
         assertEquals(R.drawable.ic_pause, icon(n))
     }
 
@@ -132,7 +184,7 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(fileLogging = true, pausedForBattery = true, batteryLevel = 14, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Surveys Paused", title(n))
+        assertEquals("Paused", title(n))
         assertEquals("Battery low (14%)", text(n))
         assertEquals("Battery low (14%)\nLog files", bigText(n))
         assertEquals(R.drawable.ic_pause, icon(n))
@@ -147,7 +199,7 @@ class SurveyNotificationBuilderTest {
             )
         )
 
-        assertEquals("Surveys Paused", title(n))
+        assertEquals("Paused", title(n))
         assertEquals("Battery low (9%)", text(n))
     }
 
@@ -170,9 +222,9 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(communitySurvey = true, scanningCellular = true, scanningWifi = true, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Survey Active", title(n))
-        assertEquals("OpenCelliD & BeaconDB", text(n))
-        assertEquals("OpenCelliD & BeaconDB\nScanning: Cellular, Wi-Fi", bigText(n))
+        assertEquals("Recording", title(n))
+        assertEquals("Community databases", text(n))
+        assertEquals("Community databases\nScanning: Cellular, Wi-Fi", bigText(n))
     }
 
     @Test
@@ -181,9 +233,9 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(nsAnalytics = true, scanningCellular = true, phoneStateActive = true, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Survey Active", title(n))
+        assertEquals("Recording", title(n))
         assertEquals("NS Analytics", text(n))
-        assertEquals("NS Analytics\nScanning: Cellular, Phone State", bigText(n))
+        assertEquals("NS Analytics\nScanning: Cellular, Phone state", bigText(n))
     }
 
     @Test
@@ -192,17 +244,20 @@ class SurveyNotificationBuilderTest {
             SurveyNotificationState(fileLogging = true, grpcState = ConnectionState.CONNECTED, scanningCellular = true, sessionStartMs = sessionStart)
         )
 
-        assertEquals("Log files, gRPC", text(n))
+        assertEquals("Log files, gRPC stream", text(n))
     }
 
     @Test
     fun grpcConnecting_showsConnectingLine() {
         val n = builder.build(
-            SurveyNotificationState(grpcState = ConnectionState.CONNECTING, sessionStartMs = sessionStart)
+            SurveyNotificationState(
+                grpcState = ConnectionState.CONNECTING, sessionStartMs = sessionStart,
+                destinationStatuses = mapOf(Destination.GRPC to DestinationStatus(StatusWord.RECONNECTING)),
+            )
         )
 
-        assertEquals("Survey Active", title(n))
-        assertEquals("gRPC: Attempting to Connect", text(n))
+        assertEquals("Recording", title(n))
+        assertEquals("gRPC stream: Reconnecting", text(n))
     }
 
     @Test
@@ -216,9 +271,9 @@ class SurveyNotificationBuilderTest {
             )
         )
 
-        assertEquals("Log files, MQTT, gRPC, OpenCelliD & BeaconDB, NS Analytics", text(n))
+        assertEquals("Log files, MQTT stream, gRPC stream, Community databases, NS Analytics", text(n))
         assertEquals(
-            "Log files, MQTT, gRPC, OpenCelliD & BeaconDB, NS Analytics\nScanning: Cellular, Phone State, Wi-Fi, Bluetooth, GNSS, CDR",
+            "Log files, MQTT stream, gRPC stream, Community databases, NS Analytics\nScanning: Cellular, Phone state, Wi-Fi, Bluetooth, GNSS, Call records",
             bigText(n)
         )
     }
@@ -227,7 +282,7 @@ class SurveyNotificationBuilderTest {
     fun disconnectingMqtt_doesNotCountAsActive() {
         val n = builder.build(SurveyNotificationState(mqttState = ConnectionState.DISCONNECTING))
 
-        assertEquals("Survey Inactive", title(n))
+        assertEquals("Ready", title(n))
         assertNull(text(n))
     }
 
@@ -238,5 +293,11 @@ class SurveyNotificationBuilderTest {
         assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertTrue(n.flags and Notification.FLAG_ONLY_ALERT_ONCE != 0)
         assertEquals(Notification.CATEGORY_SERVICE, n.category)
+    }
+
+    @Test
+    fun overrideOn_addsUsingYourOwnSettingsToTheExpandedText() {
+        val n = builder.build(SurveyNotificationState(fileLogging = true, overrideOn = true))
+        assertEquals("Log files\nUsing your own settings", bigText(n))
     }
 }

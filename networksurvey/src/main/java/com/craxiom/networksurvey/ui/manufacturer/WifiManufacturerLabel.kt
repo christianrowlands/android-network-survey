@@ -32,7 +32,7 @@ data class WifiManufacturerLabelText(
  * Resolves a BSSID to a manufacturer label suitable for inline display. Handles the
  * ~250 ms loading delay so cache-hit lookups don't flash "Looking up…".
  *
- * This powers both the details-screen sub-caption (via [WifiManufacturerSubCaption]) and the
+ * This powers both the details-screen hero card and the
  * redesigned list rows' "BSSID · vendor" line; callers choose their own typography and color.
  */
 @Composable

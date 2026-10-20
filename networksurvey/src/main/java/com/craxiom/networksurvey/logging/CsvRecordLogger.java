@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
+import com.craxiom.networksurvey.R;
 import com.craxiom.messaging.ConnectionStatus;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -65,11 +66,11 @@ public abstract class CsvRecordLogger
     private String loggingFileName;
 
     /**
-     * Constructs a Logger that writes Survey records to a GeoPackage SQLite database.
+     * Constructs a Logger that writes Survey records to a CSV file.
      *
      * @param networkSurveyService The Service instance that is running this logger.
      * @param logDirectoryName     The parent directory name to write all the files in.
-     * @param fileNamePrefix       The prefix to use for the GeoPackage file name.
+     * @param fileNamePrefix       The prefix to use for the CSV file name.
      */
     CsvRecordLogger(NetworkSurveyService networkSurveyService,
                     String logDirectoryName, String fileNamePrefix, boolean lazyFileCreation)
@@ -95,7 +96,7 @@ public abstract class CsvRecordLogger
     abstract String[] getHeaderComments();
 
     /**
-     * Sets up all the GeoPackage stuff so that the survey records can be written to a log file.
+     * Sets up the CSV file so that the survey records can be written to a log file.
      * <p>
      * If calling this method, it is assumed that the caller will add this {@link CsvRecordLogger} as a listener for
      * survey records.
@@ -226,9 +227,8 @@ public abstract class CsvRecordLogger
             printer.flush();
         } catch (IOException e)
         {
-            final String errorMessage = "Error: Unable to create the CSV file.  No logging will be recorded.";
-            Timber.e(e, errorMessage);
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
+            Timber.e(e, "Unable to create the CSV file, so no logging will be recorded");
+            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(applicationContext, R.string.log_file_create_failed, Toast.LENGTH_SHORT).show());
 
             loggingFileName = null;
 
@@ -321,7 +321,7 @@ public abstract class CsvRecordLogger
         } catch (IOException e)
         {
             Timber.e(e, "Could not create the CSV log file directory");
-            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(applicationContext, "Error: Could not create the CSV directory", Toast.LENGTH_SHORT).show());
+            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(applicationContext, R.string.log_folder_create_failed, Toast.LENGTH_SHORT).show());
         }
 
         String filePath = logFileDirectoryPath +
@@ -366,7 +366,7 @@ public abstract class CsvRecordLogger
         private final AtomicInteger recordCount = new AtomicInteger();
 
         /**
-         * The max log size for a GeoPackage file before a new one is created, in bytes. When this
+         * The max log size for a CSV file before a new one is created, in bytes. When this
          * value is set to 0, rollover is de-activated.
          */
         private int rolloverSizeBytes = Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
@@ -409,7 +409,7 @@ public abstract class CsvRecordLogger
                     }
                     final long fileSizeBytes = file.length();
 
-                    Timber.v("Checking GeoPackage file size, currently at: %s bytes", fileSizeBytes);
+                    Timber.v("Checking CSV file size, currently at: %s bytes", fileSizeBytes);
                     if (fileSizeBytes >= rolloverSizeBytes)
                     {
                         // This task is protected by the {@link #csvFileLock} to prevent closing a file that is

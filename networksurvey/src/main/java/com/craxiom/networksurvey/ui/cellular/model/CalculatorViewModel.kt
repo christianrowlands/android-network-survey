@@ -15,23 +15,24 @@ enum class CalculatorNetworkType { UMTS, LTE, NR }
 const val MAX_EARFCN = BandSearch.MAX_EARFCN
 const val MAX_NARFCN = BandSearch.MAX_NARFCN
 
+/** The largest 36-bit NR Cell Identity. */
+const val MAX_NCI = 68_719_476_735L
+
+/** The largest 28-bit LTE and UMTS Cell ID. */
+const val MAX_CELL_ID = 268_435_455L
+
+/** The largest LTE Physical Cell ID. */
+const val MAX_LTE_PCI = 503
+
+private const val MIN_GNB_ID_BITS = 22
+private const val MAX_GNB_ID_BITS = 32
+
 class CalculatorViewModel : ViewModel() {
     private val _networkType = MutableStateFlow(CalculatorNetworkType.LTE)
     val networkType: StateFlow<CalculatorNetworkType> = _networkType.asStateFlow()
 
-    private val _gnbIdLengthOptions = listOf(
-        GnbIdLengthOption("22 bits + 14 bits", 22),
-        GnbIdLengthOption("23 bits + 13 bits", 23),
-        GnbIdLengthOption("24 bits + 12 bits", 24),
-        GnbIdLengthOption("25 bits + 11 bits", 25),
-        GnbIdLengthOption("26 bits + 10 bits", 26),
-        GnbIdLengthOption("27 bits + 9 bits", 27),
-        GnbIdLengthOption("28 bits + 8 bits", 28),
-        GnbIdLengthOption("29 bits + 7 bits", 29),
-        GnbIdLengthOption("30 bits + 6 bits", 30),
-        GnbIdLengthOption("31 bits + 5 bits", 31),
-        GnbIdLengthOption("32 bits + 4 bits", 32)
-    )
+    /** gNB ID lengths from 22 to 32 bits; the sector ID gets the rest of the 36-bit NCI. */
+    private val _gnbIdLengthOptions = (MIN_GNB_ID_BITS..MAX_GNB_ID_BITS).map { GnbIdLengthOption(it) }
     val gnbIdLengthOptions: List<GnbIdLengthOption> = _gnbIdLengthOptions
 
     // Store the selected option as a state
@@ -48,15 +49,15 @@ class CalculatorViewModel : ViewModel() {
     private val _nrSectorIdOutput = MutableStateFlow("")
     val nrSectorIdOutput: StateFlow<String> = _nrSectorIdOutput.asStateFlow()
 
-    // Errors
-    private val _nciError = MutableStateFlow<String?>(null)
-    val nciError: StateFlow<String?> = _nciError.asStateFlow()
+    // Errors: the largest value the field accepts while its input is out of range, otherwise null
+    private val _nciError = MutableStateFlow<Long?>(null)
+    val nciError: StateFlow<Long?> = _nciError.asStateFlow()
 
-    private val _lteCidError = MutableStateFlow<String?>(null)
-    val lteCidError: StateFlow<String?> = _lteCidError.asStateFlow()
+    private val _lteCidError = MutableStateFlow<Long?>(null)
+    val lteCidError: StateFlow<Long?> = _lteCidError.asStateFlow()
 
-    private val _ltePciError = MutableStateFlow<String?>(null)
-    val ltePciError: StateFlow<String?> = _ltePciError.asStateFlow()
+    private val _ltePciError = MutableStateFlow<Long?>(null)
+    val ltePciError: StateFlow<Long?> = _ltePciError.asStateFlow()
 
     // Inputs for LTE Calculators
     private val _lteCellIdInput = MutableStateFlow("")
@@ -100,8 +101,8 @@ class CalculatorViewModel : ViewModel() {
     private val _shortCellIdOutput = MutableStateFlow("")
     val shortCellIdOutput: StateFlow<String> = _shortCellIdOutput
 
-    private val _umtsCidError = MutableStateFlow<String?>(null)
-    val umtsCidError: StateFlow<String?> = _umtsCidError
+    private val _umtsCidError = MutableStateFlow<Long?>(null)
+    val umtsCidError: StateFlow<Long?> = _umtsCidError
 
     fun setNetworkType(type: CalculatorNetworkType) {
         _networkType.value = type
@@ -125,8 +126,8 @@ class CalculatorViewModel : ViewModel() {
         }
 
         val nci = _nciInput.value.toLongOrNull()
-        if (nci == null || nci !in 0..68_719_476_735) {
-            _nciError.value = "Invalid NCI. Valid range is 0 - 68,719,476,735"
+        if (nci == null || nci !in 0..MAX_NCI) {
+            _nciError.value = MAX_NCI
             return
         }
 
@@ -161,7 +162,7 @@ class CalculatorViewModel : ViewModel() {
 
         val cellId = lteCellIdInput.value.toIntOrNull()
         if (cellId == null || !CalculationUtils.isLteCellIdValid(cellId)) {
-            _lteCidError.value = "Invalid Cell ID. Valid Range is 0 - 268435455"
+            _lteCidError.value = MAX_CELL_ID
             _enbIdOutput.value = ""
             _lteSectorIdOutput.value = ""
         } else {
@@ -182,8 +183,8 @@ class CalculatorViewModel : ViewModel() {
         }
 
         val pci = pciInput.value.toIntOrNull()
-        if (pci == null || pci !in 0..503) {
-            _ltePciError.value = "Invalid PCI. Valid Range is 0 - 503"
+        if (pci == null || pci !in 0..MAX_LTE_PCI) {
+            _ltePciError.value = MAX_LTE_PCI.toLong()
             _pssOutput.value = ""
             _sssOutput.value = ""
         } else {
@@ -263,8 +264,8 @@ class CalculatorViewModel : ViewModel() {
         }
 
         val cellId = _umtsCellIdInput.value.toLongOrNull()
-        if (cellId == null || cellId < 0 || cellId > 268_435_455) {
-            _umtsCidError.value = "Invalid UMTS Cell ID. Valid Range is 0 - 268435455"
+        if (cellId == null || cellId !in 0..MAX_CELL_ID) {
+            _umtsCidError.value = MAX_CELL_ID
             _rncIdOutput.value = ""
             _shortCellIdOutput.value = ""
             return

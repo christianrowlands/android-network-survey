@@ -146,7 +146,7 @@ private fun RowScope.ProviderColorGridCell(
     onClick: () -> Unit
 ) {
     val color = PlmnColorMapper.getColorByIndex(index)
-    val name = PlmnColorMapper.PALETTE_NAMES[index]
+    val name = stringResource(PlmnColorMapper.PALETTE_NAMES[index])
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

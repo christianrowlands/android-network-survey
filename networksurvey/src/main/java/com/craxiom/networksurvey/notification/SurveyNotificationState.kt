@@ -1,6 +1,9 @@
 package com.craxiom.networksurvey.notification
 
 import com.craxiom.mqttlibrary.connection.ConnectionState
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.LeftOutItem
 
 /**
  * An immutable snapshot of everything the survey notification can reflect.
@@ -10,7 +13,7 @@ import com.craxiom.mqttlibrary.connection.ConnectionState
  * notification. Keeping the snapshot separate from the service makes the title and text rules a
  * pure function that can be unit tested without a running service.
  *
- * @property fileLogging True when any protocol is being written to a CSV or GeoPackage file.
+ * @property fileLogging True when any protocol is being written to a CSV file.
  * @property communitySurvey True when records are being collected for OpenCelliD / BeaconDB.
  * @property nsAnalytics True when records are being collected for an NS Analytics workspace.
  * @property mqttState The MQTT broker connection state.
@@ -30,6 +33,10 @@ import com.craxiom.mqttlibrary.connection.ConnectionState
  * @property stalledMinutes Minutes since the last record when the stall watchdog has fired, or null
  * while records are flowing (or the watchdog is not applicable).
  * @property sessionStartMs Epoch millis of the survey session start, or null when nothing is running.
+ * @property destinationStatuses What is happening to each destination's records, the same status
+ * the Survey screen shows, for the health lines.
+ * @property leftOut What the running survey asked for and isn't getting, the same items the Survey
+ * screen lists, so a survey started at boot or by another app says what it left out.
  */
 data class SurveyNotificationState(
     val fileLogging: Boolean = false,
@@ -48,7 +55,10 @@ data class SurveyNotificationState(
     val batteryLevel: Int = -1,
     val pausedForBackpressure: Boolean = false,
     val stalledMinutes: Int? = null,
-    val sessionStartMs: Long? = null
+    val sessionStartMs: Long? = null,
+    val overrideOn: Boolean = false,
+    val destinationStatuses: Map<Destination, DestinationStatus> = emptyMap(),
+    val leftOut: List<LeftOutItem> = emptyList(),
 ) {
     /** True when the MQTT connection is up or being (re)established. */
     val mqttActive: Boolean

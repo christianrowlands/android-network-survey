@@ -21,9 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.viewinterop.AndroidView
@@ -51,6 +51,8 @@ import kotlin.coroutines.resume
  * @param uiSettings UI-specific map settings
  * @param onTowersClick Receives the tower ids under a tap, search result first if present
  * @param onSurveyedPointClick Receives the survey points under a tap when no tower was hit
+ * @param onMapDestroyed Called just before the MapView is destroyed (the map left the
+ *   composition), so whoever kept the map from [onMapReady] can drop it
  */
 @Composable
 fun MapLibreMap(
@@ -68,10 +70,11 @@ fun MapLibreMap(
     onMyLocationChanged: (Location) -> Unit = {},
     onTowersClick: ((List<String>) -> Unit)? = null,
     onSurveyedPointClick: ((SurveyedPointTap) -> Unit)? = null,
+    onMapDestroyed: () -> Unit = {},
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
-        Box(modifier = modifier.background(Color.LightGray)) {
+        Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
             Text("[Map]", modifier = Modifier.align(Alignment.Center))
         }
         return
@@ -84,7 +87,8 @@ fun MapLibreMap(
     }
 
     AndroidView(factory = { mapView }, modifier = modifier)
-    MapLifecycle(mapView, locationSettings)
+    val currentOnMapDestroyed by rememberUpdatedState(onMapDestroyed)
+    MapLifecycle(mapView, locationSettings) { currentOnMapDestroyed() }
 
     // Remember state
     val currentCameraState by rememberUpdatedState(cameraPositionState)
@@ -95,6 +99,8 @@ fun MapLibreMap(
     val currentSymbolManagerSettings by rememberUpdatedState(symbolManagerSettings)
     val currentOnMapReady by rememberUpdatedState(onMapReady)
     val currentOnStyleLoadFailed by rememberUpdatedState(onStyleLoadFailed)
+    // The chrome over the map measures itself after the first frame, so the padding changes later
+    val currentPaddingInsets by rememberUpdatedState(paddingInsets)
     val parentComposition = rememberCompositionContext()
 
     LaunchedEffect(styleUri, images, sdfImages) {
@@ -119,7 +125,7 @@ fun MapLibreMap(
                         uiSettings = currentUiSettings,
                         locationSettings = currentMapLocationSettings,
                         symbolManagerSettings = currentSymbolManagerSettings,
-                        paddingInsets = paddingInsets,
+                        paddingInsets = currentPaddingInsets,
                         onMyLocationChanged = onMyLocationChanged,
                         onTowersClick = onTowersClick,
                         onSurveyedPointClick = onSurveyedPointClick,
@@ -155,6 +161,9 @@ private suspend fun CompositionContext.newComposition(
     mapView.getMapAsync { map ->
         // 2) Ask MapLibre to load the style; this callback only fires once it's fully parsed & ready
         map.setStyle(Style.Builder().fromUri(styleUri)) { style ->
+            // The map left the composition while the style loaded; never hand out a map that is
+            // being destroyed
+            if (!cont.isActive) return@setStyle
             // 3) Inject any custom images into the style
             images.forEach { (id, res) ->
                 AppCompatResources.getDrawable(context, res)
@@ -190,7 +199,7 @@ private suspend fun CompositionContext.newComposition(
  * Registers lifecycle observers to drive MapView lifecycle events from Compose.
  */
 @Composable
-private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings) {
+private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings, onMapDestroyed: () -> Unit) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val prev = remember { mutableStateOf(Lifecycle.Event.ON_CREATE) }
@@ -208,6 +217,7 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
     DisposableEffect(mapView) {
         onDispose {
             Timber.d("MapLibreMap DisposableEffect onDispose called - cleaning up map")
+            onMapDestroyed()
 
             // MapPropertiesNode.cleanup() already removed the listeners it registered and
             // stopped location updates when the composition was disposed. Destroying the view

@@ -12,9 +12,17 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
 import androidx.test.rule.ServiceTestRule;
 
+import androidx.preference.PreferenceManager;
+
+import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfile;
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfileStore;
+import com.craxiom.networksurvey.survey.engine.SurveyOrigin;
+import com.craxiom.networksurvey.survey.model.Destination;
+import com.craxiom.networksurvey.survey.model.RecordType;
+import com.craxiom.networksurvey.survey.model.SurveySetup;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -22,6 +30,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -35,7 +45,7 @@ import java.util.concurrent.TimeoutException;
  * land there, and they discard it).
  * <p>
  * The MQTT test uses the real {@link com.craxiom.networksurvey.mqtt.MqttConnection} pointed at an
- * unreachable broker, so it exercises the genuine end to end behavior without needing a live broker.
+ * unreachable broker profile, so it exercises the genuine end to end behavior without needing a live broker.
  * The background connection attempt fails harmlessly; the connection state never calls
  * {@code onSurveyStopped()}, so the rolled values cannot be flipped back before the assertions run.
  */
@@ -51,7 +61,7 @@ public class NetworkSurveyServiceMissionIdTest
     private static final int MQTT_PORT = 1883;
     private static final String TEST_CLIENT_ID = "ns-mission-id-test-client";
     private static final String TEST_TOPIC_PREFIX = "ns-mission-id-test";
-    private static final String TEST_DEVICE_NAME = "ns-mission-id-test-device";
+    private static final long SURVEY_TIMEOUT_SECONDS = 20L;
 
     @Rule
     public final ServiceTestRule serviceRule = new ServiceTestRule();
@@ -77,18 +87,25 @@ public class NetworkSurveyServiceMissionIdTest
         // service after the test, which destroys the bound-only service.
         if (service != null)
         {
-            service.disconnectFromMqttBroker();
+            try
+            {
+                service.stopSurvey(SurveyOrigin.USER).get(SURVEY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (Exception e)
+            {
+                service.disconnectFromMqttBroker();
+            }
         }
     }
 
     /**
-     * Verifies that starting MQTT streaming rolls a fresh Mission ID and marks the mission session
-     * active. This is the exact code path that auto-starts at phone boot
-     * ({@code StartAtBootReceiver -> attemptMqttConnectionAtBoot -> connectToMqttBroker}).
+     * Verifies that starting a survey that streams to MQTT rolls a fresh Mission ID and marks the
+     * mission session active, even while the broker connection is still pending. The broker is the
+     * selected broker profile, the way a boot or app-open auto start finds it.
      */
     @Test
-    public void connectToMqttBroker_rollsMissionId() throws TimeoutException
+    public void startingMqtt_rollsMissionId() throws Exception
     {
+        selectUnreachableBroker();
         service = bindService();
 
         // Clean session: nothing has rolled a Mission ID yet, so records carry an empty Mission ID.
@@ -96,10 +113,10 @@ public class NetworkSurveyServiceMissionIdTest
         assertThat(service.isMissionSessionActive()).isFalse();
         assertThat(service.getMissionIdForRecords()).isEmpty();
 
-        service.connectToMqttBroker(buildUnreachableConnectionInfo());
+        service.startSurvey(SurveySetup.custom(Collections.singleton(RecordType.CELLULAR), Collections.singleton(Destination.MQTT)),
+                SurveyOrigin.USER).get(SURVEY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        // connectToMqttBroker calls onSurveyStarted(true) inline, so the roll has already happened by
-        // the time the call returns.
+        // A pending MQTT connection counts, so the roll has happened by the time the start returns.
         assertThat(service.getRolledMissionId()).isNotNull();
         assertThat(service.getRolledMissionId()).startsWith(NetworkSurveyConstants.MISSION_ID_PREFIX);
         assertThat(service.isMissionSessionActive()).isTrue();
@@ -167,36 +184,22 @@ public class NetworkSurveyServiceMissionIdTest
         final Context context = ApplicationProvider.getApplicationContext();
         final Intent intent = new Intent(context, NetworkSurveyService.class);
         final IBinder binder = serviceRule.bindService(intent);
-        return (NetworkSurveyService) ((NetworkSurveyService.SurveyServiceBinder) binder).getService();
+        return ((NetworkSurveyService.SurveyServiceBinder) binder).getService();
     }
 
     /**
-     * Builds a connection to an unreachable broker with every stream flag disabled. Disabling the
-     * stream flags keeps {@code connectToMqttBroker} from registering the permission sensitive scan
-     * listeners; the Mission ID roll does not depend on them.
-     *
-     * @return A {@link MqttConnectionInfo} that will never reach a real broker.
+     * Saves and selects a broker profile that can never be reached, with this phone's client ID set,
+     * so the MQTT connection attempt fails harmlessly in the background.
      */
-    private MqttConnectionInfo buildUnreachableConnectionInfo()
+    private static void selectUnreachableBroker()
     {
-        return new MqttConnectionInfo(
-                UNREACHABLE_BROKER_HOST,
-                MQTT_PORT,
-                false, // tlsEnabled
-                TEST_CLIENT_ID,
-                null, // mqttUsername
-                null, // mqttPassword
-                // The six stream flags must all stay false (cellular, wifi, bluetooth, gnss,
-                // deviceStatus, phoneState) so connectToMqttBroker skips registering the
-                // scan listeners. The Mission ID roll does not depend on them.
-                false, // isCellularStreamEnabled
-                false, // isWifiStreamEnabled
-                false, // isBluetoothStreamEnabled
-                false, // isGnssStreamEnabled
-                false, // isDeviceStatusStreamEnabled
-                false, // isPhoneStateStreamEnabled
-                TEST_TOPIC_PREFIX,
-                TEST_DEVICE_NAME,
-                MqttQos.AT_MOST_ONCE);
+        final Context context = ApplicationProvider.getApplicationContext();
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putString(MqttConstants.PROPERTY_MQTT_CLIENT_ID, TEST_CLIENT_ID)
+                .commit();
+        MqttBrokerProfileStore.create(context).save(
+                new MqttBrokerProfile(MqttBrokerProfileStore.newId(), "Unreachable", UNREACHABLE_BROKER_HOST, MQTT_PORT,
+                        false, TEST_TOPIC_PREFIX, MqttQos.AT_MOST_ONCE.getValue(), MqttBrokerProfile.Origin.USER, 0L),
+                "", "", true);
     }
 }

@@ -68,7 +68,7 @@ fun ProviderColorPickerDialog(
                 Text(
                     text = stringResource(
                         R.string.provider_color_default_label,
-                        PlmnColorMapper.PALETTE_NAMES[defaultIndex]
+                        stringResource(PlmnColorMapper.PALETTE_NAMES[defaultIndex])
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -131,7 +131,7 @@ private fun RowScope.ColorCell(
     onClick: () -> Unit
 ) {
     val color = PlmnColorMapper.getColorByIndex(index)
-    val name = PlmnColorMapper.PALETTE_NAMES[index]
+    val name = stringResource(PlmnColorMapper.PALETTE_NAMES[index])
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -157,7 +157,7 @@ private fun RowScope.ColorCell(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(R.string.selected),
+                    contentDescription = stringResource(R.string.color_option_selected),
                     modifier = Modifier.size(18.dp),
                     tint = Color.White
                 )
@@ -165,7 +165,7 @@ private fun RowScope.ColorCell(
         }
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = if (isDefault) "$name*" else name,
+            text = if (isDefault) stringResource(R.string.provider_color_default_marker, name) else name,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             maxLines = 1

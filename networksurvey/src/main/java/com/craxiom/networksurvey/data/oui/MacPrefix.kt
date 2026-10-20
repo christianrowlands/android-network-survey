@@ -18,7 +18,6 @@ internal object MacPrefix {
     const val MA_S = 36
 
     private const val LAA_BIT = 0x02L
-    private const val MULTICAST_BIT = 0x01L
     private const val MAC_MASK = 0xFFFFFFFFFFFFL
 
     /**
@@ -30,16 +29,6 @@ internal object MacPrefix {
         if (hex.length != 12) return null
         if (!hex.all { it in '0'..'9' || it in 'A'..'F' || it in 'a'..'f' }) return null
         return hex.toLongOrNull(16)
-    }
-
-    /**
-     * Normalizes a MAC to the canonical uppercase colon-grouped form `AA:BB:CC:DD:EE:FF`.
-     * Returns null if the input cannot be parsed.
-     */
-    fun normalize(mac: String): String? {
-        val parsed = parse(mac) ?: return null
-        val hex = parsed.toString(16).padStart(12, '0').uppercase()
-        return hex.chunked(2).joinToString(":")
     }
 
     /**
@@ -67,11 +56,5 @@ internal object MacPrefix {
     fun isLocallyAdministered(full48: Long): Boolean {
         val firstByte = (full48 ushr 40) and 0xFFL
         return (firstByte and LAA_BIT) != 0L
-    }
-
-    /** The multicast bit (0x01) of the first octet. */
-    fun isMulticast(full48: Long): Boolean {
-        val firstByte = (full48 ushr 40) and 0xFFL
-        return (firstByte and MULTICAST_BIT) != 0L
     }
 }

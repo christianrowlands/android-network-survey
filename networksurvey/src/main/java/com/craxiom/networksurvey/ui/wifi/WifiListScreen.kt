@@ -1,141 +1,114 @@
 package com.craxiom.networksurvey.ui.wifi
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import android.content.Context
+import android.provider.Settings
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.WifiNetwork
-import com.craxiom.networksurvey.ui.wifi.components.ScanStatusStrip
-import com.craxiom.networksurvey.ui.wifi.components.WifiGroupChildRow
-import com.craxiom.networksurvey.ui.wifi.components.WifiGroupParentRow
-import com.craxiom.networksurvey.ui.wifi.components.WifiModeTabs
-import com.craxiom.networksurvey.ui.wifi.components.WifiRowA
-import com.craxiom.networksurvey.ui.wifi.components.WifiSortSheet
-import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
+import com.craxiom.networksurvey.ui.common.PermissionRequest
+import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
+import com.craxiom.networksurvey.ui.common.findComponentActivity
+import com.craxiom.networksurvey.ui.common.openAppSettings
+import com.craxiom.networksurvey.ui.common.openLocationSettings
+import com.craxiom.networksurvey.ui.common.openSystemSettings
+import com.craxiom.networksurvey.ui.common.openWifiSettings
+import com.craxiom.networksurvey.ui.common.rememberPermissionRequest
+import com.craxiom.networksurvey.ui.main.SharedViewModel
+import com.craxiom.networksurvey.ui.signals.SignalsSubTab
+import com.craxiom.networksurvey.ui.signals.signalsStateWords
+import com.craxiom.networksurvey.ui.util.copyWithSystemConfirmation
+import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
+import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
+import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
 import com.craxiom.networksurvey.ui.wifi.model.WifiListViewModel
 
 /**
- * Top-level Compose screen for the redesigned Wi-Fi list. Reads state from [WifiListViewModel]
- * and dispatches taps (mode change, sort, pause, expand/collapse, navigate) back to it or out
- * to the hosting Fragment via [onNetworkSelected].
+ * The Wi-Fi sub-tab of Signals: binds to the survey service while it shows, re-checks the
+ * permission, location and Wi-Fi on every resume, and asks for nothing until the user taps the one
+ * button that fixes what is missing.
  */
 @Composable
-fun WifiListScreen(
-    viewModel: WifiListViewModel,
-    onNetworkSelected: (WifiNetwork) -> Unit,
-    onTogglePause: () -> Unit,
-) {
-    val state by viewModel.uiState.collectAsState()
-    var sortSheetOpen by remember { mutableStateOf(false) }
+fun WifiListScreen() {
+    val context = LocalContext.current
+    val activity = context.findComponentActivity() ?: return
+    val viewModel: WifiListViewModel = viewModel(viewModelStoreOwner = activity)
+    val sharedViewModel: SharedViewModel = viewModel(viewModelStoreOwner = activity)
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        ScanStatusStrip(
-            scanNumber = state.scanNumber,
-            apCount = state.apCount,
-            visibleApCount = state.visibleApCount,
-            filterActive = state.filter.isActive,
-            scanStatusId = state.scanStatusId,
-            isPaused = state.updatesPaused,
-            sortIndex = state.sortIndex,
-            onSortClick = { sortSheetOpen = true },
-            onTogglePause = onTogglePause,
-        )
-        WifiModeTabs(
-            mode = state.mode,
-            onModeChanged = { viewModel.setMode(it) },
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        // Centralised nav dispatcher. Looks up the raw wrapper on demand so the display model
-        // can stay @Immutable / Compose-stable. Empty-BSSID guard is belt-and-suspenders — the
-        // VM already drops empty-BSSID wrappers before they reach a row.
-        val openDetails = { bssid: String ->
-            if (bssid.isNotBlank()) {
-                val wrapper = viewModel.wrapperFor(bssid)
-                if (wrapper != null) {
-                    onNetworkSelected(WifiNetwork.from(wrapper))
-                }
-            }
-        }
-
-        // Only blame the filter when there were networks to hide; a genuinely empty scan
-        // (e.g. Wi-Fi off) falls through to the normal empty list.
-        if (state.items.isEmpty() && state.filter.isActive && state.apCount > 0) {
-            FilteredEmptyState(onClearFilter = { viewModel.clearFilter() })
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(items = state.items, key = { it.key }) { item ->
-                    when (item) {
-                        is WifiDisplayItem.Flat -> {
-                            WifiRowA(
-                                ap = item.ap,
-                                onClick = { openDetails(item.ap.bssid) },
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        }
-
-                        is WifiDisplayItem.GroupParent -> {
-                            WifiGroupParentRow(
-                                group = item,
-                                onToggle = { viewModel.toggleGroupExpanded(item.groupKey) },
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        }
-
-                        is WifiDisplayItem.GroupChild -> {
-                            WifiGroupChildRow(
-                                ap = item.ap,
-                                onClick = { openDetails(item.ap.bssid) },
-                            )
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        }
-                    }
-                }
-            }
-        }
+    ServiceConnectionHandler(viewModel::onServiceChanged)
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refresh()
+        onPauseOrDispose { }
     }
 
-    if (sortSheetOpen) {
-        WifiSortSheet(
-            selectedIndex = state.sortIndex,
-            onSelected = { viewModel.setSortIndex(it) },
-            onDismiss = { sortSheetOpen = false },
-        )
+    val permission = rememberPermissionRequest(WifiEnvironment.PERMISSIONS, onAnswered = viewModel::refresh) {
+        viewModel.refresh()
     }
+
+    WifiListContent(
+        state = state,
+        stateWords = signalsStateWords(SignalsSubTab.WIFI),
+        permissionAccess = permission.access,
+        actions = remember(viewModel, permission) { ScreenActions(context, viewModel, sharedViewModel, permission) },
+    )
 }
 
-/**
- * Shown in place of the list when the display filter hides every network, with a one-tap way
- * out so a forgotten filter never reads as an empty scan.
- */
-@Composable
-private fun FilteredEmptyState(onClearFilter: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(R.string.wifi_filter_empty_state),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = onClearFilter) {
-            Text(text = stringResource(R.string.wifi_filter_clear))
-        }
+/** Wires [WifiListActions] to the view models, the permission request and the system screens. */
+private class ScreenActions(
+    private val context: Context,
+    private val viewModel: WifiListViewModel,
+    private val sharedViewModel: SharedViewModel,
+    private val permission: PermissionRequest,
+) : WifiListActions {
+
+    override fun onNetworkClick(bssid: String) {
+        val wrapper = viewModel.wrapperFor(bssid) ?: return
+        sharedViewModel.triggerNavigationToWifiDetails(WifiNetwork.from(wrapper))
     }
+
+    override fun onCopySsid(ssid: String) = copyWithSystemConfirmation(
+        context,
+        context.getString(R.string.ssid_clip_label),
+        ssid,
+        context.getString(R.string.ssid_copied),
+    )
+
+    override fun onCopyBssid(bssid: String) = copyWithSystemConfirmation(
+        context,
+        context.getString(R.string.bssid_clip_label),
+        bssid,
+        context.getString(R.string.bssid_copied),
+    )
+
+    override fun onToggleGroup(groupKey: String) = viewModel.toggleGroupExpanded(groupKey)
+
+    override fun onModeChanged(mode: WifiListMode) = viewModel.setMode(mode)
+
+    override fun onSortSelected(index: Int) = viewModel.setSortIndex(index)
+
+    override fun onTogglePause() = viewModel.togglePaused()
+
+    override fun onClearFilter() = viewModel.clearFilter()
+
+    override fun onAllow() = permission.request()
+
+    override fun onOpenAppSettings() = openAppSettings(context)
+
+    override fun onTurnOnLocation() = openLocationSettings(context)
+
+    override fun onTurnOnWifi() = openWifiSettings(context)
+
+    /** The throttle switch is in developer options; with those off, About phone is where they turn on. */
+    override fun onOpenThrottleSettings(warning: ThrottleWarning) = openSystemSettings(
+        context,
+        if (warning.developerOptionsOn) Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS else Settings.ACTION_DEVICE_INFO_SETTINGS,
+    )
+
+    override fun onDismissThrottle() = viewModel.dismissThrottleWarning()
 }

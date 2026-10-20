@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.util
 
 import androidx.compose.ui.graphics.Color
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.util.PlmnColorMapper.PALETTE
 
 /**
@@ -35,13 +36,13 @@ object PlmnColorMapper {
     )
 
     /**
-     * Human-readable names for each palette color, indexed to match [PALETTE].
+     * The name of each palette color as a string resource, indexed to match [PALETTE].
      */
-    val PALETTE_NAMES = arrayOf(
-        "Red", "Pink", "Purple", "Deep Purple",
-        "Indigo", "Blue", "Light Blue", "Cyan",
-        "Teal", "Green", "Light Green", "Blue Grey",
-        "Brown", "Amber", "Orange", "Deep Orange"
+    val PALETTE_NAMES = intArrayOf(
+        R.string.color_name_red, R.string.color_name_pink, R.string.color_name_purple, R.string.color_name_deep_purple,
+        R.string.color_name_indigo, R.string.color_name_blue, R.string.color_name_light_blue, R.string.color_name_cyan,
+        R.string.color_name_teal, R.string.color_name_green, R.string.color_name_light_green, R.string.color_name_blue_grey,
+        R.string.color_name_brown, R.string.color_name_amber, R.string.color_name_orange, R.string.color_name_deep_orange,
     )
 
     // Thread safety: this reference is replaced atomically via @Volatile. The map itself

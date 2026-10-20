@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui
 
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.ui.wifi.model.MAX_WIFI_RSSI
@@ -33,9 +34,6 @@ abstract class ASignalChartViewModel : ViewModel() {
 
     private val _markerList = MutableStateFlow<List<Int>>(emptyList())
     val markerList: StateFlow<List<Int>> = _markerList
-
-    private val _scanRateSeconds = MutableStateFlow(-1)
-    val scanRate = _scanRateSeconds.asStateFlow()
 
     private val _maxRssi = MutableStateFlow(MAX_WIFI_RSSI)
 
@@ -101,23 +99,14 @@ abstract class ASignalChartViewModel : ViewModel() {
     }
 
     /**
-     * The label to use for the marker text on the chart. If this is an empty string, then the
-     * default marker text is displayed (the y-axis value). Override this method to provide a
-     * custom marker label.
+     * The string resource of the marker text on the chart, or 0 to display the default marker text
+     * (the y-axis value). Override this method to provide a custom marker label.
      */
-    open fun getMarkerLabel(): String {
-        return ""
-    }
+    @StringRes
+    open fun getMarkerLabel(): Int = 0
 
     fun addMarker() {
         _markerList.value = _markerList.value + lastXValue
-    }
-
-    /**
-     * Sets the scan rate in seconds.
-     */
-    fun setScanRateSeconds(scanRateSeconds: Int) {
-        _scanRateSeconds.value = scanRateSeconds
     }
 
     /**

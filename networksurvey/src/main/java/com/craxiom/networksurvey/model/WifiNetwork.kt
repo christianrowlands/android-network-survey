@@ -26,13 +26,12 @@ data class WifiNetwork(
         parcel.readString() ?: "",
         parcel.readValue(Int::class.java.classLoader) as? Int,
         parcel.readValue(Int::class.java.classLoader) as? Int,
-        WifiBandwidth.forNumber(parcel.readValue(Int::class.java.classLoader) as? Int ?: 0),
+        WifiBandwidth.forNumber(parcel.readInt()) ?: WifiBandwidth.UNKNOWN,
         parcel.readString() ?: "",
         parcel.readValue(Boolean::class.java.classLoader) as? Boolean,
         parcel.readString() ?: "",
-        Standard.forNumber(parcel.readValue(Int::class.java.classLoader) as? Int ?: 0),
-
-        )
+        Standard.forNumber(parcel.readInt()) ?: Standard.UNKNOWN,
+    )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(bssid)
@@ -40,11 +39,13 @@ data class WifiNetwork(
         parcel.writeString(ssid)
         parcel.writeValue(frequency)
         parcel.writeValue(channel)
-        parcel.writeValue(bandwidth ?: WifiBandwidth.UNKNOWN)
+        // Enums go as their numbers (UNRECOGNIZED has none): written with writeValue they were
+        // serialized objects that the reader, expecting an Int, turned into UNKNOWN after a round trip.
+        parcel.writeInt(bandwidth?.takeIf { it != WifiBandwidth.UNRECOGNIZED }?.number ?: WifiBandwidth.UNKNOWN_VALUE)
         parcel.writeString(encryptionType)
         parcel.writeValue(passpoint)
         parcel.writeString(capabilities)
-        parcel.writeValue(standard ?: Standard.UNKNOWN)
+        parcel.writeInt(standard?.takeIf { it != Standard.UNRECOGNIZED }?.number ?: Standard.UNKNOWN_VALUE)
     }
 
     override fun describeContents(): Int {

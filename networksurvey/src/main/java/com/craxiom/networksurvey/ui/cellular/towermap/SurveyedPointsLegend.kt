@@ -261,7 +261,7 @@ fun SurveyedPointsLegend(
                     LegendRow(
                         SurveyedPointPalette.hashed(SurveyedPointFeatures.colorIndex(entry.key)),
                         entry.key,
-                        entry.label
+                        entry.enbSector?.let { (enb, sector) -> stringResource(R.string.survey_point_enb_sector, enb, sector) }
                     )
                 }
                 MoreRow(data?.legendMore ?: 0)

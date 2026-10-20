@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.logging.db;
 
 import android.content.Context;
 
-import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
@@ -122,12 +121,6 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case CDMA:
                         // Skip save CDMA records since we don't upload them
-                        /*CdmaRecordData cdmaRecordData = ((CdmaRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteCdmaRecord(cdmaRecordData))
-                        {
-                            CdmaRecordEntity cdmaEntity = mapCdmaRecordToEntity(cdmaRecordData);
-                            cdmaRecords.add(cdmaEntity);
-                        }*/
                         break;
                     case UMTS:
                         UmtsRecordData umtsRecordData = ((UmtsRecord) cellularRecordWrapper.cellularRecord).getData();
@@ -296,21 +289,6 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                 data.hasSignalStrength();
     }
 
-    private boolean shouldWriteCdmaRecord(CdmaRecordData data)
-    {
-        return false; // Ignore CDMA for now
-        /*double latitude = data.getLatitude();
-        double longitude = data.getLongitude();
-        boolean hasLocation = latitude != 0d && longitude != 0d;
-
-        return data.hasSid() &&
-                data.hasNid() &&
-                data.hasZone() &&
-                data.hasBsid() &&
-                hasLocation &&
-                data.hasSignalStrength();*/
-    }
-
     private boolean shouldWriteUmtsRecord(UmtsRecordData data)
     {
         if (isAccuracyBad(data.getAccuracy())) return false;
@@ -441,37 +419,6 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.bsic = record.hasBsic() ? record.getBsic().getValue() : null;
         entity.signalStrength = record.hasSignalStrength() ? record.getSignalStrength().getValue() : null;
         entity.ta = record.hasTa() ? record.getTa().getValue() : null;
-        entity.servingCell = record.hasServingCell() ? record.getServingCell().getValue() : null;
-        entity.provider = record.getProvider();
-        entity.slot = record.hasSlot() ? record.getSlot().getValue() : null;
-
-        return entity;
-    }
-
-    private CdmaRecordEntity mapCdmaRecordToEntity(CdmaRecordData record)
-    {
-        CdmaRecordEntity entity = new CdmaRecordEntity();
-        entity.deviceSerialNumber = record.getDeviceSerialNumber();
-        entity.deviceName = record.getDeviceName();
-        entity.deviceTime = record.getDeviceTime();
-        entity.latitude = record.getLatitude();
-        entity.longitude = record.getLongitude();
-        entity.altitude = record.getAltitude();
-        entity.missionId = record.getMissionId();
-        entity.recordNumber = record.getRecordNumber();
-        entity.groupNumber = record.getGroupNumber();
-        entity.accuracy = record.getAccuracy();
-        entity.locationAge = record.getLocationAge();
-        entity.speed = record.getSpeed();
-
-        entity.sid = record.hasSid() ? record.getSid().getValue() : null;
-        entity.nid = record.hasNid() ? record.getNid().getValue() : null;
-        entity.zone = record.hasZone() ? record.getZone().getValue() : null;
-        entity.bsid = record.hasBsid() ? record.getBsid().getValue() : null;
-        entity.channel = record.hasChannel() ? record.getChannel().getValue() : null;
-        entity.pnOffset = record.hasPnOffset() ? record.getPnOffset().getValue() : null;
-        entity.signalStrength = record.hasSignalStrength() ? record.getSignalStrength().getValue() : null;
-        entity.ecio = record.hasEcio() ? record.getEcio().getValue() : null;
         entity.servingCell = record.hasServingCell() ? record.getServingCell().getValue() : null;
         entity.provider = record.getProvider();
         entity.slot = record.hasSlot() ? record.getSlot().getValue() : null;

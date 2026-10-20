@@ -71,7 +71,9 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     {
         try
         {
-            writeCsvRecord(convertToObjectArray(bluetoothRecord), false);
+            // Single records come from Classic discovery, one device at a time and with no batch
+            // flush after them, so flush each one rather than leave it buffered until logging stops.
+            writeCsvRecord(convertToObjectArray(bluetoothRecord), true);
         } catch (IOException e)
         {
             Timber.e(e, "Could not log the Bluetooth record to the CSV file");

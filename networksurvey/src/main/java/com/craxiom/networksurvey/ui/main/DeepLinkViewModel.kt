@@ -6,67 +6,39 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * ViewModel for managing deep link navigation events.
- *
- * This ViewModel acts as a bridge between the Activity (which receives deep links)
- * and the Compose UI (which handles navigation). It uses StateFlow to emit navigation
- * events that the Compose UI can observe and react to.
+ * Carries a navigation request from where it starts (a deep link or notification tap handled by
+ * the activity, or a page that asks for a tab) to the Compose UI that owns the navigation.
  */
 class DeepLinkViewModel : ViewModel() {
 
+    // A page of the outer graph to open, as a route; NavDrawerOption.None means "back to the tabs".
     private val _navigationDestination = MutableStateFlow<String?>(null)
     val navigationDestination: StateFlow<String?> = _navigationDestination.asStateFlow()
 
-    // The bottom navigation tab to select on the home screen, as a MainScreens route.
+    // The tab to select once the tabs are showing, as a MainScreens route.
     private val _homeTabDestination = MutableStateFlow<String?>(null)
     val homeTabDestination: StateFlow<String?> = _homeTabDestination.asStateFlow()
 
-    /**
-     * Trigger navigation to the NS Analytics screen.
-     * Called by the Activity when a valid NS Analytics deep link is received.
-     */
-    fun navigateToNsAnalytics() {
-        _navigationDestination.value = NavDrawerOption.NsAnalyticsConnection.name
+    /** Opens the page at [route] on top of the tabs, closing any page above them. */
+    fun navigateToPage(route: String) {
+        _navigationDestination.value = route
     }
 
     /**
-     * Trigger navigation to the Watchlist history screen.
-     * Called by the Activity when a watchlist notification is tapped.
+     * Selects the tab at [route]. Any page above the tabs is closed first, so this works from a
+     * page (a notification tap, Community's "See on map") as well as from the tabs.
      */
-    fun navigateToWatchlistHistory() {
-        _navigationDestination.value = NavOption.WatchlistHistory.name
-    }
-
-    /**
-     * Trigger navigation to the Watchlist management screen.
-     * Called by the Activity when a valid watchlist import deep link is received, after the parsed
-     * networks have been stashed for the screen to confirm.
-     */
-    fun navigateToWatchlist() {
-        _navigationDestination.value = NavDrawerOption.Watchlist.name
-    }
-
-    /**
-     * Trigger navigation to the dashboard tab of the home screen.
-     * Called by the Activity when the survey or upload notification is tapped. The main graph pops
-     * back to the home screen and the home screen then selects the dashboard tab.
-     */
-    fun navigateToDashboard() {
+    fun navigateToHomeTab(route: String) {
         _navigationDestination.value = NavDrawerOption.None.name
-        _homeTabDestination.value = MainScreens.Dashboard.route
+        _homeTabDestination.value = route
     }
 
-    /**
-     * Clear the navigation event after it has been handled.
-     * This prevents re-navigation on configuration changes.
-     */
+    /** Clears the page request once it has been handled, so a recreation does not repeat it. */
     fun clearNavigation() {
         _navigationDestination.value = null
     }
 
-    /**
-     * Clear the home tab event after the home screen has selected the tab.
-     */
+    /** Clears the tab request once the tab has been selected. */
     fun clearHomeTab() {
         _homeTabDestination.value = null
     }

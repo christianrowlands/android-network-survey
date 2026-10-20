@@ -136,8 +136,6 @@ class PlmnLookupViewModel(
         republishTrigger()
     }
 
-    fun clearQuery() = setQuery("")
-
     fun setMcc(value: String) {
         _mcc.value = value.filter(Char::isDigit).take(MCC_LEN)
         _expandedPlmns.value = emptySet()

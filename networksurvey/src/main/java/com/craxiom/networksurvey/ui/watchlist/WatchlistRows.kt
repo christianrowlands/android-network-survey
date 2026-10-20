@@ -36,8 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsHeroStatusCard
-import com.craxiom.networksurvey.ui.theme.WifiTokens
-import com.craxiom.networksurvey.ui.wifi.components.SignalMeterWide
+import com.craxiom.networksurvey.ui.common.NsSignalMeterWide
+import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
@@ -125,7 +125,7 @@ internal fun WatchlistRow(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.titleMedium,
-                        color = WifiTokens.SsidAccent
+                        color = MaterialTheme.colorScheme.primary
                     )
                     if (subtitle.isNotBlank()) {
                         Text(
@@ -185,7 +185,7 @@ private fun WatchlistSignalRow(rssi: Int?) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         val color =
-            rssi?.toWifiSignalCategory()?.color ?: MaterialTheme.colorScheme.onSurfaceVariant
+            rssi?.toWifiSignalCategory()?.textColor ?: MaterialTheme.colorScheme.onSurfaceVariant
         Text(
             text = rssi?.let { stringResource(R.string.watchlist_signal_dbm, it) }
                 ?: stringResource(R.string.watchlist_signal_unknown),
@@ -195,7 +195,7 @@ private fun WatchlistSignalRow(rssi: Int?) {
             modifier = Modifier.padding(end = 12.dp)
         )
         Box(modifier = Modifier.weight(1f)) {
-            SignalMeterWide(rssi = rssi)
+            NsSignalMeterWide(rssi = rssi)
         }
     }
 }

@@ -26,16 +26,4 @@ interface OuiCache {
 
     /** Drops every row. Called on dataset-version mismatch. */
     suspend fun evictAll()
-
-    /**
-     * Removes rows whose `dataset_version` differs from the provided current version. Returns
-     * the number of rows deleted.
-     */
-    suspend fun evictStale(currentVersion: String): Int
-
-    /** Best-effort row count; used to enforce the on-disk cap. */
-    suspend fun count(): Int
-
-    /** Removes the oldest [limit] rows by `last_seen_ts`. */
-    suspend fun evictOldest(limit: Int)
 }

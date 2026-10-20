@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -55,7 +56,7 @@ fun BandSearchField(
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
         shape = RoundedCornerShape(999.dp),
-        placeholder = { Text(stringResource(R.string.band_search_hint)) },
+        placeholder = { Text(stringResource(R.string.band_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         keyboardOptions = KeyboardOptions.Default.copy(
             keyboardType = when (reading) {

@@ -1,18 +1,14 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
+import androidx.annotation.StringRes
+import com.craxiom.networksurvey.R
+
 /**
  * Represents the possible sources of cell towers from the NS tower service.
  */
-enum class TowerSource(val apiName: String, val displayName: String) {
-    OpenCelliD("OpenCelliD", "OpenCelliD"),
-    BTSearch("BTSearch", "BTSearch (Poland)"),
+enum class TowerSource(val apiName: String, @StringRes val displayName: Int) {
+    OpenCelliD("OpenCelliD", R.string.tower_source_opencellid),
+    BTSearch("BTSearch", R.string.tower_source_btsearch),
     //BeaconDB("BeaconDB"),
     ;
-
-    companion object {
-        // Get enum from string (case insensitive)
-        fun fromValue(value: String?): TowerSource? {
-            return entries.find { it.apiName.equals(value, ignoreCase = true) }
-        }
-    }
 }

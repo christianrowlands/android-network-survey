@@ -16,10 +16,6 @@
 package com.craxiom.networksurvey.util;
 
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CLIENT_ID;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_HOST;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_PORT;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_QOS;
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 import static java.util.Collections.emptySet;
 
@@ -38,11 +34,8 @@ import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
-import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.gpstest.model.GnssType;
-import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
-import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource;
 
 import org.maplibre.android.geometry.LatLngBounds;
@@ -129,8 +122,6 @@ public class PreferenceUtils
     /**
      * Valid MQTT port range (1-65535)
      */
-    private static final int MIN_MQTT_PORT = 1;
-    private static final int MAX_MQTT_PORT = 65535;
 
     /**
      * Applies minimum and maximum scan rate validation.
@@ -267,22 +258,6 @@ public class PreferenceUtils
     }
 
     /**
-     * Gets the community survey auto start at phone boot preference.
-     * <p>
-     * Note: This preference will always return false if external data uploads are not allowed by MDM.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return The community survey auto start preference to use.
-     */
-    public static boolean getCommunitySurveyAutoStartPreference(Context context)
-    {
-        if (!MdmUtils.isExternalDataUploadAllowed(context)) return false;
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT, false);
-    }
-
-    /**
      * Gets the maximum file size preference. Once this file size is reached, the log file should be closed and a new
      * one started.
      * <p>
@@ -362,43 +337,6 @@ public class PreferenceUtils
         }
 
         return Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
-    }
-
-    /**
-     * Gets the log file type preference.
-     * <p>
-     * First, this method tries to pull the MDM provided log file type. If it is not set (either because the device
-     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
-     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default
-     * value is used.
-     * <p>
-     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
-     * then the user preference value will be used instead of the MDM value.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return A wrapper object that contains flags indicating which file types are enabled.
-     */
-    public static LogTypeState getLogTypePreference(Context context)
-    {
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-
-        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
-
-        // First try to use the MDM provided value.
-        if (restrictionsManager != null && !mdmOverride)
-        {
-            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-
-            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE))
-            {
-                return convertIndexToLogTypeState(String.valueOf(mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE)));
-            }
-        }
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-
-        // Next, try to use the value from user preferences, with a default fallback
-        return convertIndexToLogTypeState(preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE, "0"));
     }
 
     /**
@@ -523,82 +461,6 @@ public class PreferenceUtils
         return preferences.getBoolean(propertyKey, defaultValue);
     }
 
-    /**
-     * Converts the user preference index to a wrapper object that contains the flags indicating
-     * which file types are enabled.
-     */
-    private static LogTypeState convertIndexToLogTypeState(String index)
-    {
-        if (index == null || index.isEmpty())
-        {
-            Timber.w("Log type index is null or empty, defaulting to CSV only");
-            return new LogTypeState(true, false);
-        }
-
-        boolean csv = false;
-        boolean geoPackage = false;
-        switch (index)
-        {
-            case "0" -> // CSV Only
-                    csv = true;
-            case "1" -> // GeoPackage Only
-                    geoPackage = true;
-            case "2" ->
-            { // Both
-                csv = true;
-                geoPackage = true;
-            }
-            default ->
-            {
-                Timber.w("Unhandled log type setting=%s, defaulting to CSV only", index);
-                csv = true;
-            }
-        }
-
-        return new LogTypeState(csv, geoPackage);
-    }
-
-    /**
-     * Gets the auto start MQTT connection preference.
-     * <p>
-     * First, this method tries to pull the MDM provided auto start MQTT value. If it is not set (either because the device
-     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
-     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
-     * value is used.
-     * <p>
-     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
-     * then the user preference value will be used instead of the MDM value.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return True if the MQTT connection should be started when the phone is booted, false otherwise.
-     * @since 0.4.0
-     */
-    public static boolean getMqttStartOnBootPreference(Context context)
-    {
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        final boolean mdmOverride = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
-
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-        Bundle mdmProperties = null;
-        if (restrictionsManager != null)
-        {
-            mdmProperties = restrictionsManager.getApplicationRestrictions();
-        }
-
-        if (!mdmOverride
-                && mdmProperties != null
-                && mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT))
-        {
-            Timber.i("Using the MDM MQTT auto start preference");
-            return mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
-        } else
-        {
-            Timber.i("Using the user MQTT auto start preference");
-
-            return sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false);
-        }
-    }
-
     public static void saveString(SharedPreferences prefs, String key, String value)
     {
         SharedPreferences.Editor edit = prefs.edit();
@@ -607,35 +469,12 @@ public class PreferenceUtils
         edit.apply();
     }
 
-    public static void saveString(String key, String value)
-    {
-        saveString(Application.getPrefs(), key, value);
-    }
-
     public static void saveInt(SharedPreferences prefs, String key, int value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putInt(key, value);
 
         edit.apply();
-    }
-
-    public static void saveInt(String key, int value)
-    {
-        saveInt(Application.getPrefs(), key, value);
-    }
-
-    public static void saveLong(SharedPreferences prefs, String key, long value)
-    {
-        SharedPreferences.Editor edit = prefs.edit();
-        edit.putLong(key, value);
-
-        edit.apply();
-    }
-
-    public static void saveLong(String key, long value)
-    {
-        saveLong(Application.getPrefs(), key, value);
     }
 
     public static void saveBoolean(SharedPreferences prefs, String key, boolean value)
@@ -649,49 +488,6 @@ public class PreferenceUtils
     public static void saveBoolean(String key, boolean value)
     {
         saveBoolean(Application.getPrefs(), key, value);
-    }
-
-    public static void saveFloat(SharedPreferences prefs, String key, float value)
-    {
-        SharedPreferences.Editor edit = prefs.edit();
-        edit.putFloat(key, value);
-
-        edit.apply();
-    }
-
-    public static void saveFloat(String key, float value)
-    {
-        saveFloat(Application.getPrefs(), key, value);
-    }
-
-    public static void saveDouble(SharedPreferences prefs, String key, double value)
-    {
-        SharedPreferences.Editor edit = prefs.edit();
-        edit.putLong(key, Double.doubleToRawLongBits(value));
-
-        edit.apply();
-    }
-
-    public static void saveDouble(String key, double value)
-    {
-        saveDouble(Application.getPrefs(), key, value);
-    }
-
-    /**
-     * Gets a double for the provided key from preferences, or the default value if the preference
-     * doesn't currently have a value
-     *
-     * @param key          key for the preference
-     * @param defaultValue the default value to return if the key doesn't have a value
-     * @return a double from preferences, or the default value if it doesn't exist
-     */
-    public static Double getDouble(String key, double defaultValue)
-    {
-        if (!Application.getPrefs().contains(key))
-        {
-            return defaultValue;
-        }
-        return Double.longBitsToDouble(Application.getPrefs().getLong(key, 0));
     }
 
     /**
@@ -712,35 +508,21 @@ public class PreferenceUtils
         return prefs.getString(key, null);
     }
 
-    public static long getLong(SharedPreferences prefs, String key, long defaultValue)
+    /**
+     * Returns the currently selected satellite sort order as the index in R.array.sort_sats; the first
+     * option when none is stored.
+     */
+    public static int getSatSortIndex(SharedPreferences prefs)
     {
-        return prefs.getLong(key, defaultValue);
-    }
-
-    public static float getFloat(SharedPreferences prefs, String key, float defaultValue)
-    {
-        return prefs.getFloat(key, defaultValue);
+        return prefs.getInt(NetworkSurveyConstants.PROPERTY_GNSS_SORT_INDEX, 0);
     }
 
     /**
-     * Returns the currently selected satellite sort order as the index in R.array.sort_sats
-     *
-     * @return the currently selected satellite sort order as the index in R.array.sort_sats
+     * Saves the satellite sort, an index into the sort_sats array.
      */
-    public static int getSatSortOrderFromPreferences(Context context, SharedPreferences prefs)
+    public static void setSatSortIndex(SharedPreferences prefs, int index)
     {
-        Resources r = context.getResources();
-        String[] sortOptions = r.getStringArray(R.array.sort_sats);
-        String sortPref = prefs.getString(r.getString(
-                R.string.pref_key_default_sat_sort), sortOptions[0]);
-        for (int i = 0; i < sortOptions.length; i++)
-        {
-            if (sortPref.equalsIgnoreCase(sortOptions[i]))
-            {
-                return i;
-            }
-        }
-        return 0;  // Default to the first option
+        prefs.edit().putInt(NetworkSurveyConstants.PROPERTY_GNSS_SORT_INDEX, index).apply();
     }
 
     /**
@@ -797,117 +579,6 @@ public class PreferenceUtils
     public static void clearGnssFilter(Context context, SharedPreferences prefs)
     {
         saveGnssFilter(context, emptySet(), prefs);
-    }
-
-    /**
-     * Removes the specified preference by deleting it
-     */
-    public static void remove(String key)
-    {
-        SharedPreferences.Editor edit = Application.getPrefs().edit();
-        edit.remove(key).apply();
-    }
-
-    public static void populatePrefsFromMqttConnectionSettings(MqttConnectionSettings mqttConnectionSettings, Context context)
-    {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor edit = preferences.edit();
-        if (mqttConnectionSettings.host() != null)
-        {
-            final String host = mqttConnectionSettings.host().trim();
-            if (!host.isEmpty())
-            {
-                edit.putString(PROPERTY_MQTT_CONNECTION_HOST, host);
-            } else
-            {
-                Timber.w("MQTT host is empty, not saving");
-            }
-        }
-        if (mqttConnectionSettings.port() != 0)
-        {
-            final int port = mqttConnectionSettings.port();
-            if (port >= MIN_MQTT_PORT && port <= MAX_MQTT_PORT)
-            {
-                edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, port);
-            } else
-            {
-                Timber.w("MQTT port %d is invalid (must be %d-%d), not saving",
-                        port, MIN_MQTT_PORT, MAX_MQTT_PORT);
-            }
-        }
-        if (mqttConnectionSettings.tlsEnabled() != null)
-        {
-            edit.putBoolean(PROPERTY_MQTT_CONNECTION_TLS_ENABLED, mqttConnectionSettings.tlsEnabled());
-        }
-        if (mqttConnectionSettings.deviceName() != null)
-        {
-            final String deviceName = mqttConnectionSettings.deviceName().trim();
-            if (!deviceName.isEmpty())
-            {
-                edit.putString(PROPERTY_MQTT_CLIENT_ID, deviceName);
-            } else
-            {
-                Timber.w("MQTT device name is empty, not saving");
-            }
-        }
-        if (mqttConnectionSettings.mqttUsername() != null || mqttConnectionSettings.mqttPassword() != null)
-        {
-            CredentialSecureStorage.INSTANCE.storeMqttCredentials(context,
-                    mqttConnectionSettings.mqttUsername(), mqttConnectionSettings.mqttPassword());
-        }
-        if (mqttConnectionSettings.mqttTopicPrefix() != null)
-        {
-            edit.putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mqttConnectionSettings.mqttTopicPrefix());
-        }
-        if (mqttConnectionSettings.mqttQos() != null)
-        {
-            edit.putInt(PROPERTY_MQTT_QOS, mqttConnectionSettings.mqttQos());
-        }
-        if (mqttConnectionSettings.cellularStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, mqttConnectionSettings.cellularStreamEnabled());
-        }
-        if (mqttConnectionSettings.wifiStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, mqttConnectionSettings.wifiStreamEnabled());
-        }
-        if (mqttConnectionSettings.bluetoothStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, mqttConnectionSettings.bluetoothStreamEnabled());
-        }
-        if (mqttConnectionSettings.gnssStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, mqttConnectionSettings.gnssStreamEnabled());
-        }
-        if (mqttConnectionSettings.deviceStatusStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, mqttConnectionSettings.deviceStatusStreamEnabled());
-        }
-        if (mqttConnectionSettings.phoneStateStreamEnabled() != null)
-        {
-            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, mqttConnectionSettings.phoneStateStreamEnabled());
-        }
-
-        edit.apply();
-    }
-
-    /**
-     * Saves the provided MQTT Protocol Streaming flags to the shared preferences. Not all the
-     * {@link MqttConnectionInfo} parameters are saved in this method; instead, just the streaming
-     * flags are saved.
-     */
-    public static void saveMqttStreamFlags(MqttConnectionInfo info, Context context)
-    {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, info.isCellularStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, info.isWifiStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, info.isBluetoothStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, info.isGnssStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, info.isDeviceStatusStreamEnabled());
-        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, info.isPhoneStateStreamEnabled());
-
-        editor.apply();
     }
 
     /**
@@ -1336,32 +1007,9 @@ public class PreferenceUtils
         return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
     }
 
-    /**
-     * Checks if streaming queue limiting is enabled.
-     *
-     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return True if streaming queue limiting is enabled (limit > 0), false otherwise.
-     */
-    public static boolean isStreamingQueueLimitEnabled(Context context)
-    {
-        return getStreamingQueueLimit(context) > 0;
-    }
-
     // ============================================================================
     // NS Analytics Helper Methods
     // ============================================================================
-
-    /**
-     * Checks if the device is registered with NS Analytics.
-     * This is the authoritative check for registration status.
-     *
-     * @param context The context to use for secure storage access
-     * @return True if the device is registered, false otherwise
-     */
-    public static boolean isNsAnalyticsRegistered(Context context)
-    {
-        return NsAnalyticsSecureStorage.INSTANCE.isRegistered(context);
-    }
 
     /**
      * Check if NS Analytics auto upload is enabled.

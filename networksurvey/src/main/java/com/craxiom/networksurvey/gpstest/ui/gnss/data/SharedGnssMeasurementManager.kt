@@ -20,9 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
 import timber.log.Timber
@@ -38,11 +36,6 @@ class SharedGnssMeasurementManager(
     private val context: Context,
     externalScope: CoroutineScope
 ) {
-    private val _receivingMeasurementUpdates: MutableStateFlow<Boolean> =
-        MutableStateFlow(false)
-    val receivingMeasurementUpdates: StateFlow<Boolean>
-        get() = _receivingMeasurementUpdates
-
     @ExperimentalCoroutinesApi
     @SuppressLint("MissingPermission")
     private val _measurementUpdates = callbackFlow {
@@ -76,7 +69,6 @@ class SharedGnssMeasurementManager(
         ) close()
 
         Timber.d("Starting measurement updates")
-        _receivingMeasurementUpdates.value = true
 
         try {
             if (SatelliteUtils.isForceFullGnssMeasurementsSupported()) {
@@ -116,7 +108,6 @@ class SharedGnssMeasurementManager(
 
         awaitClose {
             Timber.d("Stopping measurement updates")
-            _receivingMeasurementUpdates.value = false
             locationManager.unregisterGnssMeasurementsCallback(callback) // clean up when Flow collection ends
         }
     }.shareIn(

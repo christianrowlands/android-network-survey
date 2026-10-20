@@ -19,7 +19,7 @@ width="32%">](https://f-droid.org/packages/com.craxiom.networksurvey/)
 The Network Survey Android App provides a basic survey capability for logging and analyzing
 Cellular networks, Wi-Fi networks, Bluetooth Devices, and GNSS constellations. Capture detailed
 records of signal strength, network information, and device data. All data can be conveniently
-logged to GeoPackage or CSV files for offline analysis. Alternatively, choose to live stream the
+logged to CSV files for offline analysis. Alternatively, choose to live stream the
 data via MQTT or gRPC protocols for real-time monitoring and integration with other systems.
 
 The Network Survey user manual can be found [here](https://networksurvey.app/manual).
