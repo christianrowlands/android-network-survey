@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.ui.survey.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -22,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsCtaBar
 import com.craxiom.networksurvey.ui.common.NsPrimaryCta
+import com.craxiom.networksurvey.ui.common.NsActionRow
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.survey.model.StartBlockReason
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -53,7 +52,7 @@ fun SurveyCtaBar(
         if (reason != null) {
             Text(text = reason, style = MaterialTheme.typography.bodyMedium, color = NsTheme.colors.status.warningText)
             if (startBlock == StartBlockReason.NS_ANALYTICS_NOT_CONNECTED) {
-                Row(horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
+                NsActionRow(gap = NsTheme.spacing.s) {
                     NsTextAction(stringResource(R.string.survey_action_use_log_files), onUseLogFiles)
                     NsTextAction(stringResource(R.string.survey_action_connect_ns_analytics), onConnectNsAnalytics)
                 }

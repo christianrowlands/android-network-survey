@@ -40,6 +40,8 @@ open class FakeSurveyOutputs : SurveyOutputs {
 
     /** What [mqttSendsWithoutRecordTypes] answers: device status or the watchlist streams over MQTT. */
     var mqttSendsWithoutRecordTypes = false
+    /** True to make MQTT give up inside its start, as the client does with invalid settings. */
+    var mqttGivesUpAtOnce = false
     var community = setOf(RecordType.CELLULAR, RecordType.WIFI)
 
     /** The number of distinct Mission IDs rolled so far. */
@@ -85,8 +87,13 @@ open class FakeSurveyOutputs : SurveyOutputs {
 
     override fun startMqtt(types: Set<RecordType>): Boolean {
         calls += "mqtt start $types"
-        mqttTypes = types
         tracker.onSurveyStarted(true)
+        if (mqttGivesUpAtOnce) {
+            // The client refused its settings inside the connect, so the stream never ran
+            tracker.onSurveyStopped()
+            return true
+        }
+        mqttTypes = types
         return true
     }
 

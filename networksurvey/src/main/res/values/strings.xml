@@ -534,7 +534,7 @@
     <string name="survey_points_hint_dismiss">Close</string>
     <string name="survey_points_about_title">About survey points</string>
     <string name="survey_points_about_sources">Points are recorded only while a survey that sends to the Community databases or NS Analytics is running, and only for the record types the survey records. Log files, MQTT and gRPC do not add points. Bluetooth points come from NS Analytics only.</string>
-    <string name="survey_points_about_filters">Only NS Analytics surveys have a start and an end. Points collected for OpenCelliD and BeaconDB are not grouped into surveys, so the When surveyed filter offers them time ranges only.</string>
+    <string name="survey_points_about_filters">The When surveyed filter can pick out a survey only when it sent to NS Analytics; it then shows all of that survey\'s points, including any also collected for OpenCelliD and BeaconDB. For a survey that sent only to OpenCelliD and BeaconDB, use a time range.</string>
     <!-- %1$d is the walking spacing in meters, %2$d the driving spacing, %3$d the location accuracy limit -->
     <string name="survey_points_about_spacing">A point is recorded about every %1$d m on foot and every %2$d m while driving, and only when the location fix is accurate to %3$d m or better. It is a record of where you surveyed, not of every scan.</string>
     <!-- %1$s is the formatted maximum number of points kept on the device -->

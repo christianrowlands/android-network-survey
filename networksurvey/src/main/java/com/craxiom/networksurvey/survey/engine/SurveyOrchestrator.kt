@@ -43,7 +43,8 @@ class SurveyOrchestrator(
     /**
      * What the latest start, change or merge asked for: its record types (before any was left out
      * for a radio or permission) and the destinations it tried to run. Null after a stop or a start
-     * that ran nothing. Read from other threads to publish the survey state.
+     * where nothing could run, even after an earlier start that gave up; kept after a start whose
+     * destinations all gave up at once. Read from other threads to publish the survey state.
      */
     @Volatile
     var requestedSetup: SurveySetup? = null
@@ -241,6 +242,7 @@ class SurveyOrchestrator(
                 return SurveyStartResult(results, recordTypeProblems, recording = true)
             }
             Timber.w("Nothing in the requested setup can start, so the survey stays ready")
+            requestedSetup = null
             return SurveyStartResult(results, recordTypeProblems, recording = false)
         }
 
@@ -258,7 +260,10 @@ class SurveyOrchestrator(
         if (Destination.LOG_FILES !in targets) fileLoggingFailures = emptySet()
 
         val recording = isRecording()
-        requestedSetup = if (recording) SurveySetup.custom(requestedTypes, targets.keys) else null
+        // A start whose destinations all gave up at once (MQTT refusing its settings inside the
+        // connect) keeps what it asked for, the same as a survey whose only destination gave up
+        // later, so Ready can say why it stopped. Nothing retries it while nothing records.
+        requestedSetup = SurveySetup.custom(requestedTypes, targets.keys)
         askedSetup = if (recording) requested else null
         askedNsAnalyticsCap = if (recording) nsAnalyticsCap else null
         return SurveyStartResult(results, recordTypeProblems, recording = recording)

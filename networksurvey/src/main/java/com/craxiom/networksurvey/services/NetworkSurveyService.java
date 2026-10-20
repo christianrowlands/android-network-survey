@@ -425,6 +425,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (intent == null) return START_REDELIVER_INTENT;
 
+        ensureForegroundForStartRequest(startId);
+
         // If we are started at boot, then that means the NetworkSurveyActivity was never run, so the
         // auto start setting is applied here.
         final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
@@ -460,6 +462,33 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         return START_REDELIVER_INTENT;
+    }
+
+    /**
+     * Answers a start request with {@link #startForeground} when the system does not count this
+     * service as foreground. A request sent with startForegroundService (the Intent API, boot) has to
+     * be answered by startForeground before the service stops, or Android crashes the app with
+     * ForegroundServiceDidNotStartInTimeException. The service normally goes foreground in
+     * {@link #onCreate()} and stays there, so this does nothing; it logs when the system and
+     * {@link #foregroundStarted} disagree, which is how the one such crash seen in testing would show.
+     * An attempt that fails (no location permission) still answers the request.
+     *
+     * @param startId The id of the start request being handled.
+     */
+    private void ensureForegroundForStartRequest(int startId)
+    {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return;
+        if (getForegroundServiceType() != ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) return;
+
+        if (foregroundStarted.get())
+        {
+            Timber.w("Start request %d arrived while the service is not in the foreground, although it went foreground before; going foreground again", startId);
+            foregroundStarted.set(false);
+        } else
+        {
+            Timber.i("Start request %d arrived before the service could go foreground; trying again", startId);
+        }
+        updateServiceNotification();
     }
 
     /**

@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
@@ -26,6 +25,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.engine.LinkFailure
 import com.craxiom.networksurvey.survey.engine.SkipReason
@@ -36,6 +36,8 @@ import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.AttentionPlateUi
 import com.craxiom.networksurvey.ui.theme.NsColorPair
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.ui.common.NsActionRow
+import com.craxiom.networksurvey.ui.common.NsBesideOrBelow
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.ROW_ICON
 
@@ -150,7 +152,7 @@ private fun Plate(
     title: String,
     body: String?,
     modifier: Modifier = Modifier,
-    actions: @Composable () -> Unit = {},
+    actions: (@Composable () -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier
@@ -166,9 +168,11 @@ private fun Plate(
                 if (body != null) {
                     Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                // Text buttons pad their label; pull the row back so the first label lines up with the body
-                val buttonInset = ButtonDefaults.TextButtonContentPadding.calculateStartPadding(LocalLayoutDirection.current)
-                Row(Modifier.offset(x = -buttonInset)) { actions() }
+                if (actions != null) {
+                    // Text buttons pad their label; pull the row back so the first label lines up with the body
+                    val buttonInset = ButtonDefaults.TextButtonContentPadding.calculateStartPadding(LocalLayoutDirection.current)
+                    NsActionRow(Modifier.offset(x = -buttonInset)) { actions() }
+                }
             }
         }
     }
@@ -186,15 +190,18 @@ private fun BatteryThresholdAction(setByOrganization: Boolean, actions: Attentio
 
 @Composable
 private fun AttentionItemRow(item: AttentionItemUi, onFix: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = attentionItemText(item),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        attentionActionText(item)?.let { NsTextAction(it, onFix) }
-    }
+    NsBesideOrBelow(
+        modifier = Modifier.fillMaxWidth(),
+        gap = 0.dp,
+        main = {
+            Text(
+                text = attentionItemText(item),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        end = { attentionActionText(item)?.let { NsTextAction(it, onFix) } },
+    )
 }
 
 /** The one-line problem for an item; the same words the "Couldn't start" snackbar uses. */

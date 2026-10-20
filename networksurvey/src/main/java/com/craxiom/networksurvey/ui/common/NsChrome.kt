@@ -81,7 +81,8 @@ fun NsStatusPanel(
 
 /**
  * A slim line of text with a leading icon and optional actions, used for the location line, the
- * organization line and the upgrade notice. Actions are 48dp text buttons.
+ * organization line and the upgrade notice. Actions are 48dp text buttons; they move under the text
+ * when they would squeeze its words (large font, long translation).
  */
 @Composable
 fun InlineNotice(
@@ -91,7 +92,7 @@ fun InlineNotice(
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     iconTint: Color = color,
     emphasized: Boolean = false,
-    actions: @Composable RowScope.() -> Unit = {},
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -101,14 +102,18 @@ fun InlineNotice(
         horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
     ) {
         Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(SMALL_ICON))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (emphasized) FontWeight.Medium else FontWeight.Normal,
-            color = color,
+        NsBesideOrBelow(
             modifier = Modifier.weight(1f),
+            main = {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (emphasized) FontWeight.Medium else FontWeight.Normal,
+                    color = color,
+                )
+            },
+            end = { if (actions != null) Row(verticalAlignment = Alignment.CenterVertically, content = actions) },
         )
-        actions()
     }
 }
 

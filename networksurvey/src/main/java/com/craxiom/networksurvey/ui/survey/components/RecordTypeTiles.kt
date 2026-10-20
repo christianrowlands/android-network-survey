@@ -4,12 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,14 +34,16 @@ import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.ui.survey.model.ItemLock
 import com.craxiom.networksurvey.ui.survey.model.RecordTypeTileUi
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.ui.common.NsAdaptiveGrid
 import com.craxiom.networksurvey.ui.common.ROW_ICON
 import com.craxiom.networksurvey.ui.common.SMALL_ICON
 
 /**
- * The "What should it survey?" tiles, two per row, each an icon beside its name and description.
- * An on tile is tinted with the accent and shows a check (so on and off never differ by color
- * alone); a tile the organization set keeps the on look with a building glyph and opens the lock
- * sheet instead of toggling; Phone state included with Cellular shows the on look dimmed.
+ * The "What should it survey?" tiles, two per row (one at a large font scale), each an icon beside
+ * its name and description. An on tile is tinted with the accent and shows a check (so on and off
+ * never differ by color alone); a tile the organization set keeps the on look with a building
+ * glyph and opens the lock sheet instead of toggling; Phone state included with Cellular shows the
+ * on look dimmed.
  */
 @Composable
 fun RecordTypeTiles(
@@ -53,26 +52,15 @@ fun RecordTypeTiles(
     onLocked: (RecordTypeTileUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
-        tiles.chunked(TILES_PER_ROW).forEach { row ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
-            ) {
-                row.forEach { tile ->
-                    RecordTypeTile(
-                        tile = tile,
-                        onToggle = { onToggle(tile.type) },
-                        onLocked = { onLocked(tile) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    )
-                }
-                if (row.size < TILES_PER_ROW) Spacer(Modifier.weight(1f))
-            }
+    // One column when a tile's longest word would not fit in half the width (large font, long
+    // translation), so a name like "Bluetooth" is never broken in the middle
+    NsAdaptiveGrid(maxColumns = TILES_PER_ROW, modifier = modifier.fillMaxWidth(), gap = NsTheme.spacing.s) {
+        tiles.forEach { tile ->
+            RecordTypeTile(
+                tile = tile,
+                onToggle = { onToggle(tile.type) },
+                onLocked = { onLocked(tile) },
+            )
         }
     }
 }
@@ -134,14 +122,21 @@ private fun RecordTypeTile(
                 )
                 Text(text = description, style = MaterialTheme.typography.bodySmall, color = descriptionColor)
             }
-            if (!included) TileBadge(tile, Modifier.align(Alignment.Top))
+            TileBadge(tile, shown = !included, Modifier.align(Alignment.Top))
         }
     }
 }
 
+/**
+ * The tile's check, warning or building glyph, or an empty slot the same size when it has none, so
+ * a tile is as wide on as off: the grid's column count, and the description's line breaks, then
+ * stay put when a tile is toggled.
+ */
 @Composable
-private fun TileBadge(tile: RecordTypeTileUi, modifier: Modifier) {
+private fun TileBadge(tile: RecordTypeTileUi, shown: Boolean, modifier: Modifier) {
     when {
+        !shown -> Spacer(modifier.size(SMALL_ICON))
+
         tile.notSentAnywhere -> Icon(
             imageVector = Icons.Filled.Warning,
             contentDescription = null,
@@ -162,6 +157,8 @@ private fun TileBadge(tile: RecordTypeTileUi, modifier: Modifier) {
             tint = MaterialTheme.colorScheme.primary,
             modifier = modifier.size(SMALL_ICON),
         )
+
+        else -> Spacer(modifier.size(SMALL_ICON))
     }
 }
 

@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.ui.common
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -14,7 +13,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
@@ -38,27 +36,43 @@ fun NsManagedLockSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = NsTheme.spacing.xxl)
-                .padding(bottom = NsTheme.spacing.xxl)
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.m),
-        ) {
-            Text(text = stringResource(R.string.survey_set_by_organization), style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.survey_lock_body), style = MaterialTheme.typography.bodyLarge)
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                NsTextAction(stringResource(R.string.survey_org_see_all), {
-                    onDismiss()
-                    onSeeAll()
-                })
-                if (onUseOwnSettings != null) NsTextAction(stringResource(R.string.survey_lock_use_own), onUseOwnSettings)
-                Row(modifier = Modifier.weight(1f)) {}
+        NsManagedLockContent(onSeeAll, onUseOwnSettings, onDismiss)
+    }
+}
+
+/**
+ * The lock sheet's text and actions. The actions share a line at the default font scale and wrap
+ * onto more lines at a large one, OK always last at the right edge.
+ */
+@Composable
+internal fun NsManagedLockContent(
+    onSeeAll: () -> Unit,
+    onUseOwnSettings: (() -> Unit)?,
+    onDismiss: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = NsTheme.spacing.xxl)
+            .padding(bottom = NsTheme.spacing.xxl)
+            .navigationBarsPadding(),
+        verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.m),
+    ) {
+        Text(text = stringResource(R.string.survey_set_by_organization), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.survey_lock_body), style = MaterialTheme.typography.bodyLarge)
+        NsActionRow(
+            modifier = Modifier.fillMaxWidth(),
+            end = {
                 Button(onClick = onDismiss, modifier = Modifier.heightIn(min = NsTheme.spacing.touchTarget)) {
                     Text(stringResource(R.string.ok))
                 }
-            }
+            },
+        ) {
+            NsTextAction(stringResource(R.string.survey_org_see_all), {
+                onDismiss()
+                onSeeAll()
+            })
+            if (onUseOwnSettings != null) NsTextAction(stringResource(R.string.survey_lock_use_own), onUseOwnSettings)
         }
     }
 }

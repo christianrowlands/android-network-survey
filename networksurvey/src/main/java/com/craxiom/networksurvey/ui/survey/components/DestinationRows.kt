@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -39,6 +38,7 @@ import com.craxiom.networksurvey.ui.survey.model.DestinationRowUi
 import com.craxiom.networksurvey.ui.survey.model.ItemLock
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.common.NsPanel
+import com.craxiom.networksurvey.ui.common.NsActionRow
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.ROW_ICON
 import com.craxiom.networksurvey.ui.common.SMALL_ICON
@@ -69,17 +69,20 @@ fun DestinationRows(
                 DestinationRow(row, info, onToggle, onOpen, onLocked)
             }
         }
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        NsActionRow(
+            modifier = Modifier.fillMaxWidth(),
+            end = {
+                if (showEditList) NsTextAction(
+                    text = if (userHiddenCount > 0) {
+                        pluralStringResource(R.plurals.survey_edit_list_hidden, userHiddenCount, userHiddenCount)
+                    } else {
+                        stringResource(R.string.survey_edit_list)
+                    },
+                    onClick = onEditList,
+                )
+            },
+        ) {
             onWhatGoesWhere?.let { NsTextAction(stringResource(R.string.survey_what_goes_where), it) }
-            Spacer(modifier = Modifier.weight(1f))
-            if (showEditList) NsTextAction(
-                text = if (userHiddenCount > 0) {
-                    pluralStringResource(R.plurals.survey_edit_list_hidden, userHiddenCount, userHiddenCount)
-                } else {
-                    stringResource(R.string.survey_edit_list)
-                },
-                onClick = onEditList,
-            )
         }
     }
 }

@@ -51,6 +51,30 @@ class SurveyOrchestratorTest {
     }
 
     @Test
+    fun `a start whose only destination gives up at once keeps what it asked for`() {
+        outputs.mqttGivesUpAtOnce = true
+
+        val result = orchestrator.startSurvey(setup(MQTT), SurveyOrigin.INTENT)
+
+        // Ready then says why it stopped, as for a stream that gave up later
+        assertFalse(result.recording)
+        assertEquals(setup(MQTT).destinations, orchestrator.requestedSetup?.destinations)
+        assertNull(orchestrator.retrySkipped())
+    }
+
+    @Test
+    fun `a start where nothing can run forgets the one that gave up before it`() {
+        outputs.mqttGivesUpAtOnce = true
+        orchestrator.startSurvey(setup(MQTT), SurveyOrigin.INTENT)
+        outputs.destinationProblems[MQTT] = SkipReason.NOT_CONFIGURED
+
+        orchestrator.startSurvey(setup(MQTT), SurveyOrigin.USER)
+
+        // Ready no longer says the earlier survey stopped: the latest start is what it reports on
+        assertNull(orchestrator.requestedSetup)
+    }
+
+    @Test
     fun `a community only start never rolls the Mission ID`() {
         val result = orchestrator.startSurvey(setup(COMMUNITY), SurveyOrigin.USER)
         assertTrue(result.recording)

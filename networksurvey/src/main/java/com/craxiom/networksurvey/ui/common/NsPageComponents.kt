@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -142,7 +141,7 @@ fun NsPrimaryCta(
         shape = NsTheme.shapes.pill,
         modifier = modifier
             .fillMaxWidth()
-            .height(CTA_HEIGHT)
+            .heightIn(min = CTA_HEIGHT)
             .semantics { if (stateDescription != null) this.stateDescription = stateDescription },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

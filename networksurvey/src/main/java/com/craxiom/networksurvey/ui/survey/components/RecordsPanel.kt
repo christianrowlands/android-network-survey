@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,12 +26,14 @@ import com.craxiom.networksurvey.logging.db.DbUploadStore
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import java.text.NumberFormat
+import com.craxiom.networksurvey.ui.common.NsAdaptiveGrid
 import com.craxiom.networksurvey.ui.common.NsPanel
 import com.craxiom.networksurvey.ui.common.SectionHeader
 
 /**
- * Records by type: one stacked bar in the record type colors, and a two-column legend with the
- * counts. The bar is decoration for sighted users; the legend carries the numbers for TalkBack.
+ * Records by type: one stacked bar in the record type colors, and a two-column legend (one column
+ * at a large font scale) with the counts. The bar is decoration for sighted users; the legend
+ * carries the numbers for TalkBack.
  *
  * With [savedForUpload] the counts are of records saved for the community databases, and a note
  * under the legend says why they hold still while the phone does.
@@ -51,11 +52,16 @@ fun RecordsPanel(
             topPadding = 0.dp,
         )
         StackedBar(types, counts)
-        types.chunked(LEGEND_COLUMNS).forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth().padding(top = NsTheme.spacing.s), horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.l)) {
-                row.forEach { LegendItem(it, counts[it] ?: 0L, Modifier.weight(1f)) }
-                if (row.size < LEGEND_COLUMNS) Spacer(Modifier.weight(1f))
-            }
+        // One column when a name and its count don't fit in half the width (large font)
+        NsAdaptiveGrid(
+            maxColumns = LEGEND_COLUMNS,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = NsTheme.spacing.s),
+            gap = NsTheme.spacing.l,
+            rowGap = NsTheme.spacing.s,
+        ) {
+            types.forEach { LegendItem(it, counts[it] ?: 0L) }
         }
         if (savedForUpload) {
             Text(
@@ -97,8 +103,8 @@ private fun StackedBar(types: List<RecordType>, counts: Map<RecordType, Long>) {
 }
 
 @Composable
-private fun LegendItem(type: RecordType, count: Long, modifier: Modifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
+private fun LegendItem(type: RecordType, count: Long) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
         Box(Modifier.size(SWATCH).clip(RoundedCornerShape(2.dp)).background(type.color))
         Text(stringResource(type.labelRes), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(

@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.ui.common.NsBesideOrBelow
 import com.craxiom.networksurvey.ui.common.NsPanel
 import com.craxiom.networksurvey.ui.common.ROW_ICON
 import com.craxiom.networksurvey.ui.common.SectionHeader
@@ -71,18 +72,25 @@ private fun StillToDoRow(item: StillToDoItemUi, nowMs: Long, onUploadNow: (Desti
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(ROW_ICON),
         )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = pluralStringResource(R.plurals.survey_still_to_do_records, item.pending, item.pending, name),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = DestinationStatusText.waitingDetail(LocalResources.current, item.status.detail, nowMs),
-                style = MaterialTheme.typography.bodySmall,
-                color = statusLevelColor(item.status.level),
-            )
-        }
-        StatusActionButton(item.status.action, item.destination, onUploadNow, onOpen)
+        // Upload now moves under the text when it would squeeze the words (large font, long translation)
+        NsBesideOrBelow(
+            modifier = Modifier.weight(1f),
+            gap = NsTheme.spacing.m,
+            main = {
+                Column {
+                    Text(
+                        text = pluralStringResource(R.plurals.survey_still_to_do_records, item.pending, item.pending, name),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = DestinationStatusText.waitingDetail(LocalResources.current, item.status.detail, nowMs),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusLevelColor(item.status.level),
+                    )
+                }
+            },
+            end = { StatusActionButton(item.status.action, item.destination, onUploadNow, onOpen) },
+        )
     }
 }
