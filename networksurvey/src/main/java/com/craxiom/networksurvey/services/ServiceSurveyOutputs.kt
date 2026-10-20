@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.services
 
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.craxiom.networksurvey.constants.CdrPermissions
 import com.craxiom.networksurvey.survey.engine.SkipReason
 import com.craxiom.networksurvey.survey.engine.SurveyOutputs
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
@@ -45,12 +48,16 @@ class ServiceSurveyOutputs(private val service: NetworkSurveyService) : SurveyOu
             else -> null
         }
 
+        RecordType.CDR -> if (hasAll(CdrPermissions.CDR_REQUIRED_PERMISSIONS)) null else SkipReason.PERMISSION_MISSING
+
         else -> null
     }
 
     override fun communityTargets(): Set<RecordType> = SurveyTypeResolver.communityTargets(service)
 
     override fun autoIncludePhoneState(): Boolean = SurveyTypeResolver.autoIncludePhoneState(service)
+
+    override fun mqttSendsWithoutRecordTypes(): Boolean = service.mqttSendsWithoutRecordTypes()
 
     override fun setFileLoggingEnabled(type: RecordType, enabled: Boolean): Boolean {
         val result: Boolean? = when (type) {
@@ -94,6 +101,10 @@ class ServiceSurveyOutputs(private val service: NetworkSurveyService) : SurveyOu
     }
 
     override fun endMissionSession() = service.endMissionSession()
+
+    private fun hasAll(permissions: Array<String>): Boolean = permissions.all {
+        ContextCompat.checkSelfPermission(service, it) == PackageManager.PERMISSION_GRANTED
+    }
 
     private fun isFileLogging(type: RecordType): Boolean = when (type) {
         RecordType.CELLULAR -> service.isCellularLoggingEnabled

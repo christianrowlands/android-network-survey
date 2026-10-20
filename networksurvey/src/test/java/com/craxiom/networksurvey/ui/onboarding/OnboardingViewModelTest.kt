@@ -46,7 +46,39 @@ class OnboardingViewModelTest {
         { registered },
         { linkPending },
         { true },
+        { hasUserBroker },
     )
+
+    private var hasUserBroker = false
+
+    @Test
+    fun `an upgraded MQTT stream without record types is welcomed as device status only`() {
+        store.onboardingPending = false
+        store.upgradeWelcomePending = true
+        store.setCurrentSetup(SurveySetup.custom(emptySet(), setOf(Destination.MQTT)))
+        store.userAutoStart = true
+        hasUserBroker = true
+
+        val setup = viewModel().welcomeSetup()
+
+        assertTrue(setup.deviceStatusOnly)
+        assertTrue(setup.autoStart)
+        // MQTT is in the survey, so there is nothing to say about the saved broker
+        assertFalse(setup.mqttBrokerSaved)
+    }
+
+    @Test
+    fun `a saved broker the survey does not send to is mentioned`() {
+        store.onboardingPending = false
+        store.upgradeWelcomePending = true
+        store.setCurrentSetup(SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.LOG_FILES)))
+        hasUserBroker = true
+
+        val setup = viewModel().welcomeSetup()
+
+        assertTrue(setup.mqttBrokerSaved)
+        assertFalse(setup.deviceStatusOnly)
+    }
 
     @Test
     fun `an upgraded phone gets the welcome once, with its own setup`() {

@@ -182,7 +182,7 @@ class SurveySetupStoreTest {
     @Test
     fun `the last session round trips and starts out empty`() {
         assertNull(store.lastSession)
-        val session = LastSession(durationMs = 2_520_000L, totalRecords = 3_118L, endedAtMs = 1_791_300_000_000L)
+        val session = LastSession(durationMs = 2_520_000L, totalRecords = 3_118L, endedAtMs = 1_791_300_000_000L, missionId = "NS-1")
         store.lastSession = session
         assertEquals(session, SurveySetupStore(preferences).lastSession)
         store.lastSession = null

@@ -96,7 +96,13 @@ fun SurveyScreenContent(
                         .padding(bottom = NsTheme.spacing.l),
                     verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
                 ) {
-                    LocationLine(state.location, state.lastSession, actions::onTurnOnLocation, actions::onAllowLocation)
+                    LocationLine(
+                        status = state.location,
+                        lastSession = state.lastSession,
+                        onTurnOnLocation = actions::onTurnOnLocation,
+                        onAllowLocation = actions::onAllowLocation,
+                        onCopyMissionId = actions::onCopyMissionId,
+                    )
                     state.orgLine?.let { line ->
                         OrgStatusLine(
                             line = line,
@@ -129,6 +135,7 @@ fun SurveyScreenContent(
                 onStop = { if (state.stopNeedsConfirmation) overlay = SurveyOverlay.STOP else actions.onStop() },
                 onUseLogFiles = actions::onUseLogFiles,
                 onConnectNsAnalytics = actions::onConnectNsAnalytics,
+                commandInFlight = state.commandInFlight,
             )
         }
     }
@@ -191,6 +198,7 @@ private fun RecordingBody(state: SurveyUiState, actions: SurveyActions, onOverla
             onWhatGoesWhere = { onOverlay(SurveyOverlay.WHAT_GOES_WHERE) },
             setupName = state.savedSetups?.selected?.name,
             notSent = recording.notSent,
+            deviceStatusOnly = recording.deviceStatusOnly,
         )
         val countedTypes = recording.types.filter { it in recording.counts }
         if (countedTypes.isNotEmpty()) RecordsPanel(countedTypes, recording.counts, recording.countsSavedForUpload)
@@ -221,7 +229,16 @@ private fun SurveyOverlays(
             onDismiss = close,
         )
 
-        SurveyOverlay.CHANGE -> ChangeSetupSheet(state.userSetup, preview, actions::onApplyDraft, actions::onOpenDestination, close)
+        // From what runs, which an Intent or the organization may have set apart from the working setup
+        SurveyOverlay.CHANGE -> ChangeSetupSheet(
+            initial = state.recording?.changeSeed ?: state.userSetup,
+            preview = preview,
+            onApply = actions::onApplyDraft,
+            onOpenDestination = actions::onOpenDestination,
+            onDismiss = close,
+            onSeeOrganizationSettings = actions::onOpenOrganizationSettings,
+            onUseOwnSettings = { show(SurveyOverlay.USE_OWN) },
+        )
         SurveyOverlay.EDIT_LIST -> EditDestinationListSheet(state.editList, actions::onSetDestinationShown, close)
         SurveyOverlay.STOP -> StopManagedSurveyDialog(state.stopRestartsAtBoot, actions::onStop, close)
         SurveyOverlay.USE_OWN -> UseOwnSettingsDialog(actions::onUseOwnSettings, close)

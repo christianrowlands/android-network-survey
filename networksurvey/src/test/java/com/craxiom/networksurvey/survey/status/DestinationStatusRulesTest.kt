@@ -192,6 +192,38 @@ class DestinationStatusRulesTest {
         assertEquals(StatusDetail.Waiting(12, WaitReason.AutoUploadOff), manual.detail)
     }
 
+    @Test
+    fun `a failed community upload says so and opens the Community page, while Ready and while recording`() {
+        val failed = CommunityQueue(pending = 12, lastFailure = CommunityUploadFailure(INVALID_KEY))
+        val expected = DestinationStatus(StatusWord.UPLOAD_FAILED, StatusDetail.UploadFailed(INVALID_KEY), StatusAction.OPEN)
+
+        assertEquals(expected, DestinationStatusRules.communityIdle(failed, autoUpload = true))
+        assertEquals(expected, DestinationStatusRules.communityIdle(failed, autoUpload = false))
+        assertEquals(expected, status(Destination.COMMUNITY, queues = DeliveryQueues(community = failed)))
+        assertEquals(StatusLevel.HELD, expected.level)
+    }
+
+    @Test
+    fun `a cancelled or acknowledged upload leaves no failure behind`() {
+        // The repository reports no failure for a cancel, and none once the Community page was opened
+        val noFailure = CommunityQueue(pending = 12, lastFailure = null)
+
+        val idle = DestinationStatusRules.communityIdle(noFailure, autoUpload = true)
+        assertEquals(StatusWord.NOT_UPLOADING, idle.word)
+        assertEquals(StatusAction.UPLOAD_NOW, idle.action)
+        assertEquals(StatusWord.COLLECTING, status(Destination.COMMUNITY, queues = DeliveryQueues(community = noFailure)).word)
+    }
+
+    @Test
+    fun `the next upload replaces the failure`() {
+        val failure = CommunityUploadFailure(INVALID_KEY)
+        val uploading = CommunityQueue(pending = 12, uploading = true, lastFailure = failure)
+        assertEquals(StatusWord.UPLOADING, DestinationStatusRules.communityIdle(uploading, autoUpload = true).word)
+
+        val queued = CommunityQueue(pending = 12, uploadQueued = true, lastFailure = failure)
+        assertEquals(StatusWord.QUEUED, status(Destination.COMMUNITY, queues = DeliveryQueues(community = queued)).word)
+    }
+
     // Escalation timing
 
     @Test
@@ -221,6 +253,7 @@ class DestinationStatusRulesTest {
     }
 
     private companion object {
+        const val INVALID_KEY = "Invalid API key"
         const val NOW = 1_800_000_000_000L
     }
 }

@@ -118,7 +118,8 @@ object DestinationStatusRules {
 
     /**
      * The community databases collect records and upload them in batches, so collecting is "on
-     * its way"; repeated failures and automatic upload being off hold the records (amber).
+     * its way"; a failed upload, repeated failures and automatic upload being off hold the records
+     * (amber).
      */
     private fun community(
         runtime: DestinationRuntime?,
@@ -132,6 +133,7 @@ object DestinationStatusRules {
             upload?.keyRejected == true -> DestinationStatus(StatusWord.KEY_REJECTED, StatusDetail.KeyRejected)
             queue.uploading -> DestinationStatus(StatusWord.UPLOADING, StatusDetail.Uploading(pending))
             queue.uploadQueued -> waiting(StatusWord.QUEUED, pending, queuedReason(queue))
+            queue.lastFailure != null -> uploadFailed(queue.lastFailure)
             upload != null && upload.retryAtMs > 0 -> DestinationStatus(
                 StatusWord.WILL_RETRY,
                 StatusDetail.UploadsFailed(upload.failures, upload.retryAtMs),
@@ -178,12 +180,14 @@ object DestinationStatusRules {
     /**
      * The community databases while no survey runs. With automatic upload on, a survey uploads what
      * is left when it stops, so records still waiting upload when asked or during the next survey.
+     * A failed upload says so until the user opens the Community databases page or uploads again.
      */
     fun communityIdle(queue: CommunityQueue, autoUpload: Boolean): DestinationStatus {
         val pending = queue.pending
         return when {
             queue.uploading -> DestinationStatus(StatusWord.UPLOADING, StatusDetail.Uploading(pending))
             queue.uploadQueued -> waiting(StatusWord.QUEUED, pending, queuedReason(queue))
+            queue.lastFailure != null -> uploadFailed(queue.lastFailure)
             else -> DestinationStatus(
                 StatusWord.NOT_UPLOADING,
                 StatusDetail.Waiting(
@@ -228,6 +232,10 @@ object DestinationStatusRules {
         NetworkWait.ANY -> WaitReason.Offline
         NetworkWait.NONE -> WaitReason.UploadStarting
     }
+
+    /** "Last upload failed: ...", with the way to the Community databases page that explains it. */
+    private fun uploadFailed(failure: CommunityUploadFailure) =
+        DestinationStatus(StatusWord.UPLOAD_FAILED, StatusDetail.UploadFailed(failure.message), StatusAction.OPEN)
 
     private fun waiting(word: StatusWord, pending: Int, reason: WaitReason) =
         DestinationStatus(word, StatusDetail.Waiting(pending, reason))

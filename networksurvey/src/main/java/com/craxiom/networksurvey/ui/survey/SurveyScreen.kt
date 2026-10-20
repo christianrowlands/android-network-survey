@@ -102,10 +102,27 @@ private class ScreenActions(
 
     override fun onOpenSettings() = openSettings()
 
-    /** Local network access first (a system dialog), then the battery question, then the start. */
+    /**
+     * The call records permissions first when the survey writes call records to Log files (the only
+     * destination that takes them), then local network access (a system dialog), then the battery
+     * question, then the start. Everything the steps need is read now, so an answer given after a
+     * rotation still starts the survey the user asked for.
+     */
     override fun onStart() {
-        permissions.ensureLocalNetwork(destinationsOn()) {
-            permissions.ensureBatteryChoice { afterStart -> viewModel.start(afterStart) }
+        val destinations = destinationsOn()
+        val startAfterLocalNetwork = {
+            permissions.ensureLocalNetwork(destinations) {
+                permissions.ensureBatteryChoice { afterStart -> viewModel.start(afterStart) }
+            }
+        }
+        // The tiles are the working setup with the organization's locks, so this also covers CDR it turns on
+        val recordsCdr = state.value.tiles.any { it.type == RecordType.CDR && it.on }
+        if (recordsCdr && Destination.LOG_FILES in destinations) {
+            // Only what CDR can't record without (the optional ones never block it). A denial still
+            // starts the rest of the survey, which then lists Call records as left out.
+            permissions.ensure(RecordType.CDR, includeOptional = false, runIfDenied = true, action = startAfterLocalNetwork)
+        } else {
+            startAfterLocalNetwork()
         }
     }
 
@@ -187,11 +204,13 @@ private class ScreenActions(
     private fun withPermissionsFor(types: Set<RecordType>, destinations: Set<Destination>, action: () -> Unit) {
         val added = types - state.value.userSetup.recordTypes
         val needsPermission = added.firstOrNull { it == RecordType.BLUETOOTH || it == RecordType.CDR }
-        val apply = { permissions.ensureLocalNetwork(destinations - destinationsOn()) { action() } }
+        // Read now, not when a permission answer arrives (perhaps after a rotation)
+        val newStreams = destinations - destinationsOn()
+        val apply = { permissions.ensureLocalNetwork(newStreams, action) }
         if (needsPermission == null) {
             apply()
         } else {
-            permissions.ensure(needsPermission, apply)
+            permissions.ensure(needsPermission, action = apply)
         }
     }
 

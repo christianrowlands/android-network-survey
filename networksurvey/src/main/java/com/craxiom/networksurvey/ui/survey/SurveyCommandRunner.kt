@@ -6,6 +6,9 @@ import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.SurveyEvent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.ExecutionException
@@ -20,6 +23,9 @@ import java.util.concurrent.RejectedExecutionException
  * bound again, instead of being lost or sent to a service that is shutting down. A command can
  * carry a follow-up that runs on the screen's thread once the command is done (Go to Settings on the
  * battery question opens the settings only after the survey has started).
+ *
+ * One command runs at a time: while one is in flight (including one waiting for the next binding)
+ * another is ignored, so a double tap on Start can't start a survey and then stop it.
  */
 class SurveyCommandRunner(
     private val scope: CoroutineScope,
@@ -39,12 +45,20 @@ class SurveyCommandRunner(
 
     private var gateway: SurveyServiceGateway? = null
     private var pending: Queued? = null
+    private val mutableInFlight = MutableStateFlow(false)
+
+    /** True from [run] until the command is done; a command kept for the next binding stays in flight. */
+    val inFlight: StateFlow<Boolean> = mutableInFlight.asStateFlow()
 
     /**
      * Runs [command] now if the service is bound, otherwise as soon as it is, then [afterwards] on
-     * the scope's own thread.
+     * the scope's own thread. Ignored while another command is in flight.
      */
     fun run(afterwards: () -> Unit = {}, command: (SurveyServiceGateway) -> Outcome) {
+        if (!mutableInFlight.compareAndSet(expect = false, update = true)) {
+            Timber.d("A survey command is still running; ignoring another")
+            return
+        }
         val queued = Queued(command, afterwards)
         val bound = gateway
         if (bound == null) {
@@ -70,13 +84,21 @@ class SurveyCommandRunner(
 
     private fun execute(target: SurveyServiceGateway, queued: Queued) {
         scope.launch(ioDispatcher) {
+            var keptForNextBinding = false
             try {
                 eventFor(queued.command(target))?.let(emit)
             } catch (e: ExecutionException) {
-                if (e.cause is RejectedExecutionException) return@launch keepForNextBinding(queued, e)
+                if (e.cause is RejectedExecutionException) {
+                    keptForNextBinding = true
+                    return@launch keepForNextBinding(queued, e)
+                }
                 Timber.e(e, "A survey command failed")
+                emit(SurveyEvent.CouldNotStart(emptyList()))
             } catch (e: RejectedExecutionException) {
+                keptForNextBinding = true
                 return@launch keepForNextBinding(queued, e)
+            } finally {
+                if (!keptForNextBinding) mutableInFlight.value = false
             }
             // Done (or failed for good): the follow-up runs either way
             scope.launch { queued.afterwards() }

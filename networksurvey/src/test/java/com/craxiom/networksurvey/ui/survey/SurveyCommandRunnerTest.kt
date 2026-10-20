@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CompletableFuture
@@ -26,7 +27,7 @@ import java.util.concurrent.RejectedExecutionException
 /**
  * The Survey screen's command runner: commands run off the main thread, a command issued while the
  * screen is unbound (a permission dialog paused it) is sent on the next binding, and results turn
- * into the right snackbar.
+ * into the right snackbar. One command runs at a time.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveyCommandRunnerTest {
@@ -123,13 +124,66 @@ class SurveyCommandRunnerTest {
         assertEquals(listOf(SurveyEvent.Stopped(3_118L)), events)
     }
 
+    @Test
+    fun `a second command while one is in flight is ignored, so a double tap on Start starts once`() = scope.runTest {
+        val gateway = FakeGateway()
+        runner.onConnected(gateway)
+        runner.run { SurveyCommandRunner.Outcome.Start(it.startWorkingSetup().get(), "NS-1") }
+        assertTrue(runner.inFlight.value)
+        // The second tap: Stop now sits where Start was
+        runner.run { it.stop().get(); SurveyCommandRunner.Outcome.Stop(0L) }
+        advanceUntilIdle()
+
+        assertEquals(1, gateway.starts)
+        assertEquals(0, gateway.stops)
+        assertEquals(listOf(SurveyEvent.Started("NS-1", 0)), events)
+        assertFalse(runner.inFlight.value)
+
+        // Done, so the next command runs
+        runner.run { it.stop().get(); SurveyCommandRunner.Outcome.Stop(0L) }
+        advanceUntilIdle()
+        assertEquals(1, gateway.stops)
+    }
+
+    @Test
+    fun `a command waiting for a binding stays in flight until it has run`() = scope.runTest {
+        runner.run { SurveyCommandRunner.Outcome.Start(it.startWorkingSetup().get(), null) }
+        advanceUntilIdle()
+        assertTrue(runner.inFlight.value)
+
+        val dying = FakeGateway(rejectStarts = true)
+        runner.onConnected(dying)
+        advanceUntilIdle()
+        // Kept for the next binding, so still in flight
+        assertTrue(runner.inFlight.value)
+
+        val fresh = FakeGateway()
+        runner.onDisconnected()
+        runner.onConnected(fresh)
+        advanceUntilIdle()
+        assertEquals(1, fresh.starts)
+        assertFalse(runner.inFlight.value)
+    }
+
+    @Test
+    fun `an unexpected failure says the survey couldn't start, and ends the command`() = scope.runTest {
+        runner.onConnected(FakeGateway(failStarts = true))
+        runner.run { SurveyCommandRunner.Outcome.Start(it.startWorkingSetup().get(), null) }
+        advanceUntilIdle()
+
+        assertEquals(listOf(SurveyEvent.CouldNotStart(emptyList())), events)
+        assertFalse(runner.inFlight.value)
+    }
+
     private fun TestScope.runTest(block: suspend TestScope.() -> Unit) = kotlinx.coroutines.test.runTest(dispatcher) { block() }
 
     private class FakeGateway(
         private val result: SurveyStartResult = SurveyStartResult(emptyMap(), emptyMap(), recording = true),
         private val rejectStarts: Boolean = false,
+        private val failStarts: Boolean = false,
     ) : SurveyServiceGateway {
         var starts = 0
+        var stops = 0
         override val state: StateFlow<SurveyRuntimeState> = MutableStateFlow(SurveyRuntimeState())
         override fun counts(): Map<RecordType, Long> = emptyMap()
         override fun lastRecordTimeMs(): Long? = null
@@ -141,12 +195,18 @@ class SurveyCommandRunnerTest {
             if (rejectStarts) return CompletableFuture<SurveyStartResult>().apply {
                 completeExceptionally(RejectedExecutionException("shutting down"))
             }
+            if (failStarts) return CompletableFuture<SurveyStartResult>().apply {
+                completeExceptionally(IllegalStateException("the start failed"))
+            }
             starts++
             return CompletableFuture.completedFuture(result)
         }
 
         override fun applyWorkingSetup(): Future<SurveyStartResult> = CompletableFuture.completedFuture(result)
-        override fun stop(): Future<SurveyStartResult> = CompletableFuture.completedFuture(result)
+        override fun stop(): Future<SurveyStartResult> {
+            stops++
+            return CompletableFuture.completedFuture(result)
+        }
         override fun retrySkipped(): Future<SurveyStartResult?> = CompletableFuture.completedFuture(result)
         override fun isMqttBrokerConfigured(): Boolean = false
         override fun latestLocation(): Location? = null

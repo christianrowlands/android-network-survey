@@ -78,6 +78,9 @@ enum class StatusWord(val level: StatusLevel) {
 
     /** Community: OpenCelliD refused the API key. */
     KEY_REJECTED(StatusLevel.NOT_ARRIVING),
+
+    /** Community: the last upload failed or only partly succeeded; the records are still on the phone. */
+    UPLOAD_FAILED(StatusLevel.HELD),
 }
 
 /** The second line of a destination row, as facts; the screen and the notification word it. */
@@ -123,6 +126,9 @@ sealed interface StatusDetail {
 
     /** OpenCelliD refused the API key. */
     data object KeyRejected : StatusDetail
+
+    /** The last community upload failed with [message], the upload's own result text. */
+    data class UploadFailed(val message: String) : StatusDetail
 }
 
 /** Why records wait on the phone. */
@@ -159,6 +165,9 @@ sealed interface WaitReason {
 enum class StatusAction {
     /** Upload the waiting records now. */
     UPLOAD_NOW,
+
+    /** Open the destination's page, where the problem is explained (a failed community upload). */
+    OPEN,
 }
 
 /**

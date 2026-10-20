@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.survey.engine.SurveyOrigin
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
+import com.craxiom.networksurvey.survey.setup.SurveyPreferenceKeys
 import com.craxiom.networksurvey.survey.setup.SurveySetupStore
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -167,6 +168,93 @@ class MdmOverrideControllerTest {
         assertEquals(setOf(RecordType.CELLULAR, RecordType.PHONE_STATE), outputs.fileTypes)
         assertEquals(1, outputs.rolls)
         assertFalse(controller.organizationUpdatedWhileOverridden)
+    }
+
+    /** What the next service creation does: a new controller over the same stored state. */
+    private fun relaunch() {
+        controller = MdmOverrideController(
+            coordinator, store, preferences, RestrictionsSource { RestrictionsSnapshot(restrictions) },
+            { deviceStatusSent++ }, { brokerCopies++ }, { reconnectChecks++ },
+        )
+        controller.initialize()
+        drain()
+    }
+
+    @Test
+    fun `the first run ever stores the configuration without acting on it`() {
+        restrictions = mapOf(SurveyMdmKeys.DESTINATION_MQTT to "on", SurveyMdmKeys.SURVEY_CELLULAR to "on")
+        val user = SurveySetup.custom(setOf(RecordType.BLUETOOTH), setOf(Destination.NS_ANALYTICS))
+        store.setCurrentSetup(user)
+        store.stoppedByUser = true
+
+        controller.initialize()
+
+        assertEquals(user, store.getCurrentSetup())
+        assertTrue(store.stoppedByUser)
+        assertEquals(RestrictionsSnapshot(restrictions).fingerprint(), preferences.getString(SurveyPreferenceKeys.ORG_CONFIG_FINGERPRINT, null))
+        assertTrue(preferences.getBoolean(SurveyPreferenceKeys.ORG_SHAPED_SETUP, false))
+    }
+
+    @Test
+    fun `the same configuration at the next launch does nothing`() {
+        restrictions = mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on")
+        controller.initialize()
+        val user = SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.LOG_FILES))
+        store.setCurrentSetup(user)
+        store.stoppedByUser = true
+
+        relaunch()
+
+        assertEquals(user, store.getCurrentSetup())
+        assertTrue(store.stoppedByUser)
+        assertEquals(0, reconnectChecks)
+    }
+
+    @Test
+    fun `a push while closed that makes the phone managed seeds the setup and clears the stopped flag`() {
+        controller.initialize()
+        store.setCurrentSetup(SurveySetup.custom(setOf(RecordType.BLUETOOTH), setOf(Destination.NS_ANALYTICS)))
+        store.stoppedByUser = true
+
+        restrictions = mapOf(SurveyMdmKeys.DESTINATION_MQTT to "on", SurveyMdmKeys.SURVEY_CELLULAR to "on")
+        relaunch()
+
+        assertEquals(SurveySetup.empty(), store.getCurrentSetup())
+        assertFalse(store.stoppedByUser)
+        assertFalse(coordinator.orchestrator.isRecording())
+        assertFalse(controller.organizationUpdatedWhileOverridden)
+        assertTrue(preferences.getBoolean(SurveyPreferenceKeys.ORG_SHAPED_SETUP, false))
+    }
+
+    @Test
+    fun `a push while closed to a phone that was already managed keeps the user's setup`() {
+        restrictions = mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on")
+        controller.initialize()
+        val user = SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.LOG_FILES))
+        store.setCurrentSetup(user)
+
+        restrictions = mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on", SurveyMdmKeys.SURVEY_GNSS to "on")
+        relaunch()
+
+        assertEquals(user, store.getCurrentSetup())
+    }
+
+    @Test
+    fun `a push while closed and overridden flags Review and clears the stopped flag`() {
+        restrictions = mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on")
+        controller.initialize()
+        setOverride(true)
+        val user = store.getCurrentSetup()
+        store.stoppedByUser = true
+
+        restrictions = mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on", SurveyMdmKeys.SURVEY_GNSS to "on")
+        relaunch()
+
+        assertTrue(controller.organizationUpdatedWhileOverridden)
+        assertFalse(store.stoppedByUser)
+        assertEquals(user, store.getCurrentSetup())
+        // Stored from the organization's policy, so it stays right while overridden
+        assertTrue(preferences.getBoolean(SurveyPreferenceKeys.ORG_SHAPED_SETUP, false))
     }
 
     @Test

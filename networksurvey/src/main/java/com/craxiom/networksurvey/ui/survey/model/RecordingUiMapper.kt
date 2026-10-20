@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.survey.model
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.status.DeliveryQueues
 import com.craxiom.networksurvey.survey.status.DestinationStatus
 import com.craxiom.networksurvey.survey.status.DestinationStatusRules
@@ -44,8 +45,17 @@ internal object RecordingUiMapper {
             canChange = !(form.allTypesManaged && form.allDestinationsManaged),
             notSent = routing(inputs)?.notSentAnywhere.orEmpty(),
             countsSavedForUpload = savedForUpload,
+            changeSeed = runtime.requested ?: SurveySetup.custom(runtime.recordTypes, runtime.destinations.keys),
+            deviceStatusOnly = runtime.recordTypes.isEmpty() && isMqttDeviceStatusOnly(runtime),
         )
     }
+
+    /**
+     * @return True when MQTT runs with no record types: it connects and sends device status (and the
+     * watchlist, when it streams) only. Only an organization, an upgrade or another app sets this up.
+     */
+    private fun isMqttDeviceStatusOnly(runtime: SurveyRuntimeState): Boolean =
+        runtime.destinations[Destination.MQTT]?.let { !it.failed && it.types.isEmpty() } == true
 
     /** @return True when the community databases are the only destination still running. */
     private fun isCommunityOnly(inputs: SurveyInputs): Boolean =
@@ -61,7 +71,12 @@ internal object RecordingUiMapper {
      */
     fun routing(inputs: SurveyInputs): RoutingTableUi? {
         val runtime = inputs.runtime
-        return RoutingTableUi.of(runtime.requested?.recordTypes ?: runtime.recordTypes, runningDestinations(runtime), inputs.destinationInfo)
+        return RoutingTableUi.of(
+            types = runtime.requested?.recordTypes ?: runtime.recordTypes,
+            destinations = runningDestinations(runtime),
+            info = inputs.destinationInfo,
+            mqttDeviceStatus = isMqttDeviceStatusOnly(runtime),
+        )
     }
 
     /**

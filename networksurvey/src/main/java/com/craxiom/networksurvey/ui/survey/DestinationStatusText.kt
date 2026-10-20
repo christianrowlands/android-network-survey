@@ -36,6 +36,8 @@ object DestinationStatusText {
             StatusWord.DROPPING -> R.string.survey_status_dropping
             StatusWord.COLLECTING -> R.string.survey_status_collecting
             StatusWord.KEY_REJECTED -> R.string.survey_status_key_rejected
+            // The uploader's own word for it
+            StatusWord.UPLOAD_FAILED -> R.string.uploader_failure
         }
     )
 
@@ -95,6 +97,7 @@ object DestinationStatusText {
         )
 
         StatusDetail.KeyRejected -> resources.getString(R.string.survey_status_key_rejected_detail)
+        is StatusDetail.UploadFailed -> uploadFailed(resources, detail)
     }
 
     /**
@@ -150,8 +153,12 @@ object DestinationStatusText {
     fun waitingDetail(resources: Resources, detail: StatusDetail, nowMs: Long): String = when (detail) {
         is StatusDetail.Waiting -> waitReason(resources, detail.reason, nowMs).replaceFirstChar { it.titlecase(resources.configuration.locales[0]) }
         is StatusDetail.QuotaReached -> resources.getString(R.string.survey_status_quota_reached)
+        is StatusDetail.UploadFailed -> uploadFailed(resources, detail)
         else -> resources.getString(R.string.survey_status_uploading)
     }
+
+    private fun uploadFailed(resources: Resources, detail: StatusDetail.UploadFailed): String =
+        resources.getString(R.string.survey_status_upload_failed_detail, detail.message)
 
     private fun dotted(resources: Resources, vararg parts: String?): String =
         parts.filterNotNull().filter { it.isNotBlank() }.joinToString(resources.getString(R.string.survey_dot_separator))

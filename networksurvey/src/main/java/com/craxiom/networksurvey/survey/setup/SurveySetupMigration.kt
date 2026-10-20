@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSource
 import com.craxiom.networksurvey.survey.mdm.SurveyPolicy
+import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveyDefaults
@@ -20,12 +21,17 @@ import timber.log.Timber
  *
  * The rules:
  * 1. An upgrading phone keeps the survey it started on its own: the record types it auto started,
- *    plus the old MQTT stream types when MQTT was set to start at boot, sent to Log files (plus
- *    MQTT and the community databases when those were set to start). A phone registered with NS
- *    Analytics that auto started nothing gets NS Analytics turned on instead, with the record
- *    types its old NS Analytics switches sent, so the survey picks up where the user left off.
- *    NS Analytics never auto started before, so it is not added to a setup that auto starts:
- *    starting it at boot would spend workspace quota on record types it never received.
+ *    plus the old MQTT stream types when MQTT was set to start at boot, sent to each destination
+ *    that used to start on its own (Log files when a file logging auto start switch was on, MQTT
+ *    and the community databases when those were set to start). Log files is never added to a
+ *    survey that auto starts without it, so a phone that only streamed or uploaded at boot never
+ *    starts writing files. A phone that auto started nothing gets its survey sent to Log files,
+ *    or, when it is registered with NS Analytics, to NS Analytics with the record types its old
+ *    NS Analytics switches sent, so the survey picks up where the user left off; nothing starts
+ *    until the user presses Start. NS Analytics never auto started before, so it is not added to
+ *    a setup that auto starts: starting it at boot would spend workspace quota on record types
+ *    it never received. Auto start is dropped when the policy blocks every destination it would
+ *    start (Community on a managed phone).
  * 2. A fresh install gets the fresh install default (Cellular, Phone state and Wi-Fi sent to NS
  *    Analytics) and is marked for first run. An install that was opened before but never touched
  *    the survey settings is still an upgrade, and follows rule 1 (the default record types sent to
@@ -36,7 +42,9 @@ import timber.log.Timber
  *    setup is what the organization asked for.
  *
  * A phone registered with NS Analytics also gets a saved setup named "NS Analytics" seeded from its
- * old NS Analytics record type switches, so choosing it sends exactly what it sent before.
+ * old NS Analytics record type switches, so choosing it sends the record types it sent before.
+ * Phone state is the exception: it now follows Cellular for every destination, so it can join even
+ * where its old NS Analytics switch was off.
  *
  * Version 2 removes the built-in presets that development builds of version 1 stored, keeping the
  * NS Analytics one as the user's own setup on a registered phone. Version 3 deletes the flag of the
@@ -44,6 +52,8 @@ import timber.log.Timber
  *
  * Values the app had copied from MDM into the user preferences are ignored: any old key that is
  * also present in the managed configuration is treated as an organization value, not the user's.
+ * The exception is a phone where the user had "Override organization settings" on: earlier
+ * versions ran on the user's own preferences then, so the migration reads them too.
  */
 class SurveySetupMigration(
     private val preferences: SharedPreferences,
@@ -82,14 +92,15 @@ class SurveySetupMigration(
         val snapshot = restrictionsSource.snapshot()
         val overrideOn = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false)
         val policy = SurveyPolicy.evaluate(snapshot, overrideOn)
+        val user = UserValues(snapshot, overrideOn)
         val nsAnalyticsRegistered = isRegistered()
 
         if (nsAnalyticsRegistered) store.setSavedSetups(listOf(nsAnalyticsSetup(readNsAnalyticsTypes())))
 
         // The settings defaults are written on the first launch, so an install that has them was
         // opened before: an upgrade, which gets the welcome instead of first run.
-        if (isUpgrade(snapshot, nsAnalyticsRegistered) || wasOpenedBefore()) {
-            migrateUpgradingUser(snapshot, nsAnalyticsRegistered)
+        if (isUpgrade(user, nsAnalyticsRegistered) || wasOpenedBefore()) {
+            migrateUpgradingUser(user, policy, nsAnalyticsRegistered)
             store.upgradeWelcomePending = true
         } else {
             store.setCurrentSetup(SurveyDefaults.freshInstallSetup())
@@ -132,35 +143,56 @@ class SurveySetupMigration(
         false
     }
 
-    private fun migrateUpgradingUser(snapshot: RestrictionsSnapshot, nsAnalyticsRegistered: Boolean) {
-        val autoStartTypes = AUTO_START_KEYS.filter { (_, key) -> userBoolean(snapshot, key, false) }.keys
+    private fun migrateUpgradingUser(user: UserValues, policy: SurveyPolicyState, nsAnalyticsRegistered: Boolean) {
+        val autoStartTypes = AUTO_START_KEYS.filter { (_, key) -> user.boolean(key, false) }.keys
         // MQTT joins the setup only if it used to start on its own. A broker the user configured but
         // connected by hand is left out, so upgrading never starts streaming data that did not
         // stream before; the user adds MQTT to the survey when they want it.
-        val mqttIncluded = hasUserBroker(snapshot) &&
-            userBoolean(snapshot, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false)
-        val communityIncluded = userBoolean(snapshot, NetworkSurveyConstants.PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT, false)
+        val mqttIncluded = hasUserBroker(user) &&
+            user.boolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false)
+        val communityIncluded = user.boolean(NetworkSurveyConstants.PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT, false)
 
-        val autoStarts = autoStartTypes.isNotEmpty() || communityIncluded || mqttIncluded
+        // The destinations earlier versions started on their own. Log files is one of them only
+        // when a file logging auto start switch was on.
+        val autoStartDestinations = buildSet {
+            if (autoStartTypes.isNotEmpty()) add(Destination.LOG_FILES)
+            if (mqttIncluded) add(Destination.MQTT)
+            if (communityIncluded) add(Destination.COMMUNITY)
+        }
+        // A survey whose every destination the policy blocks would start and send nothing
+        val autoStarts = autoStartDestinations.any { policy.isDestinationAvailable(it) }
+        if (autoStartDestinations.isNotEmpty() && !autoStarts) {
+            Timber.i("Not auto starting the migrated survey: the policy blocks %s", autoStartDestinations)
+        }
         // The saved "NS Analytics" setup still lets a registered user who auto starts pick it
         val nsAnalyticsIncluded = nsAnalyticsRegistered && !autoStarts
 
         val types = autoStartTypes.toMutableSet()
         if (mqttIncluded) {
             types += STREAM_KEYS.filter { (_, keyAndDefault) ->
-                userBoolean(snapshot, keyAndDefault.first, keyAndDefault.second)
+                user.boolean(keyAndDefault.first, keyAndDefault.second)
             }.keys
         }
         if (nsAnalyticsIncluded) types += readNsAnalyticsTypes()
-        if (types.isEmpty()) types += SurveyDefaults.RECORD_TYPES
 
         val destinations = buildSet {
-            // NS Analytics is the survey's home when it joins; otherwise Log files is, as it was
-            // for every survey of earlier versions that auto started.
-            if (nsAnalyticsIncluded) add(Destination.NS_ANALYTICS) else add(Destination.LOG_FILES)
+            when {
+                // NS Analytics is the survey's home when it joins
+                nsAnalyticsIncluded -> add(Destination.NS_ANALYTICS)
+                // Log files joins only where it already wrote files at boot, or as the home of a
+                // survey that does not start on its own (nothing is written until the user presses
+                // Start). A survey that only streamed or uploaded at boot never gains it.
+                autoStartTypes.isNotEmpty() || !autoStarts -> add(Destination.LOG_FILES)
+            }
             if (mqttIncluded) add(Destination.MQTT)
             if (communityIncluded) add(Destination.COMMUNITY)
         }
+
+        // MQTT on its own with every stream switch off sent only device status (and watchlist
+        // events) in earlier versions, so it keeps no record types: a heartbeat only stream.
+        // Every other survey needs record types to send anything.
+        val heartbeatOnly = destinations == setOf(Destination.MQTT)
+        if (types.isEmpty() && !heartbeatOnly) types += SurveyDefaults.RECORD_TYPES
 
         store.setCurrentSetup(SurveySetup.custom(types, destinations))
 
@@ -173,27 +205,39 @@ class SurveySetupMigration(
      * @return True if this phone ran an earlier version: any old survey preference is stored, or
      * the phone is registered with NS Analytics.
      */
-    private fun isUpgrade(snapshot: RestrictionsSnapshot, nsAnalyticsRegistered: Boolean): Boolean {
+    private fun isUpgrade(user: UserValues, nsAnalyticsRegistered: Boolean): Boolean {
         if (nsAnalyticsRegistered) return true
-        return OBSOLETE_KEYS.any { preferences.contains(it) && !snapshot.contains(it) } ||
-            hasUserBroker(snapshot)
+        return OBSOLETE_KEYS.any { preferences.contains(it) && user.isUserValue(it) } ||
+            hasUserBroker(user)
     }
 
     /**
      * @return True if the user set up a broker of their own: a saved broker profile, or the single
      * broker of earlier versions when the broker profile migration has not run yet.
      */
-    private fun hasUserBroker(snapshot: RestrictionsSnapshot): Boolean {
+    private fun hasUserBroker(user: UserValues): Boolean {
         if (hasUserBrokerProfile()) return true
-        if (snapshot.contains(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST)) return false
+        if (!user.isUserValue(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST)) return false
         val host = preferences.getString(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST, null)
         return !host.isNullOrBlank()
     }
 
-    /** Reads a user boolean, ignoring a value the app had copied in from the managed configuration. */
-    private fun userBoolean(snapshot: RestrictionsSnapshot, key: String, default: Boolean): Boolean {
-        if (snapshot.contains(key)) return default
-        return preferences.getBoolean(key, default)
+    /**
+     * Reads the user's own values of the old preferences.
+     *
+     * @param snapshot   The managed configuration. Earlier versions copied the keys it holds into
+     *                   the preferences, so a stored value of one of them is the organization's.
+     * @param overrideOn True if the user had "Override organization settings" on, which made
+     *                   earlier versions run on the user's preferences even for managed keys.
+     */
+    private inner class UserValues(private val snapshot: RestrictionsSnapshot, private val overrideOn: Boolean) {
+
+        /** @return True if the stored value of [key] is the user's, not one copied in from MDM. */
+        fun isUserValue(key: String): Boolean = overrideOn || !snapshot.contains(key)
+
+        /** Reads a user boolean, ignoring a value the app had copied in from the managed configuration. */
+        fun boolean(key: String, default: Boolean): Boolean =
+            if (isUserValue(key)) preferences.getBoolean(key, default) else default
     }
 
     private fun readNsAnalyticsTypes(): Set<RecordType> = NS_ANALYTICS_KEYS.filter { (_, keyAndDefault) ->

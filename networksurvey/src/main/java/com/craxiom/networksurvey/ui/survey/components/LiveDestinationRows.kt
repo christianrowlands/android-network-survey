@@ -104,9 +104,7 @@ private fun LiveRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (live.status.action == StatusAction.UPLOAD_NOW) {
-                NsTextAction(stringResource(R.string.survey_upload_now), onClick = { onUploadNow(live.destination) })
-            }
+            StatusActionButton(live.status.action, live.destination, onUploadNow, onOpen)
         }
         StatusLabel(statusText, statusColor)
         Icon(
@@ -115,6 +113,16 @@ private fun LiveRow(
             tint = MaterialTheme.colorScheme.outline,
             modifier = Modifier.size(SMALL_ICON),
         )
+    }
+}
+
+/** The action a status offers under its detail line: Upload now, or Open for a problem its page explains. */
+@Composable
+fun StatusActionButton(action: StatusAction?, destination: Destination, onUploadNow: (Destination) -> Unit, onOpen: (Destination) -> Unit) {
+    when (action) {
+        StatusAction.UPLOAD_NOW -> NsTextAction(stringResource(R.string.survey_upload_now), onClick = { onUploadNow(destination) })
+        StatusAction.OPEN -> NsTextAction(stringResource(R.string.survey_action_open), onClick = { onOpen(destination) })
+        null -> Unit
     }
 }
 

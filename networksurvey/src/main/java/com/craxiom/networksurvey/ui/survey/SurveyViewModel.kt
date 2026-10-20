@@ -109,8 +109,12 @@ class SurveyViewModel @JvmOverloads constructor(
      */
     val uiState: StateFlow<SurveyUiState> = gateway
         .flatMapLatest { bound -> if (bound == null) emptyFlow() else liveState(bound) }
+        .combine(commands.inFlight) { state, inFlight -> state.copy(commandInFlight = inFlight) }
         .flowOn(ioDispatcher)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), SurveyUiState.UNKNOWN)
+
+    /** True while a start, change or stop is on its way to the service. */
+    internal val commandInFlight: StateFlow<Boolean> get() = commands.inFlight
 
     init {
         preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
@@ -239,10 +243,15 @@ class SurveyViewModel @JvmOverloads constructor(
         SurveySetup.custom(setup.recordTypes, setup.destinations - Destination.NS_ANALYTICS + Destination.LOG_FILES)
     }
 
-    /** Recording only: stores the Change sheet's draft and applies it to the running survey. */
+    /**
+     * Recording only: stores the Change sheet's draft and applies it to the running survey. Both
+     * happen in the one command, so the service always applies this draft and never the one before
+     * it (a separate store write could land after the apply had read the store).
+     */
     fun applyDraft(types: Set<RecordType>, destinations: Set<Destination>) {
-        editWorkingSetup { SurveySetup.custom(types, destinations) }
+        organizationWatcher.disarm()
         commands.run { gateway ->
+            store.setCurrentSetup(SurveySetup.custom(types, destinations))
             gateway.applyWorkingSetup().get()
             SurveyCommandRunner.Outcome.Applied
         }
@@ -295,6 +304,10 @@ class SurveyViewModel @JvmOverloads constructor(
         mutableEvents.tryEmit(event)
     }
 
+    /**
+     * Ready only: edits the stored working setup on its own coroutine. Nothing starts from here; a
+     * command that must see the edit writes the store itself (see [applyDraft]).
+     */
     private fun editWorkingSetup(change: (SurveySetup) -> SurveySetup) {
         organizationWatcher.disarm()
         viewModelScope.launch(ioDispatcher) { store.setCurrentSetup(change(store.getCurrentSetup())) }

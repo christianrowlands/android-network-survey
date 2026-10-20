@@ -13,6 +13,9 @@ import com.craxiom.networksurvey.survey.status.LeftOutItem
  * Everything the Survey screen draws, as plain data. [SurveyUiStateMapper] builds it from the
  * service state; the composables turn it into words, so every rule here is JVM tested and the
  * strings stay in resources.
+ *
+ * @property commandInFlight True while a start, change or stop is on its way to the service; Start
+ *                           and Stop are disabled meanwhile, so a double tap sends one command.
  */
 data class SurveyUiState(
     val recording: RecordingUi? = null,
@@ -38,6 +41,7 @@ data class SurveyUiState(
     val stillToDo: List<StillToDoItemUi> = emptyList(),
     val routing: RoutingTableUi? = null,
     val known: Boolean = true,
+    val commandInFlight: Boolean = false,
 ) {
     /** True while a survey runs; the screen shows the Recording layout and the Stop button. */
     val isRecording: Boolean get() = recording != null
@@ -73,8 +77,11 @@ sealed interface LocationStatus {
     data object PermissionNeeded : LocationStatus
 }
 
-/** "Last survey ran for 42 min · 3,118 records" on the Ready screen. */
-data class LastSessionUi(val length: SessionLength, val records: Long)
+/**
+ * "Last survey ran for 42 min · 3,118 records" on the Ready screen, with the last survey's
+ * [missionId] (when it had one) so it can still be copied to look up its data.
+ */
+data class LastSessionUi(val length: SessionLength, val records: Long, val missionId: String? = null)
 
 /** How long the last survey ran: seconds when it was under a minute, whole minutes otherwise. */
 sealed interface SessionLength {
@@ -178,6 +185,11 @@ sealed interface OrgLineUi {
 /**
  * The Recording layout.
  *
+ * @property changeSeed          What the running survey asked for (or runs, when it asked for
+ *                               nothing it said), which the Change sheet starts from: a survey an
+ *                               Intent or the organization started may differ from the working setup.
+ * @property deviceStatusOnly    True when the survey records no record types and only MQTT runs,
+ *                               sending device status (heartbeat) messages.
  * @property counts              The count of each type the Records panel shows. When
  *                               [countsSavedForUpload] is set it holds only the types the community
  *                               databases receive.
@@ -199,6 +211,8 @@ data class RecordingUi(
     val canChange: Boolean,
     val notSent: Set<RecordType> = emptySet(),
     val countsSavedForUpload: Boolean = false,
+    val changeSeed: SurveySetup = SurveySetup.empty(),
+    val deviceStatusOnly: Boolean = false,
 )
 
 /**

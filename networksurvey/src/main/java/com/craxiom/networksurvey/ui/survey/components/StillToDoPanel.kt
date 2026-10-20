@@ -22,9 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.model.Destination
-import com.craxiom.networksurvey.survey.status.StatusAction
 import com.craxiom.networksurvey.ui.common.NsPanel
-import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.ROW_ICON
 import com.craxiom.networksurvey.ui.common.SectionHeader
 import com.craxiom.networksurvey.ui.survey.DestinationStatusText
@@ -85,8 +83,6 @@ private fun StillToDoRow(item: StillToDoItemUi, nowMs: Long, onUploadNow: (Desti
                 color = statusLevelColor(item.status.level),
             )
         }
-        if (item.status.action == StatusAction.UPLOAD_NOW) {
-            NsTextAction(stringResource(R.string.survey_upload_now), onClick = { onUploadNow(item.destination) })
-        }
+        StatusActionButton(item.status.action, item.destination, onUploadNow, onOpen)
     }
 }

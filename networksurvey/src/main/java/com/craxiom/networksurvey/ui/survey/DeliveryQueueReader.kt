@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.survey.status.CommunityQueue
+import com.craxiom.networksurvey.survey.status.CommunityUploadFailure
 import com.craxiom.networksurvey.survey.status.DeliveryQueues
 import com.craxiom.networksurvey.survey.status.NetworkWait
 import com.craxiom.networksurvey.survey.status.NsAnalyticsQueue
@@ -29,7 +30,8 @@ import timber.log.Timber
 /**
  * Reads what waits on the phone for NS Analytics and the community databases, and how their
  * uploads are going, for the destination statuses and the "Still to do" panel. Upload work changes
- * show at once; the record counts are read again every [pollIntervalMs] while collected.
+ * (and a failed community upload) show at once; the record counts are read again every
+ * [pollIntervalMs] while collected.
  */
 class DeliveryQueueReader(
     context: Context,
@@ -38,13 +40,17 @@ class DeliveryQueueReader(
     private val appContext = context.applicationContext
 
     /** The queues, while collected. */
-    fun queues(): Flow<DeliveryQueues> = combine(
-        WorkManager.getInstance(appContext).getWorkInfosByTagFlow(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG),
-        CommunityUploadRepository.get(appContext).state,
-        ticks(),
-    ) { nsAnalyticsWork, communityUpload, _ -> read(nsAnalyticsWork, communityUpload) }
-        .flowOn(Dispatchers.IO)
-        .distinctUntilChanged()
+    fun queues(): Flow<DeliveryQueues> {
+        val community = CommunityUploadRepository.get(appContext)
+        return combine(
+            WorkManager.getInstance(appContext).getWorkInfosByTagFlow(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG),
+            community.state,
+            community.lastFailure,
+            ticks(),
+        ) { nsAnalyticsWork, communityUpload, communityFailure, _ -> read(nsAnalyticsWork, communityUpload, communityFailure) }
+            .flowOn(Dispatchers.IO)
+            .distinctUntilChanged()
+    }
 
     private fun ticks(): Flow<Unit> = flow {
         while (true) {
@@ -53,8 +59,12 @@ class DeliveryQueueReader(
         }
     }
 
-    private fun read(nsAnalyticsWork: List<WorkInfo>, communityUpload: UploadProgressState): DeliveryQueues = try {
-        DeliveryQueues(nsAnalytics = nsAnalytics(nsAnalyticsWork), community = community(communityUpload))
+    private fun read(
+        nsAnalyticsWork: List<WorkInfo>,
+        communityUpload: UploadProgressState,
+        communityFailure: CommunityUploadFailure?,
+    ): DeliveryQueues = try {
+        DeliveryQueues(nsAnalytics = nsAnalytics(nsAnalyticsWork), community = community(communityUpload, communityFailure))
     } catch (e: Exception) {
         Timber.e(e, "Could not read the upload queues")
         DeliveryQueues()
@@ -81,7 +91,7 @@ class DeliveryQueueReader(
      * Only records a selected target can take count: Cellular goes to either, Wi-Fi only to
      * BeaconDB, so Wi-Fi left over after BeaconDB was turned off isn't "waiting".
      */
-    private fun community(upload: UploadProgressState): CommunityQueue {
+    private fun community(upload: UploadProgressState, failure: CommunityUploadFailure?): CommunityQueue {
         val openCelliD = PreferenceUtils.getBoolean(
             NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
         )
@@ -95,6 +105,7 @@ class DeliveryQueueReader(
             uploading = inProgress?.running == true,
             uploadQueued = inProgress != null && !inProgress.running,
             networkWait = if (inProgress != null && !inProgress.running) communityNetworkWait() else NetworkWait.NONE,
+            lastFailure = failure,
         )
     }
 

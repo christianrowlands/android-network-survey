@@ -3,11 +3,14 @@ package com.craxiom.networksurvey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
+import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.google.gson.Gson;
 
 import org.junit.Test;
 
@@ -214,5 +217,45 @@ public class MqttConnectionSettingsTest
         assertNotNull("Connection info should not be null", connectionInfo);
         assertEquals("Invalid QoS should convert to default QoS 1",
                 MqttQos.AT_LEAST_ONCE, connectionInfo.getMqttQos());
+    }
+
+    @Test
+    public void testToMqttConnectionInfo_everyOptionalFieldMissing()
+    {
+        // An Intent API JSON with only a host, as Gson reads it: no port, TLS, client, login, topic
+        // prefix, QoS or stream flags. The conversion must not throw and must use the defaults.
+        MqttConnectionSettings settings = new Gson().fromJson("{\"mqtt_host\":\"" + TEST_HOST + "\"}",
+                MqttConnectionSettings.class);
+
+        MqttConnectionInfo info = (MqttConnectionInfo) settings.toMqttConnectionInfo();
+
+        assertEquals(TEST_HOST, info.getMqttBrokerHost());
+        assertEquals(MqttConstants.DEFAULT_MQTT_PORT, info.getPortNumber());
+        assertEquals(MqttConstants.DEFAULT_MQTT_TLS_SETTING, info.isTlsEnabled());
+        assertNull(info.getMqttClientId());
+        assertNull(info.getMqttUsername());
+        assertNull(info.getMqttPassword());
+        assertEquals(MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX, info.getTopicPrefix());
+        assertEquals(MqttQos.AT_LEAST_ONCE, info.getMqttQos());
+        assertFalse(info.isCellularStreamEnabled());
+        assertFalse(info.isWifiStreamEnabled());
+        assertFalse(info.isBluetoothStreamEnabled());
+        assertFalse(info.isGnssStreamEnabled());
+        assertFalse(info.isDeviceStatusStreamEnabled());
+        assertFalse(info.isPhoneStateStreamEnabled());
+    }
+
+    @Test
+    public void testToMqttConnectionInfo_keepsAGivenPortAndTls()
+    {
+        MqttConnectionSettings settings = new MqttConnectionSettings(
+                TEST_HOST, 1883, false, TEST_DEVICE_NAME,
+                TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX, 1,
+                null, null, null, null, null, null);
+
+        BrokerConnectionInfo info = settings.toMqttConnectionInfo();
+
+        assertEquals(1883, info.getPortNumber());
+        assertFalse(info.isTlsEnabled());
     }
 }

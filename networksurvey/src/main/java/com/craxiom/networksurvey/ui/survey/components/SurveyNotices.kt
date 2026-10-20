@@ -22,7 +22,8 @@ import com.craxiom.networksurvey.ui.common.SMALL_ICON
 
 /**
  * The slim line at the top of the Survey screen: whether the phone has a location fix, and while
- * Ready, how the last survey went. It never blocks Start; a survey without a fix still records.
+ * Ready, how the last survey went and its Mission ID, which can still be copied. It never blocks
+ * Start; a survey without a fix still records.
  */
 @Composable
 fun LocationLine(
@@ -31,6 +32,7 @@ fun LocationLine(
     onTurnOnLocation: () -> Unit,
     onAllowLocation: () -> Unit,
     modifier: Modifier = Modifier,
+    onCopyMissionId: (String) -> Unit = {},
 ) {
     Column(modifier = modifier) {
         LocationStatusLine(status, onTurnOnLocation, onAllowLocation)
@@ -42,6 +44,7 @@ fun LocationLine(
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(start = SMALL_ICON + NsTheme.spacing.s),
             )
+            lastSession.missionId?.let { MissionIdRow(it, onCopyMissionId) }
         }
     }
 }

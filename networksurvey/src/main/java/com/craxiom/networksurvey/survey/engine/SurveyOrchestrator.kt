@@ -18,7 +18,11 @@ import timber.log.Timber
  *   blocked or turned off by the organization, nothing to receive) are skipped with a reason
  *   before anything starts. If nothing can start, nothing starts and the Mission ID does not roll.
  * - **Every destination gets everything the survey records**, minus capability limits, except
- *   that an Intent API merge never widens what NS Analytics receives (paid quota).
+ *   that an Intent API merge never widens what NS Analytics receives (paid quota). A survey with
+ *   no record types at all (from the organization, the upgrade migration or the Intent API) still
+ *   runs MQTT when it has a device status heartbeat or watchlist to send.
+ * - **Only report what could matter.** A record type problem (a radio off, a missing permission)
+ *   is reported only when some destination that may start would take that type.
  * - **Add before remove.** When a running survey changes, new destinations and types are started
  *   before old ones are stopped, so the session (and its Mission ID) never ends in between.
  * - **Stop stops everything**, then ends the session explicitly so an immediate Start rolls a
@@ -191,6 +195,8 @@ class SurveyOrchestrator(
         val results = linkedMapOf<Destination, DestinationResult>()
         val targets = linkedMapOf<Destination, Set<RecordType>>()
         val communityTargets = outputs.communityTargets()
+        // The record types some destination that may start could take, had none been left out
+        val takeableTypes = mutableSetOf<RecordType>()
         for (destination in Destination.entries) {
             val wanted = destination in requested.destinations || policy.lockFor(destination) == ManagedState.ON
             if (!wanted) continue
@@ -205,16 +211,21 @@ class SurveyOrchestrator(
                 continue
             }
 
-            var destinationTypes = DestinationCapabilities.typesFor(destination, types, communityTargets)
-            if (destination == Destination.NS_ANALYTICS && nsAnalyticsCap != null) {
-                destinationTypes = destinationTypes intersect nsAnalyticsCap
-            }
+            takeableTypes += typesFor(destination, requestedTypes, communityTargets, nsAnalyticsCap)
+            val destinationTypes = typesFor(destination, types, communityTargets, nsAnalyticsCap)
             if (destinationTypes.isEmpty()) {
+                if (isHeartbeatOnlyMqtt(destination, requestedTypes)) {
+                    targets[destination] = emptySet()
+                    continue
+                }
                 results[destination] = DestinationResult.Skipped(SkipReason.RECEIVES_NOTHING)
                 continue
             }
             targets[destination] = destinationTypes
         }
+        // A problem only matters for a type some destination could take: fixing it changes nothing
+        // otherwise (Bluetooth off for a survey that only sends to the community databases).
+        recordTypeProblems.keys.retainAll(takeableTypes)
 
         if (targets.isEmpty()) {
             if (isRecording() && origin == SurveyOrigin.ORGANIZATION) {
@@ -252,6 +263,31 @@ class SurveyOrchestrator(
         askedNsAnalyticsCap = if (recording) nsAnalyticsCap else null
         return SurveyStartResult(results, recordTypeProblems, recording = recording)
     }
+
+    /** @return The record types [destination] takes from [types], capped for NS Analytics by [nsAnalyticsCap]. */
+    private fun typesFor(
+        destination: Destination,
+        types: Set<RecordType>,
+        communityTargets: Set<RecordType>,
+        nsAnalyticsCap: Set<RecordType>?,
+    ): Set<RecordType> {
+        val destinationTypes = DestinationCapabilities.typesFor(destination, types, communityTargets)
+        return if (destination == Destination.NS_ANALYTICS && nsAnalyticsCap != null) {
+            destinationTypes intersect nsAnalyticsCap
+        } else {
+            destinationTypes
+        }
+    }
+
+    /**
+     * @return True if [destination] is MQTT in a survey that asks for no record types at all, and
+     * MQTT still has something to send (the device status heartbeat or the watchlist). Such a
+     * setup only comes from the organization, the upgrade migration or the Intent API; the setup
+     * screen always asks for a record type. A survey whose types were all left out (a radio off)
+     * is not one, so MQTT still receives nothing then.
+     */
+    private fun isHeartbeatOnlyMqtt(destination: Destination, requestedTypes: Set<RecordType>): Boolean =
+        destination == Destination.MQTT && requestedTypes.isEmpty() && outputs.mqttSendsWithoutRecordTypes()
 
     private fun startOrUpdate(destination: Destination, types: Set<RecordType>): DestinationResult {
         if (destination == Destination.LOG_FILES) return applyFileLogging(types)

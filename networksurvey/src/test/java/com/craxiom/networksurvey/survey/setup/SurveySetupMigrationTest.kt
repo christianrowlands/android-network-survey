@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
 import com.craxiom.networksurvey.survey.mdm.SurveyMdmKeys
+import com.craxiom.networksurvey.survey.mdm.SurveyPolicy
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveyDefaults
@@ -222,7 +223,7 @@ class SurveySetupMigrationTest {
             putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, true)
         }
         assertTrue(migrate())
-        assertTrue(Destination.MQTT in store.getCurrentSetup().destinations)
+        assertMigrated(setOf(Destination.LOG_FILES, Destination.MQTT), autoStart = true)
     }
 
     @Test
@@ -278,7 +279,7 @@ class SurveySetupMigrationTest {
             putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, true)
         }
         migrate()
-        assertEquals(setOf(Destination.LOG_FILES), store.getCurrentSetup().destinations)
+        assertMigrated(setOf(Destination.LOG_FILES), autoStart = true)
         assertEquals(setOf(RecordType.WIFI), store.getCurrentSetup().recordTypes)
     }
 
@@ -305,6 +306,167 @@ class SurveySetupMigrationTest {
         for (key in SurveySetupMigration.OBSOLETE_KEYS) assertFalse(key, preferences.contains(key))
         assertTrue(preferences.contains(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED))
         assertTrue(preferences.contains(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED))
+    }
+
+    // The upgrade table: each v1 auto start state, with the destinations and auto start it gets.
+    // Only MQTT or only Community starting at boot must never add Log files (no files written).
+
+    /** Stores a broker of the user's own, as earlier versions kept it. */
+    private fun userBroker() {
+        preferences.edit { putString(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST, "broker.example.com") }
+    }
+
+    private fun mqttStartsOnBoot() {
+        userBroker()
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, true) }
+    }
+
+    private fun communityStartsAtBoot() {
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT, true) }
+    }
+
+    private fun everyStreamFlagOff() {
+        preferences.edit {
+            putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, false)
+            putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, false)
+            putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, false)
+            putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, false)
+            putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, false)
+        }
+    }
+
+    private fun assertMigrated(destinations: Set<Destination>, autoStart: Boolean) {
+        assertEquals(destinations, store.getCurrentSetup().destinations)
+        assertEquals(autoStart, store.userAutoStart)
+    }
+
+    @Test
+    fun `MQTT start on boot only gets MQTT alone, auto started, with its old stream types`() {
+        mqttStartsOnBoot()
+        migrate()
+        assertMigrated(setOf(Destination.MQTT), autoStart = true)
+        assertEquals(setOf(RecordType.CELLULAR, RecordType.PHONE_STATE, RecordType.WIFI), store.getCurrentSetup().recordTypes)
+    }
+
+    @Test
+    fun `MQTT start on boot with every stream flag off is a heartbeat only stream without files`() {
+        mqttStartsOnBoot()
+        everyStreamFlagOff()
+        migrate()
+        assertMigrated(setOf(Destination.MQTT), autoStart = true)
+        assertTrue(store.getCurrentSetup().recordTypes.isEmpty())
+    }
+
+    @Test
+    fun `Community start at boot only gets Community alone, auto started`() {
+        communityStartsAtBoot()
+        migrate()
+        assertMigrated(setOf(Destination.COMMUNITY), autoStart = true)
+        assertEquals(SurveyDefaults.RECORD_TYPES, store.getCurrentSetup().recordTypes)
+    }
+
+    @Test
+    fun `MQTT and Community at boot get both, without Log files`() {
+        mqttStartsOnBoot()
+        communityStartsAtBoot()
+        migrate()
+        assertMigrated(setOf(Destination.MQTT, Destination.COMMUNITY), autoStart = true)
+    }
+
+    @Test
+    fun `MQTT and Community at boot with every stream flag off still give Community record types`() {
+        mqttStartsOnBoot()
+        communityStartsAtBoot()
+        everyStreamFlagOff()
+        migrate()
+        assertMigrated(setOf(Destination.MQTT, Destination.COMMUNITY), autoStart = true)
+        assertEquals(SurveyDefaults.RECORD_TYPES, store.getCurrentSetup().recordTypes)
+    }
+
+    @Test
+    fun `file auto start and MQTT at boot keep both`() {
+        mqttStartsOnBoot()
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, true) }
+        migrate()
+        assertMigrated(setOf(Destination.LOG_FILES, Destination.MQTT), autoStart = true)
+    }
+
+    @Test
+    fun `no auto start at all records to Log files and starts nothing`() {
+        userBroker()
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false) }
+        migrate()
+        assertMigrated(setOf(Destination.LOG_FILES), autoStart = false)
+        assertEquals(SurveyDefaults.RECORD_TYPES, store.getCurrentSetup().recordTypes)
+    }
+
+    @Test
+    fun `registered without auto start gets NS Analytics and starts nothing`() {
+        registered = true
+        migrate()
+        assertMigrated(setOf(Destination.NS_ANALYTICS), autoStart = false)
+    }
+
+    @Test
+    fun `a managed phone with the override on uses the user's own preferences`() {
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, true) }
+        // Earlier versions copied the organization's values into these preferences; with the
+        // override on, the user then changed them, so they are the user's.
+        restrictions = mapOf(
+            MqttConstants.PROPERTY_MQTT_CONNECTION_HOST to "org.example.com",
+            NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT to false,
+            NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING to false,
+        )
+        mqttStartsOnBoot()
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, true) }
+        migrate()
+        assertMigrated(setOf(Destination.LOG_FILES, Destination.MQTT), autoStart = true)
+        assertTrue(RecordType.WIFI in store.getCurrentSetup().recordTypes)
+    }
+
+    @Test
+    fun `a managed phone with the override on and only MQTT at boot does not gain Log files`() {
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, true) }
+        restrictions = mapOf(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT to false)
+        mqttStartsOnBoot()
+        migrate()
+        assertMigrated(setOf(Destination.MQTT), autoStart = true)
+    }
+
+    @Test
+    fun `a managed phone with Community only at boot starts nothing, since uploads are not allowed`() {
+        restrictions = mapOf(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS to true)
+        communityStartsAtBoot()
+        migrate()
+        assertFalse(store.userAutoStart)
+        // The user's choice is kept, but the policy keeps it out of what runs
+        val effective = SurveyPolicy.evaluate(RestrictionsSnapshot(restrictions), false).effectiveSetup(store.getCurrentSetup())
+        assertFalse(Destination.COMMUNITY in effective.destinations)
+        assertEquals(setOf(Destination.LOG_FILES), effective.destinations)
+    }
+
+    @Test
+    fun `a managed phone that allows uploads keeps Community at boot`() {
+        restrictions = mapOf(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD to true)
+        communityStartsAtBoot()
+        migrate()
+        assertMigrated(setOf(Destination.COMMUNITY), autoStart = true)
+    }
+
+    @Test
+    fun `no survey without Log files in the upgrade table gains it`() {
+        // Every combination of MQTT and Community at boot, with and without stream flags
+        for (mqtt in listOf(false, true)) for (community in listOf(false, true)) for (flagsOff in listOf(false, true)) {
+            if (!mqtt && !community) continue
+            preferences.edit { clear() }
+            if (mqtt) mqttStartsOnBoot()
+            if (community) communityStartsAtBoot()
+            if (flagsOff) everyStreamFlagOff()
+            migrate()
+            val case = "mqtt=$mqtt community=$community flagsOff=$flagsOff"
+            assertFalse(case, Destination.LOG_FILES in store.getCurrentSetup().destinations)
+            assertTrue(case, store.userAutoStart)
+        }
     }
 
     private companion object {

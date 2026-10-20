@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.main
 import android.content.Intent
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
+import com.craxiom.networksurvey.logging.db.uploader.UploaderNotificationHelper
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -23,9 +24,12 @@ sealed interface DeepLinkTarget {
     /** The Watchlist history (a watchlist "Seen" notification). */
     data object WatchlistHistory : DeepLinkTarget
 
+    /** The Community databases page (the community upload notification), where the upload's results are. */
+    data object CommunityPage : DeepLinkTarget
+
     /**
-     * A tab, by its [MainScreens] route (the survey and upload notifications select Survey, the
-     * new-tower notification selects Map).
+     * A tab, by its [MainScreens] route (the survey notification selects Survey, the new-tower
+     * notification selects Map).
      */
     data class HomeTab(val route: String) : DeepLinkTarget
 }
@@ -40,6 +44,7 @@ object DeepLinkRouter {
     val NAVIGATION_EXTRAS = listOf(
         NsAnalyticsConstants.EXTRA_NAVIGATE_TO_NS_ANALYTICS,
         NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY,
+        UploaderNotificationHelper.EXTRA_NAVIGATE_TO_COMMUNITY,
         NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD,
         NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP,
     )
@@ -57,6 +62,7 @@ object DeepLinkRouter {
         return when {
             NsAnalyticsConstants.EXTRA_NAVIGATE_TO_NS_ANALYTICS in trueExtras -> DeepLinkTarget.NsAnalyticsPage
             NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY in trueExtras -> DeepLinkTarget.WatchlistHistory
+            UploaderNotificationHelper.EXTRA_NAVIGATE_TO_COMMUNITY in trueExtras -> DeepLinkTarget.CommunityPage
             NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD in trueExtras -> DeepLinkTarget.HomeTab(MainScreens.Survey.route)
             NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP in trueExtras -> DeepLinkTarget.HomeTab(MainScreens.Map.route)
             else -> null

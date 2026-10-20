@@ -39,6 +39,9 @@ import com.craxiom.networksurvey.ui.common.NsTextAction
 /**
  * "What it's surveying" (or the saved setup's name when the survey matches one) while Recording: every record type as a chip (on ones tinted in their own
  * color, off ones dashed), and Change, which opens the sheet that applies immediately.
+ *
+ * @param deviceStatusOnly True when the survey records no types and MQTT sends only device status;
+ *                         the panel says so instead of six chips that are all off.
  */
 @Composable
 fun RecordingSetupPanel(
@@ -49,6 +52,7 @@ fun RecordingSetupPanel(
     modifier: Modifier = Modifier,
     setupName: String? = null,
     notSent: Set<RecordType> = emptySet(),
+    deviceStatusOnly: Boolean = false,
 ) {
     NsPanel(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -69,7 +73,15 @@ fun RecordingSetupPanel(
                 )
             }
         }
-        TypeChips(on = types.toSet(), notSent = notSent, onNotSent = onWhatGoesWhere)
+        if (deviceStatusOnly) {
+            Text(
+                text = stringResource(R.string.survey_device_status_only),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = NsTheme.spacing.s),
+            )
+        } else {
+            TypeChips(on = types.toSet(), notSent = notSent, onNotSent = onWhatGoesWhere)
+        }
         NsTextAction(stringResource(R.string.survey_what_goes_where), onWhatGoesWhere)
         if (canChange) {
             Text(

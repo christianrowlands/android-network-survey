@@ -269,7 +269,13 @@ class SurveyScreenContentTest {
             state(
                 destinations = setOf(Destination.LOG_FILES, Destination.NS_ANALYTICS),
                 info = ready.copy(nsAnalyticsAutoUpload = autoUpload),
-                runtime = recording(),
+                // The sheet starts from what the running survey asked for, here with NS Analytics
+                runtime = recording().copy(
+                    requested = SurveySetup.custom(
+                        setOf(RecordType.CELLULAR, RecordType.WIFI),
+                        setOf(Destination.LOG_FILES, Destination.NS_ANALYTICS),
+                    ),
+                ),
             )
         )
         compose.onNodeWithText("Change").performClick()

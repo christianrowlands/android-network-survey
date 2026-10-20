@@ -8,5 +8,7 @@ package com.craxiom.networksurvey.survey.engine
  * @property durationMs   How long the session ran.
  * @property totalRecords The records counted across every record type.
  * @property endedAtMs    When it ended, in epoch milliseconds.
+ * @property missionId    The session's last Mission ID, so it can still be copied after Stop, or null
+ *                        when only the community databases ran (they never roll one).
  */
-data class LastSession(val durationMs: Long, val totalRecords: Long, val endedAtMs: Long)
+data class LastSession(val durationMs: Long, val totalRecords: Long, val endedAtMs: Long, val missionId: String? = null)

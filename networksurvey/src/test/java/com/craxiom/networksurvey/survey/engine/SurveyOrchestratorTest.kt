@@ -98,6 +98,46 @@ class SurveyOrchestratorTest {
     }
 
     @Test
+    fun `a problem with a type no destination takes is not reported`() {
+        outputs.typeProblems[BLUETOOTH] = SkipReason.RADIO_OFF
+        val result = orchestrator.startSurvey(setup(COMMUNITY, types = setOf(CELLULAR, BLUETOOTH)), SurveyOrigin.USER)
+
+        assertTrue(result.recording)
+        assertEquals(emptyMap<Any, Any>(), result.recordTypeProblems)
+        assertEquals(setOf(CELLULAR), outputs.communityTypes)
+    }
+
+    @Test
+    fun `a problem with a type only a skipped destination takes is not reported`() {
+        outputs.typeProblems[BLUETOOTH] = SkipReason.RADIO_OFF
+        outputs.destinationProblems[NS_ANALYTICS] = SkipReason.NOT_REGISTERED
+        val result = orchestrator.startSurvey(setup(NS_ANALYTICS, COMMUNITY, types = setOf(CELLULAR, BLUETOOTH)), SurveyOrigin.USER)
+
+        assertEquals(emptyMap<Any, Any>(), result.recordTypeProblems)
+        assertEquals(mapOf(NS_ANALYTICS to SkipReason.NOT_REGISTERED), result.skipped)
+    }
+
+    @Test
+    fun `CDR without its permissions is left out of log files and reported`() {
+        outputs.typeProblems[CDR] = SkipReason.PERMISSION_MISSING
+        val result = orchestrator.startSurvey(setup(LOG_FILES, types = setOf(CDR)), SurveyOrigin.USER)
+
+        assertFalse(result.recording)
+        assertEquals(mapOf(CDR to SkipReason.PERMISSION_MISSING), result.recordTypeProblems)
+        assertTrue(outputs.fileTypes.isEmpty())
+        assertTrue(outputs.calls.isEmpty())
+    }
+
+    @Test
+    fun `CDR without its permissions reports nothing when only MQTT is on`() {
+        outputs.typeProblems[CDR] = SkipReason.PERMISSION_MISSING
+        val result = orchestrator.startSurvey(setup(MQTT, types = setOf(CDR)), SurveyOrigin.USER)
+
+        assertEquals(emptyMap<Any, Any>(), result.recordTypeProblems)
+        assertEquals(DestinationResult.Skipped(SkipReason.RECEIVES_NOTHING), result.destinations[MQTT])
+    }
+
+    @Test
     fun `stop stops everything and ends the session`() {
         orchestrator.startSurvey(setup(LOG_FILES, MQTT, NS_ANALYTICS, COMMUNITY), SurveyOrigin.USER)
         val result = orchestrator.stopSurvey(SurveyOrigin.USER)

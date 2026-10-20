@@ -112,6 +112,9 @@ import com.craxiom.networksurvey.survey.intent.IntentSurveyRequest;
 import com.craxiom.networksurvey.survey.intent.SurveyIntentMapper;
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource;
 import com.craxiom.networksurvey.survey.mdm.MdmOverrideController;
+import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot;
+import com.craxiom.networksurvey.survey.mdm.RestrictionsSource;
+import com.craxiom.networksurvey.survey.mdm.SurveyPolicy;
 import com.craxiom.networksurvey.survey.model.Destination;
 import com.craxiom.networksurvey.survey.model.DestinationCapabilities;
 import com.craxiom.networksurvey.survey.model.RecordType;
@@ -288,6 +291,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     // Fingerprint of the broker the running MQTT connection uses, so an MDM change can tell
     // whether a reconnect is needed.
     private volatile String connectedBrokerFingerprint = null;
+    // True when the running MQTT connection uses the organization's broker, so removing that broker
+    // ends the stream instead of moving it to the user's broker.
+    private volatile boolean connectedToOrganizationBroker = false;
+
+    // The managed configuration, read through currentRestrictions() so a test can replace it.
+    private AndroidRestrictionsSource platformRestrictionsSource;
+    private volatile RestrictionsSource restrictionsSourceForTest = null;
 
     public NetworkSurveyService()
     {
@@ -502,6 +512,23 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * @return The broker an Intent API START supplied, or null when it supplied none or its settings
+     * could not be read.
+     */
+    private static BrokerConnectionInfo readIntentBroker(IntentSurveyRequest request)
+    {
+        if (request.getMqttSettings() == null) return null;
+        try
+        {
+            return request.getMqttSettings().toMqttConnectionInfo();
+        } catch (Exception e)
+        {
+            Timber.e(e, "Failed to read the MQTT connection settings from the start survey intent");
+            return null;
+        }
+    }
+
+    /**
      * Maps an Intent API START onto a survey setup and adds it to whatever is running. The old
      * per-destination extras keep working (mapped as a union) but are deprecated in favor of the
      * {@code record_types} and {@code destinations} extras.
@@ -510,8 +537,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Timber.i("The Network Survey Service was started via an external intent");
 
-        final IntentSurveyRequest request = SurveyIntentMapper.map(new AndroidIntentExtras(intent),
-                SurveyTypeResolver.typesForCurrentSetup(this, Destination.MQTT));
+        final IntentSurveyRequest request = SurveyIntentMapper.map(new AndroidIntentExtras(intent));
         if (request == null)
         {
             Timber.w("The start survey intent did not name any record type or destination");
@@ -528,13 +554,24 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.w("Ignoring unknown values in the start survey intent: %s", request.getInvalidValues());
         }
 
-        if (request.getMqttSettings() != null)
+        SurveySetup requestedSetup = request.getSetup();
+        final BrokerConnectionInfo requestedBroker = readIntentBroker(request);
+        if (request.getMqttSettings() != null && requestedBroker == null)
+        {
+            // The intent named a broker that could not be read. Its records must never go to
+            // another broker, so the rest of the request starts without MQTT.
+            final Set<Destination> destinations = EnumSet.noneOf(Destination.class);
+            destinations.addAll(requestedSetup.getDestinations());
+            destinations.remove(Destination.MQTT);
+            requestedSetup = SurveySetup.custom(requestedSetup.getRecordTypes(), destinations);
+        }
+
+        if (requestedBroker != null)
         {
             // The intent supplies the broker for an MQTT stream it starts, unless the organization
             // keeps MQTT off (the merge below then skips MQTT). A stream that already runs (the
             // user's, the organization's or an earlier intent's) is never moved to another app's
             // broker. Done on the survey control thread so it is ordered with the merge.
-            final BrokerConnectionInfo requestedBroker = request.getMqttSettings().toMqttConnectionInfo();
             surveyCoordinator.submit(() -> {
                 if (!surveyCoordinator.policy().isDestinationAvailable(Destination.MQTT)) return Unit.INSTANCE;
                 if (mqttConnection.getConnectionState() == ConnectionState.DISCONNECTED)
@@ -548,7 +585,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             });
         }
 
-        surveyCoordinator.mergeIntoRunningSurvey(request.getSetup(), SurveyOrigin.INTENT);
+        surveyCoordinator.mergeIntoRunningSurvey(requestedSetup, SurveyOrigin.INTENT);
         surveyCoordinator.submit(() -> {
             // An intent broker only lives as long as the stream it started.
             if (!isMqttStreamingActive()) intentBrokerConnectionInfo = null;
@@ -766,6 +803,27 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * @return The managed configuration in force: the platform's, or the one a test put in place.
+     */
+    private RestrictionsSnapshot currentRestrictions()
+    {
+        final RestrictionsSource testSource = restrictionsSourceForTest;
+        if (testSource != null) return testSource.snapshot();
+        return platformRestrictionsSource != null ? platformRestrictionsSource.snapshot()
+                : new AndroidRestrictionsSource(this).snapshot();
+    }
+
+    /**
+     * Replaces the managed configuration the survey service reads, because a real phone needs a
+     * device policy controller to set one. Null restores the platform's.
+     */
+    @VisibleForTesting
+    void setRestrictionsSourceForTest(RestrictionsSource source)
+    {
+        restrictionsSourceForTest = source;
+    }
+
+    /**
      * Creates the survey setup store, the orchestrator and the coordinator that every survey start
      * and stop goes through, and the controller that reacts to MDM and override changes.
      */
@@ -774,7 +832,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final Context context = getApplicationContext();
         surveySetupStore = new SurveySetupStore(context);
         missionSessionTracker.restoreLastSession(surveySetupStore.getLastSession());
-        final AndroidRestrictionsSource restrictionsSource = new AndroidRestrictionsSource(context);
+        platformRestrictionsSource = new AndroidRestrictionsSource(context);
+        final RestrictionsSource restrictionsSource = this::currentRestrictions;
         final SurveyOrchestrator orchestrator = new SurveyOrchestrator(new ServiceSurveyOutputs(this),
                 () -> surveyCoordinator.policy());
         surveyCoordinator = new SurveyCoordinator(orchestrator, surveySetupStore, restrictionsSource,
@@ -854,7 +913,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         mqttConnection.connect(getApplicationContext(), connectionInfo);
-        connectedBrokerFingerprint = brokerFingerprint(connectionInfo);
+        rememberConnectedBroker(connectionInfo);
 
         // Track survey session when MQTT streaming starts
         onSurveyStarted(true);
@@ -1015,7 +1074,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         mqttConnection.disconnect();
         intentBrokerConnectionInfo = null;
         connectedBrokerFingerprint = null;
+        connectedToOrganizationBroker = false;
 
+        releaseMqttListeners();
+
+        // Track survey session end
+        onSurveyStopped();
+        updateWakeLock();
+    }
+
+    /**
+     * Removes everything the MQTT stream registered (its record and device status listeners, its
+     * record types, watchlist streaming and the queue backpressure state), so the scanners it kept
+     * running can stop. It does not touch the connection itself: after the client gave up (for
+     * example a rejected sign-in), disconnecting would clear the failure the status UI shows.
+     * Idempotent, so a deliberate disconnect followed by its DISCONNECTED callback is harmless.
+     * Must run on the survey control thread.
+     */
+    private void releaseMqttListeners()
+    {
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
         unregisterBluetoothSurveyRecordListener(mqttConnection);
@@ -1030,10 +1107,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         // Clear queue backpressure states since there's no active connection to be backed up
         clearMqttBackpressureStates();
-
-        // Track survey session end
-        onSurveyStopped();
-        updateWakeLock();
     }
 
     /**
@@ -1044,6 +1117,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private void reconnectMqttIfBrokerChanged()
     {
         if (!isMqttStreamingActive() || intentBrokerConnectionInfo != null) return;
+
+        if (connectedToOrganizationBroker && getMdmBrokerConnectionInfo() == null)
+        {
+            // As in v1, the organization's stream ends with its broker; it never moves to the
+            // user's broker.
+            Timber.i("The organization's MQTT broker was removed, so the MQTT stream is stopped");
+            disconnectFromMqttBrokerNow();
+            return;
+        }
 
         final BrokerConnectionInfo desired = getActiveBrokerConnectionInfo();
         if (desired == null)
@@ -1080,7 +1162,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         mqttConnection.disconnect();
         mqttConnection.connect(getApplicationContext(), connectionInfo);
+        rememberConnectedBroker(connectionInfo);
+    }
+
+    /**
+     * Records which broker the MQTT connection now uses: its fingerprint, and whether it is the
+     * organization's broker in force (not overridden).
+     */
+    private void rememberConnectedBroker(BrokerConnectionInfo connectionInfo)
+    {
         connectedBrokerFingerprint = brokerFingerprint(connectionInfo);
+        final BrokerConnectionInfo organizationBroker = isMqttMdmOverrideEnabled() ? null : getMdmBrokerConnectionInfo();
+        connectedToOrganizationBroker = organizationBroker != null
+                && brokerFingerprint(organizationBroker).equals(connectedBrokerFingerprint);
     }
 
     /**
@@ -1103,6 +1197,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public boolean hasMqttBrokerConfigured()
     {
         return intentBrokerConnectionInfo != null || getActiveBrokerConnectionInfo() != null;
+    }
+
+    /**
+     * @return True if an MQTT stream with no record types still has something to send: the device
+     * status heartbeat is on for the broker a survey connects to (the Intent API broker first, as
+     * in {@link #connectToMqttBrokerForSurvey(Set)}), or the watchlist streams over MQTT.
+     */
+    public boolean mqttSendsWithoutRecordTypes()
+    {
+        if (isWatchlistStreamingEnabled()) return true;
+        final BrokerConnectionInfo connectionInfo = intentBrokerConnectionInfo != null
+                ? intentBrokerConnectionInfo : getActiveBrokerConnectionInfo();
+        return connectionInfo != null && isDeviceStatusStreamEnabled(connectionInfo);
     }
 
     /**
@@ -1890,8 +1997,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         try
         {
-            boolean externalDataUploadAllowedForMdm = MdmUtils.isExternalDataUploadAllowed(this);
-            if (!externalDataUploadAllowedForMdm)
+            // The organization's upload gate only refuses a start. A stop must always work, or a
+            // policy change mid survey would leave Community saving records that Stop can't end.
+            if (enable && !SurveyPolicy.isExternalDataUploadAllowed(currentRestrictions()))
             {
                 return new UploadScanningResult(false, false, getString(R.string.upload_disabled_via_mdm));
             }
@@ -2628,6 +2736,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * @return True if the survey wake lock is held.
+     */
+    @VisibleForTesting
+    boolean isWakeLockHeldForTest()
+    {
+        return wakeLockActive.get();
+    }
+
+    /**
      * @return The per record type counts and last-record time for the current survey session.
      */
     public SurveySessionCounters getSessionCounters()
@@ -3311,18 +3428,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * @return The record types a destination turned on outside a survey start receives: those of the
-     * running survey, or of the user's survey setup when nothing is running.
+     * running survey, or of the user's survey setup when nothing is running. A running survey is
+     * never widened to the user's setup, even when it records nothing this destination takes (a
+     * device status only MQTT stream, or CDR files only).
      */
     public Set<RecordType> getStreamTypesForNewDestination(Destination destination)
     {
-        Set<RecordType> types = Collections.emptySet();
         if (surveyCoordinator != null && surveyCoordinator.getOrchestrator().isRecording())
         {
             final Set<RecordType> running = surveyCoordinator.getOrchestrator().runningSetup().getRecordTypes();
-            types = DestinationCapabilities.typesFor(destination, running, SurveyTypeResolver.communityTargets(this));
+            return DestinationCapabilities.typesFor(destination, running, SurveyTypeResolver.communityTargets(this));
         }
-        if (types.isEmpty()) types = SurveyTypeResolver.typesForCurrentSetup(this, destination);
-        return types;
+        return SurveyTypeResolver.typesForCurrentSetup(this, destination);
     }
 
     /**
@@ -3470,6 +3587,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * @return True if a survey is running with no record types (a device status only MQTT stream), so
+     * no records are expected and a record count that never moves is not a stall.
+     */
+    private boolean isRecordingNoRecordTypes()
+    {
+        if (surveyCoordinator == null) return false;
+        final SurveyOrchestrator orchestrator = surveyCoordinator.getOrchestrator();
+        return orchestrator.isRecording() && orchestrator.runningSetup().getRecordTypes().isEmpty();
+    }
+
+    /**
      * Creates the watchdog that flips the notification title to "No records for N min" when a survey
      * is running but nothing is being recorded, and that re-posts the notification if the user swiped
      * it away (which Android 14 and later allow for foreground services).
@@ -3479,7 +3607,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return new SurveyStallWatchdog(serviceHandler,
                 () -> missionSessionTracker.getRecordCount().get(),
                 this::isAnySurveyActive,
-                () -> isPausedForBattery() || isPausedForQueueBackpressure(),
+                () -> isPausedForBattery() || isPausedForQueueBackpressure() || isRecordingNoRecordTypes(),
                 this::getStallThresholdMs,
                 () -> {
                     updateServiceNotification();
@@ -3731,16 +3859,20 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             clearMqttBackpressureStates();
 
-            // A connection the MQTT client gave up on (bad credentials) must still end the survey
-            // session if nothing else is running, or the next start would reuse the old Mission ID.
-            // The library reports transient losses as CONNECTING, not DISCONNECTED. The check runs on
-            // the survey control thread so a broker switch (disconnect then connect, also on that
-            // thread) has finished before it looks.
+            // A connection the MQTT client gave up on (bad credentials, invalid settings) must drop
+            // its listeners, so the scanners and the wake lock it held can stop, and must end the
+            // survey session if nothing else is running, or the next start would reuse the old
+            // Mission ID. The library reports transient losses as CONNECTING, not DISCONNECTED. The
+            // check runs on the survey control thread so a broker switch (disconnect then connect,
+            // also on that thread) has finished before it looks, and so a synchronous give-up inside
+            // connectToMqttBroker is handled after that method registered its listeners.
             if (surveyCoordinator != null && !destroyed)
             {
                 surveyCoordinator.submit(() -> {
                     if (!isMqttStreamingActive())
                     {
+                        releaseMqttListeners();
+                        updateWakeLock();
                         onSurveyStopped();
                         surveyCoordinator.onRunningStateChanged();
                     }

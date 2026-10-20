@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.community
 import androidx.annotation.PluralsRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,11 @@ fun CommunityDatabasesScreen(
     viewModel: CommunityUploadViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Seen here (only while the page is on screen), so the Survey screen stops saying it failed
+    val uploadFailure by viewModel.uploadFailure.collectAsStateWithLifecycle()
+    LaunchedEffect(uploadFailure) {
+        if (uploadFailure != null) viewModel.acknowledgeUploadFailure()
+    }
     var showUploadDialog by rememberSaveable { mutableStateOf(false) }
     var showNoInternet by rememberSaveable { mutableStateOf(false) }
 

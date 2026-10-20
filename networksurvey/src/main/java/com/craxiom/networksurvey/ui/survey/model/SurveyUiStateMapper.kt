@@ -193,7 +193,9 @@ object SurveyUiStateMapper {
         } else {
             SessionLength.Minutes((last.durationMs / MILLIS_PER_MINUTE.toDouble()).roundToLong().toInt())
         }
-        return LastSessionUi(length, last.totalRecords)
+        // The ID is kept with the last session, so it can still be copied after Stop, a tab switch or
+        // a restart; a new survey rolls a new one
+        return LastSessionUi(length, last.totalRecords, last.missionId)
     }
 
     /** @return [types] in the order the screen always lists record types. */

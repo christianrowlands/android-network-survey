@@ -41,6 +41,12 @@ interface SurveyOutputs {
     fun autoIncludePhoneState(): Boolean
 
     /**
+     * @return True if MQTT has something to send with no record types at all: the device status
+     * heartbeat is on for the broker a survey would use, or the watchlist streams over MQTT.
+     */
+    fun mqttSendsWithoutRecordTypes(): Boolean
+
+    /**
      * Turns file logging of [type] on or off.
      *
      * @return True if the type is now in the requested state.

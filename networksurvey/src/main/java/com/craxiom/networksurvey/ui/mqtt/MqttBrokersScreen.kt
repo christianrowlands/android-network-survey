@@ -49,8 +49,14 @@ fun MqttBrokersScreen(
     val scanned by scannedSettings.collectAsStateWithLifecycle()
     LaunchedEffect(scanned) {
         scanned?.let { settings ->
-            permissions.ensureLocalNetwork(MQTT_ONLY) { viewModel.importFromQr(settings) }
-            onScannedSettingsConsumed()
+            // Consumed only once imported, so a rotation during the local network question keeps
+            // the scanned broker; the question asked before the rotation imports it
+            if (!permissions.isWaitingForAnswer) {
+                permissions.ensureLocalNetwork(MQTT_ONLY) {
+                    viewModel.importFromQr(settings)
+                    onScannedSettingsConsumed()
+                }
+            }
         }
     }
     val fromEditor by editorMessage.collectAsStateWithLifecycle()

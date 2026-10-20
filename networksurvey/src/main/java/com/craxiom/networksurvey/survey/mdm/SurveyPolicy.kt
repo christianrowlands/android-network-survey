@@ -131,13 +131,20 @@ data class SurveyPolicyState(
     val destinationLocks: Map<Destination, ManagedState>,
     val blockedDestinations: Set<Destination>,
     val autoStart: ManagedState,
-    val seedSetup: SurveySetup?,
+    val seedSetup: OrganizationSeed?,
     val hasOrganizationSetup: Boolean,
     val fingerprint: String,
 ) {
     /** True if any record type or destination is locked by the organization right now. */
     val hasSetupLocks: Boolean
         get() = typeLocks.values.any { it.isManaged } || destinationLocks.values.any { it.isManaged }
+
+    /**
+     * True if the organization shapes the survey setup right now (locks or a seed), so
+     * [managedSeedSetup] has something to seed. False while the override is on.
+     */
+    val shapesSetup: Boolean
+        get() = hasSetupLocks || seedSetup != null
 
     /** @return The lock state of [type]. */
     fun lockFor(type: RecordType): ManagedState = typeLocks[type] ?: ManagedState.USER
@@ -194,9 +201,11 @@ data class SurveyPolicyState(
     /**
      * The setup to seed the user layer with when a phone becomes managed (and on Restore), so the
      * organization's stream does not inherit the user's earlier picks. It works per dimension:
-     * - Record types: the deprecated keys' seed if they name any, otherwise empty if the
-     *   organization locks any record type, otherwise the user's own.
-     * - Destinations: the same, with destination locks.
+     * - Record types: the deprecated keys' seed if they decide the record types (even as none, for
+     *   a heartbeat only MDM broker), otherwise empty if the organization locks any record type,
+     *   otherwise the user's own.
+     * - Destinations: the deprecated keys' seed if they name any, otherwise empty if the
+     *   organization locks any destination, otherwise the user's own.
      *
      * @param current The user's setup before seeding.
      * @return The seeded setup, or null when the organization does not shape the setup at all.
@@ -207,7 +216,7 @@ data class SurveyPolicyState(
         if (!typesManaged && !destinationsManaged && seedSetup == null) return null
 
         val types = when {
-            !seedSetup?.recordTypes.isNullOrEmpty() -> seedSetup!!.recordTypes
+            seedSetup?.namesRecordTypes == true -> seedSetup.recordTypes
             typesManaged -> emptySet()
             else -> current.recordTypes
         }

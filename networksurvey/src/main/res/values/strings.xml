@@ -982,6 +982,10 @@
     <string name="upgrade_welcome_body">A survey now has one Start and one Stop. Pick what to record and where it goes on the Survey tab.</string>
     <string name="upgrade_welcome_setup_heading">Your survey</string>
     <string name="upgrade_welcome_auto_start">It starts on its own when the phone starts or the app opens.</string>
+    <!-- The survey sentence for an upgraded MQTT stream that has no record types. %1$s is the destination name (MQTT stream). -->
+    <string name="upgrade_welcome_device_status_sentence">Will send only device status to %1$s.</string>
+    <!-- Shown when the upgraded phone has its own MQTT broker but MQTT is not in its survey. %1$s is the destination name (MQTT stream). -->
+    <string name="upgrade_welcome_mqtt_saved">Your MQTT broker is saved. Turn on %1$s to use it; it gets the same record types as the rest of the survey.</string>
     <string name="upgrade_welcome_tabs">Signals has the live Cellular, Wi-Fi, Bluetooth and GNSS views. Map shows towers and your survey points. More has the destinations, tools such as the Watchlist, and Settings.</string>
     <string name="upgrade_welcome_done">Got it</string>
 
@@ -1461,6 +1465,8 @@
     <string name="survey_what_goes_where">What goes where</string>
     <string name="survey_routing_row">%1$s, sent to %2$s</string>
     <string name="survey_routing_row_not_sent">%1$s, not sent anywhere</string>
+    <!-- A row of the What goes where table: the device status messages, which only the MQTT stream sends -->
+    <string name="survey_routing_device_status">Device status</string>
     <string name="survey_routing_log_files_hint">Log files takes every record type.</string>
     <string name="survey_routing_not_selected">Not selected: %1$s.</string>
     <string name="survey_phone_state_follows_cellular">Phone state is recorded whenever Cellular is.</string>
@@ -1580,6 +1586,8 @@
     <string name="survey_origin_app_open">Started when the app opened</string>
     <string name="survey_origin_organization">Started by your organization</string>
     <string name="survey_running_heading">Current setup</string>
+    <!-- Shown instead of the record types while a survey sends only device status messages over MQTT (set up by the organization, an upgrade or another app) -->
+    <string name="survey_device_status_only">Device status only</string>
     <string name="survey_change">Change</string>
     <string name="survey_changes_apply_now">Changes apply right away.</string>
     <string name="survey_records_heading">Records</string>
@@ -1654,6 +1662,8 @@
     </plurals>
     <string name="survey_status_next_try_at">next try at %1$s</string>
     <string name="survey_status_key_rejected_detail">OpenCelliD refused the API key</string>
+    <!-- %1$s is the community upload's own result, for example "Invalid API key" -->
+    <string name="survey_status_upload_failed_detail">Last upload failed: %1$s</string>
     <string name="survey_item_cant_connect">%1$s can\'t connect</string>
     <string name="survey_plate_ended_title">Your last survey stopped</string>
     <string name="survey_plate_ended_sign_in">The MQTT broker refused the user name or password, and nothing else was recording.</string>

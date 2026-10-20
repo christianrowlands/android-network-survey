@@ -43,6 +43,13 @@ object SurveyPreferenceKeys {
     /** Fingerprint of the last managed configuration the app acted on. */
     const val ORG_CONFIG_FINGERPRINT = "survey_org_config_fingerprint"
 
+    /**
+     * Whether the organization shaped the survey setup (locks or a seed) in the configuration of
+     * [ORG_CONFIG_FINGERPRINT]. Read on the next launch to tell whether a configuration pushed
+     * while the app was closed is the one that made the phone managed.
+     */
+    const val ORG_SHAPED_SETUP = "survey_org_shaped_setup"
+
     /** Set when the organization changed its configuration while the user had the override on. */
     const val ORG_UPDATED_WHILE_OVERRIDDEN = "survey_org_updated_while_overridden"
 
@@ -54,4 +61,7 @@ object SurveyPreferenceKeys {
 
     /** When the most recent survey session ended, in epoch milliseconds. */
     const val LAST_SESSION_ENDED_AT_MS = "survey_last_session_ended_at_ms"
+
+    /** The Mission ID of the most recent survey session, absent when it had none. */
+    const val LAST_SESSION_MISSION_ID = "survey_last_session_mission_id"
 }

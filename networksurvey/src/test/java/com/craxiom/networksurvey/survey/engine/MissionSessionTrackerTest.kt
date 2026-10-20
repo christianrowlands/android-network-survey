@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.survey.engine
 import com.craxiom.networksurvey.survey.model.RecordType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -129,6 +130,9 @@ class MissionSessionTrackerTest {
         tracker.onSurveyStopped()
 
         assertEquals(400L, tracker.lastSession()!!.totalRecords)
+        // The Mission ID stays with the last session, so it can be copied after Stop
+        assertNotNull(tracker.lastSession()!!.missionId)
+        assertEquals(tracker.snapshot().missionId, tracker.lastSession()!!.missionId)
     }
 
     @Test
@@ -141,7 +145,7 @@ class MissionSessionTrackerTest {
 
         tracker.endSession()
 
-        assertEquals(LastSession(10_000L, 400L, 11_000L), tracker.lastSession())
+        assertEquals(LastSession(10_000L, 400L, 11_000L, "m1"), tracker.lastSession())
     }
 
     @Test
@@ -155,7 +159,7 @@ class MissionSessionTrackerTest {
         anyActive = false; missionActive = false
         tracker.onSurveyStopped()
 
-        val expected = LastSession(durationMs = 60_000L, totalRecords = 5L, endedAtMs = 61_000L)
+        val expected = LastSession(durationMs = 60_000L, totalRecords = 5L, endedAtMs = 61_000L, missionId = "m1")
         assertEquals(expected, tracker.lastSession())
         assertEquals(listOf(expected), endedSessions)
         assertEquals(0L, tracker.counters.total())
@@ -170,7 +174,7 @@ class MissionSessionTrackerTest {
 
         tracker.endSession()
 
-        assertEquals(LastSession(10_000L, 7L, 11_000L), tracker.lastSession())
+        assertEquals(LastSession(10_000L, 7L, 11_000L, "m1"), tracker.lastSession())
         assertEquals(1, endedSessions.size)
     }
 
@@ -216,6 +220,6 @@ class MissionSessionTrackerTest {
 
         tracker.onSurveyStarted(true)
         tracker.endSession()
-        assertEquals(LastSession(0L, 0L, 1_000L), tracker.lastSession())
+        assertEquals(LastSession(0L, 0L, 1_000L, "m1"), tracker.lastSession())
     }
 }

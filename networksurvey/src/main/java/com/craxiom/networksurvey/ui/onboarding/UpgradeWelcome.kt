@@ -22,9 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.common.NsPrimaryCta
 import com.craxiom.networksurvey.ui.survey.components.boldArguments
 import com.craxiom.networksurvey.ui.survey.components.destinationNames
+import com.craxiom.networksurvey.ui.survey.components.labelRes
 import com.craxiom.networksurvey.ui.survey.components.recordTypeNames
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
@@ -82,10 +84,14 @@ fun UpgradeWelcomeContent(setup: UpgradeWelcomeSetup, onDone: () -> Unit, modifi
     }
 }
 
-/** "Your survey": the setup as one sentence, and whether it starts on its own. */
+/**
+ * "Your survey": the setup as one sentence, whether it starts on its own, and how to use a saved
+ * MQTT broker the survey does not send to. An MQTT stream without record types says it sends only
+ * device status.
+ */
 @Composable
 private fun YourSetup(setup: UpgradeWelcomeSetup) {
-    if (setup.types.isEmpty() || setup.destinations.isEmpty()) return
+    if (setup.destinations.isEmpty() || (setup.types.isEmpty() && !setup.deviceStatusOnly)) return
     Column(verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
         Text(
             text = stringResource(R.string.upgrade_welcome_setup_heading),
@@ -93,14 +99,25 @@ private fun YourSetup(setup: UpgradeWelcomeSetup) {
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.semantics { heading() },
         )
-        Text(
-            text = boldArguments(
+        val sentence = if (setup.deviceStatusOnly) {
+            boldArguments(
+                stringResource(R.string.upgrade_welcome_device_status_sentence),
+                listOf(destinationNames(setup.destinations)),
+            )
+        } else {
+            boldArguments(
                 stringResource(R.string.survey_sentence),
                 listOf(recordTypeNames(setup.types), destinationNames(setup.destinations)),
-            ),
+            )
+        }
+        Text(
+            text = sentence,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (setup.autoStart) CardBody(stringResource(R.string.upgrade_welcome_auto_start))
+        if (setup.mqttBrokerSaved) {
+            CardBody(stringResource(R.string.upgrade_welcome_mqtt_saved, stringResource(Destination.MQTT.labelRes)))
+        }
     }
 }

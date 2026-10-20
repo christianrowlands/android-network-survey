@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
+import com.craxiom.networksurvey.survey.status.CommunityUploadFailure
 import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +65,12 @@ class CommunityUploadViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun cancelUpload() = repository.cancel()
+
+    /** The last upload's failure, which this page shows in its results; see [acknowledgeUploadFailure]. */
+    val uploadFailure: StateFlow<CommunityUploadFailure?> = repository.lastFailure
+
+    /** The page showed the failure, so the Survey screen stops repeating it. */
+    fun acknowledgeUploadFailure() = repository.acknowledge()
 
     /** Turns uploads to OpenCelliD on or off. */
     fun setOpenCelliD(on: Boolean) = setPreference(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, on)

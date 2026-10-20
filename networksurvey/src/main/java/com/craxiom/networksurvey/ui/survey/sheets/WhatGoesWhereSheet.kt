@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.survey.components.joinNames
 import com.craxiom.networksurvey.ui.survey.components.labelRes
 import com.craxiom.networksurvey.ui.survey.components.recordTypeNames
@@ -91,6 +92,10 @@ private fun RoutingTable(table: RoutingTableUi) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 TypeCell(row, table.columns)
             }
+            if (table.mqttDeviceStatus) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DeviceStatusCell()
+            }
         }
         Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
             table.columns.forEach { column ->
@@ -99,6 +104,10 @@ private fun RoutingTable(table: RoutingTableUi) {
                     table.rows.forEach { row ->
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         MarkCell(column in row.sentTo)
+                    }
+                    if (table.mqttDeviceStatus) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        MarkCell(column == RoutingColumn.MQTT)
                     }
                 }
             }
@@ -130,6 +139,21 @@ private fun TypeCell(row: RoutingRowUi, columns: List<RoutingColumn>) {
                 color = NsTheme.colors.status.warningText,
             )
         }
+    }
+}
+
+/** Device status, which only MQTT sends, for a survey whose MQTT stream sends nothing else. */
+@Composable
+private fun DeviceStatusCell() {
+    val name = stringResource(R.string.survey_routing_device_status)
+    val description = stringResource(R.string.survey_routing_row, name, stringResource(Destination.MQTT.labelRes))
+    Column(
+        modifier = Modifier
+            .height(ROW_HEIGHT)
+            .clearAndSetSemantics { contentDescription = description },
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 

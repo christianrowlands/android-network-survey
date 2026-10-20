@@ -166,6 +166,42 @@ class SurveyPolicyTest {
     }
 
     @Test
+    fun `a heartbeat only MDM broker seeds MQTT with no record types instead of the user's`() {
+        val user = SurveySetup.custom(setOf(RecordType.WIFI, RecordType.GNSS), setOf(Destination.LOG_FILES))
+        val policy = policy(
+            mapOf(
+                MqttConstants.PROPERTY_MQTT_CONNECTION_HOST to "broker.example.com",
+                MqttConstants.PROPERTY_MQTT_CLIENT_ID to "device-1",
+                NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED to false,
+                NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED to false,
+                NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED to false,
+            )
+        )
+        val seeded = policy.managedSeedSetup(user)!!
+        assertEquals(emptySet<RecordType>(), seeded.recordTypes)
+        assertEquals(setOf(Destination.MQTT), seeded.destinations)
+        assertTrue(policy.shapesSetup)
+    }
+
+    @Test
+    fun `a seed without record types of its own keeps the user's`() {
+        val user = SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.LOG_FILES))
+        val destinationsOnly = SurveyPolicyState(
+            isManaged = true, overrideOn = false, typeLocks = emptyMap(), destinationLocks = emptyMap(),
+            blockedDestinations = emptySet(), autoStart = ManagedState.USER,
+            seedSetup = OrganizationSeed(emptySet(), setOf(Destination.MQTT)), hasOrganizationSetup = true, fingerprint = "",
+        )
+        assertEquals(setOf(RecordType.WIFI), destinationsOnly.managedSeedSetup(user)!!.recordTypes)
+    }
+
+    @Test
+    fun `an unmanaged or overridden policy does not shape the setup`() {
+        assertFalse(policy(emptyMap()).shapesSetup)
+        assertFalse(policy(mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on"), overrideOn = true).shapesSetup)
+        assertTrue(policy(mapOf(SurveyMdmKeys.SURVEY_CELLULAR to "on")).shapesSetup)
+    }
+
+    @Test
     fun `the fingerprint ignores order and changes with values`() {
         val a = RestrictionsSnapshot(linkedMapOf("a" to 1, "b" to "x"))
         val b = RestrictionsSnapshot(linkedMapOf("b" to "x", "a" to 1))

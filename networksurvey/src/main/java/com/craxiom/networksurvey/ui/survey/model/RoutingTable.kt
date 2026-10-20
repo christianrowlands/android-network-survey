@@ -35,14 +35,18 @@ data class RoutingRowUi(val type: RecordType, val sentTo: Set<RoutingColumn>) {
 /**
  * The "What goes where" table: the survey's record types against the destinations that are on.
  *
- * @property columns    The switched-on destinations, the community databases as their targets.
- * @property rows       One per record type the survey records, in screen order.
- * @property unselected The record types the survey doesn't record.
+ * @property columns         The switched-on destinations, the community databases as their targets.
+ * @property rows            One per record type the survey records, in screen order.
+ * @property unselected      The record types the survey doesn't record.
+ * @property mqttDeviceStatus True when MQTT runs with no record types and sends only device status
+ *                           (a survey an organization, an upgrade or another app set up that way),
+ *                           so the table adds a Device status row for it.
  */
 data class RoutingTableUi(
     val columns: List<RoutingColumn>,
     val rows: List<RoutingRowUi>,
     val unselected: List<RecordType>,
+    val mqttDeviceStatus: Boolean = false,
 ) {
     /** The record types no switched-on destination takes. */
     val notSentAnywhere: Set<RecordType>
@@ -50,13 +54,20 @@ data class RoutingTableUi(
 
     companion object {
         /**
-         * @param types        The record types the survey records.
-         * @param destinations The destinations that are on.
-         * @param info         Which community upload targets are selected.
+         * @param types            The record types the survey records.
+         * @param destinations     The destinations that are on.
+         * @param info             Which community upload targets are selected.
+         * @param mqttDeviceStatus True when MQTT (one of [destinations]) sends only device status.
          * @return The table, or null when there is nothing to record or nowhere to send it.
          */
-        fun of(types: Set<RecordType>, destinations: Collection<Destination>, info: DestinationInfo): RoutingTableUi? {
-            if (types.isEmpty() || destinations.isEmpty()) return null
+        fun of(
+            types: Set<RecordType>,
+            destinations: Collection<Destination>,
+            info: DestinationInfo,
+            mqttDeviceStatus: Boolean = false,
+        ): RoutingTableUi? {
+            val deviceStatus = mqttDeviceStatus && Destination.MQTT in destinations
+            if ((types.isEmpty() && !deviceStatus) || destinations.isEmpty()) return null
             val columns = RoutingColumn.entries.filter { column ->
                 column.destination in destinations && when (column) {
                     RoutingColumn.OPENCELLID -> info.openCelliDSelected
@@ -70,6 +81,7 @@ data class RoutingTableUi(
                     RoutingRowUi(type, columns.filterTo(linkedSetOf()) { type in it.accepts() })
                 },
                 unselected = RecordType.entries.filter { it !in types },
+                mqttDeviceStatus = deviceStatus,
             )
         }
     }

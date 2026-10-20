@@ -73,6 +73,42 @@ class LegacyMdmMapperTest {
         assertTrue(policy.typeLocks.values.all { it == ManagedState.USER })
     }
 
+    /** The broker with every stream flag the app restrictions offer set to false. */
+    private val heartbeatBroker = broker + mapOf(
+        NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED to false,
+        NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED to false,
+        NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED to false,
+        NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED to false,
+        NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED to false,
+    )
+
+    @Test
+    fun `an MDM broker with every stream flag off seeds an explicitly empty type set`() {
+        val seed = map(heartbeatBroker).seedSetup!!
+        assertTrue(seed.recordTypes.isEmpty())
+        assertTrue(seed.namesRecordTypes)
+        assertEquals(setOf(Destination.MQTT), seed.destinations)
+    }
+
+    @Test
+    fun `an MDM broker with every stream flag off still seeds the types that auto start`() {
+        val seed = map(heartbeatBroker + mapOf(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING to true)).seedSetup!!
+        assertEquals(setOf(RecordType.GNSS), seed.recordTypes)
+        assertEquals(setOf(Destination.LOG_FILES, Destination.MQTT), seed.destinations)
+    }
+
+    @Test
+    fun `v2 record type keys leave the record types to the v2 keys even for a heartbeat broker`() {
+        val seed = map(heartbeatBroker, types = true).seedSetup!!
+        assertFalse(seed.namesRecordTypes)
+    }
+
+    @Test
+    fun `an auto start type without a broker names its types`() {
+        val seed = map(mapOf(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING to true)).seedSetup!!
+        assertTrue(seed.namesRecordTypes)
+    }
+
     @Test
     fun `mqtt start on boot needs a broker to auto start`() {
         assertEquals(ManagedState.USER, map(mapOf(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT to true)).autoStart)

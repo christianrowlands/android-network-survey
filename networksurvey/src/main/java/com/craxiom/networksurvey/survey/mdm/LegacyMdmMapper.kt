@@ -4,7 +4,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.mqtt.OrganizationBroker
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
-import com.craxiom.networksurvey.survey.model.SurveySetup
 
 /**
  * Maps the pre-v2 MDM keys onto the v2 survey setup model, for one release only, so fleets keep
@@ -22,6 +21,8 @@ import com.craxiom.networksurvey.survey.model.SurveySetup
  *   organization default setup instead.
  * - An MDM broker maps to MQTT turned on by the organization, matching the old behavior where the
  *   Dashboard hid the MQTT switch for a managed broker.
+ * - An MDM broker whose stream flags leave no record type on seeds an explicitly empty type set
+ *   (a heartbeat only stream), as earlier versions then streamed only device status.
  */
 object LegacyMdmMapper {
 
@@ -59,7 +60,7 @@ object LegacyMdmMapper {
     data class Result(
         val destinationLocks: Map<Destination, ManagedState>,
         val autoStart: ManagedState,
-        val seedSetup: SurveySetup?,
+        val seedSetup: OrganizationSeed?,
     ) {
         val isEmpty: Boolean
             get() = destinationLocks.isEmpty() && autoStart == ManagedState.USER && seedSetup == null
@@ -104,16 +105,19 @@ object LegacyMdmMapper {
         }
 
         val seedTypes = if (typesManagedByV2) emptySet() else autoStartTypes + streamTypes
+        // An MDM broker decides the record types even when every stream flag is off: earlier
+        // versions then streamed only device status, so the seed keeps no record types.
+        val seedNamesTypes = !typesManagedByV2 && (seedTypes.isNotEmpty() || hasMdmBroker)
         val seedDestinations = buildSet {
             if (!destinationsManagedByV2) {
                 if (autoStartTypes.isNotEmpty()) add(Destination.LOG_FILES)
                 if (hasMdmBroker) add(Destination.MQTT)
             }
         }
-        val seedSetup = if (seedTypes.isEmpty() && seedDestinations.isEmpty()) {
+        val seedSetup = if (!seedNamesTypes && seedDestinations.isEmpty()) {
             null
         } else {
-            SurveySetup.custom(seedTypes, seedDestinations)
+            OrganizationSeed(seedTypes, seedDestinations, seedNamesTypes)
         }
 
         return Result(destinationLocks, autoStart, seedSetup)

@@ -168,7 +168,10 @@ class SurveyNotificationBuilder(private val context: Context) {
         return names.joinToString(context.getString(R.string.notification_list_separator))
     }
 
-    /** Opens the app on the Survey screen (the extra keeps its historical name). */
+    /**
+     * Opens the app on the Survey screen (the extra keeps its historical name). Only this
+     * notification uses it; the community upload notification has its own extra for its page.
+     */
     private fun surveyScreenIntent(): PendingIntent {
         val intent = Intent(context, NetworkSurveyActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP

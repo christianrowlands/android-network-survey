@@ -25,9 +25,7 @@ class SurveyIntentMapperTest {
         }
     }
 
-    private val fallback = setOf(RecordType.CELLULAR, RecordType.WIFI)
-
-    private fun map(vararg pairs: Pair<String, Any>) = SurveyIntentMapper.map(MapExtras(mapOf(*pairs)), fallback)
+    private fun map(vararg pairs: Pair<String, Any>) = SurveyIntentMapper.map(MapExtras(mapOf(*pairs)))
 
     @Test
     fun `the extra names are pinned`() {
@@ -74,11 +72,33 @@ class SurveyIntentMapperTest {
     }
 
     @Test
-    fun `an MQTT JSON without stream flags streams the current setup's types`() {
-        val request = map(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON to """{"mqtt_host":"broker","mqtt_port":1883,"mqtt_client":"d1"}""")!!
-        assertEquals(fallback, request.setup.recordTypes)
+    fun `an MQTT JSON without stream flags is a heartbeat only stream, as in earlier versions`() {
+        val request = map(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON to """{"mqtt_host":"broker","mqtt_port":1883,"mqtt_client":"d1","mqtt_tls":false}""")!!
+        assertTrue(request.setup.recordTypes.isEmpty())
         assertEquals(setOf(Destination.MQTT), request.setup.destinations)
         assertFalse(request.usedLegacyExtras)
+    }
+
+    @Test
+    fun `an MQTT JSON without stream flags still takes the types of the record_types extra`() {
+        val request = map(
+            NetworkSurveyConstants.EXTRA_RECORD_TYPES to "gnss",
+            NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON to """{"mqtt_host":"broker","mqtt_port":1883,"mqtt_client":"d1"}""",
+        )!!
+        assertEquals(setOf(RecordType.GNSS), request.setup.recordTypes)
+        assertEquals(setOf(Destination.MQTT), request.setup.destinations)
+    }
+
+    @Test
+    fun `an MQTT JSON without mqtt_tls maps without throwing`() {
+        // Only the mapping is tested here; the null TLS flag is defaulted when the settings are
+        // turned into a connection.
+        val request = map(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON to """{"mqtt_host":"broker","mqtt_port":1883,"mqtt_client":"d1","wifi_stream_enabled":true}""")!!
+        val settings = request.mqttSettings!!
+        assertNull(settings.tlsEnabled())
+        assertEquals("broker", settings.host())
+        assertEquals(setOf(RecordType.WIFI), request.setup.recordTypes)
+        assertEquals(setOf(Destination.MQTT), request.setup.destinations)
     }
 
     @Test

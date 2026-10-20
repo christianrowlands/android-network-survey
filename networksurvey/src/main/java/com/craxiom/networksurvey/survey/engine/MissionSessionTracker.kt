@@ -204,7 +204,7 @@ class MissionSessionTracker(
     private fun closeSessionLocked(): LastSession {
         val now = clock()
         val total = if (sawMissionRelevant) counters.total() else communityCounters.total()
-        val ended = LastSession(now - (sessionStartTimeMs ?: now), total, now)
+        val ended = LastSession(now - (sessionStartTimeMs ?: now), total, now, missionId.takeIf { sawMissionRelevant })
         lastSession = ended
         sessionStartTimeMs = null
         resetCounts()

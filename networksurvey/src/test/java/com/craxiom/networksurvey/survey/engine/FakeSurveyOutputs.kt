@@ -9,7 +9,7 @@ import com.craxiom.networksurvey.survey.model.RecordType
  * and each stop calls [MissionSessionTracker.onSurveyStopped]. gRPC is asynchronous: it sits in a
  * connecting state until the test calls [completeGrpcConnection].
  */
-class FakeSurveyOutputs : SurveyOutputs {
+open class FakeSurveyOutputs : SurveyOutputs {
 
     val calls = mutableListOf<String>()
     private var missionCounter = 0
@@ -37,6 +37,9 @@ class FakeSurveyOutputs : SurveyOutputs {
     var typeProblems = mutableMapOf<RecordType, SkipReason>()
     var failingFileTypes = mutableSetOf<RecordType>()
     var autoIncludePhoneState = true
+
+    /** What [mqttSendsWithoutRecordTypes] answers: device status or the watchlist streams over MQTT. */
+    var mqttSendsWithoutRecordTypes = false
     var community = setOf(RecordType.CELLULAR, RecordType.WIFI)
 
     /** The number of distinct Mission IDs rolled so far. */
@@ -63,6 +66,7 @@ class FakeSurveyOutputs : SurveyOutputs {
     override fun probeRecordType(type: RecordType): SkipReason? = typeProblems[type]
     override fun communityTargets(): Set<RecordType> = community
     override fun autoIncludePhoneState(): Boolean = autoIncludePhoneState
+    override fun mqttSendsWithoutRecordTypes(): Boolean = mqttSendsWithoutRecordTypes
 
     override fun setFileLoggingEnabled(type: RecordType, enabled: Boolean): Boolean {
         calls += "file ${type.wireName} $enabled"

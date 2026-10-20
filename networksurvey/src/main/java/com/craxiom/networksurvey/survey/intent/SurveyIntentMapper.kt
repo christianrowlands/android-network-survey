@@ -59,8 +59,9 @@ data class IntentSurveyRequest(
  * survey records one set of types for every destination:
  * - each `*_file_logging` extra adds its record type and the Log files destination;
  * - `mqtt_config_json` adds the MQTT destination, and its `*_stream_enabled` flags add record
- *   types. A JSON with no stream flags at all streams [fallbackMqttTypes] (the user's current
- *   setup), as the old behavior connected MQTT regardless.
+ *   types. A JSON with no stream flags at all adds none: as in earlier versions, which connected
+ *   MQTT and streamed only device status, an intent that names no record types anywhere gets a
+ *   heartbeat only MQTT stream.
  */
 object SurveyIntentMapper {
 
@@ -74,12 +75,11 @@ object SurveyIntentMapper {
     )
 
     /**
-     * @param extras            The intent's extras.
-     * @param fallbackMqttTypes The record types to stream when an MQTT JSON carries no stream flags.
+     * @param extras The intent's extras.
      * @return The request, or null when the intent asks for nothing at all.
      */
     @JvmStatic
-    fun map(extras: IntentExtras, fallbackMqttTypes: Set<RecordType>): IntentSurveyRequest? {
+    fun map(extras: IntentExtras): IntentSurveyRequest? {
         val types = linkedSetOf<RecordType>()
         val destinations = linkedSetOf<Destination>()
         val invalid = mutableListOf<String>()
@@ -110,10 +110,9 @@ object SurveyIntentMapper {
                 RecordType.BLUETOOTH to mqttSettings.bluetoothStreamEnabled(),
                 RecordType.GNSS to mqttSettings.gnssStreamEnabled(),
             )
-            if (streamFlags.values.all { it == null }) {
-                // Only fall back when the intent names no record types of its own.
-                if (types.isEmpty()) types += fallbackMqttTypes
-            } else {
+            // No stream flags adds no record types: without record types from another extra, the
+            // stream sends only device status, as it did in earlier versions.
+            if (streamFlags.values.any { it != null }) {
                 usedLegacy = true
                 types += streamFlags.filterValues { it == true }.keys
             }

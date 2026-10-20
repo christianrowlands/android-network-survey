@@ -5,9 +5,11 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
+import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfile;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
@@ -196,9 +198,17 @@ public record MqttConnectionSettings(
         );
     }
 
+    /**
+     * Converts these settings to the connection info the MQTT connection uses. Every optional value
+     * can be missing (for example from an Intent API JSON that leaves fields out): a missing or
+     * invalid port and a missing TLS setting take the MQTT library defaults, and missing stream
+     * flags are off.
+     */
     public BrokerConnectionInfo toMqttConnectionInfo()
     {
-        return new MqttConnectionInfo(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword,
+        final int portOrDefault = MqttBrokerProfile.isValidPort(port) ? port : MqttConstants.DEFAULT_MQTT_PORT;
+        final boolean tlsOrDefault = tlsEnabled != null ? tlsEnabled : MqttConstants.DEFAULT_MQTT_TLS_SETTING;
+        return new MqttConnectionInfo(host, portOrDefault, tlsOrDefault, deviceName, mqttUsername, mqttPassword,
                 cellularStreamEnabled != null ? cellularStreamEnabled : false,
                 wifiStreamEnabled != null ? wifiStreamEnabled : false,
                 bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,

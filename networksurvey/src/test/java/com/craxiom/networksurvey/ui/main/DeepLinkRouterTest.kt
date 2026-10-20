@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.main
 import android.content.Intent
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
+import com.craxiom.networksurvey.logging.db.uploader.UploaderNotificationHelper
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -36,6 +37,12 @@ class DeepLinkRouterTest {
         assertEquals(DeepLinkTarget.NsAnalyticsPage, route(NsAnalyticsConstants.EXTRA_NAVIGATE_TO_NS_ANALYTICS))
         assertEquals(DeepLinkTarget.WatchlistHistory, route(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY))
         assertEquals(DeepLinkTarget.HomeTab(MainScreens.Survey.route), route(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD))
+    }
+
+    @Test
+    fun theCommunityUploadNotification_opensTheCommunityPage_notTheSurveyTab() {
+        assertEquals(DeepLinkTarget.CommunityPage, route(UploaderNotificationHelper.EXTRA_NAVIGATE_TO_COMMUNITY))
+        assertTrue(UploaderNotificationHelper.EXTRA_NAVIGATE_TO_COMMUNITY in DeepLinkRouter.NAVIGATION_EXTRAS)
     }
 
     @Test

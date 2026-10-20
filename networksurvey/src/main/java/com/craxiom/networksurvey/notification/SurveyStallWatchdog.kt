@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit
  * @param handler The handler whose thread runs the checks (the service's handler thread).
  * @param recordCount Supplies the survey session record counter.
  * @param isSurveyActive True while any survey output is running.
- * @param isPaused True while scanning is deliberately paused (battery or queue backpressure).
+ * @param isPaused True while no records are expected: scanning is deliberately paused (battery or
+ *                 queue backpressure), or the survey records no record types (device status only).
  * @param thresholdMs Supplies how long records may be absent before the survey counts as stalled.
  * @param onStallStateChanged Called on the handler thread when [stalledMinutes] changes.
  * @param onTick Called on the handler thread on every check while a survey is active.

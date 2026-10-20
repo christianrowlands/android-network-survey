@@ -175,6 +175,7 @@ class SurveySetupStore(private val preferences: SharedPreferences) {
                 preferences.getLong(SurveyPreferenceKeys.LAST_SESSION_DURATION_MS, 0L),
                 preferences.getLong(SurveyPreferenceKeys.LAST_SESSION_RECORD_COUNT, 0L),
                 endedAt,
+                preferences.getString(SurveyPreferenceKeys.LAST_SESSION_MISSION_ID, null),
             )
         }
         set(value) = preferences.edit {
@@ -182,10 +183,12 @@ class SurveySetupStore(private val preferences: SharedPreferences) {
                 remove(SurveyPreferenceKeys.LAST_SESSION_DURATION_MS)
                 remove(SurveyPreferenceKeys.LAST_SESSION_RECORD_COUNT)
                 remove(SurveyPreferenceKeys.LAST_SESSION_ENDED_AT_MS)
+                remove(SurveyPreferenceKeys.LAST_SESSION_MISSION_ID)
             } else {
                 putLong(SurveyPreferenceKeys.LAST_SESSION_DURATION_MS, value.durationMs)
                 putLong(SurveyPreferenceKeys.LAST_SESSION_RECORD_COUNT, value.totalRecords)
                 putLong(SurveyPreferenceKeys.LAST_SESSION_ENDED_AT_MS, value.endedAtMs)
+                putString(SurveyPreferenceKeys.LAST_SESSION_MISSION_ID, value.missionId)
             }
         }
 

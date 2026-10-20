@@ -3,6 +3,8 @@ package com.craxiom.networksurvey.ui.onboarding
 import android.app.Application
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.AndroidViewModel
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfile
+import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfileStore
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSource
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
@@ -27,8 +29,23 @@ enum class OnboardingChoice { NS_ANALYTICS, LOG_FILES, DECIDE_LATER }
 /**
  * The upgraded user's own setup, for the welcome: what it records, where it goes, and whether it
  * starts on its own.
+ *
+ * @property mqttBrokerSaved True if the user has a broker of their own that the survey does not
+ *                           send to, so the welcome says how to use it.
  */
-data class UpgradeWelcomeSetup(val types: List<RecordType>, val destinations: List<Destination>, val autoStart: Boolean)
+data class UpgradeWelcomeSetup(
+    val types: List<RecordType>,
+    val destinations: List<Destination>,
+    val autoStart: Boolean,
+    val mqttBrokerSaved: Boolean = false,
+) {
+    /**
+     * True for an MQTT stream with no record types (an upgrade from MQTT with every stream switch
+     * off), which sends only device status.
+     */
+    val deviceStatusOnly: Boolean
+        get() = types.isEmpty() && Destination.MQTT in destinations
+}
 
 /**
  * Activity-scoped state for first run: whether the cards show (decided by [OnboardingGate] when
@@ -45,6 +62,9 @@ class OnboardingViewModel @JvmOverloads constructor(
     private val isRegistered: () -> Boolean = { NsAnalyticsSecureStorage.isRegistered(application) },
     private val registrationLinkPending: () -> Boolean = { NsAnalyticsSecureStorage.getQrData(application) != null },
     private val autoIncludePhoneState: () -> Boolean = { SurveyTypeResolver.autoIncludePhoneState(application) },
+    private val hasUserBroker: () -> Boolean = {
+        MqttBrokerProfileStore.create(application).profiles().any { it.origin == MqttBrokerProfile.Origin.USER }
+    },
 ) : AndroidViewModel(application) {
 
     private val mutableVisible = MutableStateFlow(evaluate())
@@ -111,6 +131,7 @@ class OnboardingViewModel @JvmOverloads constructor(
             types = SurveyUiStateMapper.ordered(types),
             destinations = Destination.entries.filter { it in setup.destinations },
             autoStart = store.userAutoStart,
+            mqttBrokerSaved = Destination.MQTT !in setup.destinations && safely("MQTT brokers") { hasUserBroker() },
         )
     }
 

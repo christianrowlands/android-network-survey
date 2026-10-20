@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -79,6 +77,11 @@ private fun StateBadge(text: String, color: Color) {
 
 @Composable
 private fun Heartbeat(recording: RecordingUi) {
+    if (recording.deviceStatusOnly) {
+        // No records to count or wait for: only MQTT's device status messages go out
+        HeartbeatLine(stringResource(R.string.survey_device_status_only), stalled = false)
+        return
+    }
     val beat = when {
         recording.paused -> stringResource(R.string.survey_paused_nothing_recorded)
         recording.stalledMinutes != null -> stringResource(R.string.survey_last_record_minutes, recording.stalledMinutes)
@@ -89,33 +92,21 @@ private fun Heartbeat(recording: RecordingUi) {
 
         else -> stringResource(R.string.survey_last_record_minutes, (recording.secondsSinceLastRecord / SECONDS_PER_MINUTE).toInt())
     }
-    val stalled = recording.stalledMinutes != null && !recording.paused
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
-        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(SMALL_ICON))
-        Text(
-            text = recordsText(recording.totalRecords, recording.countsSavedForUpload) + stringResource(R.string.survey_dot_separator) + beat,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (stalled) NsTheme.colors.status.danger.content else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    HeartbeatLine(
+        text = recordsText(recording.totalRecords, recording.countsSavedForUpload) + stringResource(R.string.survey_dot_separator) + beat,
+        stalled = recording.stalledMinutes != null && !recording.paused,
+    )
 }
 
 @Composable
-private fun MissionIdRow(missionId: String, onCopy: (String) -> Unit) {
+private fun HeartbeatLine(text: String, stalled: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s)) {
-        Icon(painterResource(R.drawable.ic_tag), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(SMALL_ICON))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.mission_id_card_title), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = missionId, style = NsTheme.textStyles.mono, color = MaterialTheme.colorScheme.onSurface)
-        }
-        IconButton(onClick = { onCopy(missionId) }) {
-            Icon(
-                painterResource(R.drawable.ic_content_copy),
-                contentDescription = stringResource(R.string.mission_id_copy_content_description),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(SMALL_ICON),
-            )
-        }
+        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(SMALL_ICON))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (stalled) NsTheme.colors.status.danger.content else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

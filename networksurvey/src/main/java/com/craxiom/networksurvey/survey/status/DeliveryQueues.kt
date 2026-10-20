@@ -35,13 +35,22 @@ data class NsAnalyticsQueue(
  * @property uploadQueued True while an upload was asked for but hasn't started (for example it
  *                        waits for Wi-Fi).
  * @property networkWait  The network the queued upload waits for, if the phone isn't on one.
+ * @property lastFailure  The last upload's failure, until the user opens the Community databases
+ *                        page or the next upload starts; null when it succeeded or was cancelled.
  */
 data class CommunityQueue(
     val pending: Int = 0,
     val uploading: Boolean = false,
     val uploadQueued: Boolean = false,
     val networkWait: NetworkWait = NetworkWait.NONE,
+    val lastFailure: CommunityUploadFailure? = null,
 )
+
+/**
+ * A community upload that failed or only partly succeeded. [message] is the upload's own result
+ * text for the worst failing target ("Invalid API key"), already in the user's language.
+ */
+data class CommunityUploadFailure(val message: String)
 
 /** The network a queued upload waits for before it can start. */
 enum class NetworkWait {

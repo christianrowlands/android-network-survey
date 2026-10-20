@@ -19,8 +19,8 @@ import com.craxiom.networksurvey.notification.NotificationChannels;
 
 /**
  * Builds the community (OpenCelliD / BeaconDB) upload progress notification: a low importance row
- * with a determinate progress bar, a Cancel action, and a tap that lands on the dashboard where the
- * upload results are shown.
+ * with a determinate progress bar, a Cancel action, and a tap that opens the Community databases
+ * page, where the upload results are shown.
  * <p>
  * This class was pulled from the Tower Collector app and modified to work with Network Survey.
  * <p>
@@ -28,6 +28,12 @@ import com.craxiom.networksurvey.notification.NotificationChannels;
  */
 public class UploaderNotificationHelper
 {
+    /**
+     * The boolean extra that opens the Community databases page. Its own extra: the survey
+     * notification's {@link NetworkSurveyConstants#EXTRA_NAVIGATE_TO_DASHBOARD} opens the Survey tab.
+     */
+    public static final String EXTRA_NAVIGATE_TO_COMMUNITY = "navigate_to_community";
+
     private final Context context;
     private final NotificationCompat.Builder builder;
 
@@ -78,14 +84,14 @@ public class UploaderNotificationHelper
     }
 
     /**
-     * Tapping the upload row opens the dashboard, where the upload card shows the queue and the
+     * Tapping the upload row opens the Community databases page, which shows the queue and the
      * result of the last upload.
      */
     private PendingIntent createOpenMainActivityIntent()
     {
         Intent intent = new Intent(context, NetworkSurveyActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD, true);
+        intent.putExtra(EXTRA_NAVIGATE_TO_COMMUNITY, true);
         return PendingIntent.getActivity(context, NetworkSurveyConstants.UPLOADER_NOTIFICATION_ID, intent,
                 getImmutablePendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT));
     }
