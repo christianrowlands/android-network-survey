@@ -35,6 +35,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.main.appbar.nsTopBarHeight
 import com.craxiom.networksurvey.ui.common.NsInfoCard
 import com.craxiom.networksurvey.ui.common.NsSectionLabel
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
@@ -135,6 +136,7 @@ private fun ProviderColorOverrideContent(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.provider_color_overrides_title)) },
+                expandedHeight = nsTopBarHeight(),
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(

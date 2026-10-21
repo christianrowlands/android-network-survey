@@ -27,6 +27,7 @@ import com.craxiom.networksurvey.util.TelephonyStateUtils
  * @param nrLastSeenAgeMs How long ago the idle NR cell was seen, or null when the card is not idle.
  * @param nrSighting     The last live NR secondary cell, kept for the idle state.
  * @param scanned        True once a scan for this SIM has arrived.
+ * @param scanCount      How many scans for this SIM have arrived.
  */
 data class CellularSimData(
     val technology: NetworkTechnologyInfo? = null,
@@ -38,6 +39,7 @@ data class CellularSimData(
     val nrLastSeenAgeMs: Long? = null,
     val nrSighting: NrSecondaryCellSighting = NrSecondaryCellSighting.NONE,
     val scanned: Boolean = false,
+    val scanCount: Int = 0,
 ) {
 
     /** @return This SIM with the technology snapshot sent just before the next scan's records. */
@@ -52,7 +54,7 @@ data class CellularSimData(
      */
     fun withBatch(batch: List<CellularRecordWrapper>, nowMs: Long): CellularSimData {
         if (batch.isEmpty()) {
-            return CellularSimData(technology = technology, carrier = carrier, scanned = true)
+            return CellularSimData(technology = technology, carrier = carrier, scanned = true, scanCount = scanCount + 1)
         }
 
         // The last serving record wins, as it did when the old screen set each one in turn.
@@ -80,6 +82,7 @@ data class CellularSimData(
             nrLastSeenAgeMs = nr.lastSeenAgeMs,
             nrSighting = nr.sighting,
             scanned = true,
+            scanCount = scanCount + 1,
         )
     }
 

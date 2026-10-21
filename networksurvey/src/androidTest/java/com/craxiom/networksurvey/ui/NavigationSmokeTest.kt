@@ -76,7 +76,7 @@ class NavigationSmokeTest {
     fun everyTabAndSubTab_opens() {
         launch()
         tab("Signals").performClick()
-        heading("Signals").assertIsDisplayed()
+        shell.signalsChrome().assertIsDisplayed()
         listOf("Wi-Fi", "Bluetooth", "GNSS", "Cellular").forEach { label ->
             tab(label).performClick()
             tab(label).assertIsSelected()
@@ -124,7 +124,7 @@ class NavigationSmokeTest {
     fun theSurveyNotificationTap_fromSignals_landsOnSurvey() {
         launch()
         tab("Signals").performClick()
-        heading("Signals").assertIsDisplayed()
+        shell.signalsChrome().assertIsDisplayed()
 
         context().startActivity(
             activityIntent().putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD, true)
@@ -167,7 +167,7 @@ class NavigationSmokeTest {
 
         waitFor("the screen kept on") { keepScreenOnFlagSet() }
         tab("Signals").performClick()
-        heading("Signals").assertIsDisplayed()
+        shell.signalsChrome().assertIsDisplayed()
         assertTrue("Signals while recording", keepScreenOnFlagSet())
 
         tab("Survey").performClick()

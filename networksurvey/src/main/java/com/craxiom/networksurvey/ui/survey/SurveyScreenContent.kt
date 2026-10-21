@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.model.Destination
@@ -70,6 +73,7 @@ enum class SurveyOverlay { NONE, LOCK, CHANGE, EDIT_LIST, STOP, USE_OWN, RESTORE
  *
  * @param preview Builds the screen state for a draft setup, for the Change sheet.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SurveyScreenContent(
     state: SurveyUiState,
@@ -81,12 +85,20 @@ fun SurveyScreenContent(
     var overlay by rememberSaveable { mutableStateOf(SurveyOverlay.NONE) }
     val plateActions = remember(actions) { plateActions(actions) { overlay = SurveyOverlay.DISABLE_LIMIT } }
 
+    // The bar slides away as the form scrolls, so a short (landscape) window has room for it
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
     Column(modifier = modifier.fillMaxSize()) {
-        TabTopBar(title = stringResource(R.string.nav_survey), actions = appBarActions(state, actions) { overlay = it })
+        TabTopBar(
+            title = stringResource(R.string.nav_survey),
+            actions = appBarActions(state, actions) { overlay = it },
+            scrollBehavior = scrollBehavior,
+        )
         Box(modifier = Modifier.weight(1f)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .verticalScroll(rememberScrollState()),
             ) {
                 Column(

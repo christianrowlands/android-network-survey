@@ -180,7 +180,7 @@ class MapTabViewModel(application: Application) : AndroidViewModel(application),
         if (wantedSim.value == null) requestSim(viewedSim)
     }
 
-    /** Shows [viewedSim] (the Cellular view's map action), even before it has a serving cell. */
+    /** Shows [viewedSim], even before it has a serving cell. */
     fun requestSim(viewedSim: ViewedSim?) {
         if (viewedSim != null && !viewedSim.isNoSim) wantedSim.value = viewedSim.subscriptionId
     }

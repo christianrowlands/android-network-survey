@@ -87,6 +87,9 @@ internal class ShellDriver(private val compose: ComposeTestRule) {
     /** A tab's top bar title. */
     fun heading(title: String) = compose.onNode(isHeading() and hasText(title))
 
+    /** The Signals tab has no title bar; its sub-tab row carries the "Signals" pane title instead. */
+    fun signalsChrome() = compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Signals"))
+
     /** The Map tab has no title bar; its Layers button stands in for one. */
     fun mapChrome() = compose.onNode(hasContentDescription(mapLayers()))
 

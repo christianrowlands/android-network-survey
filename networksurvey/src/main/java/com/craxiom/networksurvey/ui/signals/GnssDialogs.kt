@@ -67,7 +67,7 @@ fun GnssSortByDialog(
     )
 }
 
-/** The GNSS constellation filter, opened from the Signals top bar on the GNSS sub-tab. */
+/** The GNSS constellation filter, opened from the GNSS sub-tab's Status | Sky row. */
 @Composable
 fun SatsFilterDialog(onDismissRequest: () -> Unit, onSave: () -> Unit) {
     val context = LocalContext.current

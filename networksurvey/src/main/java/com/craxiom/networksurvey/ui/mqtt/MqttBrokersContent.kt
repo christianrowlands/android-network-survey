@@ -70,7 +70,7 @@ fun MqttBrokersContent(
         when {
             state.loading -> Unit
             state.organizationBroker != null -> OrganizationBroker(state, onLocked = { showLockSheet = true })
-            state.brokers.isEmpty() -> NsRowGroup { NsEmptyState(stringResource(R.string.mqtt_brokers_empty), R.drawable.ic_rss_feed) }
+            state.brokers.isEmpty() -> NsRowGroup { NsEmptyState(stringResource(R.string.mqtt_brokers_empty), R.drawable.ic_cloud_connection) }
             else -> BrokerList(state, actions)
         }
 

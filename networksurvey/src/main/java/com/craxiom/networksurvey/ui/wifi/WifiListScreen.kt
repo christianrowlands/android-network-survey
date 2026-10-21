@@ -5,6 +5,7 @@ import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,25 +22,31 @@ import com.craxiom.networksurvey.ui.common.openWifiSettings
 import com.craxiom.networksurvey.ui.common.rememberPermissionRequest
 import com.craxiom.networksurvey.ui.main.SharedViewModel
 import com.craxiom.networksurvey.ui.signals.SignalsSubTab
-import com.craxiom.networksurvey.ui.signals.signalsStateWords
+import com.craxiom.networksurvey.ui.signals.signalsStripWords
 import com.craxiom.networksurvey.ui.util.copyWithSystemConfirmation
 import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
 import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
 import com.craxiom.networksurvey.ui.wifi.model.WifiListViewModel
+import com.craxiom.networksurvey.util.WifiBand
 
 /**
  * The Wi-Fi sub-tab of Signals: binds to the survey service while it shows, re-checks the
  * permission, location and Wi-Fi on every resume, and asks for nothing until the user taps the one
  * button that fixes what is missing.
+ *
+ * @param onOpenSpectrum Opens the Wi-Fi spectrum with this list's last scan.
+ * @param onManageExclusionList Opens the SSID exclusion list, from the filter sheet.
  */
 @Composable
-fun WifiListScreen() {
+fun WifiListScreen(onOpenSpectrum: () -> Unit, onManageExclusionList: () -> Unit) {
     val context = LocalContext.current
     val activity = context.findComponentActivity() ?: return
     val viewModel: WifiListViewModel = viewModel(viewModelStoreOwner = activity)
     val sharedViewModel: SharedViewModel = viewModel(viewModelStoreOwner = activity)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val openSpectrum by rememberUpdatedState(onOpenSpectrum)
+    val manageExclusionList by rememberUpdatedState(onManageExclusionList)
 
     ServiceConnectionHandler(viewModel::onServiceChanged)
     LifecycleResumeEffect(viewModel) {
@@ -53,9 +60,11 @@ fun WifiListScreen() {
 
     WifiListContent(
         state = state,
-        stateWords = signalsStateWords(SignalsSubTab.WIFI),
+        stripWords = signalsStripWords(SignalsSubTab.WIFI),
         permissionAccess = permission.access,
-        actions = remember(viewModel, permission) { ScreenActions(context, viewModel, sharedViewModel, permission) },
+        actions = remember(viewModel, permission) {
+            ScreenActions(context, viewModel, sharedViewModel, permission, { openSpectrum() }, { manageExclusionList() })
+        },
     )
 }
 
@@ -65,6 +74,8 @@ private class ScreenActions(
     private val viewModel: WifiListViewModel,
     private val sharedViewModel: SharedViewModel,
     private val permission: PermissionRequest,
+    private val openSpectrum: () -> Unit,
+    private val manageExclusionList: () -> Unit,
 ) : WifiListActions {
 
     override fun onNetworkClick(bssid: String) {
@@ -95,6 +106,14 @@ private class ScreenActions(
     override fun onTogglePause() = viewModel.togglePaused()
 
     override fun onClearFilter() = viewModel.clearFilter()
+
+    override fun onFilterQueryChanged(query: String) = viewModel.setFilterQuery(query)
+
+    override fun onFilterBandToggled(band: WifiBand) = viewModel.toggleFilterBand(band)
+
+    override fun onManageExclusionList() = manageExclusionList()
+
+    override fun onOpenSpectrum() = openSpectrum()
 
     override fun onAllow() = permission.request()
 

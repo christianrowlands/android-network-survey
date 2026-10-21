@@ -18,6 +18,7 @@ import com.craxiom.networksurvey.ui.bluetooth.list.model.BluetoothTech
 import com.craxiom.networksurvey.ui.bluetooth.list.model.FindMyDevice
 import com.craxiom.networksurvey.ui.common.PermissionAccess
 import com.craxiom.networksurvey.ui.showPage
+import com.craxiom.networksurvey.ui.signals.SignalsStripWords
 import com.craxiom.networksurvey.ui.textLayout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -37,11 +38,20 @@ class BluetoothListContentTest {
     val compose = createComposeRule()
 
     private val actions = RecordingActions()
-    private val live = "Live view" to "Live view"
+    private val live = SignalsStripWords(warning = null, spoken = "Live view")
 
     private val keys = BluetoothDeviceDisplay("02:00:F4:12:00:9C", "Keys", -48, "Apple, Inc.", BluetoothTech.LE, tracker = FindMyDevice.AIRTAG)
     private val unnamed = BluetoothDeviceDisplay("02:00:5C:8D:31:AA", "", null, "", BluetoothTech.UNKNOWN, tracker = null)
     private val populated = BluetoothListUiState(rows = listOf(keys, unnamed), totalCount = 2)
+
+    @Test
+    fun theFilterButton_onTheStrip_opensTheFilterSheet() {
+        show(populated)
+
+        compose.onNodeWithContentDescription("Filter the Bluetooth device list").performClick()
+
+        compose.onNodeWithText("Filter devices").assertIsDisplayed()
+    }
 
     @Test
     fun nothingHeardYet_saysSo() {
@@ -49,7 +59,8 @@ class BluetoothListContentTest {
 
         compose.onNodeWithText("No Bluetooth devices found yet").assertIsDisplayed()
         compose.onNodeWithText("0 devices", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("Live view", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("0 devices. Live view").assertIsDisplayed()
+        compose.onAllNodesWithText("Live view", useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -174,7 +185,8 @@ class BluetoothListContentTest {
     fun pausedUpdates_sayWhyTheListIsStill_andCanResume() {
         show(populated.copy(paused = true))
 
-        compose.onNodeWithText("Updates paused", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("Updates paused", substring = true).assertIsDisplayed()
+        compose.onAllNodesWithText("Updates paused", useUnmergedTree = true).assertCountEquals(0)
         compose.onNodeWithContentDescription("Resume updates").performClick()
 
         assertEquals(listOf("pause"), actions.calls)
@@ -187,13 +199,13 @@ class BluetoothListContentTest {
         compose.showPage(largeFont = true) {
             BluetoothListContent(
                 state = BluetoothListUiState(rows = listOf(longName), totalCount = 12, filter = BluetoothDisplayFilter(namedOnly = true)),
-                stateWords = "Recording" to "Recording",
+                stripWords = SignalsStripWords(warning = "Survey paused", spoken = "Survey paused"),
                 permissionAccess = PermissionAccess.AVAILABLE,
                 actions = actions,
             )
         }
 
-        assertFalse(compose.textLayout("Recording").isLineEllipsized(0))
+        assertFalse(compose.textLayout("Survey paused").isLineEllipsized(0))
         assertFalse(compose.textLayout("1 of 12 devices").isLineEllipsized(0))
         assertFalse(compose.textLayout("Signal strength", substring = true).isLineEllipsized(0))
         assertFalse(compose.textLayout("Forklift scanner 12").isLineEllipsized(0))
@@ -211,6 +223,9 @@ class BluetoothListContentTest {
         override fun onSortSelected(index: Int) { calls += "sort $index" }
         override fun onTogglePause() { calls += "pause" }
         override fun onClearFilter() { calls += "clear" }
+        override fun onFilterQueryChanged(query: String) { calls += "query $query" }
+        override fun onNamedOnlyChanged(namedOnly: Boolean) { calls += "named $namedOnly" }
+        override fun onTrackersOnlyChanged(trackersOnly: Boolean) { calls += "trackers $trackersOnly" }
         override fun onAllow() { calls += "allow" }
         override fun onOpenAppSettings() { calls += "settings" }
         override fun onTurnOnLocation() { calls += "location" }

@@ -1,18 +1,14 @@
 package com.craxiom.networksurvey.ui.main
 
-import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.craxiom.networksurvey.ui.common.findComponentActivity
 import com.craxiom.networksurvey.ui.main.more.MoreScreen
 import com.craxiom.networksurvey.ui.map.MapTabScreen
-import com.craxiom.networksurvey.ui.map.MapTabViewModel
 import com.craxiom.networksurvey.ui.signals.SignalsScreen
-import com.craxiom.networksurvey.ui.signals.SignalsViewModel
 import com.craxiom.networksurvey.ui.survey.SurveyScreen
 
 /**
@@ -30,9 +26,7 @@ fun HomeScreen(mainNavController: NavHostController, sharedViewModel: SharedView
         homeTabRequest = homeTabRequest,
         onHomeTabHandled = { deepLinkViewModel?.clearHomeTab() },
         survey = { SurveyTab(mainNavController, sharedViewModel) },
-        signals = { subTab, onSubTabChange, onOpenMap ->
-            SignalsScreen(subTab, onSubTabChange, { openMapOnViewedSim(activity, onOpenMap) }, mainNavController)
-        },
+        signals = { subTab, onSubTabChange -> SignalsScreen(subTab, onSubTabChange, mainNavController) },
         map = { MapTabScreen(sharedViewModel) },
         more = { MoreScreen(onOpen = { route -> openFromMore(mainNavController, route) }) },
     )
@@ -45,18 +39,6 @@ private fun SurveyTab(mainNavController: NavHostController, sharedViewModel: Sha
         sharedViewModel = sharedViewModel,
         onOpenSettings = { mainNavController.navigate(NavDrawerOption.Settings.name) },
     )
-}
-
-/**
- * The Cellular view's map action: the Map tab opens on the SIM the Cellular view shows, whichever
- * SIM the map showed before.
- */
-private fun openMapOnViewedSim(activity: ComponentActivity?, openMap: () -> Unit) {
-    if (activity != null) {
-        val viewedSim = ViewModelProvider(activity)[SignalsViewModel::class.java].viewedSim.value
-        ViewModelProvider(activity)[MapTabViewModel::class.java].requestSim(viewedSim)
-    }
-    openMap()
 }
 
 /** Opens a page from the More list; the Wi-Fi spectrum opens without the Wi-Fi tab's last scan. */

@@ -45,7 +45,7 @@ class ComposeDialogFragment : DialogFragment() {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                com.craxiom.networksurvey.ui.theme.NsTheme {
+                com.craxiom.networksurvey.ui.theme.NsTheme(accent = com.craxiom.networksurvey.ui.theme.rememberAccent()) {
                     hostedContent?.invoke { dismissAllowingStateLoss() }
                 }
             }

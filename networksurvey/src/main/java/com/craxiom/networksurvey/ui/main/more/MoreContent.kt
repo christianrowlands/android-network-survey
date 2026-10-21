@@ -11,13 +11,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
@@ -49,14 +52,17 @@ interface MoreActions {
  * The More tab, stateless: Settings, the destinations, the tools, and help and about, replacing the
  * old drawer. Rows that open a web page say so with an external-link icon and their click label.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreContent(state: MoreUiState, actions: MoreActions, snackbarHostState: SnackbarHostState, modifier: Modifier = Modifier) {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Column(modifier.fillMaxSize()) {
-        TabTopBar(title = stringResource(R.string.nav_more))
+        TabTopBar(title = stringResource(R.string.nav_more), scrollBehavior = scrollBehavior)
         Box(Modifier.weight(1f)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .verticalScroll(rememberScrollState()),
             ) {
                 Column(

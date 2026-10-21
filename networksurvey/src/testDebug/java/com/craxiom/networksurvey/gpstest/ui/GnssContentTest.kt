@@ -6,7 +6,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.craxiom.networksurvey.ui.common.PermissionAccess
@@ -35,6 +37,7 @@ class GnssContentTest {
         page: GnssPage = GnssPage.STATUS,
         heard: Boolean = true,
         filterHidesAll: Boolean = false,
+        filterActive: Boolean = false,
     ) {
         compose.showPage {
             GnssContent(
@@ -44,6 +47,7 @@ class GnssContentTest {
                 heard = heard,
                 filterHidesAll = filterHidesAll,
                 actions = actions,
+                filterActive = filterActive,
                 statusPage = { Text("status page") },
                 skyPage = { Text("sky page") },
             )
@@ -127,6 +131,38 @@ class GnssContentTest {
         compose.onNodeWithText("status page").assertIsDisplayed()
     }
 
+    @Test
+    fun theStatusPage_hasSortAndFilterBesideTheToggle() {
+        show(page = GnssPage.STATUS)
+
+        compose.onNodeWithContentDescription("Sort by").performClick()
+        compose.onNodeWithContentDescription("Filter signals").performClick()
+
+        assertEquals(listOf("sort", "filter"), actions.calls)
+    }
+
+    @Test
+    fun theSkyPage_hasOnlyTheFilter() {
+        show(page = GnssPage.SKY)
+
+        compose.onAllNodesWithContentDescription("Sort by").assertCountEquals(0)
+        compose.onNodeWithContentDescription("Filter signals").assertIsDisplayed()
+    }
+
+    @Test
+    fun anActiveFilter_saysSo() {
+        show(filterActive = true)
+
+        compose.onNodeWithContentDescription("Filter signals. Filter active.").assertIsDisplayed()
+    }
+
+    @Test
+    fun aMissingPermission_hidesSortAndFilter() {
+        show(scanState = GnssScanState.PERMISSION_NEEDED)
+
+        compose.onAllNodesWithContentDescription("Filter signals").assertCountEquals(0)
+    }
+
     private class RecordingActions : GnssActions {
         val calls = mutableListOf<String>()
         override fun onSelectPage(page: GnssPage) {
@@ -147,6 +183,14 @@ class GnssContentTest {
 
         override fun onShowAll() {
             calls += "showAll"
+        }
+
+        override fun onOpenSort() {
+            calls += "sort"
+        }
+
+        override fun onOpenFilter() {
+            calls += "filter"
         }
     }
 }

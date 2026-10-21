@@ -7,12 +7,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -68,6 +70,13 @@ class SignalsContentTest {
     }
 
     @Test
+    fun theSubTabRow_namesTheTab_sinceThereIsNoTopBar() {
+        compose.showPage { SignalsSubTabRow(SignalsSubTab.CELLULAR, {}) }
+
+        compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Signals")).assertExists()
+    }
+
+    @Test
     fun theLongestLabel_fitsAtLargeFont() {
         compose.showPage(largeFont = true) { SignalsSubTabRow(SignalsSubTab.BLUETOOTH, {}) }
         // Not cut short: one line, nothing ellipsized.
@@ -92,6 +101,9 @@ class SignalsContentTest {
         assertEquals(ScanStripState(StripState.LIVE, 30, null), state)
         compose.showPage { ScanStrip(state) }
         compose.onNodeWithContentDescription("Live view, scans every 30 seconds").assertIsDisplayed()
+        // Only the interval is drawn; the state is for TalkBack, the Survey tab and the notification
+        compose.onNodeWithText("Scan every 30 s", useUnmergedTree = true).assertIsDisplayed()
+        compose.onAllNodesWithText("Live view", substring = true, useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -103,11 +115,11 @@ class SignalsContentTest {
     }
 
     @Test
-    fun aSurveyWithoutThisType_saysSo_withoutAnInterval() {
+    fun aSurveyWithoutThisType_saysSo_withItsInterval() {
         val state = scanStripState(SignalsSubTab.BLUETOOTH, recordingCellular, 30, mint)
-        assertEquals(ScanStripState(StripState.NOT_IN_SURVEY, null, null), state)
+        assertEquals(ScanStripState(StripState.NOT_IN_SURVEY, 30, null), state)
         compose.showPage { ScanStrip(state) }
-        compose.onNodeWithContentDescription("Live view, not in this survey").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Live view, not in this survey, scans every 30 seconds").assertIsDisplayed()
     }
 
     @Test
@@ -116,7 +128,9 @@ class SignalsContentTest {
         val state = scanStripState(SignalsSubTab.CELLULAR, paused, 5, ViewedSim.NO_SIM)
         assertEquals(ScanStripState(StripState.PAUSED, null, ViewedSim.NO_SIM), state)
         compose.showPage { ScanStrip(state) }
-        compose.onNodeWithContentDescription("No SIM. Paused").assertIsDisplayed()
+        compose.onNodeWithContentDescription("No SIM. Survey paused").assertIsDisplayed()
+        // A paused survey is a warning, so it is drawn in place of the interval
+        compose.onNodeWithText("Survey paused", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -140,20 +154,4 @@ class SignalsContentTest {
             "SIM 1, A Very Long Mobile Virtual Network Operator Name. Recording, scans every 10 seconds"
         ).assertIsDisplayed()
     }
-
-    @Test
-    fun eachSubTab_hasItsOwnActions() {
-        assertEquals(listOf(SignalsAction.OPEN_MAP), signalsActions(SignalsSubTab.CELLULAR, GnssPage.STATUS))
-        assertEquals(
-            listOf(SignalsAction.WIFI_SPECTRUM, SignalsAction.WIFI_FILTER),
-            signalsActions(SignalsSubTab.WIFI, GnssPage.STATUS),
-        )
-        assertEquals(listOf(SignalsAction.BLUETOOTH_FILTER), signalsActions(SignalsSubTab.BLUETOOTH, GnssPage.STATUS))
-        assertEquals(
-            listOf(SignalsAction.GNSS_SORT, SignalsAction.GNSS_FILTER),
-            signalsActions(SignalsSubTab.GNSS, GnssPage.STATUS),
-        )
-        assertEquals(listOf(SignalsAction.GNSS_FILTER), signalsActions(SignalsSubTab.GNSS, GnssPage.SKY))
-    }
-
 }

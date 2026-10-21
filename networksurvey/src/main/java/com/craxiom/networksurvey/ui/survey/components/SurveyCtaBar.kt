@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.ui.survey.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -13,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -22,13 +26,15 @@ import com.craxiom.networksurvey.ui.common.NsCtaBar
 import com.craxiom.networksurvey.ui.common.NsPrimaryCta
 import com.craxiom.networksurvey.ui.common.NsActionRow
 import com.craxiom.networksurvey.ui.common.NsTextAction
+import com.craxiom.networksurvey.ui.common.rememberCompactHeight
 import com.craxiom.networksurvey.ui.survey.model.StartBlockReason
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import kotlinx.coroutines.delay
 
 /**
  * The pinned bar with the one Start or Stop button. When Start can't run, the reason sits right
- * above it (and is read out with the button), with the fix as a button where one exists.
+ * above it (beside it in a short window) and is read out with the button, with the fix as a button
+ * where one exists.
  *
  * @param commandInFlight True while a start or stop is on its way; the button keeps its label and
  *                        color, dimmed and disabled, so a second tap can't send a second command.
@@ -47,21 +53,13 @@ fun SurveyCtaBar(
     commandInFlight: Boolean = false,
 ) {
     val stopJustAppeared = rememberStopJustAppeared(recording)
-    NsCtaBar(modifier = modifier) {
-        val reason = if (recording) null else startBlock?.let { stringResource(it.messageRes) }
-        if (reason != null) {
-            Text(text = reason, style = MaterialTheme.typography.bodyMedium, color = NsTheme.colors.status.warningText)
-            if (startBlock == StartBlockReason.NS_ANALYTICS_NOT_CONNECTED) {
-                NsActionRow(gap = NsTheme.spacing.s) {
-                    NsTextAction(stringResource(R.string.survey_action_use_log_files), onUseLogFiles)
-                    NsTextAction(stringResource(R.string.survey_action_connect_ns_analytics), onConnectNsAnalytics)
-                }
-            }
-        }
+    val reason = if (recording) null else startBlock?.let { stringResource(it.messageRes) }
+    val button = @Composable { buttonModifier: Modifier ->
         if (recording) {
             NsPrimaryCta(
                 text = stringResource(R.string.survey_stop),
                 onClick = onStop,
+                modifier = buttonModifier,
                 icon = R.drawable.ic_stop,
                 enabled = !commandInFlight && !stopJustAppeared,
                 colors = dimmedWhileBusy(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.onError),
@@ -70,6 +68,7 @@ fun SurveyCtaBar(
             NsPrimaryCta(
                 text = stringResource(R.string.survey_start),
                 onClick = onStart,
+                modifier = buttonModifier,
                 enabled = startBlock == null && !commandInFlight,
                 stateDescription = reason,
                 // A blocked Start keeps the standard disabled look; a busy one only dims
@@ -79,6 +78,38 @@ fun SurveyCtaBar(
                     ButtonDefaults.buttonColors()
                 },
             ) { Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(CTA_ICON)) }
+        }
+    }
+    NsCtaBar(modifier = modifier) {
+        when {
+            reason == null -> button(Modifier)
+            // A short window puts the reason beside Start rather than above it, to save a line or two
+            rememberCompactHeight() -> Row(
+                horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.m),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs)) {
+                    BlockedReason(reason, startBlock, onUseLogFiles, onConnectNsAnalytics)
+                }
+                button(Modifier.weight(1f))
+            }
+
+            else -> {
+                BlockedReason(reason, startBlock, onUseLogFiles, onConnectNsAnalytics)
+                button(Modifier)
+            }
+        }
+    }
+}
+
+/** Why Start can't run, with the fix as buttons where one exists. */
+@Composable
+private fun BlockedReason(reason: String, startBlock: StartBlockReason?, onUseLogFiles: () -> Unit, onConnectNsAnalytics: () -> Unit) {
+    Text(text = reason, style = MaterialTheme.typography.bodyMedium, color = NsTheme.colors.status.warningText)
+    if (startBlock == StartBlockReason.NS_ANALYTICS_NOT_CONNECTED) {
+        NsActionRow(gap = NsTheme.spacing.s) {
+            NsTextAction(stringResource(R.string.survey_action_use_log_files), onUseLogFiles)
+            NsTextAction(stringResource(R.string.survey_action_connect_ns_analytics), onConnectNsAnalytics)
         }
     }
 }

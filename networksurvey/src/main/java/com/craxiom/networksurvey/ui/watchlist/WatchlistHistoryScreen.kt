@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.main.appbar.nsTopBarHeight
 import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
 import com.craxiom.networksurvey.ui.common.SegmentedOption
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
@@ -77,6 +78,7 @@ fun WatchlistHistoryScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.watchlist_history_action)) },
+                expandedHeight = nsTopBarHeight(),
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(

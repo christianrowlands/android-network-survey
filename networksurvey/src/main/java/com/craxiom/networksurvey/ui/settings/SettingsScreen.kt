@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.settings
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +26,7 @@ import com.craxiom.networksurvey.ui.common.annotatedStringResource
 import com.craxiom.networksurvey.ui.common.dialogs.NsSingleChoiceDialog
 import com.craxiom.networksurvey.ui.survey.rememberSurveyPermissionFlow
 import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
+import com.craxiom.networksurvey.ui.theme.NsAccent
 import com.craxiom.networksurvey.ui.util.copyWithSystemConfirmation
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper
 
@@ -173,6 +175,7 @@ private fun SettingsPickerHost(
         )
 
         SettingsPicker.THEME -> ValueChoiceDialog(R.string.app_theme_title, R.array.app_theme_values, R.array.app_theme_entries, state.theme, viewModel::setTheme, onClose)
+        SettingsPicker.ACCENT -> AccentChoiceDialog(state.accent, viewModel::setAccent, onClose)
         SettingsPicker.UNITS -> ValueChoiceDialog(
             R.string.measurement_units_title, R.array.measurement_unit_values, R.array.measurement_unit_entries, state.units, viewModel::setUnits, onClose,
         )
@@ -187,6 +190,21 @@ private fun SettingsPickerHost(
 
         null -> Unit
     }
+}
+
+/** The accent picker: each accent's name beside a swatch of its fill in the current light or dark scheme. */
+@Composable
+private fun AccentChoiceDialog(current: NsAccent, onChoose: (NsAccent) -> Unit, onClose: () -> Unit) {
+    val darkTheme = isSystemInDarkTheme()
+    NsSingleChoiceDialog(
+        title = stringResource(R.string.app_accent_title),
+        options = NsAccent.entries.map { stringResource(it.label) },
+        selectedIndex = current.ordinal,
+        onConfirm = { index -> onChoose(NsAccent.entries[index]) },
+        onDismiss = onClose,
+        immediateApply = true,
+        leading = { index -> AccentSwatch(NsAccent.entries[index].palette(darkTheme).fill, ACCENT_PICKER_SWATCH) },
+    )
 }
 
 /** A single choice among a list preference's labels, storing the matching value. */

@@ -1,6 +1,9 @@
 package com.craxiom.networksurvey.ui.theme
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
+import com.craxiom.networksurvey.R
+import java.util.Locale
 
 /**
  * The raw color values of the Network Survey design system, and the only place in the app where
@@ -195,28 +198,25 @@ data class NsAccentPalette(
 )
 
 /**
- * The accent colors the app can be built with; [DEFAULT] ships. Navy was picked on a device from a
- * round of candidates (Oct 2026); Slate (the first redesign accent, from the old launcher icon)
- * stays defined so the accent can be switched back with a one-line change.
+ * The accent colors the user can pick in Settings, in the order the picker lists them. Navy, the
+ * [DEFAULT], was picked on a device from a round of candidates (Oct 2026); Sky is the launcher
+ * icon's beacon; Slate was the first redesign accent, from the old launcher icon. The rest come
+ * from the prototype's accent control, plus Graphite. Violet, Green and Orange sit near the
+ * Cellular, GNSS and status colors; that was accepted for the choice they give.
+ *
+ * Each accent has its own shade per scheme, as Material's tones do: a deep fill with white text in
+ * the light scheme, and a light fill with dark text in the dark scheme, so every accent reads the
+ * same way as Navy in both.
+ *
+ * Only the Compose UI follows the user's pick. The XML colors, and so the few places that still
+ * read them (system DayNight widgets, the uploader notification color), stay on [DEFAULT].
+ *
+ * @property label The accent's name in the picker.
  */
-enum class NsAccent(val light: NsAccentPalette, val dark: NsAccentPalette) {
-    SLATE(
-        light = NsAccentPalette(
-            fill = Color(0xFF3F5178),
-            ink = Color(0xFF3F5178),
-            soft = Color(0xFFE9EDF6),
-            onFill = Color(0xFFFFFFFF),
-        ),
-        // Dark text on the light slate fill: white measures about 2.5:1, this is about 8:1.
-        dark = NsAccentPalette(
-            fill = Color(0xFF8FA5DB),
-            ink = Color(0xFFB4C4EA),
-            soft = Color(0xFF243048),
-            onFill = Color(0xFF0E1116),
-        ),
-    ),
+enum class NsAccent(@StringRes val label: Int, val light: NsAccentPalette, val dark: NsAccentPalette) {
     // White on the navy fill is about 11:1; dark text on the dark-scheme fill about 10:1.
     NAVY(
+        label = R.string.accent_navy,
         light = NsAccentPalette(
             fill = Color(0xFF1E3A6E),
             ink = Color(0xFF1E3A6E),
@@ -229,7 +229,135 @@ enum class NsAccent(val light: NsAccentPalette, val dark: NsAccentPalette) {
             soft = Color(0xFF1C2B4A),
             onFill = Color(0xFF0E1116),
         ),
+    ),
+    // The launcher icon's beacon color. The icon Sky (#22C3E6) is the dark-scheme fill, with dark text
+    // at about 9:1; on a light panel it is about 2:1, so the light scheme uses a deeper Sky.
+    SKY(
+        label = R.string.accent_sky,
+        light = NsAccentPalette(
+            fill = Color(0xFF0A7EA4),
+            ink = Color(0xFF086A8A),
+            soft = Color(0xFFDDF3FA),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFF22C3E6),
+            ink = Color(0xFF8FE0F2),
+            soft = Color(0xFF0C2D38),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    SLATE(
+        label = R.string.accent_slate,
+        light = NsAccentPalette(
+            fill = Color(0xFF3F5178),
+            ink = Color(0xFF3F5178),
+            soft = Color(0xFFE9EDF6),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFF8FA5DB),
+            ink = Color(0xFFB4C4EA),
+            soft = Color(0xFF243048),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    // A near-neutral accent for those who want no color at all.
+    GRAPHITE(
+        label = R.string.accent_graphite,
+        light = NsAccentPalette(
+            fill = Color(0xFF3D434D),
+            ink = Color(0xFF3D434D),
+            soft = Color(0xFFE8EAEE),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFFC5CDD8),
+            ink = Color(0xFFDCE1E8),
+            soft = Color(0xFF2A2F37),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    // A green-leaning teal, so it stays apart from Sky.
+    TEAL(
+        label = R.string.accent_teal,
+        light = NsAccentPalette(
+            fill = Color(0xFF0F766E),
+            ink = Color(0xFF0C6159),
+            soft = Color(0xFFD9F2EE),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFF4FD1C1),
+            ink = Color(0xFF9BE8DE),
+            soft = Color(0xFF0F2E2B),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    // The dark Indigo stays saturated so it does not read as a second Navy or Slate.
+    INDIGO(
+        label = R.string.accent_indigo,
+        light = NsAccentPalette(
+            fill = Color(0xFF3B5BDB),
+            ink = Color(0xFF3B5BDB),
+            soft = Color(0xFFE5EAFB),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFF7C8CFF),
+            ink = Color(0xFFB4BFFF),
+            soft = Color(0xFF1E2A4E),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    VIOLET(
+        label = R.string.accent_violet,
+        light = NsAccentPalette(
+            fill = Color(0xFF6D4DE0),
+            ink = Color(0xFF6D4DE0),
+            soft = Color(0xFFEDE8FB),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFFC0ABFF),
+            ink = Color(0xFFDCD0FF),
+            soft = Color(0xFF2A2150),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    GREEN(
+        label = R.string.accent_green,
+        light = NsAccentPalette(
+            fill = Color(0xFF1B7F4B),
+            ink = Color(0xFF166B3F),
+            soft = Color(0xFFDFF3E7),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFF7AD8A3),
+            ink = Color(0xFFA9E9C4),
+            soft = Color(0xFF153521),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    ORANGE(
+        label = R.string.accent_orange,
+        light = NsAccentPalette(
+            fill = Color(0xFFC4502A),
+            ink = Color(0xFFA23E22),
+            soft = Color(0xFFFBE7E0),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFFFFA083),
+            ink = Color(0xFFFFC6B3),
+            soft = Color(0xFF3B2018),
+            onFill = Color(0xFF0E1116),
+        ),
     );
+
+    /** The value stored in the accent preference. */
+    val prefValue: String get() = name.lowercase(Locale.ROOT)
 
     /** Returns this accent's palette for the given scheme. */
     fun palette(darkTheme: Boolean): NsAccentPalette = if (darkTheme) dark else light
@@ -240,5 +368,8 @@ enum class NsAccent(val light: NsAccentPalette, val dark: NsAccentPalette) {
          * so changing it means updating `values/colors.xml` and `values-night/colors.xml` too.
          */
         val DEFAULT = NAVY
+
+        /** @return The accent stored as [value], or [DEFAULT] when it is missing or unknown. */
+        fun fromPrefValue(value: String?): NsAccent = entries.firstOrNull { it.prefValue == value } ?: DEFAULT
     }
 }

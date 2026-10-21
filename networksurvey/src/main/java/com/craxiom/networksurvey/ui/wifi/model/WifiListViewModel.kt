@@ -30,8 +30,7 @@ import kotlinx.coroutines.launch
 /**
  * View model for the redesigned Wi-Fi list. Owns the raw scan wrapper list, the user's
  * mode/sort/expansion state, and derives the display-ready item list for the Compose layer.
- * Activity scoped, so the Signals app bar's filter sheet and the list share it and the list
- * survives sub-tab switches.
+ * Activity scoped, so the list survives sub-tab switches.
  *
  * The record listener is registered only while the screen is bound to the service
  * ([onServiceChanged]) and the phone can scan ([WifiScanState.READY]); registering starts the

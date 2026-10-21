@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.mdm.SurveyMdmKeys
+import com.craxiom.networksurvey.ui.theme.NsAccent
 
 /**
  * The defaults the old preference screen seeded into the shared preferences on first launch, now
@@ -37,6 +38,7 @@ object SettingsDefaults {
         NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER to NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER.toString(),
         NetworkSurveyConstants.PROPERTY_MEASUREMENT_UNITS to NetworkSurveyConstants.DEFAULT_MEASUREMENT_UNITS,
         NetworkSurveyConstants.PROPERTY_APP_THEME to NetworkSurveyConstants.DEFAULT_APP_THEME,
+        NetworkSurveyConstants.PROPERTY_APP_ACCENT to NsAccent.DEFAULT.prefValue,
         NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT to NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT.toString(),
     )
 

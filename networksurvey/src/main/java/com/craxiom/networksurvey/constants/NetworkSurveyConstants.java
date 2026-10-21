@@ -334,6 +334,8 @@ public class NetworkSurveyConstants
     public static final String APP_THEME_LIGHT = "light";
     public static final String APP_THEME_DARK = "dark";
     public static final String DEFAULT_APP_THEME = APP_THEME_SYSTEM;
+    /** The accent color; its values and default are NsAccent.prefValue and NsAccent.DEFAULT. */
+    public static final String PROPERTY_APP_ACCENT = "app_accent";
 
     // Permission request IDs
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;

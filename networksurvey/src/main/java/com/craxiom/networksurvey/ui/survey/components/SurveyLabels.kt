@@ -83,7 +83,7 @@ val Destination.iconRes: Int
     get() = when (this) {
         Destination.LOG_FILES -> R.drawable.ic_folder
         Destination.NS_ANALYTICS -> R.drawable.ic_ns_analytics
-        Destination.MQTT -> R.drawable.ic_rss_feed
+        Destination.MQTT -> R.drawable.ic_cloud_connection
         Destination.GRPC -> R.drawable.ic_dns
         Destination.COMMUNITY -> R.drawable.ic_public
     }

@@ -53,8 +53,7 @@ private const val STOP_TIMEOUT_MS = 5_000L
 
 /**
  * The Bluetooth list: the devices heard, merged by address and dropped once they stop being heard,
- * plus the user's sort, filter and pause. Activity-scoped, so the Signals app bar's filter sheet and
- * the list share it and the list survives sub-tab switches.
+ * plus the user's sort, filter and pause. Activity-scoped, so the list survives sub-tab switches.
  *
  * The record listener is registered only while the screen is bound to the service
  * ([onServiceChanged]) and the phone can scan; registering starts the service's Bluetooth scanning,

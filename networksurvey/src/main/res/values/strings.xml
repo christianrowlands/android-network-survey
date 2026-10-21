@@ -244,15 +244,18 @@
     <!-- Wi-Fi redesign: list screen -->
     <string name="wifi_mode_flat_bssid">Flat · BSSID</string>
     <string name="wifi_mode_group_by_ssid">Group by SSID</string>
+    <!-- Short forms of the two Wi-Fi list modes, shown when the full labels do not fit on one line -->
+    <string name="wifi_mode_flat_bssid_short">BSSIDs</string>
+    <string name="wifi_mode_group_by_ssid_short">By SSID</string>
     <string name="wifi_list_scan_number">Scan #%1$d</string>
     <plurals name="wifi_list_access_points">
-        <item quantity="one">%1$d access point</item>
-        <item quantity="other">%1$d access points</item>
+        <item quantity="one">%1$d AP</item>
+        <item quantity="other">%1$d APs</item>
     </plurals>
     <!-- While the list is filtered: %1$d shown of %2$d in all; the quantity follows %2$d -->
     <plurals name="wifi_list_access_points_filtered">
-        <item quantity="one">%1$d of %2$d access point</item>
-        <item quantity="other">%1$d of %2$d access points</item>
+        <item quantity="one">%1$d of %2$d AP</item>
+        <item quantity="other">%1$d of %2$d APs</item>
     </plurals>
     <plurals name="wifi_ap_count">
         <item quantity="one">%1$d AP</item>
@@ -887,6 +890,16 @@
     <string name="app_theme_entry_system">System default</string>
     <string name="app_theme_entry_light">Light</string>
     <string name="app_theme_entry_dark">Dark</string>
+    <string name="app_accent_title">Accent color</string>
+    <string name="accent_navy">Navy</string>
+    <string name="accent_sky">Sky</string>
+    <string name="accent_slate">Slate</string>
+    <string name="accent_graphite">Graphite</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_indigo">Indigo</string>
+    <string name="accent_violet">Violet</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_orange">Orange</string>
 
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID exclusion list</string>
@@ -2032,13 +2045,11 @@
     <string name="nav_signals">Signals</string>
     <string name="nav_map">Map</string>
     <string name="nav_more">More</string>
-    <string name="open_map">Open map</string>
     <string name="signals_state_live">Live view</string>
     <string name="signals_state_recording">Recording</string>
-    <string name="signals_state_not_in_survey">Live view · not in this survey</string>
     <string name="signals_state_not_in_survey_spoken">Live view, not in this survey</string>
-    <string name="signals_state_paused">Paused</string>
-    <string name="signals_state_interval">%1$s · scan every %2$d s</string>
+    <string name="signals_state_paused">Survey paused</string>
+    <string name="signals_scan_interval">Scan every %1$d s</string>
     <plurals name="signals_state_interval_spoken">
         <item quantity="one">%1$s, scans every %2$d second</item>
         <item quantity="other">%1$s, scans every %2$d seconds</item>

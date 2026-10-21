@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.main.appbar.nsTopBarHeight
 import com.craxiom.networksurvey.model.LibraryAcknowledgment
 import androidx.core.net.toUri
 
@@ -65,6 +66,7 @@ private fun AcknowledgmentsContent(
         topBar = {
             TopAppBar(
                 title = { Text(text = stringResource(R.string.acknowledgments_title)) },
+                expandedHeight = nsTopBarHeight(),
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(

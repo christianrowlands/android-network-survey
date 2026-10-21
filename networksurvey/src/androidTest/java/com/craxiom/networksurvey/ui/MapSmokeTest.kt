@@ -96,20 +96,6 @@ class MapSmokeTest {
     }
 
     @Test
-    fun theCellularMapAction_selectsTheMapTab() {
-        launch()
-        shell.tab("Signals").performClick()
-        shell.tab("Cellular").assertIsSelected()
-
-        compose.onNodeWithContentDescription("Open map").performClick()
-        shell.waitForMap()
-        shell.tab("Map").assertIsSelected()
-
-        Espresso.pressBack()
-        shell.heading("Survey").assertIsDisplayed()
-    }
-
-    @Test
     fun theNewTowerNotificationTap_coldStart_landsOnMap() {
         scenario = ActivityScenario.launch(newTowerTap())
         shell.waitForMap()

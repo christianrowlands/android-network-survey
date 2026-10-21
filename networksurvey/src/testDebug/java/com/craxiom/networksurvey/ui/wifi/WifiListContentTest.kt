@@ -5,6 +5,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -16,6 +18,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.PermissionAccess
 import com.craxiom.networksurvey.ui.plural
 import com.craxiom.networksurvey.ui.showPage
+import com.craxiom.networksurvey.ui.signals.SignalsStripWords
 import com.craxiom.networksurvey.ui.string
 import com.craxiom.networksurvey.ui.textLayout
 import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
@@ -45,7 +48,7 @@ class WifiListContentTest {
     val compose = createComposeRule()
 
     private val actions = RecordingActions()
-    private val live = "Live view" to "Live view"
+    private val live = SignalsStripWords(warning = null, spoken = "Live view")
 
     private val corp = ap("02:00:A4:11:F0:21", "Acme-Corp", -52, WifiBand.GHZ_5, 36)
     private val corp24 = ap("02:00:A4:11:F0:22", "Acme-Corp", -58, WifiBand.GHZ_24, 11)
@@ -76,12 +79,69 @@ class WifiListContentTest {
     )
 
     @Test
+    fun theFilterButton_onTheStrip_opensTheFilterSheet() {
+        show(flat)
+
+        compose.onNodeWithContentDescription("Filter the Wi-Fi network list").performClick()
+
+        compose.onNodeWithText("Filter networks").assertIsDisplayed()
+    }
+
+    @Test
+    fun anActiveFilter_saysSoOnItsButton() {
+        show(flat.copy(filter = WifiDisplayFilter(searchQuery = "acme")))
+
+        compose.onNodeWithContentDescription("Filter the Wi-Fi network list. Filter active.").assertIsDisplayed()
+    }
+
+    @Test
+    fun theSpectrumButton_endsTheModeRow() {
+        show(flat)
+
+        compose.onNodeWithContentDescription("Open the Wi-Fi spectrum").performClick()
+
+        assertEquals(listOf("spectrum"), actions.calls)
+        compose.onNodeWithText("Flat · BSSID").assertIsDisplayed()
+        compose.onNodeWithText("Group by SSID").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w280dp-h600dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE) // Real text metrics, which decide the labels
+    fun aNarrowScreen_usesTheShortModeLabels_andReadsTheFullOnes() {
+        show(flat)
+
+        compose.onNodeWithText("BSSIDs").assertIsDisplayed()
+        compose.onNodeWithText("By SSID").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Group by SSID").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Open the Wi-Fi spectrum").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h360dp")
+    fun aShortWindow_putsTheModesAndSpectrumInTheStrip() {
+        show(flat)
+
+        // The short labels sit on the strip's line, beside the counts, with no mode row under it
+        val counts = compose.onNodeWithText("Scan #4 · 2 APs", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val flatPill = compose.onNodeWithText("BSSIDs").assertIsSelected().getUnclippedBoundsInRoot()
+        assertTrue(flatPill.top < counts.bottom && counts.top < flatPill.bottom)
+        compose.onAllNodesWithText("Flat · BSSID").assertCountEquals(0)
+        compose.onNodeWithText("By SSID").performClick()
+        compose.onNodeWithContentDescription("Open the Wi-Fi spectrum").performClick()
+
+        assertEquals(listOf("mode GROUPED", "spectrum"), actions.calls)
+    }
+
+    @Test
     fun nothingFoundYet_saysSo() {
         show(WifiListUiState())
 
         compose.onNodeWithText("No Wi-Fi networks found yet").assertIsDisplayed()
-        compose.onNodeWithText("Scan #0", substring = true, useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("Live view", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Scan #0 · 0 APs", useUnmergedTree = true).assertIsDisplayed()
+        // The state is read out, not drawn: the Survey tab and the notification show it
+        compose.onNodeWithContentDescription("Scan #0. 0 APs. Live view").assertIsDisplayed()
+        compose.onAllNodesWithText("Live view", useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -225,7 +285,9 @@ class WifiListContentTest {
     fun pausedUpdates_sayWhyTheListIsStill_andCanResume() {
         show(flat.copy(updatesPaused = true))
 
-        compose.onNodeWithText("Updates paused", useUnmergedTree = true).assertIsDisplayed()
+        // The pause button shows it; TalkBack says it with the counts
+        compose.onNodeWithContentDescription("Updates paused", substring = true).assertIsDisplayed()
+        compose.onAllNodesWithText("Updates paused", useUnmergedTree = true).assertCountEquals(0)
         compose.onNodeWithContentDescription("Resume updates").performClick()
 
         assertEquals(listOf("pause"), actions.calls)
@@ -264,13 +326,13 @@ class WifiListContentTest {
                     visibleApCount = 1,
                     filter = WifiDisplayFilter(searchQuery = "fork"),
                 ),
-                stateWords = "Recording" to "Recording",
+                stripWords = SignalsStripWords(warning = "Survey paused", spoken = "Survey paused"),
                 permissionAccess = PermissionAccess.AVAILABLE,
                 actions = actions,
             )
         }
 
-        assertFalse(compose.textLayout("Recording").isLineEllipsized(0))
+        assertFalse(compose.textLayout("Survey paused").isLineEllipsized(0))
         assertFalse(compose.textLayout("Scan #128", substring = true).isLineEllipsized(0))
         assertFalse(compose.textLayout(plural(R.plurals.wifi_list_access_points_filtered, 47, 1, 47), substring = true).isLineEllipsized(0))
         assertFalse(compose.textLayout("Signal strength", substring = true).isLineEllipsized(0))
@@ -308,6 +370,10 @@ class WifiListContentTest {
         override fun onSortSelected(index: Int) { calls += "sort $index" }
         override fun onTogglePause() { calls += "pause" }
         override fun onClearFilter() { calls += "clear" }
+        override fun onFilterQueryChanged(query: String) { calls += "query $query" }
+        override fun onFilterBandToggled(band: WifiBand) { calls += "band $band" }
+        override fun onManageExclusionList() { calls += "exclusions" }
+        override fun onOpenSpectrum() { calls += "spectrum" }
         override fun onAllow() { calls += "allow" }
         override fun onOpenAppSettings() { calls += "settings" }
         override fun onTurnOnLocation() { calls += "location" }

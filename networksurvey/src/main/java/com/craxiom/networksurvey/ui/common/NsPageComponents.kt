@@ -108,21 +108,25 @@ fun NsPageScaffold(
     }
 }
 
-/** The pinned bar at the bottom of a page that holds its one main action. */
+/** The pinned bar at the bottom of a page that holds its one main action; slimmer in a short window. */
 @Composable
 fun NsCtaBar(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val vertical = if (rememberCompactHeight()) NsTheme.spacing.s else NsTheme.spacing.m
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .nsContentWidth()
-                .padding(horizontal = NsTheme.spacing.screenGutter, vertical = NsTheme.spacing.m),
+                .padding(horizontal = NsTheme.spacing.screenGutter, vertical = vertical),
             verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs),
             content = content,
         )
     }
 }
 
-/** The full-width pill button used for a page's main action and for Start and Stop. */
+/**
+ * The full-width pill button used for a page's main action and for Start and Stop. It is a little
+ * shorter in a short window, still above the 48dp touch target.
+ */
 @Composable
 fun NsPrimaryCta(
     text: String,
@@ -141,7 +145,7 @@ fun NsPrimaryCta(
         shape = NsTheme.shapes.pill,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = CTA_HEIGHT)
+            .heightIn(min = if (rememberCompactHeight()) CTA_HEIGHT_COMPACT else CTA_HEIGHT)
             .semantics { if (stateDescription != null) this.stateDescription = stateDescription },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -367,6 +371,7 @@ private fun RowText(title: String, subtitle: String?, titleColor: Color, subtitl
 }
 
 private val CTA_HEIGHT = 56.dp
+private val CTA_HEIGHT_COMPACT = 48.dp
 private val CTA_ICON = 20.dp
 private val EMPTY_ICON = 36.dp
 private val LOCK_GLYPH = 14.dp

@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Activity-scoped state shared by the Signals tab and its views: the scan interval of each sub-tab,
- * the GNSS page showing (which decides the top bar actions), whether the GNSS filter is on, and the
- * SIM the Cellular view is showing (for the scan strip and the map). The views write the last two; the tab and the map read
+ * the GNSS page showing (which decides whether the sort button shows), whether the GNSS filter is
+ * on, and the SIM the Cellular view is showing (for the scan strip and the map). The views write the last two; the tab and the map read
  * them.
  */
 class SignalsViewModel(application: Application) : AndroidViewModel(application) {
@@ -73,7 +73,7 @@ class SignalsViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /** Shows [page] in the GNSS view; it also decides the top bar actions. */
+    /** Shows [page] in the GNSS view; it also decides whether the sort button shows. */
     fun selectGnssPage(page: GnssPage) {
         mutableGnssPage.value = page
     }

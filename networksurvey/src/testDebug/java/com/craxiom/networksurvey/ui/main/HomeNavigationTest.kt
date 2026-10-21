@@ -180,7 +180,7 @@ class HomeNavigationTest {
         navController = rememberNavController()
         HomeShell(
             survey = { Text(SURVEY_SLOT) },
-            signals = { subTab, onSubTabChange, _ ->
+            signals = { subTab, onSubTabChange ->
                 Column {
                     Text("sub:${subTab.name}")
                     Button(onClick = { onSubTabChange(SignalsSubTab.WIFI) }) { Text("Show Wi-Fi") }

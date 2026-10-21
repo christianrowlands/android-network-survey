@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
 import com.craxiom.networksurvey.survey.mdm.OrganizationOverride
+import com.craxiom.networksurvey.ui.theme.NsAccent
 import com.craxiom.networksurvey.ui.theme.ThemeMode
 import com.craxiom.networksurvey.util.AppInstanceId
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper
@@ -133,6 +134,9 @@ class SettingsViewModel internal constructor(
         preferences.edit(commit = true) { putString(NetworkSurveyConstants.PROPERTY_APP_THEME, value) }
         ThemeMode.applyFromPreferences(getApplication())
     }
+
+    /** Stores the accent; the theme listens for it, so the app recolors without a restart. */
+    fun setAccent(accent: NsAccent) = preferences.edit { putString(NetworkSurveyConstants.PROPERTY_APP_ACCENT, accent.prefValue) }
 
     fun setUnits(value: String) = preferences.edit { putString(NetworkSurveyConstants.PROPERTY_MEASUREMENT_UNITS, value) }
 

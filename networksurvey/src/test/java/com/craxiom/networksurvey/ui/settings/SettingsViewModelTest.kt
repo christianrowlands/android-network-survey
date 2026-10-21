@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.mdm.ManagedState
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
+import com.craxiom.networksurvey.ui.theme.NsAccent
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -53,6 +54,15 @@ class SettingsViewModelTest {
         assertEquals(SettingsNotice.BluetoothMinimum(minimum), viewModel.notice.value)
         settle()
         assertEquals(minimum, viewModel.state.value.scanRates.getValue(ScanRate.BLUETOOTH).value)
+    }
+
+    @Test
+    fun theAccent_isStoredByItsPrefValue_andReadBack() {
+        viewModel.setAccent(NsAccent.TEAL)
+
+        assertEquals("teal", preferences.getString(NetworkSurveyConstants.PROPERTY_APP_ACCENT, null))
+        settle()
+        assertEquals(NsAccent.TEAL, viewModel.state.value.accent)
     }
 
     @Test

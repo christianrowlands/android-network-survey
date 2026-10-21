@@ -86,7 +86,7 @@ private fun Intro() {
         Column(verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.m)) {
             Benefit(R.drawable.ic_map, stringResource(R.string.ns_analytics_benefit_map))
             Benefit(R.drawable.ic_bar_chart, stringResource(R.string.ns_analytics_benefit_analysis))
-            Benefit(R.drawable.ic_cloud_connection, stringResource(R.string.ns_analytics_benefit_uploads))
+            Benefit(R.drawable.ic_upload_24, stringResource(R.string.ns_analytics_benefit_uploads))
         }
     }
 }

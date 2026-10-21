@@ -12,6 +12,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.showPage
 import com.craxiom.networksurvey.ui.string
 import com.craxiom.networksurvey.ui.textLayout
+import com.craxiom.networksurvey.ui.theme.NsAccent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
@@ -61,6 +62,16 @@ class SettingsContentTest {
         compose.onNodeWithText("Cellular 5 s · Wi-Fi 15 s · Bluetooth 30 s · GNSS 45 s").assertIsDisplayed()
         compose.onNodeWithText("Scan rates").performClick()
         assertEquals(listOf("open SCAN_RATES"), calls)
+    }
+
+    @Test
+    fun theAccentRow_namesTheAccent_andOpensItsPicker() {
+        show(SettingsUiState(accent = NsAccent.GRAPHITE))
+
+        compose.onNodeWithText("Graphite").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Accent color").performClick()
+
+        assertEquals(listOf("open ACCENT"), calls)
     }
 
     @Test

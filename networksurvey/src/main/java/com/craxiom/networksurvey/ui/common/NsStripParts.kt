@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.ui.common
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -21,11 +23,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -36,6 +48,9 @@ import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
 private const val PULSE_DURATION_MS = 900
+// Slow and even, so the eye can follow the band across the text
+private const val SWEEP_DURATION_MS = 1_600
+private const val SWEEP_BAND_FRACTION = 0.45f
 private const val PULSE_MIN_ALPHA = 0.35f
 private val STATUS_DOT_SIZE = 7.dp
 private val SORT_PILL_MIN_HEIGHT = 32.dp
@@ -43,6 +58,46 @@ private val SORT_PILL_BORDER = 1.dp
 
 // Long localized sort names ellipsize instead of pushing the strip's other pieces out.
 private val SORT_PILL_LABEL_MAX_WIDTH = 150.dp
+
+/**
+ * Draws [content] with a soft band of the accent color sweeping across it once each time
+ * [sweepKey] changes (not on the first composition): a quiet sign that a new scan just arrived,
+ * which stops when scans stop. It follows the system animation scale, so it does not play with
+ * animations off. The band only tints the content's own pixels, so text stays readable.
+ */
+@Composable
+fun NsScanSweep(sweepKey: Any?, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val progress = remember { Animatable(1f) }
+    var lastKey by remember { mutableStateOf(sweepKey) }
+    LaunchedEffect(sweepKey) {
+        if (sweepKey != lastKey) {
+            lastKey = sweepKey
+            progress.snapTo(0f)
+            progress.animateTo(1f, tween(durationMillis = SWEEP_DURATION_MS, easing = LinearEasing))
+        }
+    }
+    val highlight = MaterialTheme.colorScheme.primary
+    Box(
+        modifier = modifier
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val p = progress.value
+                if (p < 1f) {
+                    val band = size.width * SWEEP_BAND_FRACTION
+                    val center = -band + (size.width + band * 2) * p
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(Color.Transparent, highlight, Color.Transparent),
+                            startX = center - band,
+                            endX = center + band,
+                        ),
+                        blendMode = BlendMode.SrcAtop,
+                    )
+                }
+            },
+    ) { content() }
+}
 
 /** The small green dot that pulses on a list's strip while it updates live. */
 @Composable

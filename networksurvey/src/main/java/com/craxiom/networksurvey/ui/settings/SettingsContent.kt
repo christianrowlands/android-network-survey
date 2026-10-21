@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.settings
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -35,7 +36,7 @@ interface SettingsActions {
 }
 
 /** The dialogs and sheets a row opens. */
-enum class SettingsPicker { SCAN_RATES, LOCATION_SOURCE, BATTERY_THRESHOLD, THEME, UNITS, QUEUE_LIMIT }
+enum class SettingsPicker { SCAN_RATES, LOCATION_SOURCE, BATTERY_THRESHOLD, THEME, ACCENT, UNITS, QUEUE_LIMIT }
 
 /**
  * The Settings page: grouped panels under small labels, as in the prototype (Survey, Phone,
@@ -120,9 +121,18 @@ private fun PhoneGroup(state: SettingsUiState, actions: SettingsActions) {
         )
         NsRowDivider()
         PickerRow(
-            R.string.app_theme_title, R.drawable.ic_palette, locked = false, actions, SettingsPicker.THEME,
+            R.string.app_theme_title, R.drawable.ic_contrast, locked = false, actions, SettingsPicker.THEME,
             subtitle = arrayLabel(R.array.app_theme_values, R.array.app_theme_entries, state.theme),
         )
+        NsRowDivider()
+        // The accent's own color, on its icon and as a swatch, makes this row a focal point in the list
+        NsRow(
+            title = stringResource(R.string.app_accent_title),
+            subtitle = stringResource(state.accent.label),
+            icon = R.drawable.ic_palette,
+            iconTint = MaterialTheme.colorScheme.primary,
+            onClick = { actions.onOpen(SettingsPicker.ACCENT) },
+        ) { AccentSwatch(MaterialTheme.colorScheme.primary, ACCENT_ROW_SWATCH) }
         NsRowDivider()
         PickerRow(
             R.string.measurement_units_title, R.drawable.ic_tune, locked = false, actions, SettingsPicker.UNITS,
@@ -138,7 +148,7 @@ private fun DestinationsGroup(state: SettingsUiState, actions: SettingsActions) 
         NsRow(
             title = stringResource(R.string.survey_dest_ns_analytics),
             subtitle = stringResource(if (state.nsAnalyticsBlocked) R.string.ns_analytics_disabled_via_mdm else R.string.settings_ns_analytics_summary),
-            icon = R.drawable.ic_cloud_connection,
+            icon = R.drawable.ic_ns_analytics,
             locked = state.nsAnalyticsBlocked,
             onClick = if (state.nsAnalyticsBlocked) actions::onBlocked else actions::onOpenNsAnalytics,
         )

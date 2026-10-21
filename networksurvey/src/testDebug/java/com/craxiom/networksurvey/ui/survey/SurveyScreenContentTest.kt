@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -17,8 +18,8 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.engine.DestinationResult
 import com.craxiom.networksurvey.survey.engine.DestinationRuntime
 import com.craxiom.networksurvey.survey.engine.LinkState
-import com.craxiom.networksurvey.survey.engine.StreamLink
 import com.craxiom.networksurvey.survey.engine.SkipReason
+import com.craxiom.networksurvey.survey.engine.StreamLink
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.engine.SurveyStartResult
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
@@ -99,6 +100,17 @@ class SurveyScreenContentTest {
         compose.onNodeWithText("Use Log files").performClick()
         compose.onNodeWithText("Connect NS Analytics").performClick()
         assertEquals(listOf("useLogFiles", "connectNsAnalytics"), actions.calls)
+    }
+
+    @Test
+    @Config(qualifiers = "w740dp-h360dp")
+    fun aShortWindow_putsTheReasonBesideStart() {
+        show(state(types = emptySet()))
+        val reason = compose.onNodeWithText("Choose at least one thing to survey").assertIsDisplayed().getUnclippedBoundsInRoot()
+        val start = compose.onNodeWithText("Start survey").assertIsNotEnabled().getUnclippedBoundsInRoot()
+        // Side by side: the two share a line rather than stack
+        assertTrue(reason.right <= start.left)
+        assertTrue(reason.top < start.bottom && start.top < reason.bottom)
     }
 
     @Test

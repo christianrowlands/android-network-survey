@@ -84,7 +84,7 @@ data class ScanStripState(val state: StripState, val intervalSeconds: Int?, val 
 
 /**
  * @return The strip for [subTab]: whether its records are saved, its scan interval (not for GNSS,
- * whose view updates at the receiver's rate, nor when nothing scans for it), and the SIM.
+ * whose view updates at the receiver's rate, nor while the survey is paused), and the SIM.
  */
 fun scanStripState(subTab: SignalsSubTab, status: SurveyStatus, intervalSeconds: Int, sim: ViewedSim?): ScanStripState {
     val inSurvey = status.recording && subTab.recordType in status.recordTypes
@@ -94,27 +94,11 @@ fun scanStripState(subTab: SignalsSubTab, status: SurveyStatus, intervalSeconds:
         status.recording -> StripState.NOT_IN_SURVEY
         else -> StripState.LIVE
     }
-    val showsInterval = subTab != SignalsSubTab.GNSS && (state == StripState.LIVE || state == StripState.RECORDING)
+    // A paused survey's scans have stopped, so its interval would mislead.
+    val showsInterval = subTab != SignalsSubTab.GNSS && state != StripState.PAUSED
     return ScanStripState(
         state = state,
         intervalSeconds = intervalSeconds.takeIf { showsInterval },
         sim = sim.takeIf { subTab == SignalsSubTab.CELLULAR },
     )
-}
-
-/** An action on the Signals top bar. */
-enum class SignalsAction { OPEN_MAP, WIFI_SPECTRUM, WIFI_FILTER, BLUETOOTH_FILTER, GNSS_SORT, GNSS_FILTER }
-
-/**
- * @return The top bar actions for [subTab]; the GNSS Sky page has no sort, and the Wi-Fi and
- * Bluetooth lists sort from the pill on their own strip.
- */
-fun signalsActions(subTab: SignalsSubTab, gnssPage: GnssPage): List<SignalsAction> = when (subTab) {
-    SignalsSubTab.CELLULAR -> listOf(SignalsAction.OPEN_MAP)
-    SignalsSubTab.WIFI -> listOf(SignalsAction.WIFI_SPECTRUM, SignalsAction.WIFI_FILTER)
-    SignalsSubTab.BLUETOOTH -> listOf(SignalsAction.BLUETOOTH_FILTER)
-    SignalsSubTab.GNSS -> when (gnssPage) {
-        GnssPage.STATUS -> listOf(SignalsAction.GNSS_SORT, SignalsAction.GNSS_FILTER)
-        GnssPage.SKY -> listOf(SignalsAction.GNSS_FILTER)
-    }
 }

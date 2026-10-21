@@ -36,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.main.appbar.nsTopBarHeight
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
 import com.craxiom.networksurvey.ui.common.NsInfoCard
 import com.craxiom.networksurvey.ui.common.NsSectionLabel
@@ -72,6 +73,7 @@ fun WatchlistScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.watchlist_title)) },
+                expandedHeight = nsTopBarHeight(),
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(

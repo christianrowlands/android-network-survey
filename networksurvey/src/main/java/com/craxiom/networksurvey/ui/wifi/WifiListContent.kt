@@ -26,10 +26,15 @@ import com.craxiom.networksurvey.ui.common.NsEmptyState
 import com.craxiom.networksurvey.ui.common.NsLazyPanelItem
 import com.craxiom.networksurvey.ui.common.NsSortSheet
 import com.craxiom.networksurvey.ui.common.PermissionAccess
+import com.craxiom.networksurvey.ui.common.rememberCompactHeight
+import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.signals.ListScanStrip
+import com.craxiom.networksurvey.ui.signals.SignalsStripWords
 import com.craxiom.networksurvey.ui.signals.SignalsStateMessage
+import com.craxiom.networksurvey.ui.wifi.components.WifiFilterSheet
 import com.craxiom.networksurvey.ui.wifi.components.WifiGroupChildRow
 import com.craxiom.networksurvey.ui.wifi.components.WifiGroupParentRow
+import com.craxiom.networksurvey.ui.wifi.components.WifiModePills
 import com.craxiom.networksurvey.ui.wifi.components.WifiModeTabs
 import com.craxiom.networksurvey.ui.wifi.components.WifiRowA
 import com.craxiom.networksurvey.ui.wifi.components.WifiScanFixes
@@ -39,6 +44,7 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
 import com.craxiom.networksurvey.ui.wifi.model.WifiListUiState
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
+import com.craxiom.networksurvey.util.WifiBand
 
 /** What the user can do on the Wi-Fi list; the stateful screen wires these up. */
 interface WifiListActions : WifiScanFixes {
@@ -50,43 +56,72 @@ interface WifiListActions : WifiScanFixes {
     fun onSortSelected(index: Int)
     fun onTogglePause()
     fun onClearFilter()
+    fun onFilterQueryChanged(query: String)
+    fun onFilterBandToggled(band: WifiBand)
+    fun onManageExclusionList()
+    fun onOpenSpectrum()
     fun onOpenThrottleSettings(warning: ThrottleWarning)
     fun onDismissThrottle()
 }
 
 /**
- * The Wi-Fi list without its plumbing: the strip, then either what stops the scan (with the one
- * button that fixes it), or the throttling notice, the mode tabs and "No Wi-Fi networks found yet",
+ * The Wi-Fi list without its plumbing: the strip (with sort, filter and pause), then either what
+ * stops the scan (with the one button that fixes it), or the throttling notice, the mode tabs (with
+ * the spectrum button; in a short window both join the strip) and "No Wi-Fi networks found yet",
  * "No networks match", or the networks.
  *
- * @param stateWords The Signals state word and its spoken form ("Live view", "Recording"), shown
- *                   while the list is live.
+ * @param stripWords The strip's warning (a paused survey) and the state TalkBack reads.
  * @param permissionAccess Whether the permission can still be asked for or only granted in Settings.
  */
 @Composable
 fun WifiListContent(
     state: WifiListUiState,
-    stateWords: Pair<String, String>,
+    stripWords: SignalsStripWords,
     permissionAccess: PermissionAccess,
     actions: WifiListActions,
     modifier: Modifier = Modifier,
 ) {
     var sortSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
     val sortOptions = stringArrayResource(R.array.wifi_network_sort_options).toList()
     val ready = state.scanState == WifiScanState.READY
-    val (status, statusSpoken) = stripStatus(state, stateWords)
+    val (warning, spokenStatus) = stripStatus(state, stripWords)
+    // In a short window (a phone in landscape) the mode pills and the spectrum join the strip, so
+    // the list keeps the row they would take.
+    val modesInStrip = rememberCompactHeight()
+    val filterAction = AppBarAction(
+        icon = R.drawable.ic_filter,
+        // The description says when the filter is on; the badge dot alone is not announced.
+        description = if (state.filter.isActive) {
+            R.string.wifi_filter_content_description_active
+        } else {
+            R.string.wifi_filter_content_description
+        },
+        onClick = { filterSheetOpen = true },
+        active = state.filter.isActive,
+    )
 
     Column(modifier.fillMaxSize()) {
         ListScanStrip(
             // While the scan cannot run the rows are hidden, so counting them would mislead.
             counts = if (ready) stripCounts(state) else emptyList(),
-            status = status,
-            statusSpoken = statusSpoken,
-            live = ready && !state.updatesPaused,
+            warning = warning,
+            spokenStatus = spokenStatus,
+            sweepKey = state.scanNumber,
             sortLabel = sortOptions.getOrElse(state.sortIndex) { sortOptions.first() },
             onSortClick = { sortSheetOpen = true },
             paused = state.updatesPaused,
             onTogglePause = actions::onTogglePause,
+            actions = if (modesInStrip && ready) {
+                listOf(filterAction, AppBarAction(R.drawable.ic_bar_chart, R.string.open_wifi_spectrum, actions::onOpenSpectrum))
+            } else {
+                listOf(filterAction)
+            },
+            leadingControls = if (modesInStrip && ready) {
+                { WifiModePills(state.mode, actions::onModeChanged, short = true) }
+            } else {
+                null
+            },
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         if (!ready) {
@@ -99,8 +134,10 @@ fun WifiListContent(
                     onDismiss = actions::onDismissThrottle,
                 )
             }
-            WifiModeTabs(mode = state.mode, onModeChanged = actions::onModeChanged)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            if (!modesInStrip) {
+                WifiModeTabs(mode = state.mode, onModeChanged = actions::onModeChanged, onOpenSpectrum = actions::onOpenSpectrum)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
             when {
                 state.apCount == 0 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     NsEmptyState(text = stringResource(R.string.signals_wifi_empty), icon = R.drawable.ic_wifi)
@@ -125,6 +162,22 @@ fun WifiListContent(
             selectedIndex = state.sortIndex,
             onSelected = actions::onSortSelected,
             onDismiss = { sortSheetOpen = false },
+        )
+    }
+
+    if (filterSheetOpen) {
+        WifiFilterSheet(
+            filter = state.filter,
+            visibleApCount = state.visibleApCount,
+            totalApCount = state.apCount,
+            onQueryChanged = actions::onFilterQueryChanged,
+            onBandToggled = actions::onFilterBandToggled,
+            onClear = actions::onClearFilter,
+            onManageExclusionList = {
+                filterSheetOpen = false
+                actions.onManageExclusionList()
+            },
+            onDismiss = { filterSheetOpen = false },
         )
     }
 }
@@ -215,18 +268,21 @@ private fun stripCounts(state: WifiListUiState): List<String> = listOf(
 )
 
 /**
- * The status on the scan strip and its spoken form: what stops the scan, then the user's pause,
- * then the Signals tab's state words (Live view, Recording, not in this survey, Paused) so all four
- * sub-tabs answer "is this saved?" the same way.
+ * The warning on the scan strip, or null, and the status TalkBack reads: what stops the scan, then
+ * the user's pause (spoken only; the pause button shows it), then the Signals state words.
  */
 @Composable
-private fun stripStatus(state: WifiListUiState, stateWords: Pair<String, String>): Pair<String, String> {
+private fun stripStatus(state: WifiListUiState, stripWords: SignalsStripWords): Pair<String?, String> {
     val resources = LocalResources.current
     val word = when (state.scanState) {
         WifiScanState.PERMISSION_NEEDED -> resources.getString(R.string.cellular_state_permission)
         WifiScanState.LOCATION_OFF -> resources.getString(R.string.survey_location_off)
         WifiScanState.WIFI_OFF -> resources.getString(R.string.wifi_state_off)
-        WifiScanState.READY -> if (state.updatesPaused) resources.getString(R.string.list_updates_paused) else return stateWords
+        WifiScanState.READY -> return if (state.updatesPaused) {
+            null to resources.getString(R.string.list_updates_paused)
+        } else {
+            stripWords.warning to stripWords.spoken
+        }
     }
     return word to word
 }

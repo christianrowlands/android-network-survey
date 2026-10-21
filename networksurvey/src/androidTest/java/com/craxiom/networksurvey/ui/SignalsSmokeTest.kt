@@ -166,8 +166,8 @@ class SignalsSmokeTest {
             has(hasContentDescription("PCI, $INJECTED_PCI_TEXT"))
         }
         compose.onNodeWithText("Serving cell", useUnmergedTree = true).assertIsDisplayed()
-        // The strip reads "Live view · scan every 5 s" as one text.
-        compose.onNodeWithText("Live view", substring = true, useUnmergedTree = true).assertIsDisplayed()
+        // The strip shows the scan interval; the state is only read out.
+        compose.onNodeWithText("Scan every", substring = true, useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -193,7 +193,7 @@ class SignalsSmokeTest {
             injectSatellites()
             has(hasText("Average C/N0"))
         }
-        // The Sky page sorts nothing, so only the filter is left on the top bar.
+        // The Sky page sorts nothing, so only the filter is left beside the toggle.
         shell.waitFor("the sort action to go") { !has(hasContentDescription("Sort by")) }
         compose.onNodeWithContentDescription("Filter signals").assertIsDisplayed()
 

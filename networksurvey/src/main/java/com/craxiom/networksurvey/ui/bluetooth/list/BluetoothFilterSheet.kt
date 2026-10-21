@@ -9,7 +9,7 @@ import com.craxiom.networksurvey.ui.common.NsFilterPill
 import com.craxiom.networksurvey.ui.common.NsListFilterSheet
 
 /**
- * The Bluetooth list's filter, opened from the Signals app bar: search by name, address or company,
+ * The Bluetooth list's filter, opened from the list's scan strip: search by name, address or company,
  * and the Named only and Trackers only toggles. Display only; it never changes what is recorded.
  */
 @Composable

@@ -22,6 +22,7 @@ enum class CellularScanState {
  * The selected SIM's tab of the Cellular view.
  *
  * @param scanned         False until the first scan for this SIM arrives.
+ * @param scanCount       How many scans this SIM has had, so the strip can mark each new one.
  * @param hero            The technology line, or null before the first technology report.
  * @param pills           The Voice, Data and Branding pills, or null to hide them.
  * @param carrier         The last serving cell's operator name (blank or null shows "Unknown carrier").
@@ -30,6 +31,7 @@ enum class CellularScanState {
 @Immutable
 data class CellularSimView(
     val scanned: Boolean = false,
+    val scanCount: Int = 0,
     val hero: CellularHero? = null,
     val pills: CellularPills? = null,
     val carrier: String? = null,
@@ -49,6 +51,7 @@ data class CellularSimView(
             val serving = data.serving
             return CellularSimView(
                 scanned = data.scanned,
+                scanCount = data.scanCount,
                 hero = technology?.let(CellularHeroMapper::hero),
                 pills = technology?.let { CellularHeroMapper.pills(it, voiceNone) },
                 carrier = data.carrier,

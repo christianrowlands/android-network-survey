@@ -29,7 +29,9 @@ import com.craxiom.networksurvey.ui.common.NsEmptyState
 import com.craxiom.networksurvey.ui.common.NsLazyPanelItem
 import com.craxiom.networksurvey.ui.common.NsSortSheet
 import com.craxiom.networksurvey.ui.common.PermissionAccess
+import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.signals.ListScanStrip
+import com.craxiom.networksurvey.ui.signals.SignalsStripWords
 import com.craxiom.networksurvey.ui.signals.SignalsStateMessage
 
 /** What the user can do on the Bluetooth list; the stateful screen wires these up. */
@@ -39,6 +41,9 @@ interface BluetoothListActions {
     fun onSortSelected(index: Int)
     fun onTogglePause()
     fun onClearFilter()
+    fun onFilterQueryChanged(query: String)
+    fun onNamedOnlyChanged(namedOnly: Boolean)
+    fun onTrackersOnlyChanged(trackersOnly: Boolean)
     fun onAllow()
     fun onOpenAppSettings()
     fun onTurnOnLocation()
@@ -46,36 +51,50 @@ interface BluetoothListActions {
 }
 
 /**
- * The Bluetooth list without its plumbing: the strip, then either what stops the scan (with the
+ * The Bluetooth list without its plumbing: the strip (with sort, filter and pause), then either what stops the scan (with the
  * one button that fixes it), "No Bluetooth devices found yet", "No devices match", or the devices.
  *
- * @param stateWords The Signals state word and its spoken form ("Live view", "Recording"), shown
- *                   while the list is live.
+ * @param stripWords The strip's warning (a paused survey) and the state TalkBack reads.
  * @param permissionAccess Whether the permissions can still be asked for or only granted in Settings.
  */
 @Composable
 fun BluetoothListContent(
     state: BluetoothListUiState,
-    stateWords: Pair<String, String>,
+    stripWords: SignalsStripWords,
     permissionAccess: PermissionAccess,
     actions: BluetoothListActions,
     modifier: Modifier = Modifier,
 ) {
     var sortSheetOpen by rememberSaveable { mutableStateOf(false) }
+    var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
     val sortOptions = stringArrayResource(R.array.bluetooth_sort_options).toList()
-    val (status, statusSpoken) = stripStatus(state, stateWords)
+    val (warning, spokenStatus) = stripStatus(state, stripWords)
 
     Column(modifier.fillMaxSize()) {
         ListScanStrip(
             // While the scan cannot run the rows are hidden, so counting them would mislead.
             counts = if (state.scanState == BluetoothScanState.READY) listOf(deviceCount(state)) else emptyList(),
-            status = status,
-            statusSpoken = statusSpoken,
-            live = state.scanState == BluetoothScanState.READY && !state.paused,
+            warning = warning,
+            spokenStatus = spokenStatus,
+            // Bluetooth scans without numbered rounds, so a change in what was found marks an update
+            sweepKey = state.totalCount,
             sortLabel = sortOptions.getOrElse(state.sortIndex) { sortOptions.first() },
             onSortClick = { sortSheetOpen = true },
             paused = state.paused,
             onTogglePause = actions::onTogglePause,
+            // The description says when the filter is on; the badge dot alone is not announced.
+            actions = listOf(
+                AppBarAction(
+                    icon = R.drawable.ic_filter,
+                    description = if (state.filter.isActive) {
+                        R.string.bluetooth_filter_content_description_active
+                    } else {
+                        R.string.bluetooth_filter_content_description
+                    },
+                    onClick = { filterSheetOpen = true },
+                    active = state.filter.isActive,
+                ),
+            ),
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         when {
@@ -102,6 +121,19 @@ fun BluetoothListContent(
             selectedIndex = state.sortIndex,
             onSelected = actions::onSortSelected,
             onDismiss = { sortSheetOpen = false },
+        )
+    }
+
+    if (filterSheetOpen) {
+        BluetoothFilterSheet(
+            filter = state.filter,
+            visibleCount = state.visibleCount,
+            totalCount = state.totalCount,
+            onQueryChanged = actions::onFilterQueryChanged,
+            onNamedOnlyChanged = actions::onNamedOnlyChanged,
+            onTrackersOnlyChanged = actions::onTrackersOnlyChanged,
+            onClear = actions::onClearFilter,
+            onDismiss = { filterSheetOpen = false },
         )
     }
 }
@@ -186,18 +218,23 @@ private fun deviceCount(state: BluetoothListUiState): String = if (state.filter.
 }
 
 /**
- * The strip's status and its spoken form: what stops the scan wins over everything, then the
- * user's pause, then the Signals state word.
+ * The warning on the scan strip, or null, and the status TalkBack reads: what stops the scan wins
+ * over everything, then the user's pause (spoken only; the pause button shows it), then the
+ * Signals state words.
  */
 @Composable
-private fun stripStatus(state: BluetoothListUiState, stateWords: Pair<String, String>): Pair<String, String> {
+private fun stripStatus(state: BluetoothListUiState, stripWords: SignalsStripWords): Pair<String?, String> {
     val resources = LocalResources.current
     val word = when (state.scanState) {
         BluetoothScanState.NOT_SUPPORTED -> resources.getString(R.string.bluetooth_state_unsupported)
         BluetoothScanState.PERMISSION_NEEDED -> resources.getString(R.string.bluetooth_state_permission)
         BluetoothScanState.LOCATION_OFF -> resources.getString(R.string.survey_location_off)
         BluetoothScanState.BLUETOOTH_OFF -> resources.getString(R.string.bluetooth_state_off)
-        BluetoothScanState.READY -> if (state.paused) resources.getString(R.string.list_updates_paused) else return stateWords
+        BluetoothScanState.READY -> return if (state.paused) {
+            null to resources.getString(R.string.list_updates_paused)
+        } else {
+            stripWords.warning to stripWords.spoken
+        }
     }
     return word to word
 }

@@ -19,7 +19,7 @@ import com.craxiom.networksurvey.ui.common.openLocationSettings
 import com.craxiom.networksurvey.ui.common.rememberPermissionRequest
 import com.craxiom.networksurvey.ui.main.SharedViewModel
 import com.craxiom.networksurvey.ui.signals.SignalsSubTab
-import com.craxiom.networksurvey.ui.signals.signalsStateWords
+import com.craxiom.networksurvey.ui.signals.signalsStripWords
 import com.craxiom.networksurvey.ui.util.copyWithSystemConfirmation
 
 /**
@@ -48,7 +48,7 @@ fun BluetoothListScreen() {
 
     BluetoothListContent(
         state = state,
-        stateWords = signalsStateWords(SignalsSubTab.BLUETOOTH),
+        stripWords = signalsStripWords(SignalsSubTab.BLUETOOTH),
         permissionAccess = permission.access,
         actions = remember(viewModel, permission, turnOnBluetooth) {
             ScreenActions(context, viewModel, sharedViewModel, permission, turnOnBluetooth)
@@ -82,6 +82,12 @@ private class ScreenActions(
     override fun onTogglePause() = viewModel.togglePaused()
 
     override fun onClearFilter() = viewModel.clearFilter()
+
+    override fun onFilterQueryChanged(query: String) = viewModel.setFilterQuery(query)
+
+    override fun onNamedOnlyChanged(namedOnly: Boolean) = viewModel.setNamedOnly(namedOnly)
+
+    override fun onTrackersOnlyChanged(trackersOnly: Boolean) = viewModel.setTrackersOnly(trackersOnly)
 
     override fun onAllow() = permission.request()
 

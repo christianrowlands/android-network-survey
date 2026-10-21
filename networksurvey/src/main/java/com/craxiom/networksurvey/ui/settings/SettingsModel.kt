@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.survey.mdm.ManagedState
 import com.craxiom.networksurvey.survey.mdm.MdmOverlapKeys
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
 import com.craxiom.networksurvey.survey.mdm.SurveyMdmKeys
+import com.craxiom.networksurvey.ui.theme.NsAccent
 
 /** A setting's value, and whether the organization sets it (its row then explains instead of changing it). */
 data class SettingValue<T>(val value: T, val locked: Boolean = false)
@@ -57,6 +58,7 @@ data class SettingsUiState(
     val batteryOptimizationOff: Boolean = false,
     val keepScreenOn: Boolean = NetworkSurveyConstants.DEFAULT_KEEP_SCREEN_ON_WHILE_RECORDING,
     val theme: String = NetworkSurveyConstants.DEFAULT_APP_THEME,
+    val accent: NsAccent = NsAccent.DEFAULT,
     val units: String = NetworkSurveyConstants.DEFAULT_MEASUREMENT_UNITS,
     val watchlistEnabled: Boolean = NetworkSurveyConstants.DEFAULT_WATCHLIST_ENABLED,
     val watchlistStream: SettingValue<Boolean> = SettingValue(NetworkSurveyConstants.DEFAULT_MQTT_WATCHLIST_STREAM_SETTING),
@@ -97,6 +99,7 @@ object SettingsReader {
         NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
         NetworkSurveyConstants.PROPERTY_KEEP_SCREEN_ON_WHILE_RECORDING,
         NetworkSurveyConstants.PROPERTY_APP_THEME,
+        NetworkSurveyConstants.PROPERTY_APP_ACCENT,
         NetworkSurveyConstants.PROPERTY_MEASUREMENT_UNITS,
         NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED,
         NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED,
@@ -128,6 +131,7 @@ object SettingsReader {
             batteryOptimizationOff = environment.batteryOptimizationOff,
             keepScreenOn = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_KEEP_SCREEN_ON_WHILE_RECORDING, NetworkSurveyConstants.DEFAULT_KEEP_SCREEN_ON_WHILE_RECORDING),
             theme = preferences.stringOr(NetworkSurveyConstants.PROPERTY_APP_THEME, NetworkSurveyConstants.DEFAULT_APP_THEME),
+            accent = NsAccent.fromPrefValue(preferences.getString(NetworkSurveyConstants.PROPERTY_APP_ACCENT, null)),
             units = preferences.stringOr(NetworkSurveyConstants.PROPERTY_MEASUREMENT_UNITS, NetworkSurveyConstants.DEFAULT_MEASUREMENT_UNITS),
             watchlistEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED, NetworkSurveyConstants.DEFAULT_WATCHLIST_ENABLED),
             watchlistStream = locks.boolean(preferences, NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WATCHLIST_STREAM_SETTING),

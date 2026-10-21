@@ -25,6 +25,7 @@ import com.craxiom.networksurvey.ui.onboarding.OnboardingScreen
 import com.craxiom.networksurvey.ui.onboarding.OnboardingViewModel
 import com.craxiom.networksurvey.ui.onboarding.UpgradeWelcomeScreen
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.ui.theme.rememberAccent
 import timber.log.Timber
 
 /**
@@ -53,7 +54,7 @@ fun MainCompose(
     val graphReady = mainNavController.currentBackStackEntryAsState().value != null
     NavigationEventEffect(viewModel, mainNavController, deepLinkViewModel, graphReady)
 
-    NsTheme {
+    NsTheme(accent = rememberAccent()) {
         // First run replaces the tabs until it is finished or skipped. The NavHost is not composed
         // meanwhile, so graphReady stays false and any deep link or navigation request waits for it.
         val onboarding by onboardingViewModel.visible.collectAsStateWithLifecycle()

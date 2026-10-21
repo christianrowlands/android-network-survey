@@ -38,6 +38,7 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
  *   the snappy "pick and go" behavior of sort dialogs.
  *
  * @param message optional explanation of the options, shown under them.
+ * @param leading optional content drawn before each option's label (an accent swatch), by index.
  */
 @Composable
 fun NsSingleChoiceDialog(
@@ -51,6 +52,7 @@ fun NsSingleChoiceDialog(
     confirmText: String = stringResource(R.string.save),
     dismissText: String = stringResource(R.string.cancel),
     message: AnnotatedString? = null,
+    leading: (@Composable (index: Int) -> Unit)? = null,
 ) {
     var selected by remember(selectedIndex) { mutableIntStateOf(selectedIndex) }
 
@@ -110,6 +112,10 @@ fun NsSingleChoiceDialog(
                         },
                     )
                     Spacer(modifier = Modifier.width(8.dp))
+                    if (leading != null) {
+                        leading(index)
+                        Spacer(modifier = Modifier.width(NsTheme.spacing.m))
+                    }
                     Text(text = option)
                 }
             }
