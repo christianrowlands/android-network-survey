@@ -13,9 +13,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import com.craxiom.networksurvey.ui.showPage
+import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.StatusDetail
 import com.craxiom.networksurvey.survey.status.StatusWord
+import com.craxiom.networksurvey.ui.showPage
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -87,14 +91,23 @@ class GrpcServerContentTest {
 
     @Test
     fun streaming_showsTheLiveStatus_andThatSavingReconnects() {
-        show(configured.copy(status = GrpcStatus.Live(ADDRESS, DestinationStatus(StatusWord.LIVE))))
+        show(configured.copy(status = GrpcStatus.Streaming(ADDRESS)), live(DestinationStatus(StatusWord.LIVE)))
         compose.onNodeWithText("Live").assertIsDisplayed()
         compose.onNodeWithText("Saving a new address reconnects the stream. The survey keeps going.").assertIsDisplayed()
     }
 
     @Test
+    fun streamingToAServerItCantReach_saysWhatTheSurveyScreenSays() {
+        val status = DestinationStatus(StatusWord.CANT_CONNECT, StatusDetail.StreamUnreachable(sinceMs = 0L, waiting = 3))
+        show(configured.copy(status = GrpcStatus.Streaming(ADDRESS)), live(status))
+        compose.onNodeWithText("Can't connect").assertIsDisplayed()
+        compose.onNodeWithText("Can't reach $ADDRESS since", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("3 waiting to send", substring = true).assertIsDisplayed()
+    }
+
+    @Test
     fun unreachable_saysWhichServerAndWhatToCheck() {
-        show(configured.copy(status = GrpcStatus.Unreachable(ADDRESS, retrying = false)))
+        show(configured.copy(status = GrpcStatus.Unreachable(ADDRESS)))
         compose.onNodeWithText("Couldn't reach the server").assertIsDisplayed()
         compose.onNodeWithText("$ADDRESS. Check the address and that the server is running.").assertIsDisplayed()
     }
@@ -125,9 +138,12 @@ class GrpcServerContentTest {
         compose.onNodeWithText("Save changes").assertIsDisplayed()
     }
 
-    private fun show(state: GrpcServerForm) {
-        compose.showPage { GrpcServerContent(state, actions, SnackbarHostState()) }
+    private fun show(state: GrpcServerForm, liveStatus: DestinationPageStatus? = null) {
+        compose.showPage { GrpcServerContent(state, actions, SnackbarHostState(), liveStatus = liveStatus) }
     }
+
+    private fun live(status: DestinationStatus) =
+        DestinationPageStatus(Destination.GRPC, status, DestinationInfo(grpcAddress = ADDRESS), nowMs = 0L)
 
     private companion object {
         const val ADDRESS = "grpc.example.net:2621"

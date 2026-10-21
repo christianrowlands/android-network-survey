@@ -27,6 +27,8 @@ import com.craxiom.networksurvey.ui.common.NsRowGroup
 import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.common.dialogs.NsSingleChoiceDialog
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -52,6 +54,7 @@ fun LogFilesContent(
     actions: LogFilesActions,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    status: DestinationPageStatus? = null,
 ) {
     val context = LocalContext.current
     var choosingRollover by rememberSaveable { mutableStateOf(false) }
@@ -108,6 +111,8 @@ fun LogFilesContent(
             }
         },
     ) {
+        // While a survey saves here: the same Saving or Partly saving as the Survey screen's row
+        status?.let { DestinationStatusPanel(it) }
         NsRowGroup {
             val free = state.freeSpaceBytes?.let { stringResource(R.string.log_files_free, Formatter.formatShortFileSize(context, it)) }
             NsRow(

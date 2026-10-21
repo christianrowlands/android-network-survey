@@ -4,6 +4,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The result of a community upload for each target (OpenCelliD and BeaconDB).
+ */
 public class UploadResultBundle
 {
     private final Map<UploadTarget, UploadResult> results = new EnumMap<>(UploadTarget.class);
@@ -50,21 +53,29 @@ public class UploadResultBundle
         return false;
     }
 
+    /**
+     * @return True if any target failed in a way that can heal on its own (the server or the
+     * connection), so trying again later can succeed.
+     */
     public boolean isRetryableError()
     {
         for (UploadTarget target : UploadTarget.values())
         {
-            UploadResult result = results.get(target);
-            if (result == null) return false;
-            return switch (result)
-            {
-                case ServerError, ConnectionError, Failure -> true;
-                case LimitExceeded, PermissionDenied, InvalidApiKey, InvalidData, DeleteFailed,
-                     Cancelled, NoData, NotStarted, Success, PartiallySucceeded,
-                     UploadDisabledForTarget -> false;
-            };
+            if (isRetryable(results.get(target))) return true;
         }
         return false;
+    }
+
+    private static boolean isRetryable(UploadResult result)
+    {
+        if (result == null) return false;
+        return switch (result)
+        {
+            case ServerError, ConnectionError, Failure -> true;
+            case LimitExceeded, PermissionDenied, InvalidApiKey, InvalidData, DeleteFailed,
+                 Cancelled, NoData, NotStarted, Success, PartiallySucceeded,
+                 UploadDisabledForTarget -> false;
+        };
     }
 
     public void markAllFailure()
@@ -124,8 +135,9 @@ public class UploadResultBundle
         if (uploadResult == null) return true;
         return switch (uploadResult)
         {
-            case Success, PartiallySucceeded, UploadDisabledForTarget -> false;
-            case NotStarted, NoData, ConnectionError, ServerError, InvalidApiKey, InvalidData,
+            // A target with nothing to send this time has nothing to fail
+            case Success, PartiallySucceeded, UploadDisabledForTarget, NoData -> false;
+            case NotStarted, ConnectionError, ServerError, InvalidApiKey, InvalidData,
                  Failure,
                  DeleteFailed, Cancelled, LimitExceeded, PermissionDenied -> true;
         };

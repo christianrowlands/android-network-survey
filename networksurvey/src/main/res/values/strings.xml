@@ -1677,6 +1677,9 @@
     <string name="survey_status_key_rejected_detail">OpenCelliD refused the API key</string>
     <!-- %1$s is the community upload's own result, for example "Invalid API key" -->
     <string name="survey_status_upload_failed_detail">Last upload failed: %1$s</string>
+    <!-- A community upload result. %1$s is the database that had it (OpenCelliD, BeaconDB, or both joined as a list), %2$s the result, for example "Server error" -->
+    <string name="community_target_result">%1$s: %2$s</string>
+    <string name="community_stop_retrying">Stop retrying</string>
     <string name="survey_item_cant_connect">%1$s can\'t connect</string>
     <string name="survey_plate_ended_title">Your last survey stopped</string>
     <string name="survey_plate_ended_sign_in">The MQTT broker refused the user name or password, and nothing else was recording.</string>
@@ -1961,9 +1964,6 @@
     <string name="ns_analytics_error_other">Something went wrong while connecting this phone.</string>
     <string name="ns_analytics_try_again">Try again</string>
     <string name="ns_analytics_connected_to">Connected to %1$s</string>
-    <string name="ns_analytics_connected_status">Connected · %1$s</string>
-    <string name="ns_analytics_last_upload">Last upload %1$s</string>
-    <string name="ns_analytics_no_upload_yet">No upload yet</string>
     <string name="ns_analytics_upload_auto">Upload automatically</string>
     <plurals name="ns_analytics_upload_auto_detail">
         <item quantity="one">About every %1$d minute</item>

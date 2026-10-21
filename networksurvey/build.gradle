@@ -225,6 +225,8 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.work.testing)
+    // The community upload tests stand in for OpenCelliD and BeaconDB.
+    testImplementation(libs.okhttp.mockwebserver)
     implementation(libs.androidx.annotation)
 
     // Uncomment if you want to hunt for memory leaks

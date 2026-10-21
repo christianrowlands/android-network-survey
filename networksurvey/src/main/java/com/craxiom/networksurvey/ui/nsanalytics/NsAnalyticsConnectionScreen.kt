@@ -26,14 +26,16 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
+import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.common.CameraPermissionNotice
-import com.craxiom.networksurvey.ui.common.PermissionRequest
 import com.craxiom.networksurvey.ui.common.NsCtaBar
 import com.craxiom.networksurvey.ui.common.NsPageScaffold
 import com.craxiom.networksurvey.ui.common.NsPrimaryCta
+import com.craxiom.networksurvey.ui.common.PermissionRequest
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
 import com.craxiom.networksurvey.ui.common.rememberCameraPermissionRequest
 import com.craxiom.networksurvey.ui.main.more.ExternalLinks
+import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import kotlinx.coroutines.launch
 
@@ -93,7 +95,11 @@ fun NsAnalyticsConnectionScreen(
                 CircularProgressIndicator()
             }
 
-            state.isRegistered -> NsAnalyticsConnectedContent(state, connectedActions(viewModel, openUrl) { dialog = it })
+            state.isRegistered -> NsAnalyticsConnectedContent(
+                state,
+                connectedActions(viewModel, openUrl) { dialog = it },
+                status = rememberDestinationStatus(Destination.NS_ANALYTICS),
+            )
             else -> NsAnalyticsConnectWalkthrough(state.uploadFrequencyMinutes, openUrl)
         }
     }

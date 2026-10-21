@@ -2,8 +2,6 @@ package com.craxiom.networksurvey.ui.grpc
 
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings
 import com.craxiom.networksurvey.services.GrpcConnectionService.ConnectionFailure
-import com.craxiom.networksurvey.survey.status.DestinationStatus
-import com.craxiom.networksurvey.survey.status.StatusWord
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -73,38 +71,35 @@ class GrpcServerFormTest {
         val saved = GrpcConnectionSettings("grpc.example.net", 2621, "")
         val address = "grpc.example.net:2621"
 
-        assertEquals(GrpcStatus.NotSetUp, grpcStatus(null, inSetup = true, live = null, lastFailure = null))
-        assertEquals(GrpcStatus.Ready(address), grpcStatus(saved, inSetup = true, live = null, lastFailure = null))
-        assertEquals(GrpcStatus.OffInSurvey(address), grpcStatus(saved, inSetup = false, live = null, lastFailure = null))
-        assertEquals(
-            GrpcStatus.Live(address, DestinationStatus(StatusWord.LIVE)),
-            grpcStatus(saved, inSetup = true, live = DestinationStatus(StatusWord.LIVE), lastFailure = null),
-        )
+        assertEquals(GrpcStatus.NotSetUp, grpcStatus(null, inSetup = true, streaming = false, lastFailure = null))
+        assertEquals(GrpcStatus.Ready(address), grpcStatus(saved, inSetup = true, streaming = false, lastFailure = null))
+        assertEquals(GrpcStatus.OffInSurvey(address), grpcStatus(saved, inSetup = false, streaming = false, lastFailure = null))
+        assertEquals(GrpcStatus.Streaming(address), grpcStatus(saved, inSetup = true, streaming = true, lastFailure = null))
     }
 
     @Test
-    fun `a failure to reach the saved server is shown, and whether the survey keeps trying`() {
+    fun `a failure to reach the saved server shows outside a survey, and inside one the Survey status says it`() {
         val saved = GrpcConnectionSettings("grpc.example.net", 2621, "")
         val failed = ConnectionFailure("grpc.example.net", 2621, 1L)
 
+        // The running survey's own status (Can't connect) speaks for it, the same as the Survey row
         assertEquals(
-            GrpcStatus.Unreachable("grpc.example.net:2621", retrying = true),
-            grpcStatus(saved, inSetup = true, live = DestinationStatus(StatusWord.CONNECTING), lastFailure = failed),
+            GrpcStatus.Streaming("grpc.example.net:2621"),
+            grpcStatus(saved, inSetup = true, streaming = true, lastFailure = failed),
         )
         assertEquals(
-            GrpcStatus.Unreachable("grpc.example.net:2621", retrying = false),
-            grpcStatus(saved, inSetup = true, live = null, lastFailure = failed),
+            GrpcStatus.Unreachable("grpc.example.net:2621"),
+            grpcStatus(saved, inSetup = true, streaming = false, lastFailure = failed),
         )
         // A failure for a server that is no longer the saved one does not count.
         val other = ConnectionFailure("old.example.net", 2621, 1L)
-        assertEquals(GrpcStatus.Ready("grpc.example.net:2621"), grpcStatus(saved, inSetup = true, live = null, lastFailure = other))
+        assertEquals(GrpcStatus.Ready("grpc.example.net:2621"), grpcStatus(saved, inSetup = true, streaming = false, lastFailure = other))
     }
 
     @Test
-    fun `streaming covers a survey that is still trying to reach the server`() {
-        assertTrue(GrpcServerForm(status = GrpcStatus.Live("a:1", DestinationStatus(StatusWord.CONNECTING))).streaming)
-        assertTrue(GrpcServerForm(status = GrpcStatus.Unreachable("a:1", retrying = true)).streaming)
-        assertFalse(GrpcServerForm(status = GrpcStatus.Unreachable("a:1", retrying = false)).streaming)
+    fun `streaming is a survey sending to the server, connected or not`() {
+        assertTrue(GrpcServerForm(status = GrpcStatus.Streaming("a:1")).streaming)
+        assertFalse(GrpcServerForm(status = GrpcStatus.Unreachable("a:1")).streaming)
         assertFalse(GrpcServerForm(status = GrpcStatus.Ready("a:1")).streaming)
     }
 }

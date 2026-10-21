@@ -2,14 +2,20 @@ package com.craxiom.networksurvey.ui.survey
 
 import com.craxiom.networksurvey.survey.engine.DestinationRuntime
 import com.craxiom.networksurvey.survey.engine.LastSession
+import com.craxiom.networksurvey.survey.engine.LinkFailure
 import com.craxiom.networksurvey.survey.engine.LinkState
 import com.craxiom.networksurvey.survey.engine.StreamLink
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
+import com.craxiom.networksurvey.survey.status.CommunityQueue
+import com.craxiom.networksurvey.survey.status.CommunityRetry
+import com.craxiom.networksurvey.survey.status.DeliveryQueues
+import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import com.craxiom.networksurvey.ui.survey.model.LocationStatus
+import com.craxiom.networksurvey.ui.survey.model.RecordingUiMapper
 import com.craxiom.networksurvey.ui.survey.model.RoutingColumn
 import com.craxiom.networksurvey.ui.survey.model.SurveyInputs
 import com.craxiom.networksurvey.ui.survey.model.SurveyUiState
@@ -22,7 +28,8 @@ import org.junit.Test
 
 /**
  * What the Recording layout and the Ready line take from the running survey: the setup the Change
- * sheet starts from, a survey that only sends device status over MQTT, and the last Mission ID.
+ * sheet starts from, a survey that only sends device status over MQTT, the last Mission ID, and
+ * the status a destination's page shares with its Survey row.
  */
 class RecordingUiMapperTest {
 
@@ -100,6 +107,55 @@ class RecordingUiMapperTest {
 
         assertFalse(map(runtime).recording!!.deviceStatusOnly)
         assertFalse(map(runtime).routing!!.mqttDeviceStatus)
+    }
+
+    // A destination page's status
+
+    @Test
+    fun `a destination page shows the same status as its Survey row while recording`() {
+        val runtime = recording(Destination.LOG_FILES to setOf(RecordType.CELLULAR)).let {
+            val link = StreamLink(LinkState.CONNECTING, sinceMs = NOW - 1_000L, failure = LinkFailure.UNREACHABLE, waiting = 4)
+            it.copy(destinations = it.destinations + (Destination.MQTT to DestinationRuntime(setOf(RecordType.CELLULAR), link = link)))
+        }
+        val rows = map(runtime).recording!!.destinations
+
+        for (destination in listOf(Destination.LOG_FILES, Destination.MQTT)) {
+            assertEquals(
+                rows.single { it.destination == destination }.status,
+                RecordingUiMapper.pageStatus(runtime, destination, NOW, DeliveryQueues(), info),
+            )
+        }
+    }
+
+    @Test
+    fun `outside a survey an uploader's page shows what Still to do shows`() {
+        val queues = DeliveryQueues(
+            community = CommunityQueue(pending = 363, retrying = CommunityRetry("OpenCelliD: Server error", NOW + 60_000L)),
+        )
+        val communityInfo = info.copy(communityTargets = setOf(RecordType.CELLULAR, RecordType.WIFI))
+        val idle = SurveyRuntimeState()
+        val stillToDo = SurveyUiStateMapper.map(
+            SurveyInputs(
+                runtime = idle,
+                userSetup = WORKING,
+                autoIncludePhoneState = true,
+                destinationInfo = communityInfo,
+                location = LocationStatus.Fixed(4),
+                queues = queues,
+                nowMs = NOW,
+            ),
+        ).stillToDo.single()
+
+        assertEquals(stillToDo.status, RecordingUiMapper.pageStatus(idle, Destination.COMMUNITY, NOW, queues, communityInfo))
+        assertEquals(StatusWord.WILL_RETRY, stillToDo.status.word)
+    }
+
+    @Test
+    fun `outside a survey a stream, Log files and an unregistered NS Analytics have nothing to say`() {
+        val idle = SurveyRuntimeState()
+        for (destination in listOf(Destination.MQTT, Destination.GRPC, Destination.LOG_FILES, Destination.NS_ANALYTICS)) {
+            assertNull(destination.name, RecordingUiMapper.pageStatus(idle, destination, NOW, DeliveryQueues(), info))
+        }
     }
 
     // The last Mission ID

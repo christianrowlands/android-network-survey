@@ -46,18 +46,12 @@ class DeliveryQueueReader(
             WorkManager.getInstance(appContext).getWorkInfosByTagFlow(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG),
             community.state,
             community.lastFailure,
-            ticks(),
+            pollTicks(pollIntervalMs),
         ) { nsAnalyticsWork, communityUpload, communityFailure, _ -> read(nsAnalyticsWork, communityUpload, communityFailure) }
             .flowOn(Dispatchers.IO)
             .distinctUntilChanged()
     }
 
-    private fun ticks(): Flow<Unit> = flow {
-        while (true) {
-            emit(Unit)
-            delay(pollIntervalMs)
-        }
-    }
 
     private fun read(
         nsAnalyticsWork: List<WorkInfo>,
@@ -88,8 +82,9 @@ class DeliveryQueueReader(
     }
 
     /**
-     * Only records a selected target can take count: Cellular goes to either, Wi-Fi only to
-     * BeaconDB, so Wi-Fi left over after BeaconDB was turned off isn't "waiting".
+     * Only records a selected target still needs count: Cellular goes to either, Wi-Fi only to
+     * BeaconDB, so Wi-Fi left over after BeaconDB was turned off isn't "waiting", and neither is a
+     * record the selected targets already took.
      */
     private fun community(upload: UploadProgressState, failure: CommunityUploadFailure?): CommunityQueue {
         val openCelliD = PreferenceUtils.getBoolean(
@@ -98,14 +93,16 @@ class DeliveryQueueReader(
         val beaconDb = PreferenceUtils.getBoolean(
             NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB,
         )
-        val pending = if (openCelliD || beaconDb) CommunityUploadLauncher.pending(appContext) else null
+        val pending = if (openCelliD || beaconDb) CommunityUploadLauncher.pending(appContext, openCelliD, beaconDb) else null
         val inProgress = upload as? UploadProgressState.InProgress
+        val waiting = inProgress != null && !inProgress.running
         return CommunityQueue(
-            pending = (pending?.cellular ?: 0) + if (beaconDb) pending?.wifi ?: 0 else 0,
+            pending = (pending?.cellular ?: 0) + (pending?.wifi ?: 0),
             uploading = inProgress?.running == true,
-            uploadQueued = inProgress != null && !inProgress.running,
-            networkWait = if (inProgress != null && !inProgress.running) communityNetworkWait() else NetworkWait.NONE,
+            uploadQueued = waiting && inProgress.retry == null,
+            networkWait = if (waiting) communityNetworkWait() else NetworkWait.NONE,
             lastFailure = failure,
+            retrying = inProgress?.retry,
         )
     }
 
@@ -126,5 +123,13 @@ class DeliveryQueueReader(
 
     private companion object {
         const val POLL_INTERVAL_MS = 5_000L
+    }
+}
+
+/** Emits at once and then every [intervalMs], while collected, so a poll reads again on its own. */
+internal fun pollTicks(intervalMs: Long): Flow<Unit> = flow {
+    while (true) {
+        emit(Unit)
+        delay(intervalMs)
     }
 }

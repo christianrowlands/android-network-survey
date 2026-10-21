@@ -3,7 +3,6 @@ package com.craxiom.networksurvey.ui.community
 import androidx.annotation.PluralsRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.common.NsManagedLockSheet
 import com.craxiom.networksurvey.ui.common.NsPageScaffold
 import com.craxiom.networksurvey.ui.common.NsPanel
@@ -24,7 +24,11 @@ import com.craxiom.networksurvey.ui.common.NsRowDivider
 import com.craxiom.networksurvey.ui.common.NsRowGroup
 import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsSwitchRow
+import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
+import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
 import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import java.text.NumberFormat
@@ -53,11 +57,8 @@ fun CommunityDatabasesScreen(
     viewModel: CommunityUploadViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    // Seen here (only while the page is on screen), so the Survey screen stops saying it failed
-    val uploadFailure by viewModel.uploadFailure.collectAsStateWithLifecycle()
-    LaunchedEffect(uploadFailure) {
-        if (uploadFailure != null) viewModel.acknowledgeUploadFailure()
-    }
+    // The view model acknowledges a failure when the user leaves the page, so it says so while open
+    val status = rememberDestinationStatus(Destination.COMMUNITY)
     var showUploadDialog by rememberSaveable { mutableStateOf(false) }
     var showNoInternet by rememberSaveable { mutableStateOf(false) }
 
@@ -81,7 +82,7 @@ fun CommunityDatabasesScreen(
             }
         }
     }
-    CommunityDatabasesContent(state, actions)
+    CommunityDatabasesContent(state, actions, status = status)
 
     if (showUploadDialog) {
         UploadConfirmationDialog(
@@ -102,13 +103,31 @@ fun CommunityDatabasesScreen(
  * last upload. Whether the survey collects records for them is set on the Survey screen.
  */
 @Composable
-fun CommunityDatabasesContent(state: UploadUiState, actions: CommunityDatabasesActions, modifier: Modifier = Modifier) {
+fun CommunityDatabasesContent(
+    state: UploadUiState,
+    actions: CommunityDatabasesActions,
+    modifier: Modifier = Modifier,
+    status: DestinationPageStatus? = null,
+) {
     var showLockSheet by rememberSaveable { mutableStateOf(false) }
     var confirmOwnSettings by rememberSaveable { mutableStateOf(false) }
 
     NsPageScaffold(title = stringResource(R.string.survey_dest_community), onBack = actions::onBack, modifier = modifier) {
         NsSummaryText(stringResource(if (state.visible) R.string.community_intro else R.string.community_not_allowed))
         if (!state.visible) return@NsPageScaffold
+
+        val retrying = (state.uploadProgress as? UploadProgressState.InProgress)?.retry != null
+        status?.let {
+            DestinationStatusPanel(
+                page = it,
+                // A retry never stops on its own, so this is the way to stop it
+                action = if (retrying) {
+                    { NsTextAction(stringResource(R.string.community_stop_retrying), actions::onCancelUpload) }
+                } else {
+                    null
+                },
+            )
+        }
 
         NsRowGroup {
             val keyMissing = state.openCelliDOn && state.openCelliDKey == OpenCelliDKey.MISSING
@@ -157,7 +176,11 @@ fun CommunityDatabasesContent(state: UploadUiState, actions: CommunityDatabasesA
         }
 
         when (val progress = state.uploadProgress) {
-            is UploadProgressState.InProgress -> NsPanel { UploadProgressSection(progress, actions::onCancelUpload) }
+            // The status panel says why a waiting retry failed and when it tries again
+            is UploadProgressState.InProgress -> if (progress.retry == null) {
+                NsPanel { UploadProgressSection(progress, actions::onCancelUpload) }
+            }
+
             is UploadProgressState.Finished -> NsPanel { UploadResultsSection(progress, actions::onSeeOnMap) }
             UploadProgressState.Hidden -> Unit
         }

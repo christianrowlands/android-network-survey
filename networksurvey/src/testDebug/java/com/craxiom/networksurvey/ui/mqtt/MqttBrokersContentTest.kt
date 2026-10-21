@@ -1,19 +1,24 @@
 package com.craxiom.networksurvey.ui.mqtt
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.ui.common.CameraPermissionNotice
 import com.craxiom.networksurvey.ui.common.PermissionAccess
 import com.craxiom.networksurvey.ui.common.PermissionRequest
 import com.craxiom.networksurvey.ui.showPage
-import com.craxiom.networksurvey.survey.status.DestinationStatus
-import com.craxiom.networksurvey.survey.status.StatusWord
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -46,9 +51,13 @@ class MqttBrokersContentTest {
 
     @Test
     fun brokers_showTheSelectedOneWithItsLiveStatus_andSelectOrEdit() {
-        show(MqttBrokersUiState(loading = false, brokers = listOf(lab, acme), activeId = "b", liveStatus = DestinationStatus(StatusWord.LIVE)))
+        show(
+            MqttBrokersUiState(loading = false, brokers = listOf(lab, acme), activeId = "b", streaming = true),
+            DestinationPageStatus(Destination.MQTT, DestinationStatus(StatusWord.LIVE), DestinationInfo(), nowMs = 0L),
+        )
         compose.onNodeWithText("broker.example.com:8883 · TLS · surveyor-07").assertIsDisplayed()
-        compose.onNodeWithText("Live").assertIsDisplayed()
+        // The status panel and the selected broker's label say the same thing
+        compose.onAllNodesWithText("Live").assertCountEquals(2)
         compose.onNodeWithText("Acme").assertIsSelected()
 
         compose.onNodeWithText("Lab").performClick()
@@ -114,7 +123,8 @@ class MqttBrokersContentTest {
         compose.onNodeWithText("The camera is needed to scan the code.").assertIsDisplayed()
     }
 
-    private fun show(state: MqttBrokersUiState) = compose.showPage { MqttBrokersContent(state, actions, SnackbarHostState()) }
+    private fun show(state: MqttBrokersUiState, status: DestinationPageStatus? = null) =
+        compose.showPage { MqttBrokersContent(state, actions, SnackbarHostState(), status = status) }
 
     private class RecordingActions : MqttBrokersActions {
         val calls = mutableListOf<String>()

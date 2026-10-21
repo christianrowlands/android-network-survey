@@ -84,7 +84,7 @@ private fun StillToDoRow(item: StillToDoItemUi, nowMs: Long, onUploadNow: (Desti
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = DestinationStatusText.waitingDetail(LocalResources.current, item.status.detail, nowMs),
+                        text = DestinationStatusText.waitingDetail(LocalResources.current, item.status.detail, rememberTimeFormatter(), nowMs),
                         style = MaterialTheme.typography.bodySmall,
                         color = statusLevelColor(item.status.level),
                     )

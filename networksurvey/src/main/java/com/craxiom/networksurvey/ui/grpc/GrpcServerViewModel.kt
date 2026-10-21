@@ -99,7 +99,7 @@ class GrpcServerViewModel @JvmOverloads constructor(
         }
         viewModelScope.launch(ioDispatcher) {
             val before = GrpcConnectionSettings.fromPreferences(preferences)
-            val streaming = runtime.value?.let(link::liveStatus) != null
+            val streaming = link.inSurvey(runtime.value)
             GrpcConnectionSettings.save(preferences, settings)
             val result = when {
                 before == null -> GrpcSaveResult.of(link.onFirstSetup(runtime.value?.isRecording == true))
@@ -124,7 +124,7 @@ class GrpcServerViewModel @JvmOverloads constructor(
         val saved = GrpcConnectionSettings.fromPreferences(preferences)
         val state = runtime.value
         val inSetup = link.isInSetup()
-        val status = grpcStatus(saved, inSetup, link.liveStatus(state), lastFailure())
+        val status = grpcStatus(saved, inSetup, link.inSurvey(state), lastFailure())
         _form.update {
             it.copy(
                 loading = false,

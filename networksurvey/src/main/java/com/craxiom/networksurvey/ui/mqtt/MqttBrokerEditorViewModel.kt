@@ -180,7 +180,7 @@ class MqttBrokerEditorViewModel @JvmOverloads constructor(
     }
 
     private fun MqttBrokerForm.withRuntime(state: SurveyRuntimeState?) = copy(
-        streaming = link.liveStatus(state) != null,
+        streaming = link.inSurvey(state),
         onlyDestination = state?.destinations?.keys == setOf(Destination.MQTT),
     )
 

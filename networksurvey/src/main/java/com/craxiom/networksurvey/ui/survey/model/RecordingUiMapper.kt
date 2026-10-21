@@ -113,6 +113,35 @@ internal object RecordingUiMapper {
         return status(runtime, destination, queues, info, nowMs)
     }
 
+    /**
+     * @return The status a destination's page shows: the same one as its Survey row while it is in
+     * the running survey, otherwise what waits for it ([idleStatus]); null when there is nothing to
+     * say (a stream or Log files outside a survey).
+     */
+    fun pageStatus(
+        runtime: SurveyRuntimeState?,
+        destination: Destination,
+        nowMs: Long,
+        queues: DeliveryQueues,
+        info: DestinationInfo,
+    ): DestinationStatus? = runtime?.let { liveStatus(it, destination, nowMs, queues, info) }
+        ?: idleStatus(destination, queues, info)
+
+    /**
+     * @return The status of a destination that uploads later while no survey sends to it, the one
+     * the "Still to do" panel shows; null for a destination that doesn't upload later, or isn't set up.
+     */
+    fun idleStatus(destination: Destination, queues: DeliveryQueues, info: DestinationInfo): DestinationStatus? =
+        when (destination) {
+            Destination.NS_ANALYTICS -> DestinationStatusRules.nsAnalyticsIdle(queues.nsAnalytics, info.nsAnalyticsAutoUpload)
+                .takeIf { info.nsAnalyticsRegistered }
+
+            Destination.COMMUNITY -> DestinationStatusRules.communityIdle(queues.community, info.communityAutoUpload)
+                .takeIf { info.communityTargets.isNotEmpty() }
+
+            else -> null
+        }
+
     private fun status(
         runtime: SurveyRuntimeState,
         destination: Destination,

@@ -17,6 +17,7 @@ import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.common.CameraPermissionNotice
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
 import com.craxiom.networksurvey.ui.common.rememberCameraPermissionRequest
+import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
 import com.craxiom.networksurvey.ui.survey.rememberSurveyPermissionFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -83,7 +84,9 @@ fun MqttBrokersScreen(
             override fun onUseOwnSettings() = viewModel.useOwnSettings()
         }
     }
-    MqttBrokersContent(state, actions, snackbarHostState) { CameraPermissionNotice(camera) }
+    MqttBrokersContent(state, actions, snackbarHostState, status = rememberDestinationStatus(Destination.MQTT)) {
+        CameraPermissionNotice(camera)
+    }
 }
 
 /** The destination the MQTT pages connect to, for the local network request. */

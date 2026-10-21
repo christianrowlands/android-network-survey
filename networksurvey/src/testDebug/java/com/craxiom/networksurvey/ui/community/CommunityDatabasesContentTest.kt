@@ -6,6 +6,15 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.status.CommunityRetry
+import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.StatusAction
+import com.craxiom.networksurvey.survey.status.StatusDetail
+import com.craxiom.networksurvey.survey.status.StatusWord
+import com.craxiom.networksurvey.survey.status.WaitReason
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import com.craxiom.networksurvey.ui.plural
 import com.craxiom.networksurvey.ui.showPage
 import org.junit.Assert.assertEquals
@@ -75,6 +84,31 @@ class CommunityDatabasesContentTest {
     }
 
     @Test
+    fun uploadWaitingToRetry_saysWhyAndWhenAndCanBeStopped() {
+        val nextTry = NOW + 30 * 60_000L
+        val retry = CommunityRetry(OCID_SERVER_ERROR, nextTry)
+        val status = DestinationPageStatus(
+            Destination.COMMUNITY,
+            DestinationStatus(
+                StatusWord.WILL_RETRY,
+                StatusDetail.UploadRetrying(OCID_SERVER_ERROR, WaitReason.NextTry(nextTry)),
+                StatusAction.UPLOAD_NOW,
+            ),
+            DestinationInfo(),
+            NOW,
+        )
+        show(ready.copy(uploadProgress = UploadProgressState.InProgress(running = false, retry = retry)), status)
+
+        compose.onNodeWithText("Will retry").assertIsDisplayed()
+        compose.onNodeWithText("Last upload failed: $OCID_SERVER_ERROR", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("next try at", substring = true).assertIsDisplayed()
+        // No progress bar for an upload that isn't running
+        compose.onNodeWithText("The upload failed. It will try again later.").assertDoesNotExist()
+        compose.onNodeWithText("Stop retrying").performClick()
+        assertEquals(listOf("cancel"), calls)
+    }
+
+    @Test
     fun notAllowed_saysSo() {
         show(UploadUiState(visible = false))
         compose.onNodeWithText("Your organization does not allow uploads to public databases on this phone.").assertIsDisplayed()
@@ -87,5 +121,11 @@ class CommunityDatabasesContentTest {
         compose.onNodeWithText("Upload settings").performScrollTo().assertIsDisplayed()
     }
 
-    private fun show(state: UploadUiState) = compose.showPage { CommunityDatabasesContent(state, actions) }
+    private fun show(state: UploadUiState, status: DestinationPageStatus? = null) =
+        compose.showPage { CommunityDatabasesContent(state, actions, status = status) }
+
+    private companion object {
+        const val NOW = 1_800_000_000_000L
+        const val OCID_SERVER_ERROR = "OpenCelliD: Server error"
+    }
 }

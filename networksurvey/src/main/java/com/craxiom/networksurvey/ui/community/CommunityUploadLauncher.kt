@@ -22,7 +22,8 @@ import com.craxiom.networksurvey.util.PreferenceUtils
 object CommunityUploadLauncher {
 
     /**
-     * Enqueues an upload with the given choices.
+     * Enqueues an upload with the given choices. One already running is kept; one waiting to retry
+     * after a failed attempt is replaced, so Upload now tries at once.
      *
      * @return False if there is no network, so the caller can say so.
      */
@@ -41,8 +42,12 @@ object CommunityUploadLauncher {
             .setInputData(inputData)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
+        // An upload waiting to retry would otherwise keep the user waiting out its backoff
+        val retrying = (CommunityUploadRepository.get(context).state.value as? UploadProgressState.InProgress)?.retry != null
         WorkManager.getInstance(context).enqueueUniqueWork(
-            NetworkSurveyConstants.COMMUNITY_UPLOAD_UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, request,
+            NetworkSurveyConstants.COMMUNITY_UPLOAD_UNIQUE_WORK_NAME,
+            if (retrying) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP,
+            request,
         )
         return true
     }
@@ -99,9 +104,16 @@ object CommunityUploadLauncher {
     /** The Cellular and Wi-Fi records saved for the community databases and not uploaded yet. */
     data class Pending(val cellular: Int, val wifi: Int)
 
-    /** @return The records waiting to upload. Reads the database, so call it off the main thread. */
-    fun pending(context: Context): Pending {
+    /**
+     * @return The records waiting to upload to [openCelliD] or [beaconDb] (both by default, so a
+     * record either target still lacks counts). Wi-Fi only waits for BeaconDB. Reads the database,
+     * so call it off the main thread.
+     */
+    fun pending(context: Context, openCelliD: Boolean = true, beaconDb: Boolean = true): Pending {
         val dao = SurveyDatabase.getInstance(context).surveyRecordDao()
-        return Pending(NsUploaderWorker.getTotalCellularRecordsForUpload(dao), dao.wifiRecordCountForUpload)
+        return Pending(
+            NsUploaderWorker.getTotalCellularRecordsForUpload(dao, openCelliD, beaconDb),
+            dao.getWifiRecordCountForUpload(beaconDb),
+        )
     }
 }

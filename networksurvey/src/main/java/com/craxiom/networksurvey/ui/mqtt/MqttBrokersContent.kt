@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.survey.status.DestinationStatus
 import com.craxiom.networksurvey.ui.common.NsEmptyState
 import com.craxiom.networksurvey.ui.common.NsIconAction
 import com.craxiom.networksurvey.ui.common.NsManagedLockSheet
@@ -23,10 +24,12 @@ import com.craxiom.networksurvey.ui.common.NsRowGroup
 import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsSwitchRow
 import com.craxiom.networksurvey.ui.common.SectionHeader
-import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.common.StatusLabel
 import com.craxiom.networksurvey.ui.common.dialogs.NsInputDialog
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.survey.components.destinationStatusLabel
+import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
 /** Everything the MQTT page can ask for. The stateful screen wires these up. */
@@ -54,6 +57,7 @@ fun MqttBrokersContent(
     actions: MqttBrokersActions,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    status: DestinationPageStatus? = null,
     cameraNotice: @Composable () -> Unit = {},
 ) {
     var showLockSheet by rememberSaveable { mutableStateOf(false) }
@@ -66,12 +70,14 @@ fun MqttBrokersContent(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
+        // While a survey streams here: the same status and detail as the Survey screen's row
+        status?.let { DestinationStatusPanel(it) }
         SectionHeader(stringResource(R.string.mqtt_brokers_group))
         when {
             state.loading -> Unit
-            state.organizationBroker != null -> OrganizationBroker(state, onLocked = { showLockSheet = true })
+            state.organizationBroker != null -> OrganizationBroker(state, status?.status, onLocked = { showLockSheet = true })
             state.brokers.isEmpty() -> NsRowGroup { NsEmptyState(stringResource(R.string.mqtt_brokers_empty), R.drawable.ic_cloud_connection) }
-            else -> BrokerList(state, actions)
+            else -> BrokerList(state, status?.status, actions)
         }
 
         if (!state.organizationInForce && !state.loading) {
@@ -141,7 +147,7 @@ fun MqttBrokersContent(
 }
 
 @Composable
-private fun BrokerList(state: MqttBrokersUiState, actions: MqttBrokersActions) {
+private fun BrokerList(state: MqttBrokersUiState, live: DestinationStatus?, actions: MqttBrokersActions) {
     NsRowGroup(selectable = true) {
         state.brokers.forEachIndexed { index, broker ->
             if (index > 0) NsRowDivider()
@@ -152,7 +158,6 @@ private fun BrokerList(state: MqttBrokersUiState, actions: MqttBrokersActions) {
                 selected = selected,
                 onSelect = { actions.onSelect(broker.id) },
             ) {
-                val live = state.liveStatus
                 if (selected && live != null) {
                     val (text, color) = destinationStatusLabel(live)
                     StatusLabel(text, color)
@@ -164,7 +169,7 @@ private fun BrokerList(state: MqttBrokersUiState, actions: MqttBrokersActions) {
 }
 
 @Composable
-private fun OrganizationBroker(state: MqttBrokersUiState, onLocked: () -> Unit) {
+private fun OrganizationBroker(state: MqttBrokersUiState, live: DestinationStatus?, onLocked: () -> Unit) {
     val broker = state.organizationBroker ?: return
     val announcement = stringResource(R.string.mqtt_broker_organization_announcement, broker.host)
     Column {
@@ -178,7 +183,6 @@ private fun OrganizationBroker(state: MqttBrokersUiState, onLocked: () -> Unit) 
                 onClick = onLocked,
                 modifier = Modifier.semantics { contentDescription = announcement },
             ) {
-                val live = state.liveStatus
                 if (live != null) {
                     val (text, color) = destinationStatusLabel(live)
                     StatusLabel(text, color)

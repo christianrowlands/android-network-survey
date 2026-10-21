@@ -8,8 +8,6 @@ import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.setup.SurveySetupStore
-import com.craxiom.networksurvey.survey.status.DestinationStatus
-import com.craxiom.networksurvey.ui.survey.model.RecordingUiMapper
 
 /**
  * What a streaming destination's page (MQTT, gRPC) needs from the survey: how the destination is
@@ -25,9 +23,8 @@ class DestinationSurveyLink(
     private val policy: () -> SurveyPolicyState = { SurveyTypeResolver.currentPolicy(context) },
 ) {
 
-    /** @return The destination's status in a running survey, or null when it is not in it. */
-    fun liveStatus(runtime: SurveyRuntimeState?): DestinationStatus? =
-        runtime?.let { RecordingUiMapper.liveStatus(it, destination, System.currentTimeMillis()) }
+    /** @return True while [runtime] is a running survey that sends to the destination. */
+    fun inSurvey(runtime: SurveyRuntimeState?): Boolean = runtime?.destinations?.containsKey(destination) == true
 
     /** @return True when the organization keeps this destination off on this phone. */
     fun isTurnedOffByOrganization(): Boolean {

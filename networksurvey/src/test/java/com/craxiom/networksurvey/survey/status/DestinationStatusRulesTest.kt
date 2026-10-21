@@ -224,6 +224,57 @@ class DestinationStatusRulesTest {
         assertEquals(StatusWord.QUEUED, status(Destination.COMMUNITY, queues = DeliveryQueues(community = queued)).word)
     }
 
+    @Test
+    fun `a community upload waiting to retry says why and when, ahead of queued, while Ready and while recording`() {
+        val retry = CommunityRetry(OCID_SERVER_ERROR, nextTryMs = NOW + 30 * 60_000L)
+        val retrying = CommunityQueue(pending = 363, retrying = retry)
+        val expected = DestinationStatus(
+            StatusWord.WILL_RETRY,
+            StatusDetail.UploadRetrying(OCID_SERVER_ERROR, WaitReason.NextTry(NOW + 30 * 60_000L)),
+            StatusAction.UPLOAD_NOW,
+        )
+
+        assertEquals(expected, DestinationStatusRules.communityIdle(retrying, autoUpload = true))
+        assertEquals(expected, status(Destination.COMMUNITY, queues = DeliveryQueues(community = retrying)))
+        assertEquals(StatusLevel.HELD, expected.level)
+    }
+
+    @Test
+    fun `a waiting retry names the network it needs, or says it starts when the time has passed`() {
+        val retry = CommunityRetry(OCID_SERVER_ERROR, nextTryMs = NOW + 60_000L)
+        fun next(queue: CommunityQueue) = (DestinationStatusRules.communityIdle(queue, autoUpload = true).detail as StatusDetail.UploadRetrying).next
+
+        assertEquals(WaitReason.OnWifi, next(CommunityQueue(pending = 1, retrying = retry, networkWait = NetworkWait.WIFI)))
+        assertEquals(WaitReason.Offline, next(CommunityQueue(pending = 1, retrying = retry, networkWait = NetworkWait.ANY)))
+        assertEquals(WaitReason.UploadStarting, next(CommunityQueue(pending = 1, retrying = retry.copy(nextTryMs = null))))
+    }
+
+    @Test
+    fun `uploaders with nothing waiting outside a survey are up to date`() {
+        assertEquals(StatusWord.UP_TO_DATE, DestinationStatusRules.communityIdle(CommunityQueue(pending = 0), autoUpload = true).word)
+        val nsAnalytics = DestinationStatusRules.nsAnalyticsIdle(NsAnalyticsQueue(pending = 0, lastUploadMs = NOW), autoUpload = true)
+        assertEquals(DestinationStatus(StatusWord.UP_TO_DATE, StatusDetail.NothingWaiting(NOW)), nsAnalytics)
+    }
+
+    @Test
+    fun `a first connection that already failed can't connect at once, a dropped one still reconnects`() {
+        val failedFirst = stream(StreamLink(LinkState.CONNECTING, sinceMs = NOW - 1_000L, failure = LinkFailure.UNREACHABLE, waiting = 3))
+        assertEquals(StatusWord.CANT_CONNECT, failedFirst.word)
+        assertEquals(StatusDetail.StreamUnreachable(NOW - 1_000L, 3), failedFirst.detail)
+
+        val dropped = stream(
+            StreamLink(LinkState.CONNECTING, sinceMs = NOW - 1_000L, everConnected = true, failure = LinkFailure.UNREACHABLE),
+        )
+        assertEquals(StatusWord.RECONNECTING, dropped.word)
+        assertNull(
+            "A failed first attempt has nothing left to escalate",
+            DestinationStatusRules.nextEscalationMs(
+                listOf(DestinationRuntime(emptySet(), link = StreamLink(LinkState.CONNECTING, NOW, failure = LinkFailure.UNREACHABLE))),
+                NOW,
+            ),
+        )
+    }
+
     // Escalation timing
 
     @Test
@@ -254,6 +305,7 @@ class DestinationStatusRulesTest {
 
     private companion object {
         const val INVALID_KEY = "Invalid API key"
+        const val OCID_SERVER_ERROR = "OpenCelliD: Server error"
         const val NOW = 1_800_000_000_000L
     }
 }

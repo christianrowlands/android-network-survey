@@ -40,10 +40,13 @@ public final class AutoUploadRequest
      */
     public static boolean uploadRemaining(Context context)
     {
-        boolean beaconDb = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean openCelliD = prefs.getBoolean(
+                NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID);
+        boolean beaconDb = prefs.getBoolean(
                 NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB);
         int pending = NsUploaderWorker.getTotalRecordsForUpload(
-                SurveyDatabase.getInstance(context).surveyRecordDao(), beaconDb);
+                SurveyDatabase.getInstance(context).surveyRecordDao(), openCelliD, beaconDb);
         if (pending == 0) return false;
 
         Timber.i("Uploading the %d community records left at the end of the survey", pending);

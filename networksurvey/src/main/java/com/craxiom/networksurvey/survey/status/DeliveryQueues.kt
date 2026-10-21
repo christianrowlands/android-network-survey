@@ -32,11 +32,12 @@ data class NsAnalyticsQueue(
  *
  * @property pending      Records waiting to upload (Cellular and Wi-Fi).
  * @property uploading    True while an upload runs.
- * @property uploadQueued True while an upload was asked for but hasn't started (for example it
- *                        waits for Wi-Fi).
- * @property networkWait  The network the queued upload waits for, if the phone isn't on one.
+ * @property uploadQueued True while an upload was asked for and hasn't made its first attempt
+ *                        yet (for example it waits for Wi-Fi).
+ * @property networkWait  The network the waiting upload needs, if the phone isn't on one.
  * @property lastFailure  The last upload's failure, until the user opens the Community databases
  *                        page or the next upload starts; null when it succeeded or was cancelled.
+ * @property retrying     Set while an upload waits to try again after a failed attempt.
  */
 data class CommunityQueue(
     val pending: Int = 0,
@@ -44,6 +45,7 @@ data class CommunityQueue(
     val uploadQueued: Boolean = false,
     val networkWait: NetworkWait = NetworkWait.NONE,
     val lastFailure: CommunityUploadFailure? = null,
+    val retrying: CommunityRetry? = null,
 )
 
 /**
@@ -51,6 +53,15 @@ data class CommunityQueue(
  * text for the worst failing target ("Invalid API key"), already in the user's language.
  */
 data class CommunityUploadFailure(val message: String)
+
+/**
+ * A community upload whose last attempt failed and that tries again on its own.
+ *
+ * @property message   Why the attempt failed, naming the target ("OpenCelliD: Server error"),
+ *                     already in the user's language.
+ * @property nextTryMs When it tries again, if known.
+ */
+data class CommunityRetry(val message: String, val nextTryMs: Long?)
 
 /** The network a queued upload waits for before it can start. */
 enum class NetworkWait {

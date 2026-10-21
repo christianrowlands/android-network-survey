@@ -30,7 +30,8 @@ import com.craxiom.networksurvey.ui.common.NsRowGroup
 import com.craxiom.networksurvey.ui.common.NsStatusPanel
 import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.SectionHeader
-import com.craxiom.networksurvey.ui.survey.components.destinationStatusLabel
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
@@ -53,6 +54,7 @@ fun GrpcServerContent(
     actions: GrpcServerActions,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    liveStatus: DestinationPageStatus? = null,
 ) {
     var showLockSheet by rememberSaveable { mutableStateOf(false) }
     var confirmOwnSettings by rememberSaveable { mutableStateOf(false) }
@@ -72,7 +74,7 @@ fun GrpcServerContent(
         snackbarHostState = snackbarHostState,
         bottomBar = { SaveBar(form, actions) },
     ) {
-        StatusPanel(form.status)
+        StatusPanel(form.status, liveStatus)
         if (form.organizationOff) {
             NsRowGroup {
                 NsRow(
@@ -134,7 +136,7 @@ fun GrpcServerContent(
 }
 
 @Composable
-private fun StatusPanel(status: GrpcStatus) {
+private fun StatusPanel(status: GrpcStatus, liveStatus: DestinationPageStatus?) {
     when (status) {
         GrpcStatus.NotSetUp -> NsStatusPanel(
             icon = R.drawable.ic_dns,
@@ -155,10 +157,9 @@ private fun StatusPanel(status: GrpcStatus) {
             subtitle = status.address,
         )
 
-        is GrpcStatus.Live -> {
-            val (label, color) = destinationStatusLabel(status.status)
-            NsStatusPanel(icon = R.drawable.ic_dns, title = label, subtitle = status.address, iconTint = color)
-        }
+        // The same status and detail as the Survey screen's row
+        is GrpcStatus.Streaming -> liveStatus?.let { DestinationStatusPanel(it) }
+            ?: NsStatusPanel(icon = R.drawable.ic_dns, title = stringResource(R.string.grpc_status_ready), subtitle = status.address)
 
         is GrpcStatus.Unreachable -> NsStatusPanel(
             icon = R.drawable.ic_dns,

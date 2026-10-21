@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.ui.mqtt
 
 import com.craxiom.networksurvey.ui.survey.FirstSetupOutcome
-import com.craxiom.networksurvey.survey.status.DestinationStatus
 
 /**
  * What the MQTT page shows: the saved brokers (or the organization's one), which is selected and
@@ -9,7 +8,7 @@ import com.craxiom.networksurvey.survey.status.DestinationStatus
  *
  * @property organizationBroker The organization's broker while it is in force (managed, not
  *                              overridden). The user's own brokers are then kept but not listed.
- * @property liveStatus The selected broker's live status while a survey streams to it.
+ * @property streaming True while a survey streams to the selected broker.
  */
 data class MqttBrokersUiState(
     val loading: Boolean = true,
@@ -17,7 +16,7 @@ data class MqttBrokersUiState(
     val activeId: String? = null,
     val organizationBroker: OrganizationBrokerUi? = null,
     val hasOwnBrokers: Boolean = false,
-    val liveStatus: DestinationStatus? = null,
+    val streaming: Boolean = false,
     val clientId: String = "",
     val deviceStatusEnabled: Boolean = true,
 ) {

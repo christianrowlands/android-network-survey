@@ -10,14 +10,18 @@ import androidx.work.WorkerParameters
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import androidx.work.workDataOf
+import com.craxiom.networksurvey.logging.db.uploader.CommunityRetryStore
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult
+import com.craxiom.networksurvey.logging.db.uploader.UploadResultBundle
+import com.craxiom.networksurvey.logging.db.uploader.UploadTarget
 import com.craxiom.networksurvey.survey.status.CommunityUploadFailure
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -75,7 +79,8 @@ class CommunityUploadRepositoryTest {
         enqueue<FailedUploadWorker>()
 
         awaitTrue { repository.lastFailure.value != null }
-        assertEquals(CommunityUploadFailure(INVALID_KEY_TEXT), repository.lastFailure.value)
+        // Named after the target that failed, in the uploader's own words
+        assertEquals(CommunityUploadFailure(OCID_INVALID_KEY), repository.lastFailure.value)
 
         repository.acknowledge()
         // The finished work is reported until the prune lands; that must not bring the failure back
@@ -91,6 +96,22 @@ class CommunityUploadRepositoryTest {
 
         awaitState(repository) { it is UploadProgressState.Finished }
         awaitPruned()
+        assertNull(repository.lastFailure.value)
+    }
+
+    @Test
+    fun `an upload waiting to retry says why and when, and not as waiting to start`() = runBlocking {
+        val repository = CommunityUploadRepository.get(context)
+        enqueue<RetryingUploadWorker>()
+
+        val waiting = awaitState(repository) { (it as? UploadProgressState.InProgress)?.retry != null }
+            as UploadProgressState.InProgress
+        // Both targets failed the same way, so both are named
+        assertEquals(BOTH_CONNECTION_ERROR, waiting.retry?.message)
+        assertTrue((waiting.retry?.nextTryMs ?: 0L) > 0L)
+        assertFalse(waiting.running)
+        // The Survey screen shows it as Will retry, not as an upload waiting to start
+        assertNull(repository.progress.first())
         assertNull(repository.lastFailure.value)
     }
 
@@ -148,6 +169,21 @@ class CommunityUploadRepositoryTest {
         )
     }
 
+    /** Stands in for an attempt that reached neither server, which tries again later. */
+    class RetryingUploadWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+        override fun doWork(): Result {
+            CommunityRetryStore.save(
+                applicationContext,
+                id,
+                UploadResultBundle().apply {
+                    setResult(UploadTarget.OpenCelliD, UploadResult.ConnectionError)
+                    setResult(UploadTarget.BeaconDB, UploadResult.ConnectionError)
+                },
+            )
+            return Result.retry()
+        }
+    }
+
     /** Stands in for an upload the user cancelled part way, which the worker reports as Cancelled. */
     class CancelledUploadWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
         override fun doWork(): Result = Result.failure(
@@ -160,6 +196,8 @@ class CommunityUploadRepositoryTest {
 
     private companion object {
         const val INVALID_KEY_TEXT = "Invalid API key"
+        const val OCID_INVALID_KEY = "OpenCelliD: Invalid access token"
+        const val BOTH_CONNECTION_ERROR = "OpenCelliD and BeaconDB: Connection error"
         const val OCID_RESULT = "Success"
         const val BEACONDB_RESULT = "No data"
         const val TIMEOUT_MS = 5_000L

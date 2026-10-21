@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.nsanalytics
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.LinearProgressIndicator
@@ -15,11 +14,12 @@ import com.craxiom.networksurvey.ui.common.NsPanel
 import com.craxiom.networksurvey.ui.common.NsRow
 import com.craxiom.networksurvey.ui.common.NsRowDivider
 import com.craxiom.networksurvey.ui.common.NsRowGroup
-import com.craxiom.networksurvey.ui.common.NsStatusPanel
 import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsSwitchRow
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 
@@ -38,8 +38,16 @@ interface NsAnalyticsConnectedActions {
  * and the way to disconnect. Starting a survey that sends here is the Survey screen's job.
  */
 @Composable
-fun NsAnalyticsConnectedContent(state: NsAnalyticsConnectionUiState, actions: NsAnalyticsConnectedActions) {
-    StatusPanel(state)
+fun NsAnalyticsConnectedContent(
+    state: NsAnalyticsConnectionUiState,
+    actions: NsAnalyticsConnectedActions,
+    status: DestinationPageStatus? = null,
+) {
+    // The same status as the Survey screen's row; the panel is green only when nothing is held back
+    status?.let { DestinationStatusPanel(it) }
+    NsSummaryText(
+        stringResource(R.string.ns_analytics_connected_to, state.workspaceName ?: stringResource(R.string.ns_analytics_unknown_workspace)),
+    )
     if (state.uploadPausedForQuota) QuotaPausedPanel(state, actions)
 
     NsRowGroup {
@@ -89,23 +97,6 @@ fun NsAnalyticsConnectedContent(state: NsAnalyticsConnectionUiState, actions: Ns
             onClick = actions::onDisconnect,
         )
     }
-}
-
-@Composable
-private fun StatusPanel(state: NsAnalyticsConnectionUiState) {
-    NsStatusPanel(
-        icon = R.drawable.ic_cloud_done,
-        iconTint = NsTheme.colors.status.success.content,
-        title = stringResource(
-            R.string.ns_analytics_connected_status,
-            state.workspaceName ?: stringResource(R.string.ns_analytics_unknown_workspace),
-        ),
-        subtitle = if (state.lastUploadTime > 0) {
-            stringResource(R.string.ns_analytics_last_upload, DateUtils.getRelativeTimeSpanString(state.lastUploadTime).toString())
-        } else {
-            stringResource(R.string.ns_analytics_no_upload_yet)
-        },
-    )
 }
 
 @Composable

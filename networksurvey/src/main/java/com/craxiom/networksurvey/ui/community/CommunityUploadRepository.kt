@@ -5,9 +5,13 @@ import androidx.annotation.VisibleForTesting
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.logging.db.uploader.CommunityRetryStore
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult
+import com.craxiom.networksurvey.logging.db.uploader.UploadTarget
+import com.craxiom.networksurvey.survey.status.CommunityRetry
 import com.craxiom.networksurvey.survey.status.CommunityUploadFailure
+import com.craxiom.networksurvey.ui.survey.SurveyEventMessages
 import com.craxiom.networksurvey.ui.survey.model.CommunityUploadUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +33,8 @@ import java.util.UUID
  *
  * A failed upload is also kept as [lastFailure] until it is acknowledged (the Community databases
  * page is opened) or the next upload starts, so the Survey screen can say it failed instead of
- * letting it vanish with the upload notification.
+ * letting it vanish with the upload notification. An upload waiting to try again after a failed
+ * attempt carries why it failed and when it tries again ([UploadProgressState.InProgress.retry]).
  */
 class CommunityUploadRepository private constructor(context: Context) {
 
@@ -52,9 +57,13 @@ class CommunityUploadRepository private constructor(context: Context) {
      */
     val lastFailure: StateFlow<CommunityUploadFailure?> = mutableFailure.asStateFlow()
 
-    /** The compact form the Survey screen shows while an upload runs; null otherwise. */
+    /**
+     * The compact form the Survey screen shows while an upload runs or waits for its first
+     * attempt; null otherwise. An upload waiting to retry shows as the destination's Will retry
+     * status instead, which says why and when.
+     */
     val progress: Flow<CommunityUploadUi?> = state.map { upload ->
-        (upload as? UploadProgressState.InProgress)?.let {
+        (upload as? UploadProgressState.InProgress)?.takeIf { it.retry == null }?.let {
             CommunityUploadUi(
                 percent = it.progress * PERCENT / it.maxProgress.coerceAtLeast(1),
                 message = it.statusMessage,
@@ -85,6 +94,8 @@ class CommunityUploadRepository private constructor(context: Context) {
             // A new upload replaces the old result, failed or not
             mutableFailure.value = null
             mutableState.value = inProgress(active)
+            // An upload that replaced a waiting retry leaves the cancelled one behind
+            if (workInfos.any { it.state.isFinished }) workManager.pruneWork()
             return
         }
         val finished = workInfos.firstOrNull { it.state.isFinished } ?: return
@@ -103,22 +114,51 @@ class CommunityUploadRepository private constructor(context: Context) {
     private fun failure(work: WorkInfo): CommunityUploadFailure? {
         if (work.state == WorkInfo.State.CANCELLED) return null
         val output = work.outputData
-        val results = listOf(
-            resultOf(output.getString(NsUploaderWorker.OCID_RESULT_ENUM)) to output.getString(NsUploaderWorker.OCID_RESULT),
-            resultOf(output.getString(NsUploaderWorker.BEACONDB_RESULT_ENUM)) to output.getString(NsUploaderWorker.BEACONDB_RESULT),
-        )
-        if (results.any { (result, _) -> result == UploadResult.Cancelled }) return null
-        val worst = results
-            .filter { (result, _) -> result != null && result !in NOT_FAILURES }
-            .minByOrNull { (result, _) -> UploadResult.SEVERITY_ORDER.indexOf(result) }
+        val openCelliD = resultOf(output.getString(NsUploaderWorker.OCID_RESULT_ENUM))
+        val beaconDb = resultOf(output.getString(NsUploaderWorker.BEACONDB_RESULT_ENUM))
+        if (openCelliD == UploadResult.Cancelled || beaconDb == UploadResult.Cancelled) return null
+        val worst = worstMessage(openCelliD, beaconDb)
         return when {
-            worst != null -> CommunityUploadFailure(worst.second ?: appContext.getString(R.string.uploader_failure))
+            worst != null -> CommunityUploadFailure(worst)
             // A failed run that reported no result for either target
-            work.state == WorkInfo.State.FAILED && results.all { it.first == null } ->
+            work.state == WorkInfo.State.FAILED && openCelliD == null && beaconDb == null ->
                 CommunityUploadFailure(appContext.getString(R.string.uploader_failure))
 
             else -> null
         }
+    }
+
+    /**
+     * @return The worst failing result with the targets that had it ("OpenCelliD: Server error",
+     * "OpenCelliD and BeaconDB: Connection error"), or null when neither target failed.
+     */
+    private fun worstMessage(openCelliD: UploadResult?, beaconDb: UploadResult?): String? {
+        val failed = listOf(UploadTarget.OpenCelliD to openCelliD, UploadTarget.BeaconDB to beaconDb)
+            .mapNotNull { (target, result) -> result?.takeIf { it !in NOT_FAILURES }?.let { target to it } }
+        val worst = failed.minByOrNull { (_, result) -> UploadResult.SEVERITY_ORDER.indexOf(result) }?.second ?: return null
+        val targets = failed.filter { it.second == worst }.map { (target, _) -> appContext.getString(targetName(target)) }
+        return appContext.getString(
+            R.string.community_target_result,
+            SurveyEventMessages.join(appContext.resources, targets),
+            appContext.getString(UploadResult.getMessage(worst)),
+        )
+    }
+
+    private fun targetName(target: UploadTarget): Int = when (target) {
+        UploadTarget.OpenCelliD -> R.string.survey_dest_community_opencellid
+        UploadTarget.BeaconDB -> R.string.survey_dest_community_beacondb
+    }
+
+    /**
+     * @return Why an earlier attempt of [work] failed and when the next one runs, or null if none
+     * failed (the system stopped it, for example when Wi-Fi went away, which also counts as an attempt).
+     */
+    private fun retry(work: WorkInfo): CommunityRetry? {
+        val results = CommunityRetryStore.read(appContext, work.id) ?: return null
+        return CommunityRetry(
+            message = worstMessage(results.openCelliD, results.beaconDb) ?: appContext.getString(R.string.uploader_failure),
+            nextTryMs = work.nextScheduleTimeMillis.takeIf { it != Long.MAX_VALUE },
+        )
     }
 
     private fun resultOf(name: String?): UploadResult? = enumValues<UploadResult>().firstOrNull { it.name == name }
@@ -127,13 +167,14 @@ class CommunityUploadRepository private constructor(context: Context) {
         val max = work.progress.getInt(NsUploaderWorker.PROGRESS_MAX, NsUploaderWorker.PROGRESS_MAX_VALUE)
         val current = work.progress.getInt(NsUploaderWorker.PROGRESS, NsUploaderWorker.PROGRESS_MIN_VALUE)
         val waiting = work.state == WorkInfo.State.ENQUEUED
+        // A retry after a failed attempt waits in ENQUEUED too; only that one failed
+        val retry = if (waiting && work.runAttemptCount > 0) retry(work) else null
         val message = work.progress.getString(NsUploaderWorker.PROGRESS_STATUS_MESSAGE) ?: when {
-            // A retry after a failed attempt waits in ENQUEUED too; only that one failed.
-            waiting && work.runAttemptCount > 0 -> appContext.getString(R.string.uploader_enqueued)
+            retry != null -> appContext.getString(R.string.uploader_enqueued)
             waiting -> appContext.getString(R.string.uploader_waiting_to_start)
             else -> ""
         }
-        return UploadProgressState.InProgress(current.coerceAtMost(max), max, message, running = !waiting)
+        return UploadProgressState.InProgress(current.coerceAtMost(max), max, message, running = !waiting, retry = retry)
     }
 
     private fun finished(work: WorkInfo): UploadProgressState.Finished {

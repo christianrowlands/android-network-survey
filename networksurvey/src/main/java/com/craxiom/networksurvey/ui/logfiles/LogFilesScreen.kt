@@ -12,6 +12,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
 import kotlinx.coroutines.launch
 
 /** The Log files page with its view model; files go to the share sheet, the folder to a file manager. */
@@ -50,5 +52,5 @@ fun LogFilesScreen(
             }
         }
     }
-    LogFilesContent(state, actions, snackbarHostState)
+    LogFilesContent(state, actions, snackbarHostState, status = rememberDestinationStatus(Destination.LOG_FILES))
 }

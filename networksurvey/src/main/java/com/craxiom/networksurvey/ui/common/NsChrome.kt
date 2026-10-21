@@ -57,8 +57,12 @@ fun NsPanel(
 
 /**
  * The panel at the top of a destination page that says how it is doing: an icon, a title and a
- * subtitle. TalkBack reads it as one item and announces it politely when it changes, so a status
- * that moves from Connecting to Streaming is heard without stealing focus.
+ * subtitle, and an optional action under them. The text is read by TalkBack as one item and
+ * announced politely when it changes, so a status that moves from Connecting to Streaming is heard
+ * without stealing focus.
+ *
+ * @param titleColor The title's color, for a status word in its level's color.
+ * @param action     A button for what the status offers, end-aligned under the text.
  */
 @Composable
 fun NsStatusPanel(
@@ -67,14 +71,23 @@ fun NsStatusPanel(
     subtitle: String,
     modifier: Modifier = Modifier,
     iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    titleColor: Color = Color.Unspecified,
+    action: (@Composable () -> Unit)? = null,
 ) {
-    NsPanel(modifier = modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-        Row(horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.m), verticalAlignment = Alignment.CenterVertically) {
+    NsPanel(modifier = modifier) {
+        Row(
+            modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+            horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(painterResource(icon), contentDescription = null, tint = iconTint, modifier = Modifier.size(ROW_ICON))
             Column {
-                Text(text = title, style = MaterialTheme.typography.titleMedium)
+                Text(text = title, style = MaterialTheme.typography.titleMedium, color = titleColor)
                 Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+        if (action != null) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { action() }
         }
     }
 }

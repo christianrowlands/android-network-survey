@@ -68,13 +68,13 @@ class MqttBrokersViewModel @JvmOverloads constructor(
         runtimeJob = null
         if (service == null) {
             runtime.value = null
-            _uiState.update { it.copy(liveStatus = null) }
+            _uiState.update { it.copy(streaming = false) }
             return
         }
         runtimeJob = viewModelScope.launch {
             service.surveyStateFlow.collect { state ->
                 runtime.value = state
-                _uiState.update { it.copy(liveStatus = link.liveStatus(state)) }
+                _uiState.update { it.copy(streaming = link.inSurvey(state)) }
             }
         }
     }
@@ -84,7 +84,7 @@ class MqttBrokersViewModel @JvmOverloads constructor(
         val previous = _uiState.value.activeId
         if (previous == id) return
         val name = _uiState.value.brokers.firstOrNull { it.id == id }?.name ?: return
-        val streaming = _uiState.value.liveStatus != null
+        val streaming = _uiState.value.streaming
         viewModelScope.launch(ioDispatcher) {
             store.setActive(id)
             _messages.emit(if (streaming) MqttMessage.StreamingTo(name, previous) else MqttMessage.Using(name))

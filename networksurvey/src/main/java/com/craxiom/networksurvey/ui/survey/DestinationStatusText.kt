@@ -63,7 +63,7 @@ object DestinationStatusText {
             resources.getString(R.string.survey_status_uploading)
         }
 
-        is StatusDetail.Waiting -> dotted(resources, waitingCount(resources, detail.count), waitReason(resources, detail.reason, nowMs))
+        is StatusDetail.Waiting -> dotted(resources, waitingCount(resources, detail.count), waitReason(resources, detail.reason, formatTime, nowMs))
         is StatusDetail.NothingWaiting -> detail.lastUploadMs?.let {
             dotted(resources, resources.getString(R.string.survey_status_nothing_waiting), resources.getString(R.string.survey_status_last_upload_at, formatTime(it)))
         } ?: resources.getString(R.string.survey_status_nothing_waiting)
@@ -98,6 +98,7 @@ object DestinationStatusText {
 
         StatusDetail.KeyRejected -> resources.getString(R.string.survey_status_key_rejected_detail)
         is StatusDetail.UploadFailed -> uploadFailed(resources, detail)
+        is StatusDetail.UploadRetrying -> uploadRetrying(resources, detail, formatTime, nowMs)
     }
 
     /**
@@ -130,7 +131,7 @@ object DestinationStatusText {
     private fun sendCount(resources: Resources, count: Int): String? =
         if (count > 0) resources.getQuantityString(R.plurals.survey_status_waiting_to_send, count, count) else null
 
-    private fun waitReason(resources: Resources, reason: WaitReason, nowMs: Long): String = when (reason) {
+    private fun waitReason(resources: Resources, reason: WaitReason, formatTime: (Long) -> String, nowMs: Long): String = when (reason) {
         is WaitReason.NextUpload -> reason.atMs?.takeIf { it > nowMs }?.let {
             val minutes = ((it - nowMs + MILLIS_PER_MINUTE - 1) / MILLIS_PER_MINUTE).toInt().coerceAtLeast(1)
             resources.getQuantityString(R.plurals.survey_status_next_upload_in, minutes, minutes)
@@ -142,6 +143,12 @@ object DestinationStatusText {
         WaitReason.Offline -> resources.getString(R.string.survey_status_back_online)
         is WaitReason.EveryRecords -> resources.getString(R.string.survey_status_every_records, reason.records)
         WaitReason.OnWifi -> resources.getString(R.string.survey_status_on_wifi)
+        is WaitReason.NextTry -> if (reason.atMs > nowMs) {
+            resources.getString(R.string.survey_status_next_try_at, formatTime(reason.atMs))
+        } else {
+            resources.getString(R.string.survey_status_upload_starting)
+        }
+
         WaitReason.NextCommunitySurvey -> resources.getString(R.string.survey_status_next_community_survey)
         WaitReason.NextSurvey -> resources.getString(R.string.survey_status_next_survey)
     }
@@ -150,15 +157,24 @@ object DestinationStatusText {
      * @return The detail for the "Still to do" panel, whose title already gives the count: why the
      * records wait, or what the upload is doing.
      */
-    fun waitingDetail(resources: Resources, detail: StatusDetail, nowMs: Long): String = when (detail) {
-        is StatusDetail.Waiting -> waitReason(resources, detail.reason, nowMs).replaceFirstChar { it.titlecase(resources.configuration.locales[0]) }
+    fun waitingDetail(resources: Resources, detail: StatusDetail, formatTime: (Long) -> String, nowMs: Long): String = when (detail) {
+        is StatusDetail.Waiting -> waitReason(resources, detail.reason, formatTime, nowMs).replaceFirstChar { it.titlecase(resources.configuration.locales[0]) }
         is StatusDetail.QuotaReached -> resources.getString(R.string.survey_status_quota_reached)
         is StatusDetail.UploadFailed -> uploadFailed(resources, detail)
+        is StatusDetail.UploadRetrying -> uploadRetrying(resources, detail, formatTime, nowMs)
         else -> resources.getString(R.string.survey_status_uploading)
     }
 
     private fun uploadFailed(resources: Resources, detail: StatusDetail.UploadFailed): String =
         resources.getString(R.string.survey_status_upload_failed_detail, detail.message)
+
+    /** "Last upload failed: OpenCelliD: Server error · next try at 12:43". */
+    private fun uploadRetrying(resources: Resources, detail: StatusDetail.UploadRetrying, formatTime: (Long) -> String, nowMs: Long): String =
+        dotted(
+            resources,
+            resources.getString(R.string.survey_status_upload_failed_detail, detail.message),
+            waitReason(resources, detail.next, formatTime, nowMs),
+        )
 
     private fun dotted(resources: Resources, vararg parts: String?): String =
         parts.filterNotNull().filter { it.isNotBlank() }.joinToString(resources.getString(R.string.survey_dot_separator))

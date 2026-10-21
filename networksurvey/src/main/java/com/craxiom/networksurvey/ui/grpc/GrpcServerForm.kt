@@ -3,8 +3,6 @@ package com.craxiom.networksurvey.ui.grpc
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings
 import com.craxiom.networksurvey.services.GrpcConnectionService
-import com.craxiom.networksurvey.survey.status.DestinationStatus
-import com.craxiom.networksurvey.survey.status.StatusWord
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -33,7 +31,7 @@ data class GrpcServerForm(
     val status: GrpcStatus = GrpcStatus.NotSetUp,
 ) {
     /** True while a survey streams (or is connecting) to the saved server. */
-    val streaming: Boolean get() = status is GrpcStatus.Live || status is GrpcStatus.Unreachable && status.retrying
+    val streaming: Boolean get() = status is GrpcStatus.Streaming
 
     /** True when Save will also turn gRPC on for the next survey ("Save and turn on"). */
     val savesAndTurnsOn: Boolean get() = !configured && !inSetup && !recording && !organizationOff
@@ -89,30 +87,33 @@ sealed interface GrpcStatus {
     /** Saved, but gRPC is turned off in the survey setup. */
     data class OffInSurvey(val address: String) : GrpcStatus
 
-    /** A running survey streams to it (or is connecting). */
-    data class Live(val address: String, val status: DestinationStatus) : GrpcStatus
+    /**
+     * A running survey streams to it (or is connecting); the page then shows the same status as
+     * the Survey screen's row.
+     */
+    data class Streaming(val address: String) : GrpcStatus
 
-    /** The last attempt to reach it failed; [retrying] while a running survey keeps trying. */
-    data class Unreachable(val address: String, val retrying: Boolean) : GrpcStatus
+    /** No survey streams to it, and the last attempt to reach it failed. */
+    data class Unreachable(val address: String) : GrpcStatus
 }
 
 /**
- * Works out the status panel from the saved server, the survey setup, the live status in a running
- * survey, and the last failed connection attempt (which only counts if it was for the saved server).
+ * Works out the status panel from the saved server, the survey setup, whether a running survey
+ * streams to it, and the last failed connection attempt (which only counts if it was for the saved
+ * server). While a survey streams, the status comes from the same rules as the Survey screen's row.
  */
 fun grpcStatus(
     saved: GrpcConnectionSettings?,
     inSetup: Boolean,
-    live: DestinationStatus?,
+    streaming: Boolean,
     lastFailure: GrpcConnectionService.ConnectionFailure?,
 ): GrpcStatus {
     if (saved == null) return GrpcStatus.NotSetUp
     val address = saved.displayAddress
     val failedHere = lastFailure != null && lastFailure.host == saved.host && lastFailure.port == saved.port
     return when {
-        failedHere && live != null && live.word != StatusWord.LIVE -> GrpcStatus.Unreachable(address, retrying = true)
-        failedHere && live == null -> GrpcStatus.Unreachable(address, retrying = false)
-        live != null -> GrpcStatus.Live(address, live)
+        streaming -> GrpcStatus.Streaming(address)
+        failedHere -> GrpcStatus.Unreachable(address)
         inSetup -> GrpcStatus.Ready(address)
         else -> GrpcStatus.OffInSurvey(address)
     }

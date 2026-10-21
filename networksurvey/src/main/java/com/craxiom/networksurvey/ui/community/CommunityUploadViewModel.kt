@@ -72,6 +72,12 @@ class CommunityUploadViewModel(application: Application) : AndroidViewModel(appl
     /** The page showed the failure, so the Survey screen stops repeating it. */
     fun acknowledgeUploadFailure() = repository.acknowledge()
 
+    /** The user left the page (not a rotation, which keeps this view model), having seen any failure. */
+    override fun onCleared() {
+        acknowledgeUploadFailure()
+        super.onCleared()
+    }
+
     /** Turns uploads to OpenCelliD on or off. */
     fun setOpenCelliD(on: Boolean) = setPreference(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, on)
 
@@ -124,7 +130,9 @@ class CommunityUploadViewModel(application: Application) : AndroidViewModel(appl
             queue.value = queue.value.copy(
                 cellularQueueCount = cellular,
                 wifiQueueCount = wifi,
-                uploadButtonEnabled = cellular + wifi > 0 && repository.state.value !is UploadProgressState.InProgress,
+                // Upload now also replaces a retry that waits out its backoff
+                uploadButtonEnabled = cellular + wifi > 0 &&
+                    (repository.state.value as? UploadProgressState.InProgress).let { it == null || it.retry != null },
                 autoUploadEnabled = if (autoUploadLocked) {
                     snapshot.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED) == true &&
                         MdmUtils.isExternalDataUploadAllowed(context)

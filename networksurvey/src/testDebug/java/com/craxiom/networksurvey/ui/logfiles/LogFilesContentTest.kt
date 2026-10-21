@@ -11,7 +11,14 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.StatusDetail
+import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.ui.showPage
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -52,6 +59,19 @@ class LogFilesContentTest {
         compose.onNodeWithText("3.1 MB · 5 minutes ago").assertIsDisplayed()
         compose.onNodeWithText(lte.name).performClick()
         assertEquals(listOf("share:${lte.name}"), calls)
+    }
+
+    @Test
+    fun whileASurveySavesHere_theSurveyStatusShows_includingTypesWithNoFile() {
+        val status = DestinationPageStatus(
+            Destination.LOG_FILES,
+            DestinationStatus(StatusWord.PARTLY_SAVING, StatusDetail.FilesFailed(setOf(RecordType.WIFI))),
+            DestinationInfo(),
+            NOW,
+        )
+        compose.showPage { LogFilesContent(listed(lte), actions, SnackbarHostState(), status = status) }
+        compose.onNodeWithText("Partly saving").assertIsDisplayed()
+        compose.onNodeWithText("Couldn't create a file for Wi-Fi").assertIsDisplayed()
     }
 
     @Test

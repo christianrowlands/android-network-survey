@@ -91,8 +91,8 @@ object DestinationStatusRules {
 
     /**
      * MQTT and gRPC hold records while they connect, so not being connected is amber; a first
-     * attempt that hasn't connected after [CONNECTING_ESCALATION_MS] turns red, because nothing has
-     * arrived and the settings likely need fixing.
+     * attempt that failed, or hasn't connected after [CONNECTING_ESCALATION_MS], turns red, because
+     * nothing has arrived and the settings likely need fixing.
      */
     private fun stream(link: StreamLink?, paused: Boolean, nowMs: Long): DestinationStatus = when {
         link == null -> DestinationStatus(if (paused) StatusWord.PAUSED else StatusWord.LIVE)
@@ -105,6 +105,10 @@ object DestinationStatusRules {
         link.dropping -> DestinationStatus(StatusWord.DROPPING, StatusDetail.QueueFull)
         link.state == LinkState.CONNECTING && link.everConnected ->
             DestinationStatus(StatusWord.RECONNECTING, StatusDetail.StreamLost(link.sinceMs, link.waiting))
+
+        // A first attempt that already failed can't be reached; no need to wait out the escalation
+        link.state == LinkState.CONNECTING && link.failure == LinkFailure.UNREACHABLE ->
+            DestinationStatus(StatusWord.CANT_CONNECT, StatusDetail.StreamUnreachable(link.sinceMs, link.waiting))
 
         link.state == LinkState.CONNECTING && nowMs - link.sinceMs < CONNECTING_ESCALATION_MS ->
             DestinationStatus(StatusWord.CONNECTING, StatusDetail.StreamConnecting(link.waiting))
@@ -132,6 +136,7 @@ object DestinationStatusRules {
         return when {
             upload?.keyRejected == true -> DestinationStatus(StatusWord.KEY_REJECTED, StatusDetail.KeyRejected)
             queue.uploading -> DestinationStatus(StatusWord.UPLOADING, StatusDetail.Uploading(pending))
+            queue.retrying != null -> retrying(queue.retrying, queue)
             queue.uploadQueued -> waiting(StatusWord.QUEUED, pending, queuedReason(queue))
             queue.lastFailure != null -> uploadFailed(queue.lastFailure)
             upload != null && upload.retryAtMs > 0 -> DestinationStatus(
@@ -173,6 +178,7 @@ object DestinationStatusRules {
             queue.quotaPaused -> DestinationStatus(StatusWord.QUOTA_PAUSED, StatusDetail.QuotaReached(pending))
             queue.uploading -> DestinationStatus(StatusWord.UPLOADING, StatusDetail.Uploading(pending))
             queue.uploadQueued -> DestinationStatus(StatusWord.QUEUED, StatusDetail.Waiting(pending, reason))
+            pending == 0 -> DestinationStatus(StatusWord.UP_TO_DATE, StatusDetail.NothingWaiting(queue.lastUploadMs))
             else -> DestinationStatus(StatusWord.NOT_UPLOADING, StatusDetail.Waiting(pending, reason), StatusAction.UPLOAD_NOW)
         }
     }
@@ -180,14 +186,17 @@ object DestinationStatusRules {
     /**
      * The community databases while no survey runs. With automatic upload on, a survey uploads what
      * is left when it stops, so records still waiting upload when asked or during the next survey.
-     * A failed upload says so until the user opens the Community databases page or uploads again.
+     * A failed upload says so until the user opens the Community databases page or uploads again,
+     * and one that tries again on its own says why and when.
      */
     fun communityIdle(queue: CommunityQueue, autoUpload: Boolean): DestinationStatus {
         val pending = queue.pending
         return when {
             queue.uploading -> DestinationStatus(StatusWord.UPLOADING, StatusDetail.Uploading(pending))
+            queue.retrying != null -> retrying(queue.retrying, queue)
             queue.uploadQueued -> waiting(StatusWord.QUEUED, pending, queuedReason(queue))
             queue.lastFailure != null -> uploadFailed(queue.lastFailure)
+            pending == 0 -> DestinationStatus(StatusWord.UP_TO_DATE, StatusDetail.NothingWaiting(null))
             else -> DestinationStatus(
                 StatusWord.NOT_UPLOADING,
                 StatusDetail.Waiting(
@@ -205,7 +214,7 @@ object DestinationStatusRules {
      */
     fun nextEscalationMs(destinations: Collection<DestinationRuntime>, nowMs: Long): Long? =
         destinations.mapNotNull { it.link }
-            .filter { it.state == LinkState.CONNECTING && !it.everConnected }
+            .filter { it.state == LinkState.CONNECTING && !it.everConnected && it.failure == null }
             .map { it.sinceMs + CONNECTING_ESCALATION_MS }
             .filter { it > nowMs }
             .minOrNull()
@@ -231,6 +240,17 @@ object DestinationStatusRules {
         NetworkWait.WIFI -> WaitReason.OnWifi
         NetworkWait.ANY -> WaitReason.Offline
         NetworkWait.NONE -> WaitReason.UploadStarting
+    }
+
+    /**
+     * "Will retry": why the last attempt failed and when it tries again, or the network it waits
+     * for when the phone isn't on one, with Upload now to try at once.
+     */
+    private fun retrying(retry: CommunityRetry, queue: CommunityQueue): DestinationStatus {
+        val next = queuedReason(queue).takeIf { it != WaitReason.UploadStarting }
+            ?: retry.nextTryMs?.let(WaitReason::NextTry)
+            ?: WaitReason.UploadStarting
+        return DestinationStatus(StatusWord.WILL_RETRY, StatusDetail.UploadRetrying(retry.message, next), StatusAction.UPLOAD_NOW)
     }
 
     /** "Last upload failed: ...", with the way to the Community databases page that explains it. */

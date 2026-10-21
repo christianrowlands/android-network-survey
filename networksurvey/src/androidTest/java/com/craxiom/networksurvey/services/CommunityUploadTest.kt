@@ -210,7 +210,7 @@ class CommunityUploadTest {
     private fun awaitStoredRecords(cellular: Int, wifi: Int) {
         val dao = SurveyDatabase.getInstance(DestinationTestSupport.context()).surveyRecordDao()
         assertThat(awaitCondition {
-            dao.lteRecordCountForUpload >= cellular && dao.wifiRecordCountForUpload >= wifi
+            dao.getLteRecordCountForUpload(true, true) >= cellular && dao.getWifiRecordCountForUpload(true) >= wifi
         }).isTrue()
     }
 

@@ -129,6 +129,12 @@ sealed interface StatusDetail {
 
     /** The last community upload failed with [message], the upload's own result text. */
     data class UploadFailed(val message: String) : StatusDetail
+
+    /**
+     * The last community upload attempt failed with [message] and the upload tries again on its
+     * own, for [next] (a time, or the network it waits for).
+     */
+    data class UploadRetrying(val message: String, val next: WaitReason) : StatusDetail
 }
 
 /** Why records wait on the phone. */
@@ -153,6 +159,9 @@ sealed interface WaitReason {
 
     /** The phone isn't on Wi-Fi; the upload runs once it is. */
     data object OnWifi : WaitReason
+
+    /** A failed upload tries again at [atMs]. */
+    data class NextTry(val atMs: Long) : WaitReason
 
     /** No survey runs: the community databases upload on their own during the next survey that sends to them. */
     data object NextCommunitySurvey : WaitReason

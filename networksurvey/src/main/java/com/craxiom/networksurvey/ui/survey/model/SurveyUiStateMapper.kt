@@ -6,7 +6,6 @@ import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.DestinationCapabilities
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
-import com.craxiom.networksurvey.survey.status.DestinationStatusRules
 import kotlin.math.roundToLong
 
 /**
@@ -61,21 +60,15 @@ object SurveyUiStateMapper {
      * panel goes away by itself once both queues are empty.
      */
     private fun stillToDo(inputs: SurveyInputs): List<StillToDoItemUi> {
-        val info = inputs.destinationInfo
-        val nsAnalytics = inputs.queues.nsAnalytics
-        val community = inputs.queues.community
-        return listOfNotNull(
-            StillToDoItemUi(
-                Destination.NS_ANALYTICS,
-                nsAnalytics.pending,
-                DestinationStatusRules.nsAnalyticsIdle(nsAnalytics, info.nsAnalyticsAutoUpload),
-            ).takeIf { info.nsAnalyticsRegistered && nsAnalytics.pending > 0 },
-            StillToDoItemUi(
-                Destination.COMMUNITY,
-                community.pending,
-                DestinationStatusRules.communityIdle(community, info.communityAutoUpload),
-            ).takeIf { info.communityTargets.isNotEmpty() && community.pending > 0 },
+        val pending = mapOf(
+            Destination.NS_ANALYTICS to inputs.queues.nsAnalytics.pending,
+            Destination.COMMUNITY to inputs.queues.community.pending,
         )
+        return pending.mapNotNull { (destination, count) ->
+            if (count == 0) return@mapNotNull null
+            RecordingUiMapper.idleStatus(destination, inputs.queues, inputs.destinationInfo)
+                ?.let { StillToDoItemUi(destination, count, it) }
+        }
     }
 
     /** Hidden when the organization sets every record type and destination, leaving nothing to pick. */

@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.community
 
 import android.content.Context
+import com.craxiom.networksurvey.survey.status.CommunityRetry
 import com.craxiom.networksurvey.util.OpenCelliDSigning
 
 /**
@@ -50,12 +51,16 @@ enum class OpenCelliDKey {
 sealed class UploadProgressState {
     data object Hidden : UploadProgressState()
 
-    /** [running] is false while the upload waits to start (for Wi-Fi, or to retry after a failure). */
+    /**
+     * [running] is false while the upload waits to start (for Wi-Fi, or to retry after a failure);
+     * [retry] is set while it waits to try again after a failed attempt.
+     */
     data class InProgress(
         val progress: Int = 0,
         val maxProgress: Int = 100,
         val statusMessage: String = "",
         val running: Boolean = true,
+        val retry: CommunityRetry? = null,
     ) : UploadProgressState()
 
     data class Finished(

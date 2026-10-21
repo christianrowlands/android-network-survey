@@ -103,7 +103,7 @@ class NsAnalyticsPagesTest {
                 )
             }
         }
-        compose.onNodeWithText("Connected · Acme").assertIsDisplayed()
+        compose.onNodeWithText("Connected to Acme").assertIsDisplayed()
         compose.onNodeWithText("198 records waiting").assertIsDisplayed()
         compose.onNodeWithText("Upload now").performClick()
         compose.onNodeWithText("Stop the survey first").performScrollTo().assertIsDisplayed()

@@ -148,16 +148,24 @@ fun statusLevelColor(level: StatusLevel): Color {
  * there is nothing to add.
  */
 @Composable
-fun destinationStatusDetail(destination: Destination, status: DestinationStatus, info: DestinationInfo, nowMs: Long): String {
-    val context = LocalContext.current
-    val timeFormat = remember(context) { DateFormat.getTimeFormat(context) }
-    return DestinationStatusText.detail(
+fun destinationStatusDetail(destination: Destination, status: DestinationStatus, info: DestinationInfo, nowMs: Long): String =
+    DestinationStatusText.detail(
         resources = LocalResources.current,
         detail = status.detail,
         address = streamAddress(destination, info),
-        formatTime = { timeFormat.format(Date(it)) },
+        formatTime = rememberTimeFormatter(),
         nowMs = nowMs,
     ) ?: defaultDetail(destination, info)
+
+/** Formats a time of day ("09:12") the way the phone is set to show it. */
+@Composable
+fun rememberTimeFormatter(): (Long) -> String {
+    val context = LocalContext.current
+    return remember(context) {
+        val timeFormat = DateFormat.getTimeFormat(context)
+        val format: (Long) -> String = { timeFormat.format(Date(it)) }
+        format
+    }
 }
 
 /** The MQTT broker or gRPC server a stream status names. */

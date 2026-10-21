@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
+import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
 import com.craxiom.networksurvey.ui.survey.rememberSurveyPermissionFlow
 
 /**
@@ -57,7 +58,7 @@ fun GrpcServerScreen(
             override fun onUseOwnSettings() = viewModel.useOwnSettings()
         }
     }
-    GrpcServerContent(form, actions, snackbarHostState)
+    GrpcServerContent(form, actions, snackbarHostState, liveStatus = rememberDestinationStatus(Destination.GRPC))
 }
 
 /** The words for what a save did. */
