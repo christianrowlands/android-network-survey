@@ -229,7 +229,7 @@
     <string name="wifi_scan_interval_title">Wi-Fi 扫描间隔</string>
     <string name="wifi_scan_interval_description">扫描 Wi-Fi 网络的速率（单位：秒）。较小的数值会降低电池续航。</string>
     <string name="bluetooth_scan_interval_title">蓝牙扫描间隔</string>
-    <string name="bluetooth_scan_interval_description">扫描蓝牙设备的速率（单位：秒）。由于 BLE（10 秒）和经典蓝牙（12 秒）扫描时长，最小值为 23 秒。较小的数值会降低电池续航。</string>
+    <string name="bluetooth_scan_interval_description">扫描蓝牙设备的速率（单位：秒）。由于 BLE（10 秒）和经典蓝牙（12 秒）扫描时长，最小值为 24 秒。较小的数值会降低电池续航。</string>
     <plurals name="bluetooth_scan_interval_below_minimum">
         <item quantity="other">蓝牙扫描间隔必须至少为 %d 秒。数值已调整为最小值。</item>
     </plurals>
