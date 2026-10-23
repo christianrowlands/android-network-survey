@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:ns0="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="cdr_required_permissions_rationale_title">CDR (nevyhnutné oprávnenia)</string>
+    <string name="cdr_required_permissions_rationale_title">Oprávnenia na záznam hovorov</string>
     <string name="cdr_required_permissions_rationale">Aplikácia Network Survey vyžaduje niekoľko oprávnení, aby fungovalo protokolovanie podrobností volania (CDR). Ak tieto oprávnenia odmietnete, protokolovanie CDR nebude fungovať.\n\n1. <b>Vytváranie a spravovanie telefónnych hovorov</b>: Táto aplikácia nevytvára ani nespravuje telefónne hovory. Toto oprávnenie potrebuje na získanie údajov o mobilnej sieti, ktoré sa zapisujú do súboru protokolu CDR.\n\n2. <b>Prístup k polohe tohto zariadenia</b>: Oprávnenie na prístup k polohe je potrebné na získanie údajov o mobilnej sieti, ktoré sa používajú na zápis do súboru CDR.\n\n3. <b>Prístup k fotografiám, médiám a súborom vo vašom zariadení</b>: Toto oprávnenie umožňuje zápis do protokolového súboru.\n\n4. <b>Oznámenia</b>: Toto oprávnenie umožňuje aplikácii pridať oznámenie, aby ste vedeli, kedy prebieha prieskum na pozadí.\n \nExistuje známa chyba, pri ktorej sa toto dialógové okno s oprávneniami neustále zobrazuje, ale dialógové okno so žiadosťou o oprávnenie sa po stlačení tlačidla OK nezobrazí. Tento problém môžete vyriešiť odinštalovaním a opätovnou inštaláciou aplikácie a prvým schválením všetkých oprávnení, alebo otvorením nastavení systému Android a manuálnym schválením požadovaných oprávnení.</string>
-    <string name="cdr_optional_permissions_rationale_title">CDR (voliteľné oprávnenia)</string>
+    <string name="cdr_optional_permissions_rationale_title">Voliteľné oprávnenia na záznam hovorov</string>
     <string name="cdr_optional_permissions_rationale">CDR protokolovanie má voliteľné oprávnenie.\n\n1. <b>Čítanie telefónneho čísla</b>: Toto oprávnenie je potrebné na získanie telefónneho čísla tohto zariadenia s cieľom zapísať ho do súboru protokolu CDR. Toto oprávnenie môžete zamietnuť a protokolovanie CDR bude aj naďalej fungovať, avšak vaše telefónne číslo sa nebude zaznamenávať.</string>
     <string name="request">Žiadosť</string>
     <string name="ignore">Pokračovať bez oprávnení</string>
@@ -16,7 +16,7 @@
     <string name="open_settings">Otvoriť nastavenia</string>
     <string name="deny_permission">Odmietnuť oprávnenie</string>
     <string name="settings_not_available">Obrazovka nastavení nie je na tomto zariadení k dispozícii</string>
-    <string name="grant_bluetooth_scan_permission">Na vykonanie prieskumu Bluetooth je potrebné povolenie „Nájsť zariadenia v okolí“</string>
+    <string name="grant_bluetooth_scan_permission">Na prieskum Bluetooth je potrebné oprávnenie Zariadenia v okolí</string>
     <string name="grant_bluetooth_connect_permission">Oprávnenie „Bluetooth Connect“ nie je pre prieskum BT potrebné, umožňuje však získať názov zariadenia</string>
     <string name="short_cid_label">Krátke CID</string>
     <string name="sector_id_label">Sector ID</string>
@@ -31,7 +31,7 @@
     <string name="anonymously">Anonymne</string>
     <string name="upload_dialog_message">Nahraním záznamov z prieskumu sa údaje o polohe zdieľajú so službami tretích strán. Prispievaním do týchto databáz založených na crowdsourcingu pomáhate zlepšovať mapy pokrytia a presnosť geolokácie. Vaša účasť je úplne dobrovoľná; rozhodnutie o zdieľaní vašich údajov je výlučne na vás.</string>
     <string name="access_token_warning">V nastaveniach je potrebné zadať platný prístupový token</string>
-    <string name="upload_to_beacondb">Nahrať do BeaconDB (Mobilná sieť a Wi-Fi)</string>
+    <string name="upload_to_beacondb">Odoslať do BeaconDB (mobilné siete a Wi-Fi)</string>
     <string name="retry_on_failure">V prípade zlyhania to skúste znova</string>
     <string name="dont_show_again">Toto už viac nezobrazovať</string>
     <string name="cellular_title">Mobilná sieť</string>
@@ -91,7 +91,7 @@
     <string name="bssid_copied">BSSID bolo skopírované</string>
     <string name="bssid_copy_content_description">Kopírovať BSSID</string>
     <string name="ssid_copied">SSID bolo skopírované</string>
-    <string name="wifi_details_title">Podrobnosti o sieti</string>
+    <string name="wifi_details_title">Podrobnosti o sieti Wi-Fi</string>
     <string name="wifi_details_radio">Radio</string>
     <string name="wifi_details_signal_last_2_min">Signál · pred 2 minútami</string>
     <string name="wifi_details_capabilities">Schopnosti</string>
@@ -101,14 +101,14 @@
     <string name="wifi_details_standard">Štandard</string>
     <string name="wifi_details_included_in_survey">Obsiahnuté v údajoch z prieskumu</string>
     <string name="wifi_details_excluded_from_survey">Vylúčené z údajov prieskumu</string>
-    <string name="wifi_details_scan_rate_compact">Skenovanie: %1$ds</string>
+    <string name="wifi_details_scan_rate_compact">Skenovať každých %1$d s</string>
     <string name="wifi_details_exclude">Vylúčiť</string>
     <string name="wifi_details_include">Zahrnúť</string>
     <string name="wifi_details_survey_data">Údaje z prieskumu</string>
     <string name="wifi_settings_content_description">Nastavenia Wi-Fi</string>
     <string name="wifi_scan_rate_info_content_description">Informácie o frekvencii skenovania Wi-Fi</string>
     <string name="wifi_scan_rate_info_title">Rýchlosť skenovania Wi-Fi</string>
-    <string name="wifi_radio_info_content_description">Informácie o rádiu</string>
+    <string name="wifi_radio_info_content_description">O podrobnostiach Wi-Fi rozhrania</string>
     <string name="wifi_radio_info_title">Podrobnosti o rádiu</string>
     <string name="wifi_radio_help_channel">Kanál 802.11, na ktorom táto sieť vysiela. Ak je šírka pásma väčšia ako 20 MHz, sieť pokrýva viacero kanálov; hodnota v zátvorkách (napr. 40 (38)) označuje stredný kanál.</string>
     <string name="wifi_radio_help_frequency">Presná vysokofrekvenčná frekvencia primárneho kanála v MHz.</string>
@@ -116,7 +116,7 @@
     <string name="wifi_radio_help_standard">Generácie protokolu 802.11. Zjednodušené názvy: n = Wi-Fi 4, ac = Wi-Fi 5, ax = Wi-Fi 6 (Wi-Fi 6E v pásme 6 GHz), be = Wi-Fi 7 (Wi-Fi 7E v pásme 6 GHz).</string>
     <string name="dialog_button_got_it">Rozumiem</string>
     <string name="android_9_throttling_information">Systém Android 9 obmedzuje počet vyhľadávaní Wi-Fi na 2 za minútu. Ak je to možné, aktualizujte systém Android.</string>
-    <string name="android_10_throttling_information">Systém Android 10 a novšie obmedzuje vyhľadávanie sietí Wi-Fi. Ak chcete toto obmedzenie vypnúť: Systém -&gt; Pokročilé -&gt; Možnosti pre vývojárov -&gt; Obmedzenie vyhľadávania sietí Wi-Fi nastavte na „vypnuté“.</string>
+    <string name="android_10_throttling_information">Android obmedzuje, ako často môžu aplikácie vyhľadávať siete Wi-Fi. Ak chceš toto obmedzenie zrušiť, vypni obmedzovanie vyhľadávania Wi-Fi v Nastavenia &gt; Systém &gt; Možnosti pre vývojárov.</string>
     <string name="enable_developer_options">Ako aktivovať možnosti pre vývojárov: Nastavenia -&gt; Informácie o telefóne -&gt; 7-krát ťuknite na Číslo zostavenia.</string>
     <string name="airtag">AirTag</string>
     <string name="mqtt_topic_prefix_title">Prefix témy MQTT</string>
@@ -592,7 +592,7 @@
     <string name="nr_idle_badge">Nečinnosť</string>
     <string name="nr_last_seen_format">Naposledy videný pred %1$s</string>
     <string name="nr_secondary_cell_explanation"><b>Čo je to za kartu?</b> Sekundárna bunka je bunka 5G NR, ktorú váš telefón aktívne využíva popri svojej primárnej bunke. V sieťach 5G Non-Standalone (NSA) sa váš telefón registruje v bunke LTE a 5G dáta prechádzajú cez túto bunku NR, preto sa zobrazuje tu a nie v Susednej tabuľke. V sieťach 5G Standalone s agregáciou nosných frekvencií ide o dodatočnú nosnú frekvenciu NR, ktorá zvyšuje vašu rýchlosť.\n\n V režime NSA sa bunka NR pripája len počas aktívneho prenosu dát a odpojí sa niekoľko sekúnd po zastavení prenosu. Keď k tomu dôjde, karta sa stlmí na posledné zaznamenané hodnoty so značkou „Idle“ (nečinnosť) a pri ďalšom toku dát sa vráti k aktuálnym hodnotám.\n\n <b>Pásmo</b>: Prevádzkové pásmo 3GPP NR (napr. n77). Pásma pod n257 sú Sub-6 (FR1) a n257 a vyššie sú mmWave (FR2).\n\n<b>Frekvencia</b>: Stredná frekvencia nosnej vlny NR v MHz, vypočítaná z NARFCN.\n\n<b>PCI</b> (Physical Cell ID – identifikátor fyzickej bunky): Identifikátor bunky na fyzickej vrstve, ktorý pomáha mobilnému zariadeniu rozlíšiť dve bunky používajúce rovnakú frekvenciu počas výberu/opätovného výberu bunky. Platný rozsah 0–1007. Čísla v zátvorkách predstavujú primárnu synchronizačnú sekvenciu (PSS) a sekundárnu synchronizačnú sekvenciu (SSS).\n\n<b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Číslo reprezentujúce nosnú frekvenciu NR.\n\n<b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Výkon referenčného signálu v dBm, ako ho prijíma mobilné zariadenie. Platný rozsah od -31 do -156.\n\n<b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Meria kvalitu prijatého referenčného signálu. Platný rozsah je od 20 do -43, pričom hodnota 20 je najlepšia.\n\n<b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Meria kvalitu signálu vzhľadom na rušenie a šum v dB. Platný rozsah je od -23 do 40, pričom hodnota 40 je najlepšia.</string>
-    <string name="location_services_disabled_message">Služby určovania polohy sú vypnuté. Zapnite ich, aby sa vaša poloha zobrazila na mape.</string>
+    <string name="location_services_disabled_message">Poloha je vypnutá. Zapnite ju, aby sa vaša poloha zobrazila na mape.</string>
     <string name="wifi_tag_excluded">Vylúčené</string>
     <plurals name="wifi_group_excluded_count">
         <item quantity="one">%1$d bol vylúčený</item>
@@ -613,7 +613,7 @@
         <item quantity="many">Zobrazených %1$d z %2$d AP</item>
         <item quantity="other">Zobrazených %1$d z %2$d AP</item>
     </plurals>
-    <string name="wifi_filter_manage_exclusions">Správa zoznamu vylúčených SSID</string>
+    <string name="wifi_filter_manage_exclusions">Spravovať vylúčené SSID</string>
     <string name="wifi_details_on_watchlist">Na zozname sledovaných položiek</string>
     <string name="wifi_details_not_on_watchlist">Nie je na zozname sledovaných položiek</string>
     <string name="wifi_details_watch">Pozrite si</string>
@@ -795,7 +795,7 @@
     <string name="notification_health_connecting">%1$s: %2$s</string>
     <string name="new_tower_alert_channel_name">Upozornenia na novú základňovú stanicu</string>
     <string name="new_tower_alert_channel_description">Upozornenia pri zistení nových mobilných vysielačov</string>
-    <string name="new_tower_alert_title">Zistená nová základňová stanica</string>
+    <string name="new_tower_alert_title">Nájdená nová základňová stanica</string>
     <string name="new_tower_alert_content">%1$s %2$s-%3$s ID bunky %4$d</string>
     <string name="new_tower_alert_details">Technológia: %1$s\nMCC-MNC: %2$s-%3$s\nTAC/LAC: %4$d\nID bunky: %5$d</string>
     <plurals name="new_tower_alert_session_count">
@@ -1005,4 +1005,42 @@
     <string name="calculator_no_band">Žiadne pásmo neobsahuje tento kanál</string>
     <string name="calculator_frequency">Frekvencia</string>
     <string name="calculator_ambiguous_hint">Pásma NR sa prekrývajú, takže samotné číslo kanála nie vždy stačí na ich identifikáciu. Váš telefón priamo uvádza pásmo, ak je to možné.</string>
+    <string name="back_button_description">Späť</string>
+    <string name="wifi_mode_flat_bssid_short">BSSIDs</string>
+    <string name="wifi_mode_group_by_ssid_short">Podľa SSID</string>
+    <plurals name="wifi_list_access_points">
+        <item quantity="one">%1$d AP</item>
+        <item quantity="few">%1$d APs</item>
+        <item quantity="many">%1$d APs</item>
+        <item quantity="other">%1$d APs</item>
+    </plurals>
+    <plurals name="wifi_list_access_points_filtered">
+        <item quantity="one">%1$d z %2$d AP</item>
+        <item quantity="few">%1$d z %2$d APs</item>
+        <item quantity="many">%1$d z %2$d APs</item>
+        <item quantity="other">%1$d z %2$d APs</item>
+    </plurals>
+    <string name="wifi_scan_rate_info_body">Ako často sa vyhľadávajú siete Wi-Fi, v sekundách. Menšie hodnoty spotrebujú viac batérie; väčšie hodnoty spôsobujú, že graf signálu zaostáva.</string>
+    <plurals name="bluetooth_list_device_count">
+        <item quantity="one">%d zariadenie</item>
+        <item quantity="few">%d zariadenia</item>
+        <item quantity="many">%d zariadení</item>
+        <item quantity="other">%d zariadení</item>
+    </plurals>
+    <plurals name="bluetooth_list_device_count_filtered">
+        <item quantity="one">%1$d z %2$d zariadenia</item>
+        <item quantity="few">%1$d z %2$d zariadení</item>
+        <item quantity="many">%1$d z %2$d zariadení</item>
+        <item quantity="other">%1$d z %2$d zariadení</item>
+    </plurals>
+    <string name="bluetooth_no_name">Bez názvu</string>
+    <string name="bluetooth_details_title">Podrobnosti o zariadení Bluetooth</string>
+    <string name="bluetooth_tech_dual">Duálny režim</string>
+    <string name="bluetooth_row_open_details">Otvoriť podrobnosti</string>
+    <string name="bluetooth_row_copy_address">Skopírovať adresu</string>
+    <string name="bluetooth_address_clip_label">Adresa Bluetooth</string>
+    <string name="bluetooth_address_copied">Adresa bola skopírovaná</string>
+    <string name="bluetooth_state_off">Bluetooth je vypnutý</string>
+    <string name="bluetooth_state_off_body">Zapnite Bluetooth, aby ste videli zariadenia vo svojom okolí.</string>
+    <string name="bluetooth_state_permission">Vyžaduje sa oprávnenie</string>
 </resources>
