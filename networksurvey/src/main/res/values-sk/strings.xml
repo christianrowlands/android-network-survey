@@ -64,9 +64,9 @@
     <string name="wifi_list_scan_number">Skenovanie #%1$d</string>
     <plurals name="wifi_ap_count">
         <item quantity="one">%1$d AP</item>
-        <item quantity="few">%1$d APs</item>
-        <item quantity="many">%1$d APs</item>
-        <item quantity="other">%1$d APs</item>
+        <item quantity="few">%1$d AP</item>
+        <item quantity="many">%1$d AP</item>
+        <item quantity="other">%1$d AP</item>
     </plurals>
     <string name="wifi_hidden_ssid_placeholder">&lt;Skrytý SSID&gt;</string>
     <string name="wifi_hidden_network_a11y">Skrytá sieť</string>
@@ -116,7 +116,7 @@
     <string name="wifi_radio_help_standard">Generácie protokolu 802.11. Zjednodušené názvy: n = Wi-Fi 4, ac = Wi-Fi 5, ax = Wi-Fi 6 (Wi-Fi 6E v pásme 6 GHz), be = Wi-Fi 7 (Wi-Fi 7E v pásme 6 GHz).</string>
     <string name="dialog_button_got_it">Rozumiem</string>
     <string name="android_9_throttling_information">Systém Android 9 obmedzuje počet vyhľadávaní Wi-Fi na 2 za minútu. Ak je to možné, aktualizujte systém Android.</string>
-    <string name="android_10_throttling_information">Android obmedzuje, ako často môžu aplikácie vyhľadávať siete Wi-Fi. Ak chceš toto obmedzenie zrušiť, vypni obmedzovanie vyhľadávania Wi-Fi v Nastavenia &gt; Systém &gt; Možnosti pre vývojárov.</string>
+    <string name="android_10_throttling_information">Android obmedzuje, ako často môžu aplikácie vyhľadávať siete Wi-Fi. Ak chcete toto obmedzenie zrušiť, vypnite obmedzovanie vyhľadávania Wi-Fi v časti Nastavenia &gt; Systém &gt; Možnosti pre vývojárov.</string>
     <string name="enable_developer_options">Ako aktivovať možnosti pre vývojárov: Nastavenia -&gt; Informácie o telefóne -&gt; 7-krát ťuknite na Číslo zostavenia.</string>
     <string name="airtag">AirTag</string>
     <string name="mqtt_topic_prefix_title">Prefix témy MQTT</string>
@@ -1010,15 +1010,15 @@
     <string name="wifi_mode_group_by_ssid_short">Podľa SSID</string>
     <plurals name="wifi_list_access_points">
         <item quantity="one">%1$d AP</item>
-        <item quantity="few">%1$d APs</item>
-        <item quantity="many">%1$d APs</item>
-        <item quantity="other">%1$d APs</item>
+        <item quantity="few">%1$d AP</item>
+        <item quantity="many">%1$d AP</item>
+        <item quantity="other">%1$d AP</item>
     </plurals>
     <plurals name="wifi_list_access_points_filtered">
         <item quantity="one">%1$d z %2$d AP</item>
-        <item quantity="few">%1$d z %2$d APs</item>
-        <item quantity="many">%1$d z %2$d APs</item>
-        <item quantity="other">%1$d z %2$d APs</item>
+        <item quantity="few">%1$d z %2$d AP</item>
+        <item quantity="many">%1$d z %2$d AP</item>
+        <item quantity="other">%1$d z %2$d AP</item>
     </plurals>
     <string name="wifi_scan_rate_info_body">Ako často sa vyhľadávajú siete Wi-Fi, v sekundách. Menšie hodnoty spotrebujú viac batérie; väčšie hodnoty spôsobujú, že graf signálu zaostáva.</string>
     <plurals name="bluetooth_list_device_count">
