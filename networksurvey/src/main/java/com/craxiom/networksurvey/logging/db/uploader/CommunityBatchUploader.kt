@@ -144,14 +144,14 @@ class CommunityBatchUploader @JvmOverloads constructor(
             OPENCELLID_FILE_FIELD, "NetworkSurvey_measurements_${System.currentTimeMillis()}.csv", csv,
         )
         val response = OpenCelliDUploadClient.getInstance().uploadToOcid(apiKey, appId, file).execute()
-        return response.body().use { body ->
+        return response.anyBody().use { body ->
             OpenCelliDUploadClient.mapRequestResultToUploadResult(OpenCelliDUploadClient.handleOcidResponse(response.code(), body))
         }
     }
 
     private fun sendToBeaconDb(wrapper: UploadRecordsWrapper): UploadResult {
         val response = BeaconDbUploadClient.getInstance().uploadToBeaconDB(wrapper).execute()
-        return response.body().use { body ->
+        return response.anyBody().use { body ->
             BeaconDbUploadClient.mapRequestResultToUploadResult(BeaconDbUploadClient.handleBeaconDbResponse(response.code(), body))
         }
     }

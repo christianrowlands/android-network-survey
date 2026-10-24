@@ -9,6 +9,7 @@ import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
 import com.craxiom.networksurvey.logging.db.uploader.RequestResult;
 import com.craxiom.networksurvey.logging.db.uploader.UploadEndpoints;
+import com.craxiom.networksurvey.logging.db.uploader.UploadResponses;
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult;
 
 import java.io.IOException;
@@ -79,7 +80,7 @@ public interface BeaconDbUploadClient
             } catch (IOException e)
             { //no-op
             }
-            Timber.w("Received status code %s when uploading records to BeaconDB; body=%s", code, bodyString);
+            Timber.w("Received status code %s when uploading records to BeaconDB; body=%s", code, UploadResponses.logSnippet(bodyString.trim()));
         }
 
         if (code >= 500 && code <= 599)

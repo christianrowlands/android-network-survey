@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.logging.db.uploader.RequestResult;
 import com.craxiom.networksurvey.logging.db.uploader.UploadEndpoints;
+import com.craxiom.networksurvey.logging.db.uploader.UploadResponses;
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult;
 
 import java.io.IOException;
@@ -66,8 +67,17 @@ public interface OpenCelliDUploadClient
         }
     }
 
+    /** The body OCID answers a successful upload with. */
+    String OCID_OK_BODY = "0,OK";
+    /** The body OCID answers a bad key with when the request is URL-encoded, with a 200. */
+    String OCID_INVALID_TOKEN_BODY = "Err: Invalid token";
+    /** The body OCID answers an upload that is too large with. */
+    String OCID_FILESIZE_LIMIT_BODY = "Exceeded filesize limit";
+
     /**
      * Takes the result of an upload HTTP call to OCID and returns the corresponding RequestResult.
+     *
+     * @param body The response body, or for a non-2xx response the error body.
      */
     static RequestResult handleOcidResponse(int code, @Nullable ResponseBody body)
     {
@@ -76,34 +86,49 @@ public interface OpenCelliDUploadClient
         {
             if (body != null)
             {
-                bodyString = body.string().trim();
+                bodyString = body.string();
             }
         } catch (IOException e)
         {
             Timber.e(e, "Error reading response body from OCID");
         }
+        return handleOcidResponse(code, bodyString);
+    }
 
-        if (code == 200 && "0,OK".equalsIgnoreCase(bodyString))
+    /**
+     * Maps an OCID upload response to its RequestResult. A 403 that is an HTML page comes from the
+     * proxy in front of OCID, not from OCID's key check (as when OCID blocked every multipart
+     * request in October 2026), so it is a server problem that a later retry can get past; any
+     * other 403 is still a rejected key.
+     */
+    static RequestResult handleOcidResponse(int code, @NonNull String body)
+    {
+        final String bodyString = body.trim();
+        if (code == 200 && OCID_OK_BODY.equalsIgnoreCase(bodyString))
         {
             return RequestResult.Success;
         } else
         {
-            Timber.w("Received status code %s when uploading records to OCID; body=%s", code, bodyString);
+            Timber.w("Received status code %s when uploading records to OCID; body=%s", code, UploadResponses.logSnippet(bodyString));
         }
 
+        if (code == 403)
+        {
+            return UploadResponses.looksLikeHtml(bodyString) ? RequestResult.ServerError : RequestResult.InvalidApiKey;
+        }
+        if (code == 401 || OCID_INVALID_TOKEN_BODY.equalsIgnoreCase(bodyString))
+        {
+            return RequestResult.InvalidApiKey;
+        }
         if (code >= 500 && code <= 599)
         {
             return RequestResult.ServerError;
-        }
-        if (code == 401 || code == 403 || "Err: Invalid token".equalsIgnoreCase(bodyString))
-        {
-            return RequestResult.InvalidApiKey;
         }
         if (code == 400)
         {
             return RequestResult.ConfigurationError;
         }
-        if (bodyString.equalsIgnoreCase("Exceeded filesize limit"))
+        if (bodyString.equalsIgnoreCase(OCID_FILESIZE_LIMIT_BODY))
         {
             Timber.e("Exceeded filesize limit.");
             return RequestResult.LimitExceeded;
