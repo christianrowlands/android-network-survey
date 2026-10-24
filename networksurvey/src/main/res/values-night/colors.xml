@@ -26,20 +26,20 @@
     <color name="md_theme_onBackground">#E8EBF0</color>
     <color name="md_theme_surface">#0E1116</color>
     <color name="md_theme_onSurface">#E8EBF0</color>
-    <color name="md_theme_surfaceVariant">#2A3038</color>
+    <color name="md_theme_surfaceVariant">#343A44</color>
     <color name="md_theme_onSurfaceVariant">#A3ABB6</color>
-    <color name="md_theme_outline">#7B8490</color>
-    <color name="md_theme_outlineVariant">#2A3038</color>
+    <color name="md_theme_outline">#8992A0</color>
+    <color name="md_theme_outlineVariant">#343A44</color>
     <color name="md_theme_inverseSurface">#E8EBF0</color>
-    <color name="md_theme_inverseOnSurface">#181C22</color>
+    <color name="md_theme_inverseOnSurface">#21262E</color>
     <color name="md_theme_inversePrimary">#1E3A6E</color>
     <color name="md_theme_surfaceDim">#0E1116</color>
-    <color name="md_theme_surfaceBright">#2F353E</color>
+    <color name="md_theme_surfaceBright">#3A414B</color>
     <color name="md_theme_surfaceContainerLowest">#0B0E12</color>
-    <color name="md_theme_surfaceContainerLow">#181C22</color>
-    <color name="md_theme_surfaceContainer">#151920</color>
-    <color name="md_theme_surfaceContainerHigh">#1F242C</color>
-    <color name="md_theme_surfaceContainerHighest">#2A3038</color>
+    <color name="md_theme_surfaceContainerLow">#21262E</color>
+    <color name="md_theme_surfaceContainer">#181C22</color>
+    <color name="md_theme_surfaceContainerHigh">#292F38</color>
+    <color name="md_theme_surfaceContainerHighest">#343A44</color>
 
     <!-- Per-record-type colors (NsPalette.Protocol) -->
     <color name="ns_protocol_cellular">#A48BFF</color>

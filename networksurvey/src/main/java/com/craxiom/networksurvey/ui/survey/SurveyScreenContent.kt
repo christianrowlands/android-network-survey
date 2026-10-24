@@ -30,6 +30,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.ui.common.NsManagedLockSheet
+import com.craxiom.networksurvey.ui.common.NsScrollEdgeFade
 import com.craxiom.networksurvey.ui.survey.components.AttentionPlate
 import com.craxiom.networksurvey.ui.survey.components.AttentionPlateActions
 import com.craxiom.networksurvey.ui.survey.components.CommunityUploadProgressRow
@@ -87,6 +88,7 @@ fun SurveyScreenContent(
 
     // The bar slides away as the form scrolls, so a short (landscape) window has room for it
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollState = rememberScrollState()
 
     Column(modifier = modifier.fillMaxSize()) {
         TabTopBar(
@@ -99,7 +101,7 @@ fun SurveyScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
             ) {
                 Column(
                     modifier = Modifier
@@ -137,6 +139,7 @@ fun SurveyScreenContent(
                     }
                 }
             }
+            if (state.known) NsScrollEdgeFade(scrollState.canScrollForward, Modifier.align(Alignment.BottomCenter))
             SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
         }
         if (state.known) {

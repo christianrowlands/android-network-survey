@@ -37,18 +37,23 @@ object NsPalette {
         val Toast = Color(0xFF2A2F36)
     }
 
-    /** Neutral ground, panel, ink and rule colors for the dark scheme. */
+    /**
+     * Neutral ground, panel, ink and rule colors for the dark scheme. A panel's shadow can't be
+     * seen on a dark ground, so the fill step alone sets cards apart: [Panel] sits well above
+     * [Ground] (about 1.24:1, lifted from the prototype's 1.11:1 in Oct 2026), with the nav and
+     * CTA bar chrome ([Nav]) between them.
+     */
     object Dark {
         val Ground = Color(0xFF0E1116)
         val PanelLowest = Color(0xFF0B0E12)
-        val Panel = Color(0xFF181C22)
-        val Nav = Color(0xFF151920)
-        val PanelHigh = Color(0xFF1F242C)
+        val Panel = Color(0xFF21262E)
+        val Nav = Color(0xFF181C22)
+        val PanelHigh = Color(0xFF292F38)
         val Ink = Color(0xFFE8EBF0)
         val Ink2 = Color(0xFFA3ABB6)
-        val Ink3 = Color(0xFF7B8490)
-        val Rule = Color(0xFF2A3038)
-        val SurfaceBright = Color(0xFF2F353E)
+        val Ink3 = Color(0xFF8992A0)
+        val Rule = Color(0xFF343A44)
+        val SurfaceBright = Color(0xFF3A414B)
     }
 
     /**
@@ -155,7 +160,7 @@ object NsPalette {
         val SecurityEnterpriseDark = Color(0xFF6FCFE0)
         val SecurityOpenDark = Color(0xFFE88A6C)
         val PasspointDark = Color(0xFF8FA0F0)
-        val HiddenSsidDark = Color(0xFF90A4AE)
+        val HiddenSsidDark = Color(0xFF9AADB7)
         val TrackerDark = Color(0xFFCE93D8)
     }
 

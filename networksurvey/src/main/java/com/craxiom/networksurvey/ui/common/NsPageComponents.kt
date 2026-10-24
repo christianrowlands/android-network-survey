@@ -108,18 +108,25 @@ fun NsPageScaffold(
     }
 }
 
-/** The pinned bar at the bottom of a page that holds its one main action; slimmer in a short window. */
+/**
+ * The pinned bar at the bottom of a page that holds its one main action; slimmer in a short window.
+ * It shares the nav bar's color and has a rule along its top, so it reads as fixed chrome rather
+ * than the last section of the page. Pair it with [NsScrollEdgeFade] above it.
+ */
 @Composable
 fun NsCtaBar(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val vertical = if (rememberCompactHeight()) NsTheme.spacing.s else NsTheme.spacing.m
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .nsContentWidth()
-                .padding(horizontal = NsTheme.spacing.screenGutter, vertical = vertical),
-            verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs),
-            content = content,
-        )
+        Column {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(
+                modifier = Modifier
+                    .nsContentWidth()
+                    .padding(horizontal = NsTheme.spacing.screenGutter, vertical = vertical),
+                verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs),
+                content = content,
+            )
+        }
     }
 }
 
