@@ -81,7 +81,6 @@ import com.craxiom.networksurvey.ui.watchlist.rememberMapSheetMetrics
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.launch
-import okhttp3.internal.toImmutableMap
 
 /** The most towers the tower service returns for one request; more means the map is truncated. */
 private const val TOWER_RESPONSE_LIMIT = 5_000
@@ -259,12 +258,12 @@ private fun TowerMap(
         mapOf(
             KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_sdf,
             KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_sdf,
-        ).toImmutableMap()
+        )
     }
 
     // Non-SDF icons (search result keeps its fixed color)
     val iconMap = remember {
-        mapOf(KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark).toImmutableMap()
+        mapOf(KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark)
     }
 
     MapLibreMap(

@@ -15,11 +15,11 @@
 
 [versions]
 # Build tooling / plugins
-agp = "9.2.1"
-kotlin = "2.4.20"
+agp = "9.4.1"
+kotlin = "2.4.21"
 # KSP2 versions independently of Kotlin. 2.3.10+ is required for Kotlin 2.4.x
 # (older KSP cannot handle Kotlin 2.4's default module names containing ':').
-ksp = "2.3.10"
+ksp = "2.3.12"
 googleServices = "4.5.0"
 firebaseCrashlyticsGradle = "3.0.8"
 licenseReport = "3.1.4"
@@ -27,37 +27,40 @@ licenseReport = "3.1.4"
 # Library version groups (shared across multiple library entries)
 hilt = "2.60.1"
 room = "2.8.5"
-grpc = "1.84.0"
-navigation = "2.10.1"
+grpc = "1.85.1"
+navigation = "2.10.2"
 networkSurveyMessaging = "2.6.0"
 composeBom = "2026.09.00"
-firebaseBom = "34.19.0"
+firebaseBom = "35.1.0"
 
 # Single-library versions
 androidxAppcompat = "1.8.0"
 timber = "5.0.1"
 material = "1.14.0"
 preferenceKtx = "1.2.1"
-fragment = "1.8.9"
+fragment = "1.9.1"
 activityCompose = "1.13.0"
 drawerlayout = "1.2.0"
 coroutines = "1.11.0"
 mqtt = "2.0.0"
-protobufJavaUtil = "4.36.1"
+protobufJavaUtil = "4.36.2"
 commonsCsv = "1.14.1"
 recyclerview = "1.4.0"
 vico = "3.3.1"
 codeScanner = "2.3.2"
 zxing = "3.5.4"
-maplibre = "13.6.1"
+maplibre = "13.7.1"
 maplibreAnnotation = "4.0.0"
 retrofit = "3.0.0"
+# Pinned above the 4.12.0 that Retrofit 3.0.0 brings: 4.12.1 blocks compromised eMudhra intermediate
+# certificates on devices without Google Play Services. Stay on the 4.x line until Retrofit moves to 5.
+okhttp = "4.12.1"
 snakeyaml = "2.7"
-workRuntime = "2.11.2"
-annotation = "1.10.0"
+workRuntime = "2.12.0"
+annotation = "1.11.0"
 junit = "4.13.2"
-mockito = "5.23.0"
-mockitoKotlin = "6.3.0"
+mockito = "5.24.0"
+mockitoKotlin = "6.4.0"
 robolectric = "4.17"
 testExtJunit = "1.3.0"
 testRunner = "1.7.0"
@@ -65,7 +68,6 @@ testRules = "1.7.0"
 espresso = "3.7.0"
 truth = "1.4.5"
 moquette = "0.17"
-mockwebserver = "4.12.0"
 
 [libraries]
 # AndroidX core
@@ -121,6 +123,7 @@ grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 # Networking / serialization
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobufJavaUtil" }
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 
@@ -171,8 +174,8 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
 # Embedded MQTT broker for the instrumented destination tests.
 moquette-broker = { module = "io.moquette:moquette-broker", version.ref = "moquette" }
-# Must stay on the OkHttp 4 line that Retrofit 3 uses.
-okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockwebserver" }
+# Shares the okhttp version so tests run on the same OkHttp the app ships.
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 
 [bundles]
 # gRPC family (excluding grpc-protobuf, which has a custom transitive exclusion).
