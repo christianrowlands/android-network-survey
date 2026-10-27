@@ -16,6 +16,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.SurveyedPointStore;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
+import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.OpenCelliDSigning;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -86,6 +87,17 @@ public class NsUploaderWorker extends Worker
                     OpenCelliDSigning.isAnonymous(getApplicationContext()));
             isBeaconDBUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, false);
             boolean isRetryEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, false);
+
+            // Every upload ends here (Upload now, auto upload, retries queued before the phone was
+            // enrolled), so the organization's policy is checked here as well as by the callers
+            if (!MdmUtils.isExternalDataUploadAllowed(getApplicationContext()))
+            {
+                Timber.i("The organization does not allow community database uploads; skipping the upload");
+                UploadResultBundle uploadResultBundle = new UploadResultBundle();
+                uploadResultBundle.setResult(UploadTarget.OpenCelliD, UploadResult.UploadDisabledForTarget);
+                uploadResultBundle.setResult(UploadTarget.BeaconDB, UploadResult.UploadDisabledForTarget);
+                return Result.success(getResultData(uploadResultBundle));
+            }
 
             if (!isOpenCellIdUploadEnabled && !isBeaconDBUploadEnabled)
             {

@@ -37,11 +37,12 @@ import com.craxiom.networksurvey.ui.common.NsPanel
 import com.craxiom.networksurvey.ui.common.NsTextAction
 
 /**
- * "What it's surveying" (or the saved setup's name when the survey matches one) while Recording: every record type as a chip (on ones tinted in their own
+ * "What it's surveying" (or the saved setup's name when the survey matches one) while Recording: each record type the organization allows as a chip (on ones tinted in their own
  * color, off ones dashed), and Change, which opens the sheet that applies immediately.
  *
  * @param deviceStatusOnly True when the survey records no types and MQTT sends only device status;
  *                         the panel says so instead of six chips that are all off.
+ * @param availableTypes   The types to show as chips: those the organization hasn't turned off.
  */
 @Composable
 fun RecordingSetupPanel(
@@ -53,6 +54,7 @@ fun RecordingSetupPanel(
     setupName: String? = null,
     notSent: Set<RecordType> = emptySet(),
     deviceStatusOnly: Boolean = false,
+    availableTypes: List<RecordType> = RecordType.entries,
 ) {
     NsPanel(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -80,7 +82,7 @@ fun RecordingSetupPanel(
                 modifier = Modifier.padding(top = NsTheme.spacing.s),
             )
         } else {
-            TypeChips(on = types.toSet(), notSent = notSent, onNotSent = onWhatGoesWhere)
+            TypeChips(shown = availableTypes, on = types.toSet(), notSent = notSent, onNotSent = onWhatGoesWhere)
         }
         NsTextAction(stringResource(R.string.survey_what_goes_where), onWhatGoesWhere)
         if (canChange) {
@@ -95,18 +97,24 @@ fun RecordingSetupPanel(
 }
 
 /**
- * All six record types as chips; [on] ones are tinted with their own color. A type in [notSent]
+ * The [shown] record types as chips; [on] ones are tinted with their own color. A type in [notSent]
  * was selected but no destination takes it: it shows a warning and opens "What goes where".
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TypeChips(on: Set<RecordType>, notSent: Set<RecordType>, onNotSent: () -> Unit, modifier: Modifier = Modifier) {
+fun TypeChips(
+    shown: List<RecordType>,
+    on: Set<RecordType>,
+    notSent: Set<RecordType>,
+    onNotSent: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     FlowRow(
         modifier = modifier.padding(top = NsTheme.spacing.s),
         horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
         verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
     ) {
-        RecordType.entries.forEach { type ->
+        shown.forEach { type ->
             if (type in notSent) NotSentChip(type, onNotSent) else TypeChip(type, type in on)
         }
     }

@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.survey
 
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.engine.DestinationResult
 import com.craxiom.networksurvey.survey.engine.DestinationRuntime
 import com.craxiom.networksurvey.survey.engine.LinkState
@@ -290,6 +291,37 @@ class SurveyUiStateMapperTest {
 
         assertTrue(SurveyUiStateMapper.map(inputs(info = info)).stillToDo.isEmpty())
         assertTrue("Not while recording", SurveyUiStateMapper.map(inputs(info = info, runtime = recording()).copy(queues = queues)).stillToDo.isEmpty())
+    }
+
+    @Test
+    fun `records for a destination the organization blocks are not offered for upload`() {
+        val queues = DeliveryQueues(
+            nsAnalytics = NsAnalyticsQueue(pending = 312),
+            community = CommunityQueue(pending = 812),
+        )
+        val info = allReady.copy(nsAnalyticsAutoUpload = false)
+
+        // Any managed configuration blocks the community databases unless the organization allows them
+        val managed = inputs(info = info, restrictions = mapOf(MQTT_HOST_KEY to "mqtt.example.com")).copy(queues = queues)
+        assertEquals(listOf(Destination.NS_ANALYTICS), SurveyUiStateMapper.map(managed).stillToDo.map { it.destination })
+
+        val blocksNsAnalytics = inputs(
+            info = info,
+            restrictions = mapOf(
+                NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS to false,
+                NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD to true,
+            ),
+        ).copy(queues = queues)
+        assertEquals(listOf(Destination.COMMUNITY), SurveyUiStateMapper.map(blocksNsAnalytics).stillToDo.map { it.destination })
+    }
+
+    @Test
+    fun `while recording, a type the organization turned off has no chip`() {
+        val restrictions = mapOf(SurveyMdmKeys.SURVEY_GNSS to SurveyMdmKeys.VALUE_OFF)
+        val recording = SurveyUiStateMapper.map(inputs(restrictions = restrictions, runtime = recording())).recording!!
+
+        assertEquals(RecordType.entries - RecordType.GNSS, recording.availableTypes)
+        assertEquals(RecordType.entries, SurveyUiStateMapper.map(inputs(runtime = recording())).recording!!.availableTypes)
     }
 
     @Test

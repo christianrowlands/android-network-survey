@@ -372,10 +372,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         brokerProfileStore = MqttBrokerProfileStore.create(context);
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
 
-        initializeSurveyCoordinator();
-
+        // Before the survey coordinator: a managed configuration that changed while the app was
+        // closed is handled as the coordinator starts, and that asks whether MQTT is streaming.
         // Must register for MDM updates AFTER initializing the MQTT connection because we try to make an MQTT connection if the MDM settings change
         initializeMqttConnection();
+        initializeSurveyCoordinator();
         registerManagedConfigurationListener();
 
         cellularController.initialize();
@@ -2474,6 +2475,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public boolean isMqttStreamingActive()
     {
+        if (mqttConnection == null) return false;
         final com.craxiom.mqttlibrary.connection.ConnectionState state = mqttConnection.getConnectionState();
         return state == ConnectionState.CONNECTED || state == ConnectionState.CONNECTING;
     }
@@ -3066,7 +3068,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled())
         {
-            if (surveyRecordProcessor != null)
+            // Also runs each time a screen registers a listener while a survey logs; turning the
+            // logger on again would start a new file, so only turn it on when it is off
+            if (surveyRecordProcessor != null && !deviceStatusCsvLogger.isLoggingEnabled())
             {
                 deviceStatusCsvLogger.enableLogging(true);
                 surveyRecordProcessor.registerDeviceStatusListener(deviceStatusCsvLogger);

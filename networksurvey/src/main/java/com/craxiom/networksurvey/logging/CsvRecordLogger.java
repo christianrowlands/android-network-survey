@@ -96,6 +96,14 @@ public abstract class CsvRecordLogger
     abstract String[] getHeaderComments();
 
     /**
+     * @return True if logging is on, whether or not a lazily created file has been written yet.
+     */
+    public boolean isLoggingEnabled()
+    {
+        return loggingEnabled;
+    }
+
+    /**
      * Sets up the CSV file so that the survey records can be written to a log file.
      * <p>
      * If calling this method, it is assumed that the caller will add this {@link CsvRecordLogger} as a listener for

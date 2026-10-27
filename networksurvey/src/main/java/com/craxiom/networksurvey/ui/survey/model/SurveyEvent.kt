@@ -40,6 +40,6 @@ sealed interface SurveyEvent {
     /** Upload now was tapped while offline, and this upload can't wait for the network. */
     data object UploadNeedsNetwork : SurveyEvent
 
-    /** The organization doesn't allow NS Analytics uploads on this phone. */
-    data object UploadBlockedByOrganization : SurveyEvent
+    /** The organization doesn't allow uploads to [destination] on this phone. */
+    data class UploadBlockedByOrganization(val destination: Destination) : SurveyEvent
 }

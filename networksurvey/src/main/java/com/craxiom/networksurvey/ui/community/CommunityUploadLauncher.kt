@@ -11,6 +11,7 @@ import androidx.work.WorkManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker
+import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.OpenCelliDSigning
 import com.craxiom.networksurvey.util.PreferenceUtils
@@ -21,14 +22,24 @@ import com.craxiom.networksurvey.util.PreferenceUtils
  */
 object CommunityUploadLauncher {
 
+    /** What happened when an upload was asked for. */
+    enum class StartResult {
+        STARTED,
+
+        /** There is no network, and a community upload doesn't wait for one. */
+        NO_NETWORK,
+
+        /** The organization doesn't allow uploads to the community databases on this phone. */
+        BLOCKED_BY_ORGANIZATION,
+    }
+
     /**
      * Enqueues an upload with the given choices. One already running is kept; one waiting to retry
      * after a failed attempt is replaced, so Upload now tries at once.
-     *
-     * @return False if there is no network, so the caller can say so.
      */
-    fun start(context: Context, uploadToOpenCellId: Boolean, anonymously: Boolean, uploadToBeaconDb: Boolean, retry: Boolean): Boolean {
-        if (!NsUtils.isNetworkAvailable(context)) return false
+    fun start(context: Context, uploadToOpenCellId: Boolean, anonymously: Boolean, uploadToBeaconDb: Boolean, retry: Boolean): StartResult {
+        if (!MdmUtils.isExternalDataUploadAllowed(context)) return StartResult.BLOCKED_BY_ORGANIZATION
+        if (!NsUtils.isNetworkAvailable(context)) return StartResult.NO_NETWORK
 
         val inputData = Data.Builder()
             .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId)
@@ -49,7 +60,7 @@ object CommunityUploadLauncher {
             if (retrying) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP,
             request,
         )
-        return true
+        return StartResult.STARTED
     }
 
     /**
@@ -69,10 +80,8 @@ object CommunityUploadLauncher {
     /**
      * Saves the choices made in the upload dialog, so the next upload starts from them, then
      * enqueues the upload.
-     *
-     * @return False if there is no network, so the caller can say so.
      */
-    fun startWithChoices(context: Context, uploadToOpenCellId: Boolean, anonymously: Boolean, uploadToBeaconDb: Boolean, retry: Boolean): Boolean {
+    fun startWithChoices(context: Context, uploadToOpenCellId: Boolean, anonymously: Boolean, uploadToBeaconDb: Boolean, retry: Boolean): StartResult {
         PreferenceManager.getDefaultSharedPreferences(context).edit {
             putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId)
             putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDb)
@@ -82,12 +91,8 @@ object CommunityUploadLauncher {
         return start(context, uploadToOpenCellId, anonymously, uploadToBeaconDb, retry)
     }
 
-    /**
-     * Uploads with the targets saved in the settings.
-     *
-     * @return False if there is no network.
-     */
-    fun startWithSavedSettings(context: Context): Boolean = start(
+    /** Uploads with the targets saved in the settings. */
+    fun startWithSavedSettings(context: Context): StartResult = start(
         context,
         uploadToOpenCellId = PreferenceUtils.getBoolean(
             NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,

@@ -333,7 +333,7 @@
         android:title="@string/ignore_wifi_scan_throttling_warning_title" />
 
     <restriction
-        android:defaultValue="0"
+        android:defaultValue="3"
         android:description="@string/location_provider_mdm_description"
         android:key="location_provider"
         android:restrictionType="integer"

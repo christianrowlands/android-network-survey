@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.survey
 import android.content.res.Resources
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.engine.SkipReason
+import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.survey.components.labelRes
 import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.SurveyEvent
@@ -50,7 +51,9 @@ object SurveyEventMessages {
         is SurveyEvent.SetupSaved -> resources.getString(R.string.survey_setup_saved, event.name)
         SurveyEvent.UploadWaitsForNetwork -> resources.getString(R.string.survey_upload_waits_for_network)
         SurveyEvent.UploadNeedsNetwork -> resources.getString(R.string.survey_upload_needs_network)
-        SurveyEvent.UploadBlockedByOrganization -> resources.getString(R.string.ns_analytics_upload_status_mdm_blocked)
+        is SurveyEvent.UploadBlockedByOrganization -> resources.getString(
+            if (event.destination == Destination.COMMUNITY) R.string.community_not_allowed else R.string.ns_analytics_upload_status_mdm_blocked,
+        )
     }
 
     /** The one-line problem for a skipped record type or destination. */

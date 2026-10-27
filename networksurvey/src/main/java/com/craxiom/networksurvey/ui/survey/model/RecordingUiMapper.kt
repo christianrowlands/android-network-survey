@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.survey.model
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.status.DeliveryQueues
 import com.craxiom.networksurvey.survey.status.DestinationStatus
@@ -47,6 +48,8 @@ internal object RecordingUiMapper {
             countsSavedForUpload = savedForUpload,
             changeSeed = runtime.requested ?: SurveySetup.custom(runtime.recordTypes, runtime.destinations.keys),
             deviceStatusOnly = runtime.recordTypes.isEmpty() && isMqttDeviceStatusOnly(runtime),
+            // A type the organization turned off can't be turned on, so it isn't shown as an off chip
+            availableTypes = RecordType.entries.filter { form.policy.isRecordTypeAvailable(it) || it in runtime.recordTypes },
         )
     }
 

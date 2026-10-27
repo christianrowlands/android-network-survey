@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -51,6 +52,10 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
     private lateinit var deepLinkDispatcher: DeepLinkDispatcher
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Android 15 and later draw edge to edge for this target SDK, and the screens pad for the
+        // system bars themselves. Do the same on older versions, which would otherwise color the
+        // status bar with the theme's primary color behind icons picked for the app's background.
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         // A deep link or notification tap is handled once: not again when the activity is

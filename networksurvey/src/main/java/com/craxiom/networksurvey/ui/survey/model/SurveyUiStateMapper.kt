@@ -56,8 +56,9 @@ object SurveyUiStateMapper {
     }
 
     /**
-     * Records still on the phone after a survey, for destinations that can still upload them. The
-     * panel goes away by itself once both queues are empty.
+     * Records still on the phone after a survey, for destinations that can still upload them (not
+     * one the organization's policy blocks). The panel goes away by itself once both queues are
+     * empty.
      */
     private fun stillToDo(inputs: SurveyInputs): List<StillToDoItemUi> {
         val pending = mapOf(
@@ -65,7 +66,7 @@ object SurveyUiStateMapper {
             Destination.COMMUNITY to inputs.queues.community.pending,
         )
         return pending.mapNotNull { (destination, count) ->
-            if (count == 0) return@mapNotNull null
+            if (count == 0 || destination in inputs.runtime.policy.blockedDestinations) return@mapNotNull null
             RecordingUiMapper.idleStatus(destination, inputs.queues, inputs.destinationInfo)
                 ?.let { StillToDoItemUi(destination, count, it) }
         }

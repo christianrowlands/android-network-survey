@@ -214,6 +214,7 @@ private fun RecordingBody(state: SurveyUiState, actions: SurveyActions, onOverla
             setupName = state.savedSetups?.selected?.name,
             notSent = recording.notSent,
             deviceStatusOnly = recording.deviceStatusOnly,
+            availableTypes = recording.availableTypes,
         )
         val countedTypes = recording.types.filter { it in recording.counts }
         if (countedTypes.isNotEmpty()) RecordsPanel(countedTypes, recording.counts, recording.countsSavedForUpload)

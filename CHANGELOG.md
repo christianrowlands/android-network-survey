@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0-beta01](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0-beta01) - 2026-10-25
+## [2.0-beta01](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0-beta01) - 2026-10-27
 
 Network Survey 2.0 rebuilds the whole app. Your settings carry over on upgrade, and a one-time welcome shows what your survey became.
 

@@ -58,10 +58,14 @@ class CommunityUploadViewModel(application: Application) : AndroidViewModel(appl
     fun startUpload(uploadToOpenCellId: Boolean, anonymously: Boolean, uploadToBeaconDb: Boolean, retry: Boolean): Boolean =
         started(CommunityUploadLauncher.startWithChoices(context, uploadToOpenCellId, anonymously, uploadToBeaconDb, retry))
 
-    /** Disables the upload button once an upload was enqueued. */
-    private fun started(enqueued: Boolean): Boolean {
-        if (enqueued) queue.value = queue.value.copy(uploadButtonEnabled = false)
-        return enqueued
+    /**
+     * Disables the upload button once an upload was enqueued.
+     *
+     * @return False if there is no network, so the caller can say so.
+     */
+    private fun started(result: CommunityUploadLauncher.StartResult): Boolean {
+        if (result == CommunityUploadLauncher.StartResult.STARTED) queue.value = queue.value.copy(uploadButtonEnabled = false)
+        return result != CommunityUploadLauncher.StartResult.NO_NETWORK
     }
 
     fun cancelUpload() = repository.cancel()

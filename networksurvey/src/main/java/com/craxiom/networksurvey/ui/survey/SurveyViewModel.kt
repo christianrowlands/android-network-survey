@@ -176,13 +176,13 @@ class SurveyViewModel @JvmOverloads constructor(
             when (destination) {
                 Destination.NS_ANALYTICS -> when (NsAnalyticsUploadWorker.triggerImmediateUpload(context, waitForNetwork = true)) {
                     is NsAnalyticsUploadWorker.Companion.TriggerResult.WaitingForNetwork -> emit(SurveyEvent.UploadWaitsForNetwork)
-                    NsAnalyticsUploadWorker.Companion.TriggerResult.MdmBlocked -> emit(SurveyEvent.UploadBlockedByOrganization)
+                    NsAnalyticsUploadWorker.Companion.TriggerResult.MdmBlocked ->
+                        emit(SurveyEvent.UploadBlockedByOrganization(Destination.NS_ANALYTICS))
+
                     else -> Unit
                 }
 
-                Destination.COMMUNITY -> if (!CommunityUploadLauncher.startWithSavedSettings(context)) {
-                    emit(SurveyEvent.UploadNeedsNetwork)
-                }
+                Destination.COMMUNITY -> emitCommunityProblem(CommunityUploadLauncher.startWithSavedSettings(context))
 
                 else -> Unit
             }
@@ -194,10 +194,15 @@ class SurveyViewModel @JvmOverloads constructor(
         viewModelScope.launch(ioDispatcher) {
             val context = getApplication<Application>()
             if (dontShowAgain) CommunityUploadLauncher.setSkipConfirmation(context, true)
-            if (!CommunityUploadLauncher.startWithChoices(context, uploadToOpenCellId, anonymously, uploadToBeaconDb, retry)) {
-                emit(SurveyEvent.UploadNeedsNetwork)
-            }
+            emitCommunityProblem(CommunityUploadLauncher.startWithChoices(context, uploadToOpenCellId, anonymously, uploadToBeaconDb, retry))
         }
+    }
+
+    /** Says why a community upload didn't start, if it didn't. */
+    private fun emitCommunityProblem(result: CommunityUploadLauncher.StartResult) = when (result) {
+        CommunityUploadLauncher.StartResult.NO_NETWORK -> emit(SurveyEvent.UploadNeedsNetwork)
+        CommunityUploadLauncher.StartResult.BLOCKED_BY_ORGANIZATION -> emit(SurveyEvent.UploadBlockedByOrganization(Destination.COMMUNITY))
+        CommunityUploadLauncher.StartResult.STARTED -> Unit
     }
 
     /** Turns off the MQTT queue limit, as the old queue card's "Disable limit" did. */

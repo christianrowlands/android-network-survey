@@ -213,6 +213,7 @@ data class RecordingUi(
     val countsSavedForUpload: Boolean = false,
     val changeSeed: SurveySetup = SurveySetup.empty(),
     val deviceStatusOnly: Boolean = false,
+    val availableTypes: List<RecordType> = RecordType.entries,
 )
 
 /**
