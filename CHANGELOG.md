@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [2.0-beta01](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0-beta01) - 2026-10-25
 
 **NEW FEATURES**
 * A short first run on a fresh install explains what the app does and why it asks for each permission, and asks where the data should go. It is skipped on phones with a managed configuration and on phones already registered with NS Analytics.

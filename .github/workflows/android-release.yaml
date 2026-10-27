@@ -170,7 +170,12 @@ jobs:
           artifacts: "networksurvey/build/outputs/apk/cdr/release/*.apk,networksurvey/build/outputs/apk/regular/release/*.apk"
           token: ${{ secrets.GH_TOKEN }}
           commit: ${{ github.sha }}
+          # A tag with a hyphen (v2.0-beta01, v2.1-rc1) is a pre-release and must not become the Latest release
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          makeLatest: ${{ !contains(github.ref_name, '-') }}
           body: |
+            ${{ contains(github.ref_name, '-') && '> **This is a beta.** The Google Play Store production version is still the previous release, so the regular-release APK below is not yet what Play serves. Please report problems at https://github.com/christianrowlands/android-network-survey/issues' || '' }}
+
             ## What's Changed
 
             ---
