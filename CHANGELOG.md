@@ -2,58 +2,24 @@
 
 ## [2.0-beta01](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0-beta01) - 2026-10-25
 
-**NEW FEATURES**
-* A short first run on a fresh install explains what the app does and why it asks for each permission, and asks where the data should go. It is skipped on phones with a managed configuration and on phones already registered with NS Analytics.
-* Save what is selected on the Survey screen as a named setup and switch between saved setups with one tap. Setups can be starred (starred ones are listed first), renamed and deleted.
-* Filter the Bluetooth list by name, address or company, or show only named devices or only Find My trackers. The filter is for the screen only and never changes what is recorded.
+Network Survey 2.0 rebuilds the whole app. Your settings carry over on upgrade, and a one-time welcome shows what your survey became.
 
-**CHANGES**
-* The "Enable Location" dialog and the "Please turn on GPS" toast no longer appear on every launch; the Survey screen and the Map say when location is off. The launch permission explanation dialog and the first launch battery optimization dialog are replaced by first run.
-* The background location prompt only appears when the survey is set to start automatically, the one thing that needs it.
-* The Bluetooth list is rebuilt to match the Wi-Fi list: each device shows its name, address, company, technology and signal, with sort and pause on the strip at the top. Devices stay on the list while they are still being heard instead of dropping out between scans.
-* The Bluetooth list no longer pops up a permission explanation, a toast or a "turn on Bluetooth" prompt on every visit. It says what is missing (permission, location or Bluetooth) with one button to fix it.
-* Sorting the Bluetooth list by name now goes from A to Z with unnamed devices last, and devices without a signal reading sort last.
-* The Bluetooth list no longer tags AirPods, iPhones and Macs as AirTags. A device is tagged "AirTag" when its Find My advertisement says so, and "Find My" when it is a tracker that could be a third-party tracker, a second-generation AirTag or some AirPods, since those can only be told apart by connecting to them.
-* Bluetooth details shows the manufacturer data (long press to select and copy it), what sent a Find My advertisement, and the Tx power when the phone reports it.
-* The Cellular view is rebuilt: the technology the phone is using in large type with Voice, Data and Branding pills, the serving cell's values with their signal colors, the 5G NR secondary cell, and one neighbor list per technology. Every value is still there; long press copies one, and the Band opens the band reference.
-* The Cellular view says when a missing permission, location being off or airplane mode stops it, with one button to fix it, instead of showing an empty screen.
-* The GNSS view is rebuilt: Status and Sky are switched with a toggle at the top, and the sky plot, the average C/N0 card and the legend (now a sheet opened from the plot) use the new look. The plot keeps its shapes, colors and compass turning, and a satellite heard on two frequencies is drawn once.
-* The GNSS view says when a missing permission or location being off stops it, with one button to fix it, instead of waiting for satellites that cannot arrive.
-* The Wi-Fi list no longer opens the Wi-Fi panel on its own when Wi-Fi is off. It says what stops it (permission, location, or Wi-Fi and Wi-Fi scanning both off) with one button to fix it; with Wi-Fi off but Wi-Fi scanning on, it keeps scanning as Android allows.
-* The Wi-Fi scan throttling warning is a notice above the list with Open settings and Dismiss instead of a red bar over the rows.
-* The Wi-Fi details, Wi-Fi spectrum and Bluetooth details pages say when the phone cannot scan, with one button to fix it, and keep what they already show.
-* The Bluetooth details page is rebuilt in the look of the Wi-Fi details page, with translated labels.
-* The GNSS filter action in the top bar shows a badge while a filter is on.
-* The Settings icons are drawn in the theme's colors in light and dark, instead of fixed images.
-* The GNSS Status page is rebuilt: a Location panel with every reading (position, altitude, accuracy, DOP, satellites used and seen, time, time to first fix, speed and bearing with their accuracies) as a value over its label, then one row per signal with its number, flag, system and band, elevation and azimuth, AGC, what it is missing (not used in fix, no ephemeris, no almanac), and its C/N0 over a meter in the sky plot's colors. Nothing scrolls sideways or is cut off at large text sizes, and long press copies a value (Lat or Lon copies the location).
-* Settings is rebuilt in the app's new look: grouped panels (Survey, Phone, Destinations, Watchlist, Map and lookups, Fleet, Device IDs), the five scan intervals in one Scan rates form, and Map settings and the OpenCelliD and BeaconDB upload settings in the same style. Every setting keeps its value. On a managed phone, a setting the organization sets shows "Set by your organization" and explains itself on a tap, as on the Survey screen and the destination pages, instead of only being greyed out.
-* The Survey screen's record type tiles put the icon beside the name, as in the design, so more of the screen shows at once; Phone state included with Cellular shows dimmed rather than looking like a choice.
-* In landscape and on tablets, pages keep a readable width instead of stretching across the screen.
-* The Wi-Fi and Bluetooth lists, the PLMN lookup results and the band list sit in rounded panels like the rest of the app. The Wi-Fi and Bluetooth details pages share one header layout, and the Bluetooth device fields use the same value grid as Wi-Fi and Cellular.
-* The Cellular calculators are rebuilt in panels with their results as values over labels, and the network type is a segmented toggle.
-* The Map runs up under the status bar with no title bar over it, and its buttons float without a tray behind them, with Filters as the larger button in the middle; "No towers found" and "Zoom in" show as a notice under the cell card instead of text over the map; the Layers sheet uses the app's rows and switches.
-* Section titles are never squeezed into a narrow column by a long count or sort at large text sizes; the lookup tools and Wi-Fi details follow the app's type scale; the battery optimization question's "Don't show this again" can be tapped on its label.
-* The wording is consistent across the app: sentence case, and the same names everywhere (Wi-Fi, MQTT broker, Phone state, OpenCelliD, "Turned off by your organization"). The managed configuration titles that MDM consoles show follow the same rules; no restriction key changed.
-* The Map's Layers sheet, tower filters, tower search and tower details, the Cellular calculators, Acknowledgments, the battery question's phone maker steps, provider color names and several messages can now be translated; they were English only. Times on the tower sheet ("5 minutes ago", "Yesterday") come in the phone's language.
-* The battery optimization question is shorter and plainer: "Keep surveying with the screen off?"
-* The Wi-Fi list shows "26 access points" (or "2 of 47 access points" with a filter) instead of "APs: 26"; the Wi-Fi details title is "Wi-Fi network details"; PLMN lookup shows "50 results"; the location source choices read Fused, GNSS, Network and All.
-* The GNSS sort is now stored as a choice rather than its label, so a change of language or wording keeps it; an existing sort is carried over on upgrade.
+**WHAT'S NEW**
+* One survey with one Start and one Stop. On the Survey tab, pick the record types to survey (Cellular, Phone state, Wi-Fi, Bluetooth, GNSS, and Call records) and the destinations they go to (Log files, MQTT, gRPC, NS Analytics, OpenCelliD and BeaconDB).
+* Save what is selected as a named setup and switch between setups with one tap. Starred setups are listed first.
+* Four tabs replace the side menu: Survey (replacing the Dashboard and Survey Monitor), Signals (Cellular, Wi-Fi, Bluetooth and GNSS), Map, and More.
+* One Map tab replaces both the Tower Map and the Survey Monitor map, with the serving cell card and your survey points. It keeps the Tower Map's settings.
+* Each destination has its own page with its status, and the Survey screen and the notification show the same status. MQTT can save more than one broker. Streams hold records while they connect, and the Survey tab lists anything still waiting to upload.
+* The Cellular, Wi-Fi, Bluetooth and GNSS screens are rebuilt. Every value is still there, long press copies one, and when a missing permission, location or a radio being off stops a screen, it says so with one button to fix it.
+* Filter the Bluetooth list by name, address or company, or show only named devices or only Find My trackers.
+* A short first run on a fresh install explains each permission and asks where your data should go. The "Enable Location" dialog and the "Please turn on GPS" toast no longer appear on every launch, and background location is only requested when the survey is set to start automatically.
+* A new look: light and dark themes (or follow the system), a choice of accent colors, a new launcher icon, and a rebuilt Settings screen. Every screen can now be translated.
 
-**BUG FIXES**
-* Fix the Wi-Fi band and channel ("5 GHz · ch 149") not showing the channel in bold in Chinese.
-* Fix the GNSS sort resetting to Constellation when the app language changed.
-* Fix Later and Go to Settings on the battery optimization question not starting the survey: both now start it (Go to Settings then opens the battery settings), and Back starts nothing.
-* Fix a managed phone's battery threshold not showing (or being kept) as set by the organization in Settings.
-* Fix the Wi-Fi list showing the networks from before when location, the permission or Wi-Fi scanning came back; it now starts empty until the next scan. Rows frozen with Pause are kept.
-* Fix a false Wi-Fi scan throttling warning on Android 9 and 10 after the survey paused its scans for low battery or a full MQTT queue.
-* Fix neighbor cells with the same signal strength showing as one row in the Cellular view's neighbor tables.
-* Fix the Cellular view's technology line and Branding pill losing 5G NSA after a SIM change while a survey records cellular.
-* Fix the GNSS sky plot leaving out satellites at exactly 0 degrees of azimuth or elevation, and showing the previous satellites for a moment when the view came back.
-* Fix the Wi-Fi details page losing the network's channel width and Wi-Fi standard after Android restarted the app in the background.
-* Fix the Wi-Fi details and spectrum pages no longer following a scan interval change after they had been in the background.
-* Fix the tower details on the map showing the coordinates with decimal commas in languages that use them, which made the latitude and longitude hard to tell apart.
-* Fix "Later" on the battery optimization dialog showing the dialog again on every Start, so the survey never started until battery settings were changed.
-* The Map tab replaces both the Tower Map and the Survey Monitor's map, and uses the Tower Map's settings. The Survey Monitor map's own copies of the tile source, layer, survey point and keep-screen-on settings are removed on upgrade.
+**CHANGES TO KNOW ABOUT**
+* GeoPackage log files are removed. Log files are CSV, one file per record type.
+* Every destination receives every record type it can carry; the per-destination record type switches are gone. Phone state now follows Cellular.
+* Translations whose meaning changed were removed, so some screens show English until they are translated again on [Weblate](https://hosted.weblate.org/engage/network-survey-android-app/).
+* Managed configuration (MDM) has new keys for record types, destinations and auto start, and the existing keys still work. A setting the organization sets shows "Set by your organization" in Settings, on the Survey screen and on the destination pages.
 
 ## [1.59](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.59) - 2026-09-21
 

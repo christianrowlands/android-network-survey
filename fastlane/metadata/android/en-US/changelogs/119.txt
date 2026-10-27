@@ -1,0 +1,8 @@
+Network Survey 2.0 rebuilds the whole app. Your settings carry over.
+* One survey with one Start and Stop: pick what to record and where it goes
+* Save setups and switch with one tap
+* Four tabs: Survey, Signals, Map, More
+* One Map with your survey points
+* Rebuilt Cellular, Wi-Fi, Bluetooth and GNSS screens
+* Light and dark themes, accent colors, new icon
+* GeoPackage logging removed; log files are CSV
