@@ -1065,7 +1065,7 @@
     <string name="list_updates_resume">Pokračovať v aktualizáciách</string>
     <string name="list_updates_paused">Aktualizácie boli pozastavené</string>
     <string name="ignore_wifi_scan_throttling_warning_description">Ak je zapnuté, skryje upozornenie na obmedzovanie vyhľadávania Wi-Fi v zozname Wi-Fi; ak je vypnuté, upozornenie sa zobrazí. Upozornenie používateľa informuje, že Android obmedzuje vyhľadávanie sietí Wi-Fi, a odkazuje na možnosti pre vývojárov, kde možno obmedzovanie vypnúť. Ak vaša organizácia blokuje možnosti pre vývojárov, nastavte túto možnosť na zapnutú, aby sa používateľ tam nepresmerovával.</string>
-    <string name="mdm_override_title">Prevážiť nastavenia organizácie</string>
+    <string name="mdm_override_title">Prepísať nastavenia organizácie</string>
     <string name="mdm_override_summary_on">Používanie vašich vlastných nastavení namiesto nastavení vašej organizácie</string>
     <string name="mdm_override_summary_off">Vaša organizácia spravuje nastavenia prieskumu v tomto telefóne</string>
     <string name="allow_intent_control_title">Povoliť iným aplikáciám spúšťať a zastavovať prieskumy</string>
@@ -1178,13 +1178,13 @@
     <string name="ns_analytics_what_is_sent">Všetko, čo prieskum zaznamenáva, okrem záznamov hovorov. Každý záznam sa započítava do kvóty pracovného priestoru, preto ponechajte GNSS a Bluetooth vypnuté, ak ich nepotrebujete.</string>
     <string name="auto_start_survey_title">Automaticky spustiť prieskum</string>
     <string name="auto_start_survey_summary">Spustí prieskum pri otvorení aplikácie a po reštarte telefónu</string>
-    <string name="mdm_choice_user">Vyberá operátor</string>
+    <string name="mdm_choice_user">Vyberá používateľ</string>
     <string name="mdm_choice_on">Stále zapnuté</string>
     <string name="mdm_choice_off">Vypnuté</string>
-    <string name="mdm_survey_record_type_description">Predvolená možnosť „Operátor si vyberá“ ponecháva tento typ záznamu na používateľovi telefónu. Možnosť „Stále zapnuté“ ho zaznamenáva v každom prieskume. Možnosť „Vypnuté“ ho odstráni z obrazovky Prieskum.</string>
-    <string name="mdm_destination_description">Predvolená možnosť „Operátor si vyberá“ ponecháva výber tohto cieľa na používateľovi telefónu. Možnosť „Stále zapnuté“ sem odosiela každý prieskum. Možnosť „Vypnuté“ ho odstráni z obrazovky Prieskum.</string>
+    <string name="mdm_survey_record_type_description">Predvolená možnosť „Vyberá používateľ“ ponecháva tento typ záznamu na používateľovi telefónu. Možnosť „Stále zapnuté“ ho zaznamenáva v každom prieskume. Možnosť „Vypnuté“ ho odstráni z obrazovky Prieskum.</string>
+    <string name="mdm_destination_description">Predvolená možnosť „Vyberá používateľ“ ponecháva výber tohto cieľa na používateľovi telefónu. Možnosť „Stále zapnuté“ sem odosiela každý prieskum. Možnosť „Vypnuté“ ho odstráni z obrazovky Prieskum.</string>
     <string name="mdm_auto_start_survey_title">Automaticky spustiť prieskum</string>
-    <string name="mdm_auto_start_survey_description">Predvolená možnosť „Operátor si vyberá“ používa nastavenie telefónu. Možnosť „Stále zapnuté“ spustí prieskum pri otvorení aplikácie a po reštarte telefónu. Možnosť „Vypnuté“ ho nikdy nespustí automaticky.</string>
+    <string name="mdm_auto_start_survey_description">Predvolená možnosť „Vyberá používateľ“ používa nastavenie telefónu. Možnosť „Stále zapnuté“ spustí prieskum pri otvorení aplikácie a po reštarte telefónu. Možnosť „Vypnuté“ ho nikdy nespustí automaticky.</string>
     <string name="mdm_survey_cellular_title">Zaznamenávať mobilnú sieť</string>
     <string name="mdm_survey_phone_state_title">Zaznamenávať stav telefónu</string>
     <string name="mdm_survey_wifi_title">Zaznamenávať Wi-Fi</string>
