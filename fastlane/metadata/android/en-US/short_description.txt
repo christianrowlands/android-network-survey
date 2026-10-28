@@ -1,1 +1,1 @@
-Displays and Logs Cellular, Wi-Fi, Bluetooth, and GNSS Network Survey Details
+Survey cellular, Wi-Fi, Bluetooth and GNSS, then log, stream or upload the data

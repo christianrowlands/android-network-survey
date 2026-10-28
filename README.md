@@ -16,20 +16,44 @@ width="32%">](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey
 alt="Get it on F-Droid"
 width="32%">](https://f-droid.org/packages/com.craxiom.networksurvey/)
 
-The Network Survey Android App provides a basic survey capability for logging and analyzing
-Cellular networks, Wi-Fi networks, Bluetooth Devices, and GNSS constellations. Capture detailed
-records of signal strength, network information, and device data. All data can be conveniently
-logged to CSV files for offline analysis. Alternatively, choose to live stream the
-data via MQTT or gRPC protocols for real-time monitoring and integration with other systems.
+The Network Survey Android App turns an Android phone into a wireless survey tool for Cellular
+networks, Wi-Fi networks, Bluetooth devices, and GNSS constellations. A survey has one Start and one
+Stop. On the Survey tab you pick the record types to survey (Cellular, Phone state, Wi-Fi,
+Bluetooth, GNSS, and Call records) and the destinations the records go to. Several destinations can
+run at once, and each one receives every record type it can carry:
+
+* **Log files**: CSV files on the phone, one per record type. The only destination for Call records.
+* **NS Analytics**: uploads to your team's [NS Analytics](https://www.networksurvey.app/analytics)
+  workspace, connected by scanning a QR code.
+* **MQTT stream**: JSON records to your own MQTT broker.
+* **gRPC stream**: protobuf records to your own gRPC server.
+* **Community databases**: cellular records to [OpenCelliD](https://opencellid.org/), and cellular
+  and Wi-Fi records to [BeaconDB](https://beacondb.net/).
 
 The Network Survey user manual can be found [here](https://networksurvey.app/manual).
 
 <p align="center">
-  <img src="screenshots/dashboard.png" alt="Cellular Details" width="190"/>
-  <img src="screenshots/cellular_details.png" alt="Cellular Details" width="190"/>
-  <img src="screenshots/wi-fi_details.png" alt="Wi-Fi Details" width="190"/>
-  <img src="screenshots/gnss_details.png" alt="GNSS Details" width="190"/>
+  <img src="screenshots/survey_tab.png" alt="Survey tab recording Cellular, Phone state, Wi-Fi, Bluetooth and GNSS, with the Mission ID and record counts by type" width="190"/>
+  <img src="screenshots/signals_cellular.png" alt="Signals, Cellular: a 5G NR Standalone serving cell on band n41 with carrier aggregation and a signal strength chart" width="190"/>
+  <img src="screenshots/signals_wifi.png" alt="Signals, Wi-Fi: access points sorted by signal strength with band, channel, security and 802.11 standard" width="190"/>
+  <img src="screenshots/map_survey_points.png" alt="Map tab: nearby towers and survey points from a walk, colored by cellular signal strength" width="190"/>
 </p>
+
+## Features
+
+* **Survey tab**: choose what to survey and where it goes, see "What goes where", and start or stop
+  with one button. Each survey gets its own Mission ID.
+* **Saved setups**: save what to record and where it goes, and switch back to it with one tap.
+* **Signals**: live Cellular, Wi-Fi, Bluetooth and GNSS views. Long press copies a value.
+* **Map**: towers from OpenCelliD and BTSearch, BeaconDB coverage, and My survey points (recorded for
+  surveys that send to NS Analytics or the Community databases).
+* **Watchlist**: a notification when a saved Wi-Fi network (SSID or BSSID) is seen, with a history.
+* **Tools**: Cellular tools (LTE and 5G NR bands, channel to band, cell ID decoders), PLMN lookup,
+  OUI lookup, and Wi-Fi spectrum.
+* **Themes**: light, dark or system theme and a choice of accent colors.
+* **Managed configuration (MDM)**: each record type and destination can be set to "Operator
+  chooses", "Always on" or "Off", along with the MQTT broker, auto start and other settings.
+* **Intent API**: other apps can start and stop a survey (see [Intent API](#intent-api)).
 
 ## CDR Log Files
 
@@ -130,9 +154,9 @@ Install Android Studio to work on this code.
 
 ## gRPC Survey Record Streaming
 
-The Network Survey app supports streaming GSM, CDMA, UMTS, LTE, and 802.11 survey records to a gRPC
-server. More specifically,
-the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
+The gRPC stream destination sends GSM, CDMA, UMTS, LTE, NR, 802.11, Bluetooth, GNSS, Phone State, and
+Device Status records to a gRPC server. The
+[Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
 library can be used to stand up a gRPC server. From there it is up to the implementation to handle
 the incoming survey messages.
 
@@ -144,8 +168,8 @@ GoLang.
 
 ## MQTT Broker Survey Record Streaming
 
-Currently, GSM, CDMA, UMTS, LTE, NR, 802.11, Bluetooth and GNSS survey records are sent to a
-connected MQTT broker. They are published on the following MQTT Topics:
+The MQTT stream destination publishes GSM, CDMA, UMTS, LTE, NR, 802.11, Bluetooth and GNSS survey
+records to a connected MQTT broker on the following MQTT topics:
 
 * gsm_message
 * cdma_message
@@ -159,28 +183,35 @@ connected MQTT broker. They are published on the following MQTT Topics:
 There is also a DeviceStatus and a PhoneState message that is published on
 the `device_status_message` topic.
 
-The MQTT Broker connection supports both plain text and TLS/SSL connections.
+While "Stream over MQTT" is on (under Watchlist in Settings, on by default), Wi-Fi watchlist events
+are published too:
+
+* watchlist_match_message (a watched network was seen)
+* watchlist_entry_message (the phone's watched networks and their labels)
+
+The MQTT Broker connection supports both plain text and TLS/SSL connections, and the app can save
+more than one broker.
 
 The survey messages are sent in JSON format following the protobuf definitions from
 the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
-library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/)
-.
+library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
 
-QR Code for MQTT Broker connection setting needs to provide a JSON string with the following fields.
+### MQTT broker QR code
+
+On the MQTT stream page, "Scan a QR code" saves a broker from a QR code that contains a JSON string
+with the following fields.
 
 The `mqtt_client` field is optional and will default to the App's auto-generated value.
 
 The `mqtt_topic_prefix` field is used to prefix the MQTT topics that the survey records are
-published
-to. The default topics are listed above (e.g. `lte_message`), but if you want to add a custom
-prefix,
-you can use the `mqtt_topic_prefix` field to change the topic to something like
+published to. The default topics are listed above (e.g. `lte_message`), but if you want to add a
+custom prefix, you can use the `mqtt_topic_prefix` field to change the topic to something like
 `my/custom/topic/lte_message` by setting the value to `"mqtt_topic_prefix": "my/custom/topic/"`
 (notice the trailing slash).
 
 ```json
 {
-  "mqtt_host": "cloud.mymqttserver.com",
+  "mqtt_host": "mqtt.example.com",
   "mqtt_port": 8883,
   "mqtt_tls": true,
   "mqtt_client": "aclient",
@@ -188,35 +219,39 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
   "mqtt_password": "apassword",
   "mqtt_topic_prefix": "my/custom/topic/path/",
   "mqtt_qos": 1,
-  "cellular_stream_enabled": true,
-  "phone_state_stream_enabled": true,
-  "wifi_stream_enabled": true,
-  "bluetooth_stream_enabled": true,
-  "gnss_stream_enabled": true,
   "device_status_stream_enabled": true
 }
 ```
+
+What gets streamed comes from the record types selected for the survey. A QR code does not choose
+record types, so the per-type flags from older versions (`cellular_stream_enabled`,
+`phone_state_stream_enabled`, `wifi_stream_enabled`, `bluetooth_stream_enabled`,
+`gnss_stream_enabled`) are ignored when a code is scanned.
 
 ## Intent API
 
 The Network Survey app supports an Intent API that allows other apps to start and stop a survey. The
 Intent API is documented on the [Intent API website](https://www.networksurvey.app/intent-api).
 
-## Upload Feature
+## Community Databases
 
-The **Upload Feature** allows users to voluntarily contribute collected **cellular and Wi-Fi survey
-data** to third-party databases. This feature is **optional** and you decide if you want to use it.
+The **Community databases** destination lets you voluntarily contribute collected **cellular and
+Wi-Fi survey data** to public databases. It is **optional** and off unless you turn it on.
 
-### Supported Upload Destinations:
+### Supported Databases:
 
-- **[OpenCelliD](https://opencellid.org/)** – A global open-source cell tower database.
-- **[BeaconDB](https://beacondb.net/)** – A crowdsourced geolocation database.
+- **[OpenCelliD](https://opencellid.org/)**: a global open cell tower database. Takes cellular
+  records.
+- **[BeaconDB](https://beacondb.net/)**: a crowdsourced geolocation database. Takes cellular and
+  Wi-Fi records.
 
-When started by the user, survey records are stored locally and can be uploaded at any time. No
-personally identifiable information (such as phone numbers or IMEIs) is included in uploads.
+Records from a survey that sends to the Community databases are kept on the phone and uploaded
+automatically ("Upload automatically") or when you choose "Upload now". Only cellular and Wi-Fi
+records are used, and the Mission ID is not sent. No phone numbers or IMEIs are included in
+uploads, but Wi-Fi uploads include each network's name (SSID) and hardware address (BSSID).
 
-For more details, visit the *
-*[Network Survey User Manual](https://networksurvey.app/manual#data-upload)**.
+For more details, visit the
+[Network Survey User Manual](https://networksurvey.app/manual/advanced/upload-databases/).
 
 ## APK Verification
 

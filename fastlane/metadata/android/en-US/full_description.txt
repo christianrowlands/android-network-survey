@@ -1,21 +1,42 @@
-<p>The <i>Network Survey</i> app enables logging cellular, Wi-Fi, Bluetooth, and/or GNSS information to a log file (CSV format). For cellular records it supports logging GSM, CDMA, UMTS, LTE, and NR records.</p>
+<p><i>Network Survey</i> turns an Android phone into a wireless survey tool. Pick what to survey, pick where the data goes, and press Start survey. One survey, one Start and one Stop.</p>
 
-<p>You might receive an alert from anti-malware software indicating that Network Survey sends SMS messages in private manner to deceive users. This is NOT the case. SMS permission is necessary for some of the logging that is done. Just to be clear though, Network Survey does not send any text messages, nor does it install anything. In fact, you can deny all the SMS permissions if you are not using the CDR (call detail record) logging feature. The SMS permissions are only requested the first time you turn on CDR logging. More information can be found in this GitHub Discussion: https://github.com/christianrowlands/android-network-survey/discussions/35</p>
+<p><b>What it records</b></p>
+<ul>
+<li>Cellular: serving and neighbor cells for GSM, CDMA, UMTS, LTE and 5G NR, including carrier aggregation</li>
+<li>Phone state: what the radio is doing</li>
+<li>Wi-Fi: access points, with channel, security and 802.11 standard</li>
+<li>Bluetooth: Classic and BLE devices, with company names and Find My trackers</li>
+<li>GNSS: GPS, GLONASS, Galileo, BeiDou, QZSS, IRNSS and SBAS satellites</li>
+<li>Call records: calls, texts (SMS and MMS) and cell tower changes, saved to log files</li>
+</ul>
 
-<p>This app has the ability to access your device's location in the background. The background location permission is needed to start Network Survey at boot. You can deny this permission if you don't want to start Network Survey at phone boot. More information can be found in the App's privacy policy located at <a href="https://github.com/christianrowlands/android-network-survey/blob/master/privacy_policy.md">https://github.com/christianrowlands/android-network-survey/blob/master/privacy_policy.md</a></p>
+<p><b>Where the data goes</b></p>
+<p>Turn on one destination or several at once:</p>
+<ul>
+<li>Log files: CSV files on the phone</li>
+<li>NS Analytics: uploads to your team's workspace</li>
+<li>MQTT stream: JSON records to your own broker (for example <a href="https://mosquitto.org">Mosquitto</a>), with TLS and QR code setup</li>
+<li>gRPC stream: records to your own gRPC server</li>
+<li>Community databases: OpenCelliD and BeaconDB</li>
+</ul>
+<p>Message formats: <a href="https://messaging.networksurvey.app/">messaging.networksurvey.app</a></p>
 
-<p>The cellular logging feature logs several details about the current serving cell, and then some basic information about the neighbor cells. This app won't log all 5 cellular protocols at once. Instead, it will only log information about the protocols that are current connected. If logging for one specific protocol is desired, then the phone must be locked to that protocol (try using *#*#4636#*#* from the dial pad).</p>
+<p><b>NS Analytics</b></p>
+<p>NS Analytics is the web analytics companion for Network Survey data. Connected phones upload their records to your workspace, so nobody copies files off phones. See your surveys on one map, open an analysis page for each record type, and export the raw records. Connect a phone by scanning the QR code on your workspace's Devices page. It is a separate web service: <a href="https://www.networksurvey.app/analytics">networksurvey.app/analytics</a></p>
 
-<p>The cellular survey records can be streamed to either a gRPC server or a MQTT broker. This is not on by default and a gRPC server or MQTT Broker needs to be setup for this feature to work.</p>
+<p><b>And more</b></p>
+<ul>
+<li>Signals: live Cellular, Wi-Fi, Bluetooth and GNSS views, including AGC and C/N0 trends</li>
+<li>Map: towers from OpenCelliD and BTSearch, and the points your NS Analytics and Community database surveys covered, colored by signal strength</li>
+<li>Watchlist alerts when a saved Wi-Fi network is seen</li>
+<li>Cellular tools, PLMN lookup, OUI lookup and Wi-Fi spectrum</li>
+<li>Saved setups, light and dark themes, and nine accent colors</li>
+<li>Managed configuration (MDM) per record type and destination, and an Intent API</li>
+</ul>
 
-<p>See the <a href="https://github.com/christianrowlands/network-survey-messaging">NS Messaging GitHub Repo</a> for more details on setting up a network survey gRPC server.</p>
+<p><b>Permissions and privacy</b></p>
+<p>Location is needed because every record needs a position, and Android requires it to scan Wi-Fi and Bluetooth. Background location is requested only if you turn on Start survey automatically. This build has no Firebase, analytics or crash reporting. <a href="https://www.networksurvey.app/privacy-policy">Privacy policy</a></p>
 
-<p>See <a href="https://mosquitto.org"> for information on setting up a MQTT Broker.</p>
+<p>Some anti-malware apps flag Network Survey because it can read SMS. It never sends texts and installs nothing. The SMS and call log permissions are used only for Call records (text events and the other party's number) and are asked for only when you turn Call records on, or set a survey that records them to start automatically. Both are optional: without them Call records still logs calls and tower changes. <a href="https://github.com/christianrowlands/android-network-survey/discussions/35">More on GitHub</a></p>
 
-<p>A bonus feature of this app is its ability to create a Call Detail Record (CDR) file. If enabled, CDR events are logged to a CSV file.</p>
-
-<p>The app also has a calculator that converts an LTE Cell ID to the corresponding eNodeB ID and Sector ID, and a calculator that converts an LTE PCI to the corresponding Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).</p>
-
-<p>I hope you enjoy this app as much as I have enjoyed writing it. If you have any feature requests please feel free to reach out by creating a GitHub issue at the link below.</p>
-
-<p>The source code for this app lives here: https://github.com/christianrowlands/android-network-survey</p>
+<p>Open source (Apache 2.0): <a href="https://github.com/christianrowlands/android-network-survey">github.com/christianrowlands/android-network-survey</a>. Manual: <a href="https://networksurvey.app/manual">networksurvey.app/manual</a>. Requires Android 8.0 or later.</p>

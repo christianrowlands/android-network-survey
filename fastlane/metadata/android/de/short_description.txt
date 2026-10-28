@@ -1,1 +1,1 @@
-Zeigt und protokolliert LTE Network Survey Details
+Mobilfunk, WLAN, Bluetooth und GNSS erfassen, speichern, streamen oder hochladen
