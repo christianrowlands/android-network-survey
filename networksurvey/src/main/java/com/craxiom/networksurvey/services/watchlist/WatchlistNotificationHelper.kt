@@ -18,8 +18,8 @@ import timber.log.Timber
  * Modeled on the New Tower notification helper, but with its own high-importance channel and a
  * distinct notification id range so the two never collide. Tapping a notification deep-links to the
  * Watchlist history screen. The notification body uses the user's own label plus the signal
- * strength; because the detection manager only alerts on a network re-appearing (not on every scan)
- * the signal value does not cause notification spam.
+ * strength when the scan measured one; because the detection manager only alerts on a network
+ * re-appearing (not on every scan) the signal value does not cause notification spam.
  */
 object WatchlistNotificationHelper {
 
@@ -56,13 +56,14 @@ object WatchlistNotificationHelper {
      * @param context application context
      * @param entryId the id of the matched watchlist entry, used for a stable notification id
      * @param label the user's label for the matched entry
-     * @param rssi the signal strength of the detection, in dBm
+     * @param rssi the signal strength of the detection in dBm, or null when the access point
+     *   reported none (the text then leaves the signal out instead of showing 0 dBm)
      */
     fun showWatchlistNotification(
         context: Context,
         entryId: Long,
         label: String,
-        rssi: Int
+        rssi: Int?
     ) {
         createNotificationChannel(context)
 
@@ -81,7 +82,7 @@ object WatchlistNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val contentText = context.getString(R.string.watchlist_alert_content, label, rssi)
+        val contentText = contentText(context, label, rssi)
 
         val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_watchlist)
@@ -107,4 +108,14 @@ object WatchlistNotificationHelper {
             Timber.e(e, "Error showing watchlist notification")
         }
     }
+
+    /**
+     * @return the alert body: the label with its signal, or just the label when [rssi] is null.
+     */
+    internal fun contentText(context: Context, label: String, rssi: Int?): String =
+        if (rssi == null) {
+            context.getString(R.string.watchlist_alert_content_no_signal, label)
+        } else {
+            context.getString(R.string.watchlist_alert_content, label, rssi)
+        }
 }

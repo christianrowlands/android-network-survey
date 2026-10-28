@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.Response
 import timber.log.Timber
 import java.util.concurrent.CopyOnWriteArraySet
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * Utility functions for NS Analytics operations.
@@ -110,7 +111,7 @@ object NsAnalyticsUtils {
      * @return Formatted string with thousands separators (e.g., "1,234,567")
      */
     fun formatNumberWithThousandsSeparator(number: Int): String {
-        return java.text.NumberFormat.getNumberInstance().format(number)
+        return CountFormat.format(number)
     }
 
     /** How this phone's NS Analytics registration changed. */

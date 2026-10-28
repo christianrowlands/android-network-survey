@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * Applies the outcome of an NS Analytics upload to the page's state: the completed result, a
@@ -119,11 +120,7 @@ internal class NsAnalyticsUploadResults(
             uploadPausedForQuota = false,
             showQuotaExceededDialog = false,
             lastUploadResult = if (recordsUploaded > 0) {
-                context.resources.getQuantityString(
-                    R.plurals.ns_analytics_upload_result_records,
-                    recordsUploaded,
-                    recordsUploaded
-                )
+                CountFormat.plural(context.resources, R.plurals.ns_analytics_upload_result_records, recordsUploaded)
             } else null
         )
 

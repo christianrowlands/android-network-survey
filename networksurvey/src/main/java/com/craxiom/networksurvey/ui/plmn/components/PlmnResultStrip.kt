@@ -22,7 +22,7 @@ import com.craxiom.networksurvey.ui.common.NsPulsingDot
 import com.craxiom.networksurvey.ui.common.NsSortPill
 import com.craxiom.networksurvey.ui.plmn.PlmnSortKey
 import com.craxiom.networksurvey.ui.theme.NsTheme
-import java.text.NumberFormat
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * Top-of-list status strip for the PLMN lookup screen, on the same pulsing dot and sort pill as the
@@ -60,7 +60,7 @@ fun PlmnResultStrip(
 /** "50 results", with the number in the stronger color and weight wherever the language puts it. */
 @Composable
 private fun ResultMeta(count: Int) {
-    val number = NumberFormat.getIntegerInstance().format(count)
+    val number = CountFormat.format(count)
     val full = pluralStringResource(R.plurals.plmn_lookup_result_count, count, number)
     val start = full.indexOf(number)
     val numberStyle = SpanStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)

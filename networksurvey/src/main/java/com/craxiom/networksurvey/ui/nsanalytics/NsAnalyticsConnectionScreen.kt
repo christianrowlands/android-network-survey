@@ -51,7 +51,10 @@ fun NsAnalyticsConnectionScreen(
     onNavigateToQrScanner: () -> Unit,
     onConnected: (workspaceName: String) -> Unit,
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val viewModelState by viewModel.uiState.collectAsStateWithLifecycle()
+    val status = if (viewModelState.isRegistered) rememberDestinationStatus(Destination.NS_ANALYTICS) else null
+    // One count of the records waiting for the whole page: the status's
+    val state = viewModelState.withQueueOf(status)
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -98,7 +101,7 @@ fun NsAnalyticsConnectionScreen(
             state.isRegistered -> NsAnalyticsConnectedContent(
                 state,
                 connectedActions(viewModel, openUrl) { dialog = it },
-                status = rememberDestinationStatus(Destination.NS_ANALYTICS),
+                status = status,
             )
             else -> NsAnalyticsConnectWalkthrough(state.uploadFrequencyMinutes, openUrl)
         }

@@ -147,6 +147,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -190,8 +191,9 @@ public class SurveyRecordProcessor
     private final Set<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
     /**
-     * Passive Wi-Fi listeners (currently just the Watchlist detector) observe scan results when a
-     * survey is already scanning, but unlike normal listeners they do NOT cause Wi-Fi scanning to
+     * Passive Wi-Fi listeners (currently just the Watchlist detector) observe every Wi-Fi scan the
+     * app processes, whatever started it (a survey that includes Wi-Fi, or an open Wi-Fi list,
+     * details, or spectrum screen), but unlike normal listeners they do NOT cause Wi-Fi scanning to
      * start and do NOT keep the service alive. They always receive unfiltered records.
      */
     private final Set<IWifiSurveyRecordListener> passiveWifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
@@ -306,8 +308,8 @@ public class SurveyRecordProcessor
 
     /**
      * Registers a passive Wi-Fi listener that observes scan results without triggering scanning or
-     * keeping the service alive. Used by the Watchlist detector so it only runs while a survey is
-     * already scanning Wi-Fi.
+     * keeping the service alive. Used by the Watchlist detector so it runs whenever something else
+     * (a survey or an open Wi-Fi screen) is already scanning Wi-Fi.
      */
     void registerPassiveWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
     {
@@ -1099,6 +1101,7 @@ public class SurveyRecordProcessor
         final long elapsedTimeMillis = SystemClock.elapsedRealtime();
         final List<WifiRecordWrapper> wifiBeaconRecords = apScanResults.stream()
                 .map(apScanResult -> generateWiFiBeaconSurveyRecord(apScanResult, deviceTime, elapsedTimeMillis))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         notifyWifiBeaconRecordListeners(wifiBeaconRecords);
     }
@@ -2100,10 +2103,9 @@ public class SurveyRecordProcessor
     private WifiRecordWrapper generateWiFiBeaconSurveyRecord(ScanResult apScanResult, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final String bssid = apScanResult.BSSID;
-        final int signalStrength = apScanResult.level;
 
         // Validate that the required fields are present before proceeding further
-        if (!validateWifiBeaconFields(bssid, signalStrength)) return null;
+        if (!validateWifiBeaconFields(bssid)) return null;
 
         final WifiBeaconRecordData.Builder dataBuilder = WifiBeaconRecordData.newBuilder();
 
@@ -2136,7 +2138,7 @@ public class SurveyRecordProcessor
         dataBuilder.setRecordNumber(wifiRecordNumber.getAndIncrement());
 
         dataBuilder.setBssid(bssid);
-        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        setWifiSignalStrength(dataBuilder, apScanResult.level);
 
         final String ssid = apScanResult.SSID;
         if (ssid != null) dataBuilder.setSsid(ssid);
@@ -2186,6 +2188,27 @@ public class SurveyRecordProcessor
         final boolean isExcluded = ssidExclusionManager.isExcluded(ssid);
 
         return new WifiRecordWrapper(recordBuilder.build(), apScanResult.capabilities, isExcluded);
+    }
+
+    /**
+     * Sets the record's signal strength only when Android measured one. An access point listed
+     * without a reading (see {@link WifiUtils#isMeasuredRssi(int)}) keeps the record, since it was
+     * heard, but leaves the field unset so no sink stores or streams a false 0 dBm.
+     * <p>
+     * Visible for testing.
+     *
+     * @param dataBuilder The record builder to set the signal strength on.
+     * @param rssiDbm     The {@link ScanResult#level} reported by Android.
+     */
+    static void setWifiSignalStrength(WifiBeaconRecordData.Builder dataBuilder, int rssiDbm)
+    {
+        if (WifiUtils.isMeasuredRssi(rssiDbm))
+        {
+            dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssiDbm).build());
+        } else
+        {
+            Timber.v("Wi-Fi scan listed %s with no signal measurement (level %d)", dataBuilder.getBssid(), rssiDbm);
+        }
     }
 
     /**
@@ -2878,17 +2901,11 @@ public class SurveyRecordProcessor
      * @return True if the provided fields are all valid, false if one or more is invalid.
      * @since 0.1.2
      */
-    private boolean validateWifiBeaconFields(String bssid, int signalStrength)
+    private boolean validateWifiBeaconFields(String bssid)
     {
         if (bssid == null || bssid.isEmpty())
         {
             Timber.v("The BSSID is required to build a Wi-Fi Beacon Survey Record.");
-            return false;
-        }
-
-        if (signalStrength == Integer.MAX_VALUE)
-        {
-            Timber.v("The Signal Strength is required to build a Wi-Fi Beacon Survey Record.");
             return false;
         }
 

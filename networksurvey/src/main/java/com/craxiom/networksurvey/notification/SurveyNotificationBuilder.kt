@@ -105,7 +105,8 @@ class SurveyNotificationBuilder(private val context: Context) {
         }
         if (state.mqttDropping) {
             add(context.getString(R.string.mqtt_drop_mode_title))
-            add(context.getString(R.string.mqtt_drop_mode_subtitle))
+            // Only reassure about file logging when Log files is part of this survey
+            if (state.fileLogging) add(context.getString(R.string.mqtt_drop_mode_subtitle))
         }
         state.destinationStatuses.forEach { (destination, status) ->
             if (needsHealthLine(destination, status, state)) add(healthLine(destination, status))

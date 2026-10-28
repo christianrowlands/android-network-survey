@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import com.craxiom.networksurvey.R
@@ -29,6 +28,7 @@ import com.craxiom.networksurvey.ui.common.SectionHeader
 import com.craxiom.networksurvey.ui.survey.DestinationStatusText
 import com.craxiom.networksurvey.ui.survey.model.StillToDoItemUi
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.ui.common.countText
 
 /**
  * "Still to do" at the top of the Ready screen: records a finished survey left on the phone for
@@ -79,7 +79,7 @@ private fun StillToDoRow(item: StillToDoItemUi, nowMs: Long, onUploadNow: (Desti
             main = {
                 Column {
                     Text(
-                        text = pluralStringResource(R.plurals.survey_still_to_do_records, item.pending, item.pending, name),
+                        text = countText(R.plurals.survey_still_to_do_records, item.pending, name),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )

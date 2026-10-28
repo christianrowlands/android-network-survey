@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -11,6 +12,8 @@ import android.location.Location;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
 import android.telephony.CellInfoNr;
+
+import com.craxiom.messaging.WifiBeaconRecordData;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -248,5 +251,42 @@ public class SurveyRecordProcessorTest
 
         long reference = Integer.MAX_VALUE + 60_000L;
         assertEquals(Integer.MAX_VALUE, SurveyRecordProcessor.getLocationAgeMs(location, reference));
+    }
+
+    // A Pixel 10 Pro XL (Android 17) listed about 3% of its 2.4 GHz scan results with level 0, on
+    // APs that read -55 dBm in the scans before and after. Setting that 0 put a false 0 dBm into
+    // the Wi-Fi list (full green bars, and a whole SSID group at 0 dBm), Log files, MQTT, NS
+    // Analytics and BeaconDB.
+    @Test
+    public void setWifiSignalStrength_zeroLevel_isNotAMeasurement()
+    {
+        WifiBeaconRecordData.Builder data = WifiBeaconRecordData.newBuilder().setBssid("ae:46:9d:2a:16:c1");
+
+        SurveyRecordProcessor.setWifiSignalStrength(data, 0);
+
+        assertFalse(data.hasSignalStrength());
+    }
+
+    @Test
+    public void setWifiSignalStrength_nonNegativeOrUnsetLevel_isNotAMeasurement()
+    {
+        for (int level : new int[]{1, 10, Integer.MAX_VALUE})
+        {
+            WifiBeaconRecordData.Builder data = WifiBeaconRecordData.newBuilder();
+            SurveyRecordProcessor.setWifiSignalStrength(data, level);
+            assertFalse("level " + level, data.hasSignalStrength());
+        }
+    }
+
+    @Test
+    public void setWifiSignalStrength_measuredLevel_isKept()
+    {
+        for (int level : new int[]{-1, -55, -100})
+        {
+            WifiBeaconRecordData.Builder data = WifiBeaconRecordData.newBuilder();
+            SurveyRecordProcessor.setWifiSignalStrength(data, level);
+            assertTrue("level " + level, data.hasSignalStrength());
+            assertEquals(level, data.getSignalStrength().getValue(), 0f);
+        }
     }
 }

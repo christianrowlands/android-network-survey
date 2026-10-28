@@ -20,10 +20,8 @@ import org.apache.commons.csv.CSVPrinter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,7 +49,11 @@ public abstract class CsvRecordLogger
      */
     protected final Object csvFileLock = new Object();
 
-    private final DecimalFormat twoDecimalFormat = new DecimalFormat("#.##");
+    /**
+     * Formats the decimal values. Replaced each time a file is created, so each file follows the
+     * locale in effect when it was opened and never mixes two decimal separators.
+     */
+    private volatile CsvNumberFormat numberFormat = new CsvNumberFormat(Locale.getDefault());
 
     private Context applicationContext;
     private final String logDirectoryName;
@@ -79,8 +81,6 @@ public abstract class CsvRecordLogger
         this.logDirectoryName = logDirectoryName;
         this.fileNamePrefix = fileNamePrefix;
         this.lazyFileCreation = lazyFileCreation;
-
-        twoDecimalFormat.setRoundingMode(RoundingMode.CEILING);
     }
 
     public void onDestroy()
@@ -223,11 +223,8 @@ public abstract class CsvRecordLogger
         String[] additionalComments = getHeaderComments();
         Collections.addAll(headerComments, additionalComments);
 
-        CSVFormat csvFormat = CSVFormat.Builder.create()
-                .setCommentMarker('#')
-                .setHeaderComments(headerComments.toArray(new String[0]))
-                .setHeader(getHeaders())
-                .build();
+        numberFormat = new CsvNumberFormat(Locale.getDefault());
+        CSVFormat csvFormat = createCsvFormat(headerComments.toArray(new String[0]));
         try
         {
             final FileWriter out = new FileWriter(loggingFileName);
@@ -358,7 +355,7 @@ public abstract class CsvRecordLogger
      */
     private class RolloverWorker
     {
-        private static final int BYTES_TO_MEGABYTES = 1_048_576;
+        private static final long BYTES_TO_MEGABYTES = 1_048_576L;
 
         /**
          * A lock that synchronizes read and write operations on {@link #rolloverSizeBytes}. For
@@ -377,7 +374,7 @@ public abstract class CsvRecordLogger
          * The max log size for a CSV file before a new one is created, in bytes. When this
          * value is set to 0, rollover is de-activated.
          */
-        private int rolloverSizeBytes = Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
+        private long rolloverSizeBytes = Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
 
         /**
          * Update the rollover worker with new values.
@@ -457,25 +454,43 @@ public abstract class CsvRecordLogger
     }
 
     /**
-     * Trims a double (location) to six decimal places, not removing extra zeros.
+     * Creates the CSV format for a new log file: a '#' comment block, then the header row. Fields
+     * that contain the delimiter (such as a comma decimal "38,889484") are quoted.
+     *
+     * @param headerComments The comment lines written above the header row.
+     * @return The CSV format to print the file with.
+     */
+    CSVFormat createCsvFormat(String[] headerComments)
+    {
+        return CSVFormat.Builder.create()
+                .setCommentMarker('#')
+                .setHeaderComments(headerComments)
+                .setHeader(getHeaders())
+                .build();
+    }
+
+    /**
+     * Trims a double (location) to six decimal places, not removing extra zeros. The decimal
+     * separator follows the locale; see {@link CsvNumberFormat} for what stays fixed.
      *
      * @param value The double to trim.
      * @return The trimmed double as a string.
      */
     String trimToSixDecimalPlaces(double value)
     {
-        return String.format(Locale.getDefault(), "%.6f", value);
+        return numberFormat.toSixDecimalPlaces(value);
     }
 
     /**
-     * Rounds a double to 2 decimal places, removing extra zeros.
+     * Rounds a double up to 2 decimal places, removing extra zeros. The decimal separator follows
+     * the locale; see {@link CsvNumberFormat} for what stays fixed.
      *
      * @param value The double to round.
      * @return The rounded double as a string.
      */
     String roundToTwoDecimalPlaces(double value)
     {
-        return twoDecimalFormat.format(value);
+        return numberFormat.toAtMostTwoDecimalPlaces(value);
     }
 
     /**

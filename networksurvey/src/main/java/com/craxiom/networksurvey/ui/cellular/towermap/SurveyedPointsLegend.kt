@@ -48,7 +48,7 @@ import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
 import com.craxiom.networksurvey.ui.common.SegmentedOption
 import com.craxiom.networksurvey.ui.common.dialogs.NsMessageDialog
 import com.craxiom.networksurvey.util.SignalBuckets
-import java.text.NumberFormat
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /** The modal host for [SurveyedPointsOptions], opened from the pill or the Layers sheet. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,7 +124,7 @@ fun SurveyPointsAboutDialog(onDismiss: () -> Unit) {
         ),
         stringResource(
             R.string.survey_points_about_storage,
-            NumberFormat.getInstance().format(SurveyedPointStore.MAX_ROWS)
+            CountFormat.format(SurveyedPointStore.MAX_ROWS)
         ),
         stringResource(R.string.survey_points_about_reading),
     ).joinToString("\n\n")

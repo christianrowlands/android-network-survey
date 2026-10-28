@@ -32,6 +32,15 @@ public class WatchlistHitEntity
      */
     public static final String MATCHED_FIELD_BSSID = "bssid";
 
+    /**
+     * The value stored in {@link #rssi} when the access point reported no signal strength. A Wi-Fi
+     * RSSI is always negative dBm, so 0 (and any other value that is not negative) never means a
+     * measured signal, and history rows written before this constant existed already use 0 for a
+     * missing signal. The {@link com.craxiom.networksurvey.logging.db.dao.WatchlistHitDao} signal
+     * aggregates skip it, and the UI shows it as an unknown signal rather than 0 dBm.
+     */
+    public static final int RSSI_UNKNOWN = 0;
+
     @PrimaryKey(autoGenerate = true)
     public long id;
 
@@ -61,7 +70,9 @@ public class WatchlistHitEntity
     public String bssid;
 
     /**
-     * The signal strength (RSSI, dBm) of the detection.
+     * The signal strength (RSSI, dBm) of the detection, or {@link #RSSI_UNKNOWN} when the access
+     * point reported none. Read it through {@code WatchlistSignal} so an unknown signal is never shown
+     * as 0 dBm.
      */
     public int rssi;
 

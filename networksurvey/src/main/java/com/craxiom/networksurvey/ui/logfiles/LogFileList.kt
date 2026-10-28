@@ -33,6 +33,7 @@ import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.friendlyTimeText
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * Where the recent files list is: how many surveys it shows, whether it is selecting files to share,
@@ -74,7 +75,14 @@ fun LogFileList(listing: LogFilesListing.Files, nowMs: Long, state: LogFileListS
     }
     if (listing.groups.size > state.shownGroups) {
         Column {
-            NsSummaryText(pluralStringResource(R.plurals.log_files_showing, listing.groups.size, state.shownGroups, listing.groups.size))
+            NsSummaryText(
+                pluralStringResource(
+                    R.plurals.log_files_showing,
+                    listing.groups.size,
+                    CountFormat.format(state.shownGroups),
+                    CountFormat.format(listing.groups.size),
+                ),
+            )
             NsTextAction(stringResource(R.string.log_files_show_more), actions::onShowMore)
         }
     }
@@ -131,7 +139,7 @@ private fun FileRow(file: LogFile, nowMs: Long, state: LogFileListState, actions
     if (state.selecting) {
         val checked = file.name in state.selected
         NsRow(
-            title = file.name,
+            title = breakableFileName(file.name),
             subtitle = detail,
             icon = R.drawable.ic_description,
             modifier = Modifier.toggleable(value = checked, role = Role.Checkbox) { actions.onSetSelected(listOf(file), it) },
@@ -141,7 +149,7 @@ private fun FileRow(file: LogFile, nowMs: Long, state: LogFileListState, actions
         }
     } else {
         NsRow(
-            title = file.name,
+            title = breakableFileName(file.name),
             subtitle = detail,
             icon = R.drawable.ic_description,
             onClickLabel = stringResource(R.string.log_files_share, file.name),
@@ -157,3 +165,14 @@ private fun FileRow(file: LogFile, nowMs: Long, state: LogFileListState, actions
         }
     }
 }
+
+/** A zero-width space: an invisible point where a line may break. */
+private const val LINE_BREAK_OPPORTUNITY = "\u200B"
+
+/**
+ * The file name with a break opportunity after each hyphen. Unicode line breaking keeps a hyphen
+ * that is followed by a digit together with the digits (it reads as a minus sign), so a name like
+ * craxiom-devicestatus-20261028-124351.csv had no break point and wrapped mid-extension (".cs" / "v").
+ * Only the displayed text changes; share and select labels keep the real name.
+ */
+internal fun breakableFileName(name: String): String = name.replace("-", "-$LINE_BREAK_OPPORTUNITY")

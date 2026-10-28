@@ -33,18 +33,21 @@ interface WatchlistHitDao {
      * Observe the most recent "Seen" time (and that sighting's RSSI) for every entry in a single
      * grouped query, so the management screen avoids one query per row. The bare {@code rssi} column
      * is the value from the {@code MAX(timestamp)} row (a documented SQLite behavior for a single
-     * min/max aggregate).
+     * min/max aggregate). A sighting with no measured signal
+     * ({@link WatchlistHitEntity#RSSI_UNKNOWN}, or any value that is not negative) reads as null.
      */
-    @Query("SELECT entryId AS entryId, MAX(timestamp) AS lastSeen, rssi AS lastRssi FROM watchlist_hit GROUP BY entryId")
+    @Query("SELECT entryId AS entryId, MAX(timestamp) AS lastSeen, CASE WHEN rssi < 0 THEN rssi END AS lastRssi FROM watchlist_hit GROUP BY entryId")
     fun observeLastSeen(): Flow<List<WatchlistLastSeen>>
 
     /**
      * Observe a per-entry aggregate (sighting count, strongest signal, most recent time) in a single
      * grouped query. Every column is an aggregate, so count and time always come from the same
      * emission (no transient mismatch). A row exists only for entries that have at least one hit, which
-     * the history screen relies on to omit never-seen networks.
+     * the history screen relies on to omit never-seen networks. The strongest signal skips sightings
+     * with no measured signal ({@link WatchlistHitEntity#RSSI_UNKNOWN}, or any value that is not
+     * negative), so it is null when none of the entry's sightings had one.
      */
-    @Query("SELECT entryId AS entryId, COUNT(*) AS sightings, MAX(rssi) AS bestRssi, MAX(timestamp) AS lastSeen FROM watchlist_hit GROUP BY entryId")
+    @Query("SELECT entryId AS entryId, COUNT(*) AS sightings, MAX(CASE WHEN rssi < 0 THEN rssi END) AS bestRssi, MAX(timestamp) AS lastSeen FROM watchlist_hit GROUP BY entryId")
     fun observeGroupSummaries(): Flow<List<WatchlistGroupSummary>>
 
     @Query("DELETE FROM watchlist_hit")

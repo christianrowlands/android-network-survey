@@ -1404,10 +1404,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     /**
      * Registers or unregisters the Watchlist detector based on the watchlist-enabled preference.
      * <p>
-     * The detector is registered as a PASSIVE Wi-Fi listener, so it observes scan results only while
-     * a survey is already scanning Wi-Fi and never starts scanning or keeps the service alive on its
-     * own. This is the "detection requires a survey running" model. The manager is recreated on each
-     * enable so its coroutine scope is fresh after a previous disable.
+     * The detector is registered as a PASSIVE Wi-Fi listener, so it sees every Wi-Fi scan the app
+     * processes, whatever started it: a survey that includes Wi-Fi, or an open Wi-Fi list, details, or
+     * spectrum screen. It never starts scanning or keeps the service alive on its own, so with no
+     * survey and no Wi-Fi screen open nothing is matched. The manager is recreated on each enable so
+     * its coroutine scope is fresh after a previous disable.
      */
     public void updateWatchlistRegistration()
     {

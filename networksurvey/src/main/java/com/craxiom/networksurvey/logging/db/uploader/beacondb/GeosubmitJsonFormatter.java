@@ -6,6 +6,7 @@ import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
+import com.craxiom.networksurvey.logging.db.uploader.ObservationTime;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -168,7 +169,11 @@ public class GeosubmitJsonFormatter
     private static JSONObject createBaseRecord(BaseRecordEntity record) throws JSONException
     {
         JSONObject item = new JSONObject();
-        item.put("timestamp", System.currentTimeMillis());
+        // The geosubmit timestamp is the time of observation. BeaconDB requires it (its report
+        // model has no default) and stores it apart from its own submitted_at, so the upload time
+        // is only a last resort for a record whose device time cannot be read.
+        Long observedAt = ObservationTime.toEpochMillis(record.deviceTime);
+        item.put("timestamp", observedAt != null ? observedAt : System.currentTimeMillis());
 
         JSONObject position = new JSONObject();
         position.put("latitude", record.latitude);

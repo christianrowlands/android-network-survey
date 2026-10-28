@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsCtaBar
@@ -32,6 +31,7 @@ import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.common.dialogs.NsSingleChoiceDialog
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.ui.common.countText
 
 /** Everything the Log files page can ask for. */
 interface LogFilesActions {
@@ -99,7 +99,7 @@ fun LogFilesContent(
             if (selecting) {
                 NsCtaBar {
                     NsPrimaryCta(
-                        text = pluralStringResource(R.plurals.log_files_share_count, chosen.size, chosen.size),
+                        text = countText(R.plurals.log_files_share_count, chosen.size),
                         onClick = {
                             actions.onShare(chosen)
                             stopSelecting()

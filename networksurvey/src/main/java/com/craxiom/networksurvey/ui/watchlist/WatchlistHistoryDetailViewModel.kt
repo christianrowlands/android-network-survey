@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity
+import com.craxiom.networksurvey.services.watchlist.signalDbm
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,7 +48,8 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
             ) { entry, hits, selected, sortOrder ->
                 // The DAO already returns hits newest-first, so NEWEST keeps that order.
                 val sortedHits = when (sortOrder) {
-                    DetailSort.STRONGEST -> hits.sortedByDescending { it.rssi }
+                    // A sighting with no measured signal sorts after every measured one.
+                    DetailSort.STRONGEST -> hits.sortedByDescending { it.signalDbm ?: Int.MIN_VALUE }
                     DetailSort.NEWEST -> hits
                 }
                 val located = hits.filter { it.latitude != null && it.longitude != null }
@@ -63,7 +65,7 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
                             id = hit.id.toString(),
                             latitude = hit.latitude!!,
                             longitude = hit.longitude!!,
-                            colorHex = signalColorHex(hit.rssi)
+                            colorHex = signalColorHex(hit.signalDbm)
                         )
                     },
                     selectedHitId = selected,

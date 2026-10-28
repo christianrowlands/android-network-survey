@@ -11,11 +11,12 @@ package com.craxiom.networksurvey.logging.db.model
  *
  * <p>A row exists only for entries that have at least one hit, so the history screen iterates these
  * summaries (rather than every watched entry) to avoid listing never-seen networks. {@code bestRssi}
- * is {@code MAX(rssi)}: because RSSI is negative dBm, the maximum is the strongest signal.
+ * is the {@code MAX} of the measured signals: because RSSI is negative dBm, the maximum is the
+ * strongest signal. It is null when none of the sightings had a measured signal.
  */
 data class WatchlistGroupSummary(
     val entryId: Long,
     val sightings: Int,
-    val bestRssi: Int,
+    val bestRssi: Int?,
     val lastSeen: Long,
 )

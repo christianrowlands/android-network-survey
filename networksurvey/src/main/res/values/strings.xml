@@ -165,9 +165,9 @@
         <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
         <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
         <b>TA</b> (Timing Advance): The timing offset a mobile device uses to keep its transmissions in sync with the tower. Represents RF distance from the tower, which can be loosely translated to physical distance. Larger numbers indicate the device is further away from the tower.\n\n
-        <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
-        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
-        <b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
+        <b>SS_RSRP</b> (Synchronization Signal based Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
+        <b>SS_RSRQ</b> (Synchronization Signal based Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
+        <b>SS_SINR</b> (Synchronization Signal based Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
     </string>
 
     <string name="nr_secondary_cell_explanation">
@@ -183,9 +183,9 @@
         <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
         <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
         <b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Number representing NR carrier frequency.\n\n
-        <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
-        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
-        <b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
+        <b>SS_RSRP</b> (Synchronization Signal based Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
+        <b>SS_RSRQ</b> (Synchronization Signal based Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
+        <b>SS_SINR</b> (Synchronization Signal based Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
     </string>
 
     <string name="location_services_disabled_message">Location is off. Turn it on to show your location on the map.</string>
@@ -323,7 +323,7 @@
     <string name="wifi_details_not_on_watchlist">Not on watchlist</string>
     <string name="wifi_details_watch">Watch</string>
     <string name="wifi_details_view_watchlist">View</string>
-    <string name="wifi_details_watchlist_info">Watched networks alert you when they are seen during a Wi-Fi survey</string>
+    <string name="wifi_details_watchlist_info">Watched networks alert you whenever a Wi-Fi scan sees them</string>
     <string name="wifi_settings_content_description">Wi-Fi settings</string>
     <string name="wifi_scan_rate_info_content_description">About Wi-Fi scan rate</string>
     <string name="wifi_scan_rate_info_title">Wi-Fi scan rate</string>
@@ -425,7 +425,7 @@
     <string name="mdm_override_summary_off">Your organization manages survey settings on this phone</string>
 
 
-    <string name="log_rollover_description">The maximum file size (in MB) before starting a new survey log file. The default value is 10 MB.</string>
+    <string name="log_rollover_description">The maximum file size (in MB) before starting a new survey log file. Set to 0 to never start a new file. Values above 1000 MB are capped at 1000 MB. The default value is 10 MB.</string>
     <string name="log_rollover_title">Log rollover size (MB)</string>
 
     <string name="auto_start_cellular_logging_title">Auto start cellular logging</string>
@@ -517,7 +517,8 @@
     <string name="coverage_circle_color_title">Coverage circle color</string>
 
     <string name="coverage_circle_opacity_title">Coverage circle fill opacity</string>
-    <string name="coverage_circle_opacity_summary">Adjust transparency of the coverage circle fill (0%% = no fill, 100%% = solid fill)</string>
+    <!-- %1$s is 0 percent and %2$s is 100 percent, each written the way the language writes a percentage ("0%", "0 %") -->
+    <string name="coverage_circle_opacity_detail">Adjust transparency of the coverage circle fill (%1$s = no fill, %2$s = solid fill)</string>
 
     <string name="keep_screen_on_title">Keep the screen on with the map</string>
     <string name="keep_screen_on_summary_on">The screen stays on while the Map tab shows</string>
@@ -570,7 +571,7 @@
     <string name="survey_points_signal_between">%1$d to %2$d dBm</string>
     <string name="survey_points_signal_below">below %1$d dBm</string>
     <string name="survey_points_thresholds_note">Thresholds adjust for 3G and 2G</string>
-    <string name="survey_points_unknown">Unknown (surveyed before this update)</string>
+    <string name="survey_points_unknown">Unknown or not recorded</string>
     <string name="survey_points_unknown_short">Unknown</string>
     <plurals name="survey_points_and_more">
         <item quantity="one">and %1$d more</item>
@@ -858,8 +859,8 @@
 
     <!-- Streaming Queue Management -->
     <string name="streaming_queue_limit_title">Streaming queue limit</string>
-    <string name="streaming_queue_limit_description">Maximum number of pending messages to queue when streaming to MQTT or gRPC. When the queue is full, scanning will pause until messages are sent. Set to 0 to disable (unbounded queue). Recommended: 20,000 if network is unreliable.</string>
-    <string name="streaming_queue_limit_mdm_description">Maximum pending messages before pausing scanning. Set to 0 to turn the limit off (unbounded queue). Valid range: 0 to 100000. Use this to prevent out-of-memory crashes when network connectivity is poor.</string>
+    <string name="streaming_queue_limit_description">Maximum number of pending messages to queue when streaming to MQTT or gRPC. When the MQTT queue is full, scanning pauses until messages are sent, unless the survey also saves somewhere else, in which case new MQTT messages are dropped. A full gRPC queue drops new records. Set to 0 to remove the MQTT limit; gRPC still stops at 20,000. Recommended: 20,000 if the network is unreliable.</string>
+    <string name="streaming_queue_limit_mdm_description">Maximum pending messages before MQTT pauses scanning or drops messages, and before gRPC drops records. Set to 0 to remove the MQTT limit; gRPC still stops at 20000. Valid range: 0 to 100000. Use this to prevent out-of-memory crashes when network connectivity is poor.</string>
 
     <!-- Queue Backpressure UI -->
 
@@ -869,7 +870,7 @@
 
     <!-- Queue Limit Warning Dialogs -->
     <string name="disable_queue_limit_title">Turn off the queue limit?</string>
-    <string name="disable_queue_limit_message">Disabling the queue limit allows unlimited messages to queue when the network is slow or unavailable. This may cause the app to crash due to memory exhaustion if connectivity problems persist.\n\nAre you sure you want to disable the limit?</string>
+    <string name="disable_queue_limit_message">Turning off the queue limit lets unlimited MQTT messages queue when the network is slow or unavailable (gRPC still stops at 20,000). This may cause the app to crash due to memory exhaustion if connectivity problems persist.\n\nAre you sure you want to turn off the limit?</string>
     <string name="disable_queue_limit_confirm">Turn off</string>
     <string name="high_queue_limit_title">High queue limit</string>
     <string name="high_queue_limit_message">A queue limit above 50,000 may cause memory pressure on some devices. The recommended value is 20,000.\n\nContinue with this setting?</string>
@@ -1032,8 +1033,8 @@
     <string name="ns_analytics_upload_status_viewer_cannot_upload">Upload not permitted</string>
     <string name="ns_analytics_upload_status_session_expired">Session expired</string>
     <plurals name="ns_analytics_upload_result_records">
-        <item quantity="one">%1$d record uploaded</item>
-        <item quantity="other">%1$d records uploaded</item>
+        <item quantity="one">%1$s record uploaded</item>
+        <item quantity="other">%1$s records uploaded</item>
     </plurals>
     <string name="ns_analytics_upload_resumed">Uploads resumed</string>
     <string name="ns_analytics_open_dashboard">Open NS Analytics</string>
@@ -1205,9 +1206,11 @@
     <string name="watchlist_alert_channel_description">Notifications when a watched network is seen</string>
     <string name="watchlist_alert_title">Watched network nearby</string>
     <string name="watchlist_alert_content">%1$s is nearby (%2$d dBm)</string>
+    <!-- The alert body when the access point reported no signal strength. %1$s is the watched network's label. -->
+    <string name="watchlist_alert_content_no_signal">%1$s is nearby</string>
 
     <!-- Watchlist management screen -->
-    <string name="watchlist_info">Add Wi-Fi networks to watch for. When one is seen during a survey, you\'ll get a notification and it will show up in your history.</string>
+    <string name="watchlist_info">Add Wi-Fi networks to watch for. Network Survey looks for them whenever it scans Wi-Fi: during a survey that includes Wi-Fi, or while a Wi-Fi screen is open. When one is seen, you\'ll get a notification and it will show up in your history.</string>
     <string name="watchlist_empty">No watched networks yet. Add a network and we\'ll let you know when it\'s nearby.</string>
     <string name="watchlist_add">Add to watchlist</string>
     <string name="watchlist_add_network">Add network</string>
@@ -1275,7 +1278,7 @@
     <string name="watchlist_row_ssid_quoted">SSID \"%1$s\"</string>
     <string name="watchlist_row_seen_times">seen %1$d×</string>
     <string name="watchlist_row_not_seen">not seen yet</string>
-    <string name="watchlist_alerts_subtitle">Notify me during a survey</string>
+    <string name="watchlist_alerts_subtitle">Notify me when the app scans Wi-Fi</string>
 
     <!-- Watchlist redesign: add sheet -->
     <string name="watchlist_match_by">Match by</string>
@@ -1628,16 +1631,16 @@
     <string name="survey_status_key_rejected">Key refused</string>
     <string name="survey_status_files_failed">Couldn\'t create a file for %1$s</string>
     <plurals name="survey_status_uploading_count">
-        <item quantity="one">Uploading %d record</item>
-        <item quantity="other">Uploading %d records</item>
+        <item quantity="one">Uploading %s record</item>
+        <item quantity="other">Uploading %s records</item>
     </plurals>
     <plurals name="survey_status_waiting">
-        <item quantity="one">%d waiting</item>
-        <item quantity="other">%d waiting</item>
+        <item quantity="one">%s waiting</item>
+        <item quantity="other">%s waiting</item>
     </plurals>
     <plurals name="survey_status_waiting_to_send">
-        <item quantity="one">%d waiting to send</item>
-        <item quantity="other">%d waiting to send</item>
+        <item quantity="one">%s waiting to send</item>
+        <item quantity="other">%s waiting to send</item>
     </plurals>
     <string name="survey_status_nothing_waiting">Nothing waiting</string>
     <string name="survey_status_last_upload_at">last upload at %1$s</string>
@@ -1659,8 +1662,8 @@
     <string name="survey_status_next_survey">uploads on its own during your next NS Analytics survey</string>
     <string name="survey_still_to_do">Still to do</string>
     <plurals name="survey_still_to_do_records">
-        <item quantity="one">%1$d record for %2$s</item>
-        <item quantity="other">%1$d records for %2$s</item>
+        <item quantity="one">%1$s record for %2$s</item>
+        <item quantity="other">%1$s records for %2$s</item>
     </plurals>
     <string name="survey_status_quota_reached">Workspace quota reached</string>
     <string name="survey_status_not_connected_yet">%1$s · not connected yet</string>
@@ -1859,6 +1862,8 @@
     <string name="mqtt_share_password_warning">This code includes the password. Show it only to people who should use this broker.</string>
     <string name="camera_needed">The camera is needed to scan the code.</string>
     <string name="camera_allow">Allow</string>
+    <string name="camera_missing">This device has no camera, so it cannot scan a code.</string>
+    <string name="camera_open_failed">The camera could not be opened to scan the code.</string>
     <string name="survey_dest_mqtt_choose">Choose a broker</string>
 
     <!-- Organization settings page -->
@@ -1878,16 +1883,16 @@
 
     <!-- Log files page -->
     <string name="log_files_location">Location</string>
-    <string name="log_files_location_detail">%1$s · CSV, one file per record type</string>
+    <string name="log_files_location_detail">%1$s · CSV, one file per record type (one per technology for cellular) plus device status</string>
     <string name="log_files_free">%1$s free</string>
     <string name="log_files_rollover">Start a new file every</string>
     <string name="log_files_rollover_mb">%1$d MB</string>
-    <string name="log_files_rollover_never">Never (one file per record type per survey)</string>
+    <string name="log_files_rollover_never">Never (one set of files per survey)</string>
     <string name="log_files_recent">Recent files</string>
     <string name="log_files_share">Share %1$s</string>
     <plurals name="log_files_showing">
-        <item quantity="one">Showing the %1$d newest of %2$d survey.</item>
-        <item quantity="other">Showing the %1$d newest of %2$d surveys.</item>
+        <item quantity="one">Showing the %1$s newest of %2$s survey.</item>
+        <item quantity="other">Showing the %1$s newest of %2$s surveys.</item>
     </plurals>
     <string name="log_files_show_more">Show more</string>
     <plurals name="log_files_group_detail">
@@ -1898,8 +1903,8 @@
     <string name="log_files_select">Select</string>
     <string name="log_files_select_named">Select %1$s</string>
     <plurals name="log_files_share_count">
-        <item quantity="one">Share %1$d file</item>
-        <item quantity="other">Share %1$d files</item>
+        <item quantity="one">Share %1$s file</item>
+        <item quantity="other">Share %1$s files</item>
     </plurals>
     <string name="log_files_open_folder">Open in a file manager</string>
     <string name="log_files_no_file_manager">No file manager found. The files are in %1$s.</string>
@@ -1971,14 +1976,14 @@
     </plurals>
     <string name="ns_analytics_upload_now">Upload now</string>
     <plurals name="ns_analytics_records_waiting">
-        <item quantity="one">%d record waiting</item>
-        <item quantity="other">%d records waiting</item>
+        <item quantity="one">%s record waiting</item>
+        <item quantity="other">%s records waiting</item>
     </plurals>
     <string name="ns_analytics_usage">Usage</string>
     <string name="ns_analytics_clear_queue">Clear the upload queue</string>
     <plurals name="ns_analytics_clear_queue_confirm">
-        <item quantity="one">Delete %d record waiting to upload? It won\'t be sent.</item>
-        <item quantity="other">Delete %d records waiting to upload? They won\'t be sent.</item>
+        <item quantity="one">Delete %s record waiting to upload? It won\'t be sent.</item>
+        <item quantity="other">Delete %s records waiting to upload? They won\'t be sent.</item>
     </plurals>
     <string name="ns_analytics_clear_queue_action">Delete</string>
     <string name="ns_analytics_disconnect">Disconnect this phone</string>
@@ -2002,8 +2007,8 @@
     <string name="ns_analytics_message_auto_upload_off">Upload automatically is off</string>
     <string name="ns_analytics_message_auto_upload_failed">Couldn\'t change Upload automatically</string>
     <plurals name="ns_analytics_message_cleared">
-        <item quantity="one">Deleted %d record waiting to upload</item>
-        <item quantity="other">Deleted %d records waiting to upload</item>
+        <item quantity="one">Deleted %s record waiting to upload</item>
+        <item quantity="other">Deleted %s records waiting to upload</item>
     </plurals>
     <string name="ns_analytics_message_clear_failed">Couldn\'t clear the upload queue</string>
     <string name="ns_analytics_message_offline">Connect to the internet to disconnect this phone</string>

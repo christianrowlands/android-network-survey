@@ -18,6 +18,27 @@ public class WifiUtils
     public static final int START_OF_6_GHZ_RANGE = 5935;
 
     /**
+     * The lowest {@link android.net.wifi.ScanResult#level} that is not a real measurement. A beacon
+     * received at 0 dBm (1 mW) or stronger does not happen at survey distances, and Android uses 0
+     * for an access point it lists without a signal reading.
+     */
+    public static final int UNMEASURED_RSSI_FLOOR_DBM = 0;
+
+    /**
+     * Some phones list an access point in a scan without measuring it and report
+     * {@link android.net.wifi.ScanResult#level} as 0 (a Pixel 10 Pro XL on Android 17 did this for
+     * about 3% of its 2.4 GHz results, on APs that read -55 dBm in the scans before and after).
+     * Such a value must never be stored or shown as a signal strength.
+     *
+     * @param rssiDbm The RSSI reported by Android, in dBm.
+     * @return True if the value is a real signal measurement.
+     */
+    public static boolean isMeasuredRssi(int rssiDbm)
+    {
+        return rssiDbm < UNMEASURED_RSSI_FLOOR_DBM;
+    }
+
+    /**
      * Given the {@link android.net.wifi.ScanResult#capabilities} string, return the appropriate {@link EncryptionType}.
      * <p>
      * Example capability strings can be found in the unit tests.

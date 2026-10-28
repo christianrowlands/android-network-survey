@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.watchlist
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +38,7 @@ import com.craxiom.networksurvey.ui.common.NsHeroStatusCard
 import com.craxiom.networksurvey.ui.common.NsSignalMeterWide
 import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
+import com.craxiom.networksurvey.ui.common.relativeAgeText
 
 /**
  * Row composables for the Watchlist management screen, extracted to keep [WatchlistScreen] focused:
@@ -96,13 +96,7 @@ internal fun WatchlistRow(
         }
         if (item.sightingsCount > 0 && item.lastSeen != null) {
             add(stringResource(R.string.watchlist_row_seen_times, item.sightingsCount))
-            add(
-                DateUtils.getRelativeTimeSpanString(
-                    item.lastSeen,
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS
-                ).toString()
-            )
+            add(relativeAgeText(item.lastSeen, System.currentTimeMillis(), midSentence = true))
         } else {
             add(stringResource(R.string.watchlist_row_not_seen))
         }

@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.community
 
-import androidx.annotation.PluralsRes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +30,8 @@ import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
 import com.craxiom.networksurvey.ui.survey.sheets.UseOwnSettingsDialog
 import com.craxiom.networksurvey.ui.theme.NsTheme
-import java.text.NumberFormat
+import com.craxiom.networksurvey.ui.common.CountFormat
+import com.craxiom.networksurvey.ui.common.countText
 
 /** Everything the Community databases page can ask for. */
 interface CommunityDatabasesActions {
@@ -156,7 +156,7 @@ fun CommunityDatabasesContent(
                 subtitle = pluralStringResource(
                     if (state.autoUploadWifiOnly) R.plurals.community_auto_upload_detail_wifi else R.plurals.community_auto_upload_detail,
                     NetworkSurveyConstants.AUTO_UPLOAD_RECORD_THRESHOLD,
-                    NumberFormat.getIntegerInstance().format(NetworkSurveyConstants.AUTO_UPLOAD_RECORD_THRESHOLD),
+                    CountFormat.format(NetworkSurveyConstants.AUTO_UPLOAD_RECORD_THRESHOLD),
                 ),
                 checked = state.autoUploadEnabled,
                 onCheckedChange = actions::onSetAutoUpload,
@@ -210,15 +210,10 @@ private fun readyText(state: UploadUiState): String = when {
     else -> pluralStringResource(
         R.plurals.community_ready_both,
         state.wifiQueueCount,
-        NumberFormat.getIntegerInstance().format(state.cellularQueueCount),
-        NumberFormat.getIntegerInstance().format(state.wifiQueueCount),
+        CountFormat.format(state.cellularQueueCount),
+        CountFormat.format(state.wifiQueueCount),
     )
 }
-
-/** A plural whose only argument is [count], grouped for the phone's locale ("1,204"). */
-@Composable
-private fun countText(@PluralsRes id: Int, count: Int): String =
-    pluralStringResource(id, count, NumberFormat.getIntegerInstance().format(count))
 
 private val OpenCelliDKey.detailRes: Int
     get() = when (this) {

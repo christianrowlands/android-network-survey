@@ -87,19 +87,25 @@ data class SurveyedPointDetails(
             )
         }
 
-        /** Describes the batch by its strongest access point. */
+        /**
+         * Describes the batch by its strongest measured access point. Records without a signal
+         * strength are counted but never picked: an unset field reads as 0, which would beat
+         * every real reading. A batch with no measured AP keeps its count with an unknown signal.
+         */
         @JvmStatic
         fun fromWifi(batch: List<WifiRecordWrapper>): SurveyedPointDetails {
             val records = batch.mapNotNull { it.wifiBeaconRecord?.data }
-            val strongest =
-                records.maxByOrNull { it.signalStrength.value } ?: return SurveyedPointDetails()
+            if (records.isEmpty()) return SurveyedPointDetails()
+            val missionId = records.firstNotNullOfOrNull { it.missionId.ifBlank { null } }
+            val strongest = records.filter { it.hasSignalStrength() }.maxByOrNull { it.signalStrength.value }
+                ?: return SurveyedPointDetails(deviceCount = records.size, missionId = missionId)
             val signal = strongest.signalStrength.value.toInt()
             return SurveyedPointDetails(
                 signal = signal,
                 signalBucket = SignalBuckets.rssi(signal),
                 deviceCount = records.size,
                 label = strongest.ssid.ifBlank { strongest.bssid }.ifBlank { null },
-                missionId = records.firstNotNullOfOrNull { it.missionId.ifBlank { null } },
+                missionId = missionId,
             )
         }
 

@@ -37,6 +37,7 @@ import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.survey.DestinationStatusText
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.common.NsPanel
+import com.craxiom.networksurvey.ui.common.countText
 import com.craxiom.networksurvey.ui.common.ROW_ICON
 import com.craxiom.networksurvey.ui.common.SMALL_ICON
 import com.craxiom.networksurvey.ui.common.SectionHeader

@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -32,7 +31,7 @@ import com.craxiom.networksurvey.ui.common.NsIconAction
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.SignalBuckets
-import java.text.NumberFormat
+import com.craxiom.networksurvey.ui.common.countText
 
 /*
  * The small chrome around the survey points layer: the user-facing names of its modes, kinds,
@@ -156,7 +155,7 @@ fun SurveyPointsLayerSummary(
                 )
                 Text(
                     text = if (count > 0) {
-                        pluralStringResource(R.plurals.survey_points_count, count, NumberFormat.getInstance().format(count))
+                        countText(R.plurals.survey_points_count, count)
                     } else {
                         stringResource(R.string.survey_points_empty)
                     },

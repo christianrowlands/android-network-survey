@@ -205,8 +205,9 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
 
 /**
  * A single row on the management screen: a watched network plus its most recent "Seen" time, the
- * signal of that latest sighting, and how many times it has been seen. [lastRssi] is null and
- * [sightingsCount] is 0 when the network has never been seen.
+ * signal of that latest sighting, and how many times it has been seen. [lastRssi] is null when the
+ * network has never been seen or its latest sighting had no measured signal, and [sightingsCount] is
+ * 0 when the network has never been seen.
  */
 data class WatchlistRowItem(
     val entry: WatchlistEntryEntity,

@@ -96,3 +96,14 @@ fun fullDateTimeText(ms: Long): String {
     val use24Hour = DateFormat.is24HourFormat(LocalContext.current)
     return remember(ms, locale, use24Hour) { NsTimeText.dateTime(ms, locale, NsTimeText.OLDER_SKELETON, use24Hour) }
 }
+
+/**
+ * How long ago [thenMs] was at [nowMs] ("Now", "5 minutes ago", "Yesterday"), in the phone's
+ * language: the one relative age every list in the app uses (see [RelativeAge]), so under a minute
+ * never reads "0 minutes ago". With [midSentence] it is not capitalized, for placing inside a line.
+ */
+@Composable
+fun relativeAgeText(thenMs: Long, nowMs: Long, midSentence: Boolean = false): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(thenMs, nowMs, locale, midSentence) { RelativeAge.of(thenMs, nowMs).format(locale, midSentence) }
+}

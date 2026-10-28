@@ -18,14 +18,17 @@ import kotlinx.coroutines.flow.map
 /**
  * What a destination's page says about it, worded by the same rules as its Survey row.
  *
- * @property info  What describes the destination (broker, address, workspace), for the detail line.
- * @property nowMs When it was worked out, for "next try at" and "since" times.
+ * @property info   What describes the destination (broker, address, workspace), for the detail line.
+ * @property nowMs  When it was worked out, for "next try at" and "since" times.
+ * @property queues What waited on the phone when it was worked out, so the rest of the page can show
+ *                  the same counts as the status instead of reading the queue again at another moment.
  */
 data class DestinationPageStatus(
     val destination: Destination,
     val status: DestinationStatus,
     val info: DestinationInfo,
     val nowMs: Long,
+    val queues: DeliveryQueues = DeliveryQueues(),
 )
 
 /**
@@ -53,7 +56,7 @@ class DestinationStatusFlow(
             val nowMs = clock()
             // The times it shows are to the minute, so the page only redraws when something changes
             RecordingUiMapper.pageStatus(state, destination, nowMs, waiting, destinationInfo)
-                ?.let { DestinationPageStatus(destination, it, destinationInfo, nowMs - nowMs % MINUTE_MS) }
+                ?.let { DestinationPageStatus(destination, it, destinationInfo, nowMs - nowMs % MINUTE_MS, waiting) }
         }
             .flowOn(Dispatchers.IO)
             .distinctUntilChanged()

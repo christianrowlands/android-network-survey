@@ -12,10 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.craxiom.networksurvey.ui.common.RelativeAge
+import com.craxiom.networksurvey.ui.common.relativeAgeText
 import com.craxiom.networksurvey.ui.common.fullDateTimeText
 
 /*
@@ -131,8 +130,6 @@ internal fun dateTimeText(epochSeconds: Long): String = fullDateTimeText(epochSe
  * [midSentence] it is not capitalized, for placing inside a sentence.
  */
 @Composable
-internal fun relativeTimeText(epochSeconds: Long, midSentence: Boolean = false): String {
-    val locale = LocalConfiguration.current.locales[0]
-    return RelativeAge.of(epochSeconds * MILLIS_PER_SECOND, System.currentTimeMillis()).format(locale, midSentence)
-}
+internal fun relativeTimeText(epochSeconds: Long, midSentence: Boolean = false): String =
+    relativeAgeText(epochSeconds * MILLIS_PER_SECOND, System.currentTimeMillis(), midSentence)
 

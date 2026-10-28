@@ -167,6 +167,22 @@ class SurveyNotificationBuilderTest {
     }
 
     @Test
+    fun mqttDropMode_withoutLogFiles_doesNotClaimFileLoggingContinues() {
+        val n = builder.build(
+            SurveyNotificationState(
+                mqttState = ConnectionState.CONNECTED, mqttDropping = true,
+                scanningCellular = true, sessionStartMs = sessionStart
+            )
+        )
+
+        assertEquals(context.getString(R.string.mqtt_drop_mode_title), text(n))
+        assertEquals(
+            context.getString(R.string.mqtt_drop_mode_title) + "\nMQTT stream\nScanning: Cellular",
+            bigText(n),
+        )
+    }
+
+    @Test
     fun backpressurePause_showsSurveysPausedWithNetworkInterrupted() {
         val n = builder.build(
             SurveyNotificationState(mqttState = ConnectionState.CONNECTED, pausedForBackpressure = true, sessionStartMs = sessionStart)

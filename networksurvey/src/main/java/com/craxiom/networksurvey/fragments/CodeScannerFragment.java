@@ -42,6 +42,7 @@ public class CodeScannerFragment extends Fragment
 
         CodeScannerView scannerView = root.findViewById(R.id.scanner_view);
         codeScanner = new CodeScanner(activity, scannerView);
+        CodeScannerErrorHandler.install(this, codeScanner);
         codeScanner.setDecodeCallback(result -> activity.runOnUiThread(() -> {
             final MqttConnectionSettings settings = parseBrokerCode(result.getText());
             if (settings == null)

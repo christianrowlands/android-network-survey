@@ -104,7 +104,8 @@ class WatchlistHistoryViewModel(application: Application) : AndroidViewModel(app
             val filtered = if (q.isBlank()) data.groups else data.groups.filter { it.matches(q) }
             val sorted = when (s) {
                 HistorySort.RECENT -> filtered.sortedByDescending { it.lastSeen }
-                HistorySort.STRONGEST -> filtered.sortedByDescending { it.bestRssi }
+                // A network with no measured signal sorts after every measured one.
+                HistorySort.STRONGEST -> filtered.sortedByDescending { it.bestRssi ?: Int.MIN_VALUE }
                 HistorySort.MOST_SEEN -> filtered.sortedByDescending { it.sightings }
             }
             WatchlistHistoryUiState(
@@ -150,12 +151,13 @@ class WatchlistHistoryViewModel(application: Application) : AndroidViewModel(app
 
 /**
  * A history group: one watched network that has been seen, with its sighting count, strongest signal,
- * most recent sighting time, and the color it is drawn with on the map.
+ * most recent sighting time, and the color it is drawn with on the map. [bestRssi] is null when none
+ * of its sightings had a measured signal.
  */
 data class WatchlistHistoryGroup(
     val entry: WatchlistEntryEntity,
     val sightings: Int,
-    val bestRssi: Int,
+    val bestRssi: Int?,
     val lastSeen: Long,
     val colorHex: String,
 ) {

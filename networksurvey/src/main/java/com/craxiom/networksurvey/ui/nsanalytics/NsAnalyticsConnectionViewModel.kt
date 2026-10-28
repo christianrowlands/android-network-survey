@@ -27,6 +27,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import com.craxiom.networksurvey.ui.common.CountFormat
+import com.craxiom.networksurvey.ui.survey.DeliveryQueueReader
 
 /**
  * ViewModel for the NS Analytics page.
@@ -411,7 +413,9 @@ class NsAnalyticsConnectionViewModel @JvmOverloads constructor(
                         queuedRecords = 0,
                         uploadPausedForQuota = false
                     )
-                    showMessage(context.resources.getQuantityString(R.plurals.ns_analytics_message_cleared, queueSize, queueSize))
+                    // The page's status reads the queue on its own poll; read it again now
+                    DeliveryQueueReader.refresh()
+                    showMessage(CountFormat.plural(context.resources, R.plurals.ns_analytics_message_cleared, queueSize))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to clear queue")

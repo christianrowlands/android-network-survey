@@ -1,6 +1,14 @@
 package com.craxiom.networksurvey.ui.survey
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.isOff
+import androidx.compose.ui.test.isOn
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -117,6 +125,19 @@ class SavedSetupsContentTest {
     }
 
     @Test
+    fun setupsSheet_star_saysWhetherItIsStarred() {
+        show(state())
+        openSetups()
+        // A screen reader hears the toggle's state with its name ("Star Drive, Starred, checkbox"),
+        // which uiautomator's content-desc alone doesn't show
+        compose.onNode(hasContentDescription("Star Drive") and hasStateDescription("Starred") and isToggleable() and isOn())
+            .assertExists()
+            .assert(hasRole(Role.Checkbox))
+        compose.onNode(hasContentDescription("Star Warehouse walk") and hasStateDescription("Not starred") and isOff())
+            .assertExists()
+    }
+
+    @Test
     fun setupsSheet_renamesFromTheMenu_andRefusesANameInUse() {
         show(state())
         openSetups()
@@ -185,6 +206,8 @@ class SavedSetupsContentTest {
 
     private fun hasStateDescription(value: String) =
         androidx.compose.ui.test.SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, value)
+
+    private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
 
     private fun hasSetTextAction() = androidx.compose.ui.test.hasSetTextAction()
 

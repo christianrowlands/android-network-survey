@@ -105,7 +105,7 @@
         <b>SNR</b>（信噪比）：参考信号的信噪比，单位为 dB。完整范围：-20 dB 至 +30 dB，其中 30 为最佳。常见范围约为 5 至 15。\n
     </string>
     <string name="nr_info_description">NR 术语信息</string>
-    <string name="nr_cellular_terms_explanation"><b>MCC</b>（移动国家码）：移动网络的唯一国家标识符。\n\n <b>MNC</b>（移动网络码）：国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n <b>TAC</b>（跟踪区码）：一组用于寻呼的基站的标识符。\n\n <b>CID</b>（小区标识）：特定基站的标识符。MCC、MNC 和 CID 共同唯一标识全球范围内一个特定的 NR 小区扇区。\n\n <b>NARFCN</b>（新空口绝对射频频道号）：表示 NR 载波频率的编号。\n\n <b>PCI</b>（物理小区 ID）：物理层小区标识符，帮助移动设备在使用相同频率的小区选择/重选过程中区分两个不同的小区。有效范围 0–1007。括号中的数字表示主同步序列（PSS）和辅同步序列（SSS）。\n\n <b>TA</b>（时间提前量）：移动设备用于保持其传输与基站同步的时间偏移量。代表与基站之间的射频距离，可大致换算为物理距离。数值越大表示设备离基站越远。\n\n <b>SS_RSRP</b>（辅同步参考信号接收功率）：移动设备接收到的参考信号功率，单位为 dBm。有效范围 -31 至 -156。\n\n <b>SS_RSRQ</b>（辅同步参考信号接收质量）：衡量接收到的参考信号的质量。有效范围 20 至 -43，其中 20 为最佳。</string>
+    <string name="nr_cellular_terms_explanation"><b>MCC</b>（移动国家码）：移动网络的唯一国家标识符。\n\n <b>MNC</b>（移动网络码）：国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n <b>TAC</b>（跟踪区码）：一组用于寻呼的基站的标识符。\n\n <b>CID</b>（小区标识）：特定基站的标识符。MCC、MNC 和 CID 共同唯一标识全球范围内一个特定的 NR 小区扇区。\n\n <b>NARFCN</b>（新空口绝对射频频道号）：表示 NR 载波频率的编号。\n\n <b>PCI</b>（物理小区 ID）：物理层小区标识符，帮助移动设备在使用相同频率的小区选择/重选过程中区分两个不同的小区。有效范围 0–1007。括号中的数字表示主同步序列（PSS）和辅同步序列（SSS）。\n\n <b>TA</b>（时间提前量）：移动设备用于保持其传输与基站同步的时间偏移量。代表与基站之间的射频距离，可大致换算为物理距离。数值越大表示设备离基站越远。\n\n <b>SS_RSRP</b>（同步信号参考信号接收功率）：移动设备接收到的参考信号功率，单位为 dBm。有效范围 -31 至 -156。\n\n <b>SS_RSRQ</b>（同步信号参考信号接收质量）：衡量接收到的参考信号的质量。有效范围 20 至 -43，其中 20 为最佳。</string>
     <!-- 位置状态指示器 -->
     <!-- 飞行模式提示 -->
     <string name="settings">设置</string>
@@ -254,7 +254,7 @@
     <string name="display_coverage_area_summary_off">服务小区覆盖不会显示在地图上</string>
     <string name="coverage_circle_color_title">覆盖圆颜色</string>
     <string name="coverage_circle_opacity_title">覆盖圆填充透明度</string>
-    <string name="coverage_circle_opacity_summary">调整覆盖圆填充的透明度（0%% = 无填充，100%% = 实心填充）</string>
+    <string name="coverage_circle_opacity_detail">调整覆盖圆填充的透明度（%1$s = 无填充，%2$s = 实心填充）</string>
     <string name="keep_screen_on_summary_off">屏幕将在无操作后正常熄灭</string>
     <string name="show_zoom_controls_title">显示缩放控件</string>
     <string name="show_zoom_controls_summary_on">地图上显示放大/缩小按钮</string>
@@ -508,7 +508,7 @@
     <string name="ns_analytics_upload_status_viewer_cannot_upload">不允许上传</string>
     <string name="ns_analytics_upload_status_session_expired">会话已过期</string>
     <plurals name="ns_analytics_upload_result_records">
-        <item quantity="other">已上传 %1$d 条记录</item>
+        <item quantity="other">已上传 %1$s 条记录</item>
     </plurals>
     <string name="ns_analytics_upload_resumed">上传已恢复</string>
     <string name="ns_analytics_open_dashboard">打开 NS Analytics</string>

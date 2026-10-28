@@ -19,19 +19,22 @@ import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.merge
 import timber.log.Timber
 
 /**
  * Reads what waits on the phone for NS Analytics and the community databases, and how their
  * uploads are going, for the destination statuses and the "Still to do" panel. Upload work changes
  * (and a failed community upload) show at once; the record counts are read again every
- * [pollIntervalMs] while collected.
+ * [pollIntervalMs] while collected, and at once after [refresh].
  */
 class DeliveryQueueReader(
     context: Context,
@@ -46,7 +49,7 @@ class DeliveryQueueReader(
             WorkManager.getInstance(appContext).getWorkInfosByTagFlow(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG),
             community.state,
             community.lastFailure,
-            pollTicks(pollIntervalMs),
+            merge(pollTicks(pollIntervalMs), refreshes),
         ) { nsAnalyticsWork, communityUpload, communityFailure, _ -> read(nsAnalyticsWork, communityUpload, communityFailure) }
             .flowOn(Dispatchers.IO)
             .distinctUntilChanged()
@@ -121,8 +124,18 @@ class DeliveryQueueReader(
         }
     }
 
-    private companion object {
-        const val POLL_INTERVAL_MS = 5_000L
+    companion object {
+        private const val POLL_INTERVAL_MS = 5_000L
+
+        private val refreshes = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+        /**
+         * Reads the queues again now, for a change no upload work announces (the NS Analytics queue
+         * cleared), so a page doesn't show the old count until the next poll.
+         */
+        fun refresh() {
+            refreshes.tryEmit(Unit)
+        }
     }
 }
 

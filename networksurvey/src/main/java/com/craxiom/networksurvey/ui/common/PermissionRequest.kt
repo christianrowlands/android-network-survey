@@ -38,26 +38,45 @@ enum class PermissionAccess {
  * [access] lives in memory: after the process is recreated a permission denied for good reads as
  * [PermissionAccess.AVAILABLE] again, so the first request does nothing visible and then flips to
  * [PermissionAccess.BLOCKED].
+ *
+ * A request for hardware this device does not have ([hardwarePresent] is false) neither asks nor
+ * calls back; it sets [hardwareMissing] so the page can say why nothing happened.
  */
 @Stable
-class PermissionRequest internal constructor(private val launch: () -> Unit, private val grantedNow: () -> Boolean, private val onGranted: () -> Unit) {
+class PermissionRequest internal constructor(
+    private val launch: () -> Unit,
+    private val grantedNow: () -> Boolean,
+    private val onGranted: () -> Unit,
+    private val hardwarePresent: () -> Boolean = { true },
+) {
     var access by mutableStateOf(PermissionAccess.AVAILABLE)
         internal set
 
+    /** True once a request found that this device lacks the hardware the permissions are for. */
+    var hardwareMissing by mutableStateOf(false)
+        private set
+
     /** Runs the granted callback if everything is allowed, or asks for what is missing. */
     fun request() {
+        if (!hardwarePresent()) {
+            hardwareMissing = true
+            return
+        }
         if (grantedNow()) onGranted() else launch()
     }
 }
 
 /**
  * Remembers a [PermissionRequest] for [permissions] that calls [onGranted] once all of them are
- * granted, and [onAnswered] after every answer from the system dialog, granted or not.
+ * granted, and [onAnswered] after every answer from the system dialog, granted or not. When
+ * [hardwareFeature] is set and this device does not have it, a request only marks the hardware as
+ * missing (see [PermissionRequest.hardwareMissing]).
  */
 @Composable
 fun rememberPermissionRequest(
     permissions: Array<String>,
     onAnswered: () -> Unit = {},
+    hardwareFeature: String? = null,
     onGranted: () -> Unit,
 ): PermissionRequest {
     val context = LocalContext.current
@@ -81,6 +100,7 @@ fun rememberPermissionRequest(
             launch = { launcher.launch(permissions) },
             grantedNow = { permissions.all { granted(context, it) } },
             onGranted = { currentOnGranted() },
+            hardwarePresent = { hardwareFeature == null || context.packageManager.hasSystemFeature(hardwareFeature) },
         )
     }
     return request

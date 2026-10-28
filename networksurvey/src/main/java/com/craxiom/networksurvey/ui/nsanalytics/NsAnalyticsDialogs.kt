@@ -1,11 +1,11 @@
 package com.craxiom.networksurvey.ui.nsanalytics
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
 import com.craxiom.networksurvey.ui.common.dialogs.NsMessageDialog
+import com.craxiom.networksurvey.ui.common.countText
 
 /** The dialog the NS Analytics page is showing, if any, besides those its state drives. */
 enum class NsAnalyticsDialog { NONE, DISCONNECT, CLEAR_QUEUE }
@@ -109,7 +109,7 @@ fun NsAnalyticsDialogs(state: NsAnalyticsConnectionUiState, dialog: NsAnalyticsD
 
         dialog == NsAnalyticsDialog.CLEAR_QUEUE -> NsConfirmationDialog(
             title = stringResource(R.string.ns_analytics_clear_queue),
-            message = pluralStringResource(R.plurals.ns_analytics_clear_queue_confirm, state.queuedRecords, state.queuedRecords),
+            message = countText(R.plurals.ns_analytics_clear_queue_confirm, state.queuedRecords),
             confirmText = stringResource(R.string.ns_analytics_clear_queue_action),
             destructive = true,
             onConfirm = actions::onConfirmClearQueue,

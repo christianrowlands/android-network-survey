@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity
+import com.craxiom.networksurvey.services.watchlist.signalDbm
 import com.craxiom.networksurvey.ui.common.NsSignalMeter
 import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
@@ -179,13 +180,15 @@ internal fun SightingRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                val rssi = hit.signalDbm
                 Text(
-                    text = stringResource(R.string.watchlist_signal_dbm, hit.rssi),
+                    text = rssi?.let { stringResource(R.string.watchlist_signal_dbm, it) }
+                        ?: stringResource(R.string.watchlist_signal_unknown),
                     style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     fontWeight = FontWeight.SemiBold,
-                    color = hit.rssi.toWifiSignalCategory().textColor
+                    color = rssi?.toWifiSignalCategory()?.textColor ?: MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                NsSignalMeter(rssi = hit.rssi, width = 80.dp)
+                NsSignalMeter(rssi = rssi, width = 80.dp)
                 Text(
                     text = whenText,
                     style = MaterialTheme.typography.bodySmall,

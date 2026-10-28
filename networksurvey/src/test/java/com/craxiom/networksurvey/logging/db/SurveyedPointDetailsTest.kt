@@ -159,6 +159,27 @@ class SurveyedPointDetailsTest {
     }
 
     @Test
+    fun wifiIgnoresAccessPointsWithoutASignal() {
+        fun ap(bssid: String, rssi: Float?) = WifiRecordWrapper(
+            WifiBeaconRecord.newBuilder().setData(
+                WifiBeaconRecordData.newBuilder().setSsid("JetSet-Private").setBssid(bssid)
+                    .apply { rssi?.let { setSignalStrength(FloatValue.of(it)) } }
+                    .setMissionId("")
+            ).build(), ""
+        )
+
+        // An unset signal reads as 0 f, which would beat every real reading.
+        val details = SurveyedPointDetails.fromWifi(listOf(ap("aa:aa", null), ap("bb:bb", -78f)))
+        assertEquals(2, details.deviceCount)
+        assertEquals(-78, details.signal)
+
+        val unmeasured = SurveyedPointDetails.fromWifi(listOf(ap("aa:aa", null)))
+        assertEquals(1, unmeasured.deviceCount)
+        assertEquals(SignalBuckets.UNKNOWN, unmeasured.signalBucket)
+        assertNull(unmeasured.label)
+    }
+
+    @Test
     fun bluetoothUsesTheStrongestDeviceAndFallsBackToItsAddress() {
         fun device(name: String?, address: String, rssi: Float): BluetoothRecord {
             val data = BluetoothRecordData.newBuilder().setSourceAddress(address)

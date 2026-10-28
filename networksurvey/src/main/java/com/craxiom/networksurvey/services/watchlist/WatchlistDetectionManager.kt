@@ -26,8 +26,9 @@ import java.util.function.Supplier
 
 /**
  * Detects when a watched network (a {@link WatchlistEntryEntity}) comes into range and alerts the
- * user. Registered as an {@link IWifiSurveyRecordListener} so it sees every Wi-Fi scan while a
- * survey is running, including SSIDs the user has excluded from logging.
+ * user. Registered as a passive {@link IWifiSurveyRecordListener}, so it sees every Wi-Fi scan the
+ * app processes (during a survey that includes Wi-Fi, or while a Wi-Fi list, details, or spectrum
+ * screen is open), including SSIDs the user has excluded from logging. It never starts a scan.
  * <p>
  * Matching is done in memory against a cached snapshot of the enabled entries, so the work done on
  * the shared survey-processing thread is cheap and never blocks; database writes and notifications
@@ -192,7 +193,7 @@ class WatchlistDetectionManager(
                     matchedField = match.matchedField
                     ssid = match.ssid
                     bssid = match.bssid
-                    rssi = match.rssi
+                    rssi = WatchlistSignal.toStoredRssi(match.signalStrength)
                     latitude = match.latitude
                     longitude = match.longitude
                     timestamp = now
@@ -208,7 +209,7 @@ class WatchlistDetectionManager(
                 context,
                 entry.id,
                 label,
-                match.rssi
+                WatchlistSignal.dbm(match.signalStrength)
             )
         }
     }
@@ -296,10 +297,7 @@ class WatchlistDetectionManager(
         val locationAge: Int,
         val speed: Float,
         val matchedField: String
-    ) {
-        /** The signal strength truncated to a whole dBm for the history row, or 0 when unavailable. */
-        val rssi: Int get() = signalStrength?.toInt() ?: 0
-    }
+    )
 
     companion object {
         const val DEFAULT_ABSENCE_WINDOW_SECONDS = 60

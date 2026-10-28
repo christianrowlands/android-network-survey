@@ -25,10 +25,10 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.logging.db.DbUploadStore
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.ui.theme.NsTheme
-import java.text.NumberFormat
 import com.craxiom.networksurvey.ui.common.NsAdaptiveGrid
 import com.craxiom.networksurvey.ui.common.NsPanel
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * Records by type: one stacked bar in the record type colors, and a two-column legend (one column
@@ -108,7 +108,7 @@ private fun LegendItem(type: RecordType, count: Long) {
         Box(Modifier.size(SWATCH).clip(RoundedCornerShape(2.dp)).background(type.color))
         Text(stringResource(type.labelRes), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(
-            NumberFormat.getIntegerInstance().format(count),
+            CountFormat.format(count),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
         )

@@ -26,6 +26,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLocationSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.SurveyedPointPalette
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -90,10 +91,11 @@ data class WatchlistMapPoint(
 
 /**
  * The "#RRGGBB" color for an RSSI, derived from the shared signal ramp so map pins match the meters
- * and dBm text elsewhere. Usable off the main thread (no Compose state read).
+ * and dBm text elsewhere, or a neutral gray when the signal is unknown (null). Usable off the main
+ * thread (no Compose state read).
  */
-internal fun signalColorHex(rssi: Int): String =
-    "#%06X".format(0xFFFFFF and rssi.toWifiSignalCategory().color.toArgb())
+internal fun signalColorHex(rssi: Int?): String =
+    "#%06X".format(0xFFFFFF and (rssi?.toWifiSignalCategory()?.color?.toArgb() ?: SurveyedPointPalette.UNKNOWN))
 
 /**
  * A self-contained MapLibre map that plots [points] as colored circles and reports taps. Built on the

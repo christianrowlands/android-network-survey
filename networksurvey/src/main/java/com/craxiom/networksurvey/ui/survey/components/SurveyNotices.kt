@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.survey.components
 
-import androidx.annotation.PluralsRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -15,8 +14,8 @@ import com.craxiom.networksurvey.ui.survey.model.LocationStatus
 import com.craxiom.networksurvey.ui.survey.model.OrgLineUi
 import com.craxiom.networksurvey.ui.survey.model.SessionLength
 import com.craxiom.networksurvey.ui.theme.NsTheme
-import java.text.NumberFormat
 import com.craxiom.networksurvey.ui.common.InlineNotice
+import com.craxiom.networksurvey.ui.common.countText
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.SMALL_ICON
 
@@ -97,14 +96,6 @@ private fun lastSessionText(last: LastSessionUi): String {
 fun recordsText(records: Long, savedForUpload: Boolean = false): String = countText(
     if (savedForUpload) R.plurals.survey_saved_for_upload_count else R.plurals.survey_records_count,
     records,
-)
-
-/** A plural with [count] grouped for the phone's locale as its only argument. */
-@Composable
-fun countText(@PluralsRes plural: Int, count: Long): String = pluralStringResource(
-    plural,
-    count.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-    NumberFormat.getIntegerInstance().format(count),
 )
 
 /** What the organization is doing to this survey, with the one action that applies. */

@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.survey.status.StatusDetail
 import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.survey.status.WaitReason
 import com.craxiom.networksurvey.ui.survey.components.labelRes
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * Words a destination status for the Survey screen, the destination pages and the survey
@@ -58,7 +59,7 @@ object DestinationStatusText {
         StatusDetail.Default -> null
         is StatusDetail.FilesFailed -> resources.getString(R.string.survey_status_files_failed, typeNames(resources, detail.types))
         is StatusDetail.Uploading -> if (detail.count > 0) {
-            resources.getQuantityString(R.plurals.survey_status_uploading_count, detail.count, detail.count)
+            CountFormat.plural(resources, R.plurals.survey_status_uploading_count, detail.count)
         } else {
             resources.getString(R.string.survey_status_uploading)
         }
@@ -123,13 +124,13 @@ object DestinationStatusText {
     }
 
     private fun waitingCount(resources: Resources, count: Int): String = if (count > 0) {
-        resources.getQuantityString(R.plurals.survey_status_waiting, count, count)
+        CountFormat.plural(resources, R.plurals.survey_status_waiting, count)
     } else {
         resources.getString(R.string.survey_status_nothing_waiting)
     }
 
     private fun sendCount(resources: Resources, count: Int): String? =
-        if (count > 0) resources.getQuantityString(R.plurals.survey_status_waiting_to_send, count, count) else null
+        if (count > 0) CountFormat.plural(resources, R.plurals.survey_status_waiting_to_send, count) else null
 
     private fun waitReason(resources: Resources, reason: WaitReason, formatTime: (Long) -> String, nowMs: Long): String = when (reason) {
         is WaitReason.NextUpload -> reason.atMs?.takeIf { it > nowMs }?.let {

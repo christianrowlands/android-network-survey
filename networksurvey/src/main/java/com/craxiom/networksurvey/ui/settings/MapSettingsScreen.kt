@@ -183,7 +183,7 @@ private fun OpacityRow(opacity: Int, onChange: (Int) -> Unit) {
     Column(modifier = Modifier.padding(vertical = NsTheme.spacing.s)) {
         Text(text = title, style = MaterialTheme.typography.bodyLarge)
         Text(
-            text = stringResource(R.string.coverage_circle_opacity_summary),
+            text = stringResource(R.string.coverage_circle_opacity_detail, percentText(0), percentText(OPACITY_MAX.roundToInt())),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -18,6 +18,7 @@ import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsSwitchRow
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.common.countText
 import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
 import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -32,6 +33,15 @@ interface NsAnalyticsConnectedActions {
     fun onClearQueue() {}
     fun onDisconnect() {}
 }
+
+/**
+ * @return This state with the records waiting taken from the page's [status] when there is one, so
+ * the Upload now row, Clear the upload queue and its confirmation count the same records as the
+ * status above them. The view model and the status read the queue on polls of their own, so while
+ * a survey adds records their counts would otherwise disagree.
+ */
+fun NsAnalyticsConnectionUiState.withQueueOf(status: DestinationPageStatus?): NsAnalyticsConnectionUiState =
+    status?.let { copy(queuedRecords = it.queues.nsAnalytics.pending) } ?: this
 
 /**
  * The NS Analytics page once this phone is connected: the workspace, its uploads, what is sent,
@@ -106,7 +116,7 @@ private fun UploadNowRow(state: NsAnalyticsConnectionUiState, actions: NsAnalyti
     val subtitle = when {
         uploading || failed -> state.uploadStatusMessage
         else -> listOfNotNull(
-            pluralStringResource(R.plurals.ns_analytics_records_waiting, state.queuedRecords, state.queuedRecords),
+            countText(R.plurals.ns_analytics_records_waiting, state.queuedRecords),
             state.lastUploadResult,
         ).joinToString(SEPARATOR)
     }

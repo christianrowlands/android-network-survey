@@ -43,6 +43,7 @@ public class NsAnalyticsQrScannerFragment extends Fragment
 
         CodeScannerView scannerView = root.findViewById(R.id.scanner_view);
         codeScanner = new CodeScanner(activity, scannerView);
+        CodeScannerErrorHandler.install(this, codeScanner);
         codeScanner.setDecodeCallback(result -> activity.runOnUiThread(() -> {
             if (!result.getText().isEmpty())
             {

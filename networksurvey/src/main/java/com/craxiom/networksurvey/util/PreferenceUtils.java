@@ -114,10 +114,10 @@ public class PreferenceUtils
     private static final int MAX_SCAN_RATE_SECONDS = 43200;
 
     /**
-     * Maximum log rollover size in MB to prevent excessively large files.
-     * Set to 200MB which is generous for log files.
+     * Maximum log rollover size in MB: the largest choice on the Log files page (1000 MB), which an MDM
+     * or stored value is capped to. 0 (never roll over) is not affected by this cap.
      */
-    private static final int MAX_ROLLOVER_SIZE_MB = 200;
+    static final int MAX_ROLLOVER_SIZE_MB = 1000;
 
     /**
      * Valid MQTT port range (1-65535)
@@ -287,23 +287,12 @@ public class PreferenceUtils
             if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
             {
                 final int logRolloverSizeMb = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
-                // 0 means unlimited, values > 0 must be validated
-                if (logRolloverSizeMb == 0)
+                // 0 means unlimited, values > 0 are capped
+                if (logRolloverSizeMb >= 0)
                 {
-                    return 0; // Unlimited
-                } else if (logRolloverSizeMb > 0)
-                {
-                    if (logRolloverSizeMb > MAX_ROLLOVER_SIZE_MB)
-                    {
-                        Timber.w("MDM rollover size %d MB exceeds maximum %d MB, clamping to max",
-                                logRolloverSizeMb, MAX_ROLLOVER_SIZE_MB);
-                        return MAX_ROLLOVER_SIZE_MB;
-                    }
-                    return logRolloverSizeMb;
-                } else
-                {
-                    Timber.w("MDM rollover size %d MB is negative, using default", logRolloverSizeMb);
+                    return clampRolloverSizeMb(logRolloverSizeMb);
                 }
+                Timber.w("MDM rollover size %d MB is negative, using default", logRolloverSizeMb);
             }
         }
 
@@ -314,29 +303,36 @@ public class PreferenceUtils
         try
         {
             final int logRolloverSizeMb = Integer.parseInt(rolloverPreferenceString);
-            // 0 means unlimited, values > 0 must be validated
-            if (logRolloverSizeMb == 0)
+            // 0 means unlimited, values > 0 are capped
+            if (logRolloverSizeMb >= 0)
             {
-                return 0; // Unlimited
-            } else if (logRolloverSizeMb > 0)
-            {
-                if (logRolloverSizeMb > MAX_ROLLOVER_SIZE_MB)
-                {
-                    Timber.w("User rollover size %d MB exceeds maximum %d MB, clamping to max",
-                            logRolloverSizeMb, MAX_ROLLOVER_SIZE_MB);
-                    return MAX_ROLLOVER_SIZE_MB;
-                }
-                return logRolloverSizeMb;
-            } else
-            {
-                Timber.w("User rollover size %d MB is negative, using default", logRolloverSizeMb);
+                return clampRolloverSizeMb(logRolloverSizeMb);
             }
+            Timber.w("User rollover size %d MB is negative, using default", logRolloverSizeMb);
         } catch (Exception e)
         {
             Timber.e(e, "Could not convert the log rollover size user preference (%s) to an int", rolloverPreferenceString);
         }
 
         return Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
+    }
+
+    /**
+     * Caps a non-negative rollover size from MDM or the user preferences at {@link #MAX_ROLLOVER_SIZE_MB}.
+     * 0 (never roll over) and every size up to the maximum pass through unchanged.
+     *
+     * @param rolloverSizeMb The rollover size in MB; must not be negative.
+     * @return The rollover size to use, in MB.
+     */
+    static int clampRolloverSizeMb(int rolloverSizeMb)
+    {
+        if (rolloverSizeMb > MAX_ROLLOVER_SIZE_MB)
+        {
+            Timber.w("Rollover size %d MB exceeds the maximum %d MB, clamping to the maximum",
+                    rolloverSizeMb, MAX_ROLLOVER_SIZE_MB);
+            return MAX_ROLLOVER_SIZE_MB;
+        }
+        return rolloverSizeMb;
     }
 
     /**

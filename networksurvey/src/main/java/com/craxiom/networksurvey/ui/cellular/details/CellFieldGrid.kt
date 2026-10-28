@@ -25,9 +25,10 @@ import com.craxiom.networksurvey.ui.common.signalTextColor
 
 /**
  * The cellular values as the prototype lays them out: each value over its uppercase label,
- * centered, four to a row, dropping to three or two when the width or the font scale needs it.
- * Values wrap rather than clip; a Band shows its number with its name on a line under it. Long
- * press copies a value; a Band value opens the band reference ("BAND ›").
+ * centered, four to a row, dropping to three or two when the width, the font scale or a long value
+ * (an 11-digit NR CID, "27500.040 MHz") needs it, so a number is never broken across lines. A Band
+ * shows its number with its name on a line under it. Long press copies a value; a Band value opens
+ * the band reference ("BAND ›").
  */
 @Composable
 fun CellFieldGrid(

@@ -7,7 +7,7 @@ import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.survey.components.labelRes
 import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.SurveyEvent
-import java.text.NumberFormat
+import com.craxiom.networksurvey.ui.common.CountFormat
 
 /**
  * The words for the Survey screen's snackbars and attention items. Plain functions over
@@ -30,11 +30,7 @@ object SurveyEventMessages {
             resources.getString(R.string.survey_could_not_start, join(resources, event.problems.map { itemText(resources, it) }))
         }
 
-        is SurveyEvent.Stopped -> resources.getQuantityString(
-            R.plurals.survey_stopped,
-            event.records.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-            NumberFormat.getIntegerInstance().format(event.records),
-        )
+        is SurveyEvent.Stopped -> CountFormat.plural(resources, R.plurals.survey_stopped, event.records)
 
         SurveyEvent.Applied -> resources.getString(R.string.survey_applied)
         is SurveyEvent.OrganizationChanged -> {

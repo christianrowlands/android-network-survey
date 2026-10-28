@@ -57,7 +57,7 @@ class LogFilesContentTest {
         compose.onNodeWithText("12 minutes ago").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("1 file · 3.1 MB").assertIsDisplayed()
         compose.onNodeWithText("3.1 MB · 5 minutes ago").assertIsDisplayed()
-        compose.onNodeWithText(lte.name).performClick()
+        compose.onNodeWithText(breakableFileName(lte.name)).performClick()
         assertEquals(listOf("share:${lte.name}"), calls)
     }
 
@@ -90,9 +90,9 @@ class LogFilesContentTest {
         }
         show(listed(*files.toTypedArray()))
         compose.onNodeWithText("Showing the 20 newest of 25 surveys.").performScrollTo().assertIsDisplayed()
-        assertEquals(0, compose.onAllNodesWithText("craxiom-lte-24.csv").fetchSemanticsNodes().size)
+        assertEquals(0, compose.onAllNodesWithText(breakableFileName("craxiom-lte-24.csv")).fetchSemanticsNodes().size)
         compose.onNodeWithText("Show more").performScrollTo().performClick()
-        compose.onNodeWithText("craxiom-lte-24.csv").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(breakableFileName("craxiom-lte-24.csv")).performScrollTo().assertIsDisplayed()
         assertEquals(0, compose.onAllNodesWithText("Show more").fetchSemanticsNodes().size)
     }
 
@@ -105,7 +105,7 @@ class LogFilesContentTest {
         compose.onNodeWithText("Select").performClick()
         compose.onNodeWithText("Share 0 files").assertIsNotEnabled()
         compose.onNodeWithText("12 minutes ago").performClick()
-        compose.onNodeWithText(older.name).performScrollTo().performClick()
+        compose.onNodeWithText(breakableFileName(older.name)).performScrollTo().performClick()
         compose.onNodeWithText("Share 3 files").assertIsEnabled().performClick()
         assertEquals(listOf("share:${lte.name},${wifi.name},${older.name}"), calls)
         // Sharing ends select mode, as in the Files app
@@ -117,7 +117,7 @@ class LogFilesContentTest {
     fun cancel_leavesSelectMode() {
         show(listed(lte))
         compose.onNodeWithText("Select").performClick()
-        compose.onNodeWithText(lte.name).performScrollTo().performClick()
+        compose.onNodeWithText(breakableFileName(lte.name)).performScrollTo().performClick()
         compose.onNodeWithText("Cancel").performScrollTo().performClick()
         assertEquals(0, compose.onAllNodesWithText("Share 1 file").fetchSemanticsNodes().size)
         assertEquals(emptyList<String>(), calls)
@@ -126,7 +126,7 @@ class LogFilesContentTest {
     @Test
     fun aLongPress_startsSelectingWithThatFile() {
         show(listed(lte))
-        compose.onNodeWithText(lte.name).performScrollTo().performTouchInput { longClick() }
+        compose.onNodeWithText(breakableFileName(lte.name)).performScrollTo().performTouchInput { longClick() }
         compose.onNodeWithText("Share 1 file").assertIsEnabled()
         assertEquals(emptyList<String>(), calls)
     }

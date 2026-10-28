@@ -13,6 +13,12 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.LinkAnnotation
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.data.api.NsAnalyticsQrData
+import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.status.DeliveryQueues
+import com.craxiom.networksurvey.survey.status.DestinationStatusRules
+import com.craxiom.networksurvey.survey.status.NsAnalyticsQueue
+import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
+import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import com.craxiom.networksurvey.ui.common.CameraPermissionNotice
 import com.craxiom.networksurvey.ui.common.PermissionAccess
 import com.craxiom.networksurvey.ui.common.PermissionRequest
@@ -60,6 +66,20 @@ class NsAnalyticsPagesTest {
 
         request.access = PermissionAccess.BLOCKED
         compose.onNodeWithText("Open Settings").assertIsDisplayed()
+    }
+
+    @Test
+    fun noCamera_scanNeitherAsksNorOpensTheScanner_andSaysWhy() {
+        val request = PermissionRequest(
+            launch = { calls += "ask" },
+            grantedNow = { true },
+            onGranted = { calls += "scanner" },
+            hardwarePresent = { false },
+        )
+        compose.showPage { Column { CameraPermissionNotice(request) } }
+        request.request()
+        compose.onNodeWithText("This device has no camera, so it cannot scan a code.").assertIsDisplayed()
+        assertEquals(emptyList<String>(), calls)
     }
 
     @Test
@@ -112,6 +132,33 @@ class NsAnalyticsPagesTest {
     }
 
     @Test
+    fun connected_countsTheRecordsTheStatusCounts_groupedForTheLanguage() {
+        // The view model's own poll read the queue a moment later than the status did
+        val queues = DeliveryQueues(nsAnalytics = NsAnalyticsQueue(pending = 8696, nextUploadMs = 16 * MINUTE_MS))
+        val status = DestinationPageStatus(
+            Destination.NS_ANALYTICS,
+            DestinationStatusRules.nsAnalytics(queues.nsAnalytics, autoUpload = true),
+            DestinationInfo(),
+            nowMs = 0L,
+            queues = queues,
+        )
+        val viewModelState = NsAnalyticsConnectionUiState(isRegistered = true, workspaceName = "Acme", queuedRecords = 8701)
+        compose.showPage {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                NsAnalyticsConnectedContent(viewModelState.withQueueOf(status), object : NsAnalyticsConnectedActions {}, status)
+            }
+        }
+        compose.onNodeWithText("8,696 waiting · next upload in about 16 min").assertIsDisplayed()
+        compose.onNodeWithText("8,696 records waiting").assertIsDisplayed()
+    }
+
+    @Test
+    fun clearQueue_confirmsWithTheCountGrouped() {
+        showDialogs(NsAnalyticsConnectionUiState(isRegistered = true, queuedRecords = 1006), NsAnalyticsDialog.CLEAR_QUEUE)
+        compose.onNodeWithText("Delete 1,006 records waiting to upload? They won't be sent.").assertIsDisplayed()
+    }
+
+    @Test
     fun disconnect_confirmsAndKeepsTheQueue() {
         showDialogs(NsAnalyticsConnectionUiState(isRegistered = true, workspaceName = "Acme"), NsAnalyticsDialog.DISCONNECT)
         compose.onNodeWithText(
@@ -159,3 +206,5 @@ class NsAnalyticsPagesTest {
         override fun onConfirmDisconnect() { calls += "disconnect" }
     }
 }
+
+private const val MINUTE_MS = 60_000L

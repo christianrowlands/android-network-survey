@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.watchlist
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +47,7 @@ import androidx.core.graphics.toColorInt
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.util.textColor
 import com.craxiom.networksurvey.util.toWifiSignalCategory
+import com.craxiom.networksurvey.ui.common.relativeAgeText
 
 /**
  * Row composables for the Watchlist history screen: a per-network group card, the sort chip, and the
@@ -68,11 +68,7 @@ internal fun WatchlistHistoryGroupRow(
     } else {
         stringResource(R.string.watchlist_matched_by_ap_short)
     }
-    val relative = DateUtils.getRelativeTimeSpanString(
-        group.lastSeen,
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS
-    ).toString()
+    val relative = relativeAgeText(group.lastSeen, System.currentTimeMillis(), midSentence = true)
     val subtitle = stringResource(
         R.string.watchlist_history_group_subtitle,
         pluralStringResource(R.plurals.watchlist_sightings_count, group.sightings, group.sightings),
@@ -106,11 +102,12 @@ internal fun WatchlistHistoryGroupRow(
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
+                val bestRssi = group.bestRssi
                 Text(
-                    text = group.bestRssi.toString(),
+                    text = bestRssi?.toString() ?: stringResource(R.string.signal_none),
                     style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Monospace),
                     fontWeight = FontWeight.Bold,
-                    color = group.bestRssi.toWifiSignalCategory().textColor
+                    color = bestRssi?.toWifiSignalCategory()?.textColor ?: MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = stringResource(R.string.watchlist_history_best_dbm),
