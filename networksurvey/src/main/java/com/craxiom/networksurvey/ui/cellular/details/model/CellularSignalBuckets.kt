@@ -1,70 +1,67 @@
 package com.craxiom.networksurvey.ui.cellular.details.model
 
 import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
-import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.util.SignalBuckets
 
 /**
  * The signal bucket (which colors a value) and the bar fraction (how full its bar is) for each
  * cellular measurement, on one scale so the two never disagree.
  *
- * The strongest-is-best measurements in dBm (RSSI, RSCP, RSRP, SS-RSRP) use the app's
- * [SignalBuckets] thresholds, so the Cellular view agrees with the map; their fraction puts each
- * threshold on a fifth of the bar, so a fair value always fills 40 to 60 percent. The quality
- * measurements (RSRQ, SNR, SS-RSRQ, SS-SINR) have no such table; they use the range each
- * [CellularProtocol] declares, split into five equal steps, and the bucket follows the fraction.
+ * Every measurement reads its cut points from [SignalBuckets]: the strength measurements in dBm
+ * (RSSI, RSCP, RSRP, SS-RSRP) share the map's tables, so the Cellular view agrees with the map, and
+ * the quality measurements (RSRQ, SNR, SS-RSRQ, SS-SINR) have their own. The fraction puts each cut
+ * point on a fifth of the bar, so a fair value always fills 40 to 60 percent.
  */
 object CellularSignalBuckets {
-
-    private const val STRONG_FRACTION = 0.8f
-    private const val GOOD_FRACTION = 0.6f
-    private const val FAIR_FRACTION = 0.4f
-    private const val WEAK_FRACTION = 0.2f
 
     /** The fraction of the bar each step between two thresholds takes. */
     private const val STEP_FRACTION = 0.2f
 
-    /** @return The [SignalBuckets] value for [value] of [kind] on [protocol]. */
-    fun bucket(protocol: CellularProtocol, kind: CellFieldKind, value: Int?): Int {
+    /** @return The [SignalBuckets] value for [value] of [kind]. */
+    fun bucket(kind: CellFieldKind, value: Int?): Int {
         if (value == null) return SignalBuckets.UNKNOWN
         thresholdProtocol(kind)?.let { return SignalBuckets.cellular(it, value) }
-        return fraction(protocol, kind, value)?.let(::bucketForFraction) ?: SignalBuckets.UNKNOWN
+        return when (kind) {
+            CellFieldKind.RSRQ, CellFieldKind.SS_RSRQ -> SignalBuckets.rsrq(value)
+            CellFieldKind.SNR, CellFieldKind.SS_SINR -> SignalBuckets.sinr(value)
+            else -> SignalBuckets.UNKNOWN
+        }
     }
 
     /**
      * @return How full the bar for [value] of [kind] is, from 0 to 1, or null when there is no value
      * (a dBm value of 0 or more is the protobuf default, not a reading) or no scale for [kind].
      */
-    fun fraction(protocol: CellularProtocol, kind: CellFieldKind, value: Int?): Float? {
+    fun fraction(kind: CellFieldKind, value: Int?): Float? {
         if (value == null) return null
-        thresholdProtocol(kind)?.let { return thresholdFraction(it, value) }
-        val (min, span) = range(protocol, kind) ?: return null
-        if (span <= 0) return null
-        return ((value - min).toFloat() / span).coerceIn(0f, 1f)
+        thresholdProtocol(kind)?.let { protocol ->
+            if (value >= 0) return null
+            return SignalBuckets.cellularThresholds(protocol)?.let { thresholdFraction(it, value) }
+        }
+        return qualityThresholds(kind)?.let { thresholdFraction(it, value) }
     }
 
-    /** @return True when [kind] has a scale on [protocol], so a missing bar means a missing value. */
-    fun hasRange(protocol: CellularProtocol, kind: CellFieldKind): Boolean =
-        thresholdProtocol(kind) != null || (range(protocol, kind)?.second ?: 0) > 0
+    /** @return True when [kind] has a scale, so a missing bar means a missing value. */
+    fun hasRange(kind: CellFieldKind): Boolean = thresholdProtocol(kind) != null || qualityThresholds(kind) != null
 
     /**
-     * A dBm value placed on the threshold table: the weakest threshold sits at 0.2 and each stronger
-     * one a fifth further, with one more step of headroom at each end. A value exactly on a
-     * threshold belongs to the bucket below it (the thresholds compare with `>`), and its fraction
-     * sits on that bucket's upper edge, so the bar and the color always match.
+     * A value placed on its threshold table (strongest first): the weakest threshold sits at 0.2 and
+     * each stronger one a fifth further, with one more step of headroom at each end (as wide as the
+     * step next to it). A value exactly on a threshold belongs to the bucket below it (the thresholds
+     * compare with `>`), and its fraction sits on that bucket's upper edge, so the bar and the color
+     * always match.
      */
-    private fun thresholdFraction(thresholdProtocol: Int, dBm: Int): Float? {
-        if (dBm >= 0) return null
-        val thresholds = SignalBuckets.cellularThresholds(thresholdProtocol) ?: return null
+    private fun thresholdFraction(thresholds: IntArray, value: Int): Float {
         val ascending = thresholds.reversed()
-        val step = thresholds[0] - thresholds[1]
-        val anchors = listOf(ascending.first() - step) + ascending + (ascending.last() + step)
-        if (dBm <= anchors.first()) return 0f
-        if (dBm >= anchors.last()) return 1f
-        val upper = anchors.indexOfFirst { dBm <= it }
+        val lowHeadroom = ascending[1] - ascending[0]
+        val highHeadroom = ascending[ascending.lastIndex] - ascending[ascending.lastIndex - 1]
+        val anchors = listOf(ascending.first() - lowHeadroom) + ascending + (ascending.last() + highHeadroom)
+        if (value <= anchors.first()) return 0f
+        if (value >= anchors.last()) return 1f
+        val upper = anchors.indexOfFirst { value <= it }
         val low = anchors[upper - 1]
         val high = anchors[upper]
-        return (upper - 1) * STEP_FRACTION + STEP_FRACTION * (dBm - low) / (high - low)
+        return (upper - 1) * STEP_FRACTION + STEP_FRACTION * (value - low) / (high - low)
     }
 
     /** @return The [SurveyedPointEntity] protocol whose dBm thresholds [kind] uses, or null. */
@@ -76,18 +73,10 @@ object CellularSignalBuckets {
         else -> null
     }
 
-    /** @return The protocol's minimum and normalized span for a quality [kind], or null. */
-    private fun range(protocol: CellularProtocol, kind: CellFieldKind): Pair<Int, Int>? = when (kind) {
-        CellFieldKind.RSRQ, CellFieldKind.SS_RSRQ -> protocol.minSignalTwo to protocol.maxNormalizedSignalTwo
-        CellFieldKind.SNR, CellFieldKind.SS_SINR -> protocol.minSignalThree to protocol.maxNormalizedSignalThree
+    /** @return The dB thresholds of a quality [kind], or null. */
+    private fun qualityThresholds(kind: CellFieldKind): IntArray? = when (kind) {
+        CellFieldKind.RSRQ, CellFieldKind.SS_RSRQ -> SignalBuckets.rsrqThresholds()
+        CellFieldKind.SNR, CellFieldKind.SS_SINR -> SignalBuckets.sinrThresholds()
         else -> null
-    }
-
-    private fun bucketForFraction(fraction: Float): Int = when {
-        fraction >= STRONG_FRACTION -> SignalBuckets.STRONG
-        fraction >= GOOD_FRACTION -> SignalBuckets.GOOD
-        fraction >= FAIR_FRACTION -> SignalBuckets.FAIR
-        fraction >= WEAK_FRACTION -> SignalBuckets.WEAK
-        else -> SignalBuckets.VERY_WEAK
     }
 }

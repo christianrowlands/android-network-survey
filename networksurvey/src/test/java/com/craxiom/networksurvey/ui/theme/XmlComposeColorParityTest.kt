@@ -31,18 +31,6 @@ class XmlComposeColorParityTest {
         assertParity(nsDarkColorScheme(NsAccent.DEFAULT), nsColors(darkTheme = true))
     }
 
-    @Test
-    fun rssiColorsMatchTheSignalRampInBothSchemes() {
-        for (qualifier in listOf("notnight", "night")) {
-            RuntimeEnvironment.setQualifiers(qualifier)
-            assertXml(NsPalette.Signal.Strong, R.color.rssi_green, "rssi_green ($qualifier)")
-            assertXml(NsPalette.Signal.Good, R.color.rssi_yellow, "rssi_yellow ($qualifier)")
-            assertXml(NsPalette.Signal.Fair, R.color.rssi_orange, "rssi_orange ($qualifier)")
-            assertXml(NsPalette.Signal.Weak, R.color.rssi_red, "rssi_red ($qualifier)")
-            assertXml(NsPalette.Signal.VeryWeak, R.color.rssi_deep_red, "rssi_deep_red ($qualifier)")
-        }
-    }
-
     private fun assertParity(scheme: ColorScheme, colors: NsColors) {
         val roles = mapOf(
             R.color.md_theme_primary to scheme.primary,

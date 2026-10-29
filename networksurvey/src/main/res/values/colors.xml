@@ -83,13 +83,6 @@
     <color name="ns_state_attention">@color/ns_status_danger</color>
     <color name="ns_state_attention_container">@color/ns_status_danger_container</color>
 
-    <!-- Wi-Fi & Bluetooth RSSI color ranges (NsPalette.Signal), the same in both schemes -->
-    <color name="rssi_green">#388E3C</color>
-    <color name="rssi_yellow">#FBC02D</color>
-    <color name="rssi_orange">#F57C00</color>
-    <color name="rssi_red">#D32F2F</color>
-    <color name="rssi_deep_red">#D50000</color>
-
     <!-- The serving cell's default coverage circle on the map -->
     <color name="serving_cell_dark">#4DA6FF</color>
 

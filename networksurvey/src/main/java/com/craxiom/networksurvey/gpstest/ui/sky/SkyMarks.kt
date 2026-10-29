@@ -45,8 +45,8 @@ data class SkyColors(val scale: List<Color>, val outline: Color, val hollow: Col
 fun skyColors(): SkyColors = SkyColors(
     scale = listOf(
         MaterialTheme.colorScheme.outline,
-        NsPalette.Signal.Weak,
-        NsPalette.Signal.Good,
+        NsPalette.Signal.VeryWeak,
+        NsPalette.Signal.Fair,
         NsPalette.Signal.Strong,
     ),
     outline = MaterialTheme.colorScheme.onSurface,

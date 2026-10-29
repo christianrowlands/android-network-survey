@@ -62,7 +62,7 @@ object ServingCellMapper {
         return ServingCellDetails(
             protocol = protocol,
             carrier = data.provider,
-            signals = listOf(signal(protocol, CellFieldKind.RSSI, rssi, ValueUnit.DBM)),
+            signals = listOf(signal(CellFieldKind.RSSI, rssi, ValueUnit.DBM)),
             identity = listOf(
                 CellField(CellFieldKind.PLMN, plmn(data.hasPlmn(), data.plmn.value, data.hasMcc(), data.mcc.value, data.hasMnc(), data.mnc.value)),
                 CellField(CellFieldKind.LAC, if (data.hasLac()) data.lac.value.toString() else null),
@@ -85,8 +85,8 @@ object ServingCellMapper {
             protocol = protocol,
             carrier = data.provider,
             signals = listOf(
-                signal(protocol, CellFieldKind.RSSI, rssi, ValueUnit.DBM),
-                signal(protocol, CellFieldKind.RSCP, rscp, ValueUnit.DBM),
+                signal(CellFieldKind.RSSI, rssi, ValueUnit.DBM),
+                signal(CellFieldKind.RSCP, rscp, ValueUnit.DBM),
             ),
             identity = listOf(
                 CellField(CellFieldKind.PLMN, plmn(data.hasPlmn(), data.plmn.value, data.hasMcc(), data.mcc.value, data.hasMnc(), data.mnc.value)),
@@ -113,9 +113,9 @@ object ServingCellMapper {
             protocol = protocol,
             carrier = data.provider,
             signals = listOf(
-                signal(protocol, CellFieldKind.RSRP, rsrp, ValueUnit.DBM),
-                signal(protocol, CellFieldKind.RSRQ, if (data.hasRsrq()) data.rsrq.value.toInt() else null, ValueUnit.DB),
-                signal(protocol, CellFieldKind.SNR, if (data.hasSnr()) data.snr.value.toInt() else null, ValueUnit.DB),
+                signal(CellFieldKind.RSRP, rsrp, ValueUnit.DBM),
+                signal(CellFieldKind.RSRQ, if (data.hasRsrq()) data.rsrq.value.toInt() else null, ValueUnit.DB),
+                signal(CellFieldKind.SNR, if (data.hasSnr()) data.snr.value.toInt() else null, ValueUnit.DB),
             ),
             identity = listOf(
                 CellField(CellFieldKind.PLMN, plmn(data.hasPlmn(), data.plmn.value, data.hasMcc(), data.mcc.value, data.hasMnc(), data.mnc.value)),
@@ -174,21 +174,20 @@ object ServingCellMapper {
 
     /** @return The SS-RSRP, SS-RSRQ and SS-SINR of an NR cell, with their buckets. */
     fun nrSignals(data: NrRecordData): List<CellField> {
-        val protocol = CellularProtocol.NR
         return listOf(
-            signal(protocol, CellFieldKind.SS_RSRP, if (data.hasSsRsrp()) data.ssRsrp.value.toInt() else null, ValueUnit.DBM),
-            signal(protocol, CellFieldKind.SS_RSRQ, if (data.hasSsRsrq()) data.ssRsrq.value.toInt() else null, ValueUnit.DB),
-            signal(protocol, CellFieldKind.SS_SINR, if (data.hasSsSinr()) data.ssSinr.value.toInt() else null, ValueUnit.DB),
+            signal(CellFieldKind.SS_RSRP, if (data.hasSsRsrp()) data.ssRsrp.value.toInt() else null, ValueUnit.DBM),
+            signal(CellFieldKind.SS_RSRQ, if (data.hasSsRsrq()) data.ssRsrq.value.toInt() else null, ValueUnit.DB),
+            signal(CellFieldKind.SS_SINR, if (data.hasSsSinr()) data.ssSinr.value.toInt() else null, ValueUnit.DB),
         )
     }
 
     /** @return A signal value with its bucket and its bar fraction, on one scale. */
-    fun signal(protocol: CellularProtocol, kind: CellFieldKind, value: Int?, unit: ValueUnit): CellField = CellField(
+    fun signal(kind: CellFieldKind, value: Int?, unit: ValueUnit): CellField = CellField(
         kind = kind,
         value = value?.toString(),
         unit = unit,
-        bucket = CellularSignalBuckets.bucket(protocol, kind, value),
-        fraction = CellularSignalBuckets.fraction(protocol, kind, value),
+        bucket = CellularSignalBuckets.bucket(kind, value),
+        fraction = CellularSignalBuckets.fraction(kind, value),
     )
 
     /** @return The PCI with its primary and secondary sync sequences, e.g. "146 (2/48)". */

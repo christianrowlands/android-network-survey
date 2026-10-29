@@ -74,6 +74,36 @@ class SignalBucketsTest {
     }
 
     @Test
+    fun rsrqUsesTheQualityThresholdsAtTheirBoundaries() {
+        assertEquals(SignalBuckets.STRONG, SignalBuckets.rsrq(5))
+        assertEquals(SignalBuckets.STRONG, SignalBuckets.rsrq(0))
+        assertEquals(SignalBuckets.STRONG, SignalBuckets.rsrq(-10))
+        assertEquals(SignalBuckets.GOOD, SignalBuckets.rsrq(-11))
+        assertEquals(SignalBuckets.GOOD, SignalBuckets.rsrq(-13))
+        assertEquals(SignalBuckets.FAIR, SignalBuckets.rsrq(-14))
+        assertEquals(SignalBuckets.FAIR, SignalBuckets.rsrq(-16))
+        assertEquals(SignalBuckets.WEAK, SignalBuckets.rsrq(-17))
+        assertEquals(SignalBuckets.WEAK, SignalBuckets.rsrq(-19))
+        assertEquals(SignalBuckets.VERY_WEAK, SignalBuckets.rsrq(-20))
+        assertEquals(SignalBuckets.VERY_WEAK, SignalBuckets.rsrq(-34))
+    }
+
+    @Test
+    fun sinrUsesTheQualityThresholdsAtTheirBoundaries() {
+        assertEquals(SignalBuckets.STRONG, SignalBuckets.sinr(30))
+        assertEquals(SignalBuckets.STRONG, SignalBuckets.sinr(20))
+        assertEquals(SignalBuckets.GOOD, SignalBuckets.sinr(19))
+        assertEquals(SignalBuckets.GOOD, SignalBuckets.sinr(13))
+        assertEquals(SignalBuckets.FAIR, SignalBuckets.sinr(12))
+        assertEquals(SignalBuckets.FAIR, SignalBuckets.sinr(5))
+        assertEquals(SignalBuckets.WEAK, SignalBuckets.sinr(4))
+        // Zero is a real SINR, not the protobuf default.
+        assertEquals(SignalBuckets.WEAK, SignalBuckets.sinr(0))
+        assertEquals(SignalBuckets.VERY_WEAK, SignalBuckets.sinr(-1))
+        assertEquals(SignalBuckets.VERY_WEAK, SignalBuckets.sinr(-20))
+    }
+
+    @Test
     fun strongIsTheHighestBucketSoMaxPicksTheBest() {
         assertEquals(5, SignalBuckets.STRONG)
         assertEquals(1, SignalBuckets.VERY_WEAK)

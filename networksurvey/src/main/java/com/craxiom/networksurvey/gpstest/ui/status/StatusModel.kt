@@ -83,8 +83,8 @@ data class SatelliteRow(
 
 /**
  * @return The [SignalBuckets] bucket whose text color is nearest the sky's fill for [cn0DbHz]:
- * unknown (muted) below the first stop, very weak up to the red stop, weak to halfway to yellow,
- * fair up to yellow, good to halfway to green, and strong above.
+ * unknown (muted) below the first stop, very weak (red) up to the red stop, weak (orange) to halfway
+ * to yellow, fair (yellow) up to yellow, good (light green) to halfway to green, and strong above.
  */
 fun cn0Bucket(cn0DbHz: Float): Int {
     val (gray, red, yellow, green) = SkyProjection.CN0_STOPS.toList()

@@ -58,21 +58,19 @@ object CellularNeighbors {
 
     private fun nr(record: CellularRecordWrapper): SortableRow {
         val data = (record.cellularRecord as NrRecord).data
-        val protocol = CellularProtocol.NR
         val narfcn = if (data.hasNarfcn()) data.narfcn.value else null
         val pci = if (data.hasPci()) data.pci.value else null
         val ssRsrp = if (data.hasSsRsrp()) data.ssRsrp.value.toInt() else null
         val ssRsrq = if (data.hasSsRsrq()) data.ssRsrq.value.toInt() else null
         val details = listOfNotNull(
             narfcn?.let { CellField(CellFieldKind.NARFCN, it.toString()) },
-            ssRsrq?.let { ServingCellMapper.signal(protocol, CellFieldKind.SS_RSRQ, it, ValueUnit.DB) },
+            ssRsrq?.let { ServingCellMapper.signal(CellFieldKind.SS_RSRQ, it, ValueUnit.DB) },
         )
-        return row(protocol, CellFieldKind.PCI, pci?.toString(), details, CellFieldKind.SS_RSRP, ssRsrp, narfcn, pci)
+        return row(CellFieldKind.PCI, pci?.toString(), details, CellFieldKind.SS_RSRP, ssRsrp, narfcn, pci)
     }
 
     private fun lte(record: CellularRecordWrapper): SortableRow {
         val data = (record.cellularRecord as LteRecord).data
-        val protocol = CellularProtocol.LTE
         val earfcn = if (data.hasEarfcn()) data.earfcn.value else null
         val band = earfcn?.let { CellularUtils.downlinkEarfcnToBand(it) }?.takeIf { it != -1 }
         val pci = if (data.hasPci()) data.pci.value else null
@@ -81,10 +79,10 @@ object CellularNeighbors {
         val details = listOfNotNull(
             earfcn?.let { CellField(CellFieldKind.EARFCN, it.toString()) },
             band?.let { CellField(CellFieldKind.BAND, it.toString()) },
-            rsrq?.let { ServingCellMapper.signal(protocol, CellFieldKind.RSRQ, it, ValueUnit.DB) },
+            rsrq?.let { ServingCellMapper.signal(CellFieldKind.RSRQ, it, ValueUnit.DB) },
             if (data.hasTa()) CellField(CellFieldKind.TA, data.ta.value.toString()) else null,
         )
-        return row(protocol, CellFieldKind.PCI, pci?.toString(), details, CellFieldKind.RSRP, rsrp, earfcn, pci)
+        return row(CellFieldKind.PCI, pci?.toString(), details, CellFieldKind.RSRP, rsrp, earfcn, pci)
     }
 
     private fun umts(record: CellularRecordWrapper): SortableRow {
@@ -93,7 +91,7 @@ object CellularNeighbors {
         val psc = if (data.hasPsc()) data.psc.value else null
         val rscp = if (data.hasRscp()) data.rscp.value.toInt() else null
         val details = listOfNotNull(uarfcn?.let { CellField(CellFieldKind.UARFCN, it.toString()) })
-        return row(CellularProtocol.UMTS, CellFieldKind.PSC, psc?.toString(), details, CellFieldKind.RSCP, rscp, uarfcn, psc)
+        return row(CellFieldKind.PSC, psc?.toString(), details, CellFieldKind.RSCP, rscp, uarfcn, psc)
     }
 
     private fun gsm(record: CellularRecordWrapper): SortableRow {
@@ -103,11 +101,10 @@ object CellularNeighbors {
         val rssi = if (data.hasSignalStrength()) data.signalStrength.value.toInt() else null
         val details = listOfNotNull(arfcn?.let { CellField(CellFieldKind.ARFCN, it.toString()) })
         val bsicText = bsic?.let { ParserUtils.bsicToString(it) }?.ifEmpty { null }
-        return row(CellularProtocol.GSM, CellFieldKind.BSIC, bsicText, details, CellFieldKind.RSSI, rssi, arfcn, bsic)
+        return row(CellFieldKind.BSIC, bsicText, details, CellFieldKind.RSSI, rssi, arfcn, bsic)
     }
 
     private fun row(
-        protocol: CellularProtocol,
         titleKind: CellFieldKind,
         title: String?,
         details: List<CellField>,
@@ -119,7 +116,7 @@ object CellularNeighbors {
         row = NeighborRow(
             title = CellField(titleKind, title),
             details = details,
-            signal = ServingCellMapper.signal(protocol, signalKind, signal, ValueUnit.DBM),
+            signal = ServingCellMapper.signal(signalKind, signal, ValueUnit.DBM),
         ),
         signal = signal,
         channel = channel,

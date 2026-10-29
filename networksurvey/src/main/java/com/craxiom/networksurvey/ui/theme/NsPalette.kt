@@ -107,33 +107,35 @@ object NsPalette {
     }
 
     /**
-     * The five-step signal strength ramp, strongest first. Theme-independent because it also
-     * colors MapLibre layers and View screens; it mirrors the XML `rssi_*` colors.
+     * The five-step signal strength ramp, strongest first: dark green, light green, yellow, orange,
+     * red, so only the weak end reads as a warning and a fair value shows yellow. Theme-independent
+     * because it also colors MapLibre layers.
      */
     object Signal {
         val Strong = Color(0xFF388E3C)
-        val Good = Color(0xFFFBC02D)
-        val Fair = Color(0xFFF57C00)
-        val Weak = Color(0xFFD32F2F)
-        val VeryWeak = Color(0xFFD50000)
+        val Good = Color(0xFF8BC34A)
+        val Fair = Color(0xFFFBC02D)
+        val Weak = Color(0xFFF57C00)
+        val VeryWeak = Color(0xFFD32F2F)
     }
 
     /**
      * The signal ramp for text (dBm readouts), strongest first. The fill ramp in [Signal] is too
      * light for text on light panels (yellow measures about 1.6:1), so text uses these instead.
+     * Each measures at least 4.5:1 on the theme's panels.
      */
     object SignalText {
         val StrongLight = Color(0xFF276B2B)
-        val GoodLight = Color(0xFF7F6400)
-        val FairLight = Color(0xFFA84B06)
-        val WeakLight = Color(0xFFC62828)
-        val VeryWeakLight = Color(0xFFA50E0E)
+        val GoodLight = Color(0xFF4A7310)
+        val FairLight = Color(0xFF7F6400)
+        val WeakLight = Color(0xFFA84B06)
+        val VeryWeakLight = Color(0xFFC62828)
 
         val StrongDark = Color(0xFF5DC777)
-        val GoodDark = Color(0xFFFBC02D)
-        val FairDark = Color(0xFFF57C00)
-        val WeakDark = Color(0xFFFF7A70)
-        val VeryWeakDark = Color(0xFFFF5252)
+        val GoodDark = Color(0xFFA5D46A)
+        val FairDark = Color(0xFFFBC02D)
+        val WeakDark = Color(0xFFF57C00)
+        val VeryWeakDark = Color(0xFFFF7A70)
     }
 
     /** Wi-Fi band dot colors. Theme-independent: they are always drawn with a halo. */

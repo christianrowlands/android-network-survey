@@ -16,7 +16,6 @@ import androidx.compose.ui.semantics.contentDescription
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.band.BandTapTarget
 import com.craxiom.networksurvey.fragments.model.NrSecondaryCellViewState
-import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.ui.cellular.details.model.CellField
 import com.craxiom.networksurvey.ui.cellular.details.model.CellFieldKind
 import com.craxiom.networksurvey.ui.cellular.details.model.NrSecondaryCellResolver
@@ -97,9 +96,9 @@ private fun IdleLine(lastSeenAgeMs: Long) {
 }
 
 private fun signals(state: NrSecondaryCellViewState): List<CellField> = listOf(
-    ServingCellMapper.signal(CellularProtocol.NR, CellFieldKind.SS_RSRP, state.ssRsrp(), ValueUnit.DBM),
-    ServingCellMapper.signal(CellularProtocol.NR, CellFieldKind.SS_RSRQ, state.ssRsrq(), ValueUnit.DB),
-    ServingCellMapper.signal(CellularProtocol.NR, CellFieldKind.SS_SINR, state.ssSinr(), ValueUnit.DB),
+    ServingCellMapper.signal(CellFieldKind.SS_RSRP, state.ssRsrp(), ValueUnit.DBM),
+    ServingCellMapper.signal(CellFieldKind.SS_RSRQ, state.ssRsrq(), ValueUnit.DB),
+    ServingCellMapper.signal(CellFieldKind.SS_SINR, state.ssSinr(), ValueUnit.DB),
 )
 
 private fun identity(state: NrSecondaryCellViewState): List<CellField> = listOf(
