@@ -4,6 +4,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,13 +22,19 @@ import com.patrykandpatrick.vico.compose.common.Fill
 /**
  * A chart that shows signal values (e.g. RSSI) over time.
  *
+ * Callers may swap [viewModel] in place (one chart per SIM, for example); the chart is rebuilt for it.
+ *
  * @param viewModel The view model that contains the data to display.
  */
 @Composable
 internal fun SignalChart(
     viewModel: ASignalChartViewModel
 ) {
-    ComposeChart(viewModel)
+    // Vico throws if one chart host is handed a second model producer, which happens when the same
+    // spot switches charts (the Cellular view's SIM tabs), so each view model gets its own host.
+    key(viewModel) {
+        ComposeChart(viewModel)
+    }
 }
 
 @Composable
