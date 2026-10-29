@@ -14,7 +14,7 @@ class NsAccentTest {
     @Test
     fun aMissingOrUnknownValue_fallsBackToTheDefault() {
         assertEquals(NsAccent.DEFAULT, NsAccent.fromPrefValue(null))
-        assertEquals(NsAccent.DEFAULT, NsAccent.fromPrefValue("magenta"))
+        assertEquals(NsAccent.DEFAULT, NsAccent.fromPrefValue("chartreuse"))
     }
 
     @Test

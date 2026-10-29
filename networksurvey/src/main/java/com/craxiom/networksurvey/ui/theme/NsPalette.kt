@@ -208,8 +208,10 @@ data class NsAccentPalette(
  * The accent colors the user can pick in Settings, in the order the picker lists them. Navy, the
  * [DEFAULT], was picked on a device from a round of candidates (Oct 2026); Sky is the launcher
  * icon's beacon; Slate was the first redesign accent, from the old launcher icon. The rest come
- * from the prototype's accent control, plus Graphite. Violet, Green and Orange sit near the
- * Cellular, GNSS and status colors; that was accepted for the choice they give.
+ * from the prototype's accent control, plus Graphite, and were deepened before 2.0 (Oct 2026).
+ * Phosphor, Amber and Magenta are bold accents for those who want a terminal look in the dark
+ * scheme. Violet, Green, Orange, Phosphor and Amber sit near the Cellular, GNSS and status colors;
+ * that was accepted for the choice they give.
  *
  * Each accent has its own shade per scheme, as Material's tones do: a deep fill with white text in
  * the light scheme, and a light fill with dark text in the dark scheme, so every accent reads the
@@ -285,80 +287,130 @@ enum class NsAccent(@StringRes val label: Int, val light: NsAccentPalette, val d
             onFill = Color(0xFF0E1116),
         ),
     ),
-    // A green-leaning teal, so it stays apart from Sky.
+    // A deep, green-leaning teal, so it stays apart from Sky.
     TEAL(
         label = R.string.accent_teal,
         light = NsAccentPalette(
-            fill = Color(0xFF0F766E),
-            ink = Color(0xFF0C6159),
-            soft = Color(0xFFD9F2EE),
+            fill = Color(0xFF0B5F58),
+            ink = Color(0xFF094F49),
+            soft = Color(0xFFD5EFEB),
             onFill = Color(0xFFFFFFFF),
         ),
         dark = NsAccentPalette(
-            fill = Color(0xFF4FD1C1),
-            ink = Color(0xFF9BE8DE),
-            soft = Color(0xFF0F2E2B),
+            fill = Color(0xFF14D4BE),
+            ink = Color(0xFF7CEBDD),
+            soft = Color(0xFF0A2E2A),
             onFill = Color(0xFF0E1116),
         ),
     ),
-    // The dark Indigo stays saturated so it does not read as a second Navy or Slate.
+    // The dark Indigo stays saturated so it does not read as a second Navy or Slate. A deeper
+    // saturated blue or violet fill in the dark scheme would drop below 4.5:1 against the panel.
     INDIGO(
         label = R.string.accent_indigo,
         light = NsAccentPalette(
-            fill = Color(0xFF3B5BDB),
-            ink = Color(0xFF3B5BDB),
-            soft = Color(0xFFE5EAFB),
+            fill = Color(0xFF2E3FC4),
+            ink = Color(0xFF2E3FC4),
+            soft = Color(0xFFE2E6FB),
             onFill = Color(0xFFFFFFFF),
         ),
         dark = NsAccentPalette(
-            fill = Color(0xFF7C8CFF),
-            ink = Color(0xFFB4BFFF),
-            soft = Color(0xFF1E2A4E),
+            fill = Color(0xFF7A88FF),
+            ink = Color(0xFFB0BAFF),
+            soft = Color(0xFF1A2150),
             onFill = Color(0xFF0E1116),
         ),
     ),
     VIOLET(
         label = R.string.accent_violet,
         light = NsAccentPalette(
-            fill = Color(0xFF6D4DE0),
-            ink = Color(0xFF6D4DE0),
-            soft = Color(0xFFEDE8FB),
+            fill = Color(0xFF5523D1),
+            ink = Color(0xFF5523D1),
+            soft = Color(0xFFECE5FC),
             onFill = Color(0xFFFFFFFF),
         ),
         dark = NsAccentPalette(
-            fill = Color(0xFFC0ABFF),
-            ink = Color(0xFFDCD0FF),
-            soft = Color(0xFF2A2150),
+            fill = Color(0xFFA87BFF),
+            ink = Color(0xFFD4C2FF),
+            soft = Color(0xFF2A1958),
             onFill = Color(0xFF0E1116),
         ),
     ),
     GREEN(
         label = R.string.accent_green,
         light = NsAccentPalette(
-            fill = Color(0xFF1B7F4B),
-            ink = Color(0xFF166B3F),
-            soft = Color(0xFFDFF3E7),
+            fill = Color(0xFF0E6B3A),
+            ink = Color(0xFF0B5A30),
+            soft = Color(0xFFDCF2E4),
             onFill = Color(0xFFFFFFFF),
         ),
         dark = NsAccentPalette(
-            fill = Color(0xFF7AD8A3),
-            ink = Color(0xFFA9E9C4),
-            soft = Color(0xFF153521),
+            fill = Color(0xFF2EDB7A),
+            ink = Color(0xFF8AF0B5),
+            soft = Color(0xFF0C3220),
             onFill = Color(0xFF0E1116),
         ),
     ),
     ORANGE(
         label = R.string.accent_orange,
         light = NsAccentPalette(
-            fill = Color(0xFFC4502A),
-            ink = Color(0xFFA23E22),
-            soft = Color(0xFFFBE7E0),
+            fill = Color(0xFFB23C12),
+            ink = Color(0xFF933010),
+            soft = Color(0xFFFBE5DB),
             onFill = Color(0xFFFFFFFF),
         ),
         dark = NsAccentPalette(
-            fill = Color(0xFFFFA083),
-            ink = Color(0xFFFFC6B3),
-            soft = Color(0xFF3B2018),
+            fill = Color(0xFFFF7A3D),
+            ink = Color(0xFFFFB894),
+            soft = Color(0xFF3D1A0C),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    // The bold "hacker" accents, made for the dark scheme: terminal phosphor green, CRT amber and
+    // neon magenta. Their light-scheme shades are deep enough for white text, so they read as
+    // ordinary deep accents there. Amber sits near the paused and warning amber.
+    // Phosphor green, at about 14:1 with dark text.
+    PHOSPHOR(
+        label = R.string.accent_phosphor,
+        light = NsAccentPalette(
+            fill = Color(0xFF0A7D33),
+            ink = Color(0xFF076A2A),
+            soft = Color(0xFFDAF5E2),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFF39FF6A),
+            ink = Color(0xFF9CFFB5),
+            soft = Color(0xFF0A2B13),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    AMBER(
+        label = R.string.accent_amber,
+        light = NsAccentPalette(
+            fill = Color(0xFF8F5300),
+            ink = Color(0xFF7A4600),
+            soft = Color(0xFFFBEFD6),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFFFFB000),
+            ink = Color(0xFFFFD47A),
+            soft = Color(0xFF33250A),
+            onFill = Color(0xFF0E1116),
+        ),
+    ),
+    MAGENTA(
+        label = R.string.accent_magenta,
+        light = NsAccentPalette(
+            fill = Color(0xFFB0127A),
+            ink = Color(0xFF990F6A),
+            soft = Color(0xFFFBE3F1),
+            onFill = Color(0xFFFFFFFF),
+        ),
+        dark = NsAccentPalette(
+            fill = Color(0xFFFF4FB4),
+            ink = Color(0xFFFFAEDC),
+            soft = Color(0xFF3D0F2A),
             onFill = Color(0xFF0E1116),
         ),
     );

@@ -901,6 +901,9 @@
     <string name="accent_violet">Violet</string>
     <string name="accent_green">Green</string>
     <string name="accent_orange">Orange</string>
+    <string name="accent_phosphor">Phosphor</string>
+    <string name="accent_amber">Amber</string>
+    <string name="accent_magenta">Magenta</string>
 
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID exclusion list</string>
