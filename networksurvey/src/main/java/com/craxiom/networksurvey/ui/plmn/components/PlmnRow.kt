@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.data.plmn.displayName
+import com.craxiom.networksurvey.data.plmn.secondaryName
 import com.craxiom.networksurvey.ui.plmn.PlmnGroup
 import com.craxiom.networksurvey.ui.plmn.isoToFlag
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -110,16 +111,8 @@ private fun LeftBlock(record: PlmnRecord, modifier: Modifier = Modifier) {
 
 @Composable
 private fun TopNameRow(record: PlmnRecord) {
-    val brand = record.brand?.takeIf { it.isNotBlank() }
-    val operator = record.operator?.takeIf { it.isNotBlank() }
     val primary = record.displayName() ?: stringResource(R.string.unknown)
-    val secondary = if (brand != null && operator != null &&
-        !brand.trim().equals(operator.trim(), ignoreCase = true)
-    ) {
-        operator
-    } else {
-        null
-    }
+    val secondary = record.secondaryName()
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

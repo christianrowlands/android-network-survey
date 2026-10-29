@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -49,7 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
-import com.craxiom.networksurvey.data.PlmnColorOverrideManager
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.util.CalculationUtils
@@ -181,32 +179,21 @@ private fun TowerListRow(
     onClick: () -> Unit,
     onColorOverrideChanged: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    var providerColor by remember { mutableStateOf(PlmnColorMapper.getColor(tower.mcc, tower.mnc)) }
+    val provider = rememberTowerProvider(tower.mcc, tower.mnc)
     var showColorPicker by remember { mutableStateOf(false) }
     var colorVersion by remember { mutableIntStateOf(0) }
 
     // Re-read color when version changes (after override is applied)
-    providerColor = remember(colorVersion) { PlmnColorMapper.getColor(tower.mcc, tower.mnc) }
+    val providerColor = remember(colorVersion, tower.mcc, tower.mnc) { PlmnColorMapper.getColor(tower.mcc, tower.mnc) }
 
     if (showColorPicker) {
-        val overrideManager = remember { PlmnColorOverrideManager(context) }
-        ProviderColorPickerDialog(
+        ProviderColorPickerHost(
             mcc = tower.mcc,
             mnc = tower.mnc,
-            currentPaletteIndex = PlmnColorMapper.getColorIndex(tower.mcc, tower.mnc),
-            hasOverride = overrideManager.getOverride(tower.mcc, tower.mnc) != null,
-            onColorSelected = { index ->
-                overrideManager.setOverride(tower.mcc, tower.mnc, index)
+            providerName = (provider as? TowerProvider.Known)?.name,
+            onChanged = {
                 colorVersion++
                 onColorOverrideChanged()
-                showColorPicker = false
-            },
-            onResetToDefault = {
-                overrideManager.removeOverride(tower.mcc, tower.mnc)
-                colorVersion++
-                onColorOverrideChanged()
-                showColorPicker = false
             },
             onDismiss = { showColorPicker = false }
         )
@@ -242,15 +229,7 @@ private fun TowerListRow(
             ProtocolBadge(tower.radio)
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(
-                    text = stringResource(
-                        R.string.label_value_pair,
-                        stringResource(R.string.mcc_mnc_label),
-                        stringResource(R.string.mcc_mnc_value, tower.mcc.toString(), tower.mnc.toString()),
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
+                TowerListProviderLine(provider, tower.mcc, tower.mnc)
                 Text(
                     text = stringResource(R.string.label_value_pair, stringResource(R.string.calculator_cell_id), tower.cid.toString()),
                     style = MaterialTheme.typography.bodySmall,
@@ -348,27 +327,19 @@ private fun TowerDetailView(
 private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> Unit = {}) {
     val context = LocalContext.current
     var colorVersion by remember { mutableIntStateOf(0) }
-    val providerColor = remember(colorVersion) { PlmnColorMapper.getColor(tower.mcc, tower.mnc) }
+    val providerColor = remember(colorVersion, tower.mcc, tower.mnc) { PlmnColorMapper.getColor(tower.mcc, tower.mnc) }
     var showColorPicker by remember { mutableStateOf(false) }
+    var lookupAttempt by remember(tower.mcc, tower.mnc) { mutableIntStateOf(0) }
+    val provider = rememberTowerProvider(tower.mcc, tower.mnc, lookupAttempt)
 
     if (showColorPicker) {
-        val overrideManager = remember { PlmnColorOverrideManager(context) }
-        ProviderColorPickerDialog(
+        ProviderColorPickerHost(
             mcc = tower.mcc,
             mnc = tower.mnc,
-            currentPaletteIndex = PlmnColorMapper.getColorIndex(tower.mcc, tower.mnc),
-            hasOverride = overrideManager.getOverride(tower.mcc, tower.mnc) != null,
-            onColorSelected = { index ->
-                overrideManager.setOverride(tower.mcc, tower.mnc, index)
+            providerName = (provider as? TowerProvider.Known)?.name,
+            onChanged = {
                 colorVersion++
                 onColorOverrideChanged()
-                showColorPicker = false
-            },
-            onResetToDefault = {
-                overrideManager.removeOverride(tower.mcc, tower.mnc)
-                colorVersion++
-                onColorOverrideChanged()
-                showColorPicker = false
             },
             onDismiss = { showColorPicker = false }
         )
@@ -398,30 +369,23 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                     modifier = Modifier.padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    TowerProviderRow(
+                        provider = provider,
+                        providerColor = providerColor,
+                        onColorClick = { showColorPicker = true },
+                        onRetry = { lookupAttempt++ }
+                    )
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Color dot (tappable to open color picker)
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clickable { showColorPicker = true }
-                                    .padding(7.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .background(providerColor, CircleShape)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(2.dp))
-                            CompactInfoItem(
-                                stringResource(R.string.mcc_mnc_label),
-                                stringResource(R.string.mcc_mnc_value, tower.mcc.toString(), tower.mnc.toString()),
-                            )
-                        }
+                        CompactInfoItem(
+                            stringResource(R.string.mcc_mnc_label),
+                            stringResource(R.string.mcc_mnc_value, tower.mcc, tower.mnc),
+                        )
                         CompactInfoItem(stringResource(R.string.survey_point_area), tower.area.toString())
                     }
 

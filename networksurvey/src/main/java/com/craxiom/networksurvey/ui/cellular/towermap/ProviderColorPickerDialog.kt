@@ -25,14 +25,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.data.PlmnColorOverrideManager
 import com.craxiom.networksurvey.util.PlmnColorMapper
 
 /**
@@ -46,6 +49,7 @@ import com.craxiom.networksurvey.util.PlmnColorMapper
  * @param onColorSelected Called with the selected palette index when the user picks a color.
  * @param onResetToDefault Called when the user taps "Reset to Default".
  * @param onDismiss Called when the dialog is dismissed.
+ * @param providerName The provider's name, shown as the title above the MCC-MNC when known.
  */
 @Composable
 fun ProviderColorPickerDialog(
@@ -55,7 +59,8 @@ fun ProviderColorPickerDialog(
     hasOverride: Boolean,
     onColorSelected: (Int) -> Unit,
     onResetToDefault: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    providerName: String? = null
 ) {
     val defaultIndex =
         PlmnColorMapper.getDefaultColorIndex(mcc.toIntOrNull() ?: 0, mnc.toIntOrNull() ?: 0)
@@ -64,7 +69,15 @@ fun ProviderColorPickerDialog(
         onDismissRequest = onDismiss,
         title = {
             Column {
-                Text(stringResource(R.string.mcc_mnc_format, mcc, mnc))
+                val plmn = stringResource(R.string.mcc_mnc_format, mcc, mnc)
+                Text(providerName ?: plmn)
+                if (providerName != null) {
+                    Text(
+                        text = plmn,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     text = stringResource(
                         R.string.provider_color_default_label,
@@ -116,6 +129,40 @@ fun ProviderColorPickerDialog(
                 Text(stringResource(R.string.cancel))
             }
         }
+    )
+}
+
+/**
+ * [ProviderColorPickerDialog] wired to the saved color overrides, for the tower sheet's color dots:
+ * picking a color or resetting it saves the change, calls [onChanged], then closes the dialog.
+ */
+@Composable
+internal fun ProviderColorPickerHost(
+    mcc: String,
+    mnc: String,
+    providerName: String?,
+    onChanged: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val overrideManager = remember { PlmnColorOverrideManager(context) }
+    ProviderColorPickerDialog(
+        mcc = mcc,
+        mnc = mnc,
+        currentPaletteIndex = PlmnColorMapper.getColorIndex(mcc, mnc),
+        hasOverride = overrideManager.getOverride(mcc, mnc) != null,
+        onColorSelected = { index ->
+            overrideManager.setOverride(mcc, mnc, index)
+            onChanged()
+            onDismiss()
+        },
+        onResetToDefault = {
+            overrideManager.removeOverride(mcc, mnc)
+            onChanged()
+            onDismiss()
+        },
+        onDismiss = onDismiss,
+        providerName = providerName
     )
 }
 

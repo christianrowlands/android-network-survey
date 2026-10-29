@@ -2383,6 +2383,30 @@
     <string name="tower_detail_yes">Yes</string>
     <string name="tower_detail_no">No</string>
 
+    <!-- The provider row at the top of the tower details, looked up from the tower's MCC-MNC -->
+    <string name="tower_provider_loading">Looking up the provider</string>
+    <string name="tower_provider_unknown">Unknown provider</string>
+    <string name="tower_provider_not_listed">Not in the PLMN database</string>
+    <string name="tower_provider_unavailable">Provider name unavailable</string>
+    <string name="tower_provider_offline">No connection. Tap to retry.</string>
+    <string name="tower_provider_failed">Lookup failed. Tap to retry.</string>
+    <string name="tower_provider_retry">Try again</string>
+    <string name="tower_provider_show_all">Show every provider on this PLMN</string>
+    <string name="tower_provider_hide_all">Hide the other providers</string>
+    <string name="tower_provider_change_color">Change this provider\'s map color</string>
+    <!-- The badge after the provider name when other names share the PLMN; %d is how many ("+1") -->
+    <string name="tower_provider_more_badge">+%d</string>
+    <!-- Read aloud for the badge above -->
+    <plurals name="tower_provider_more_names">
+        <item quantity="one">%d more provider</item>
+        <item quantity="other">%d more providers</item>
+    </plurals>
+    <!-- Under the provider name when the PLMN is used in several countries; always 2 or more -->
+    <plurals name="tower_provider_shared_countries">
+        <item quantity="one">Shared by %d country</item>
+        <item quantity="other">Shared by %d countries</item>
+    </plurals>
+
     <!-- A label and its value on one line ("Cell ID: 1234"); %1$s is the label, %2$s the value -->
     <string name="label_value_pair">%1$s: %2$s</string>
 
