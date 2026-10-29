@@ -52,19 +52,33 @@ object PlmnColorMapper {
     private var overrides: Map<String, Int> = emptyMap()
 
     /**
-     * Replaces the current set of user overrides. Called by [PlmnColorOverrideManager] on
-     * every mutation and at startup.
+     * Replaces the current set of user overrides, keyed by stored "mcc-mnc". Called by
+     * [PlmnColorOverrideManager] on every mutation and at startup.
      */
     fun refreshOverrides(newOverrides: Map<String, Int>) {
-        overrides = newOverrides
+        overrides = newOverrides.mapKeys { (key, _) -> overrideKey(key) }
     }
 
     /**
      * Returns the palette index for the given MCC/MNC combination, respecting user overrides.
      */
     fun getColorIndex(mcc: String, mnc: String): Int {
-        overrides["$mcc-$mnc"]?.let { return it }
+        overrides[overrideKey(mcc, mnc)]?.let { return it }
         return getDefaultColorIndex(mcc.toIntOrNull() ?: 0, mnc.toIntOrNull() ?: 0)
+    }
+
+    /**
+     * The key an override matches on. The MNC is compared by its integer value, because the
+     * same network can reach this app at two widths (the phone's broadcast "440-10" and a tower
+     * stored as "440-010"), and no MCC has two networks with the same integer MNC.
+     */
+    fun overrideKey(mcc: String, mnc: String): String = "$mcc-${mnc.toIntOrNull() ?: mnc}"
+
+    /** [overrideKey] for a stored "mcc-mnc" key. */
+    fun overrideKey(storedKey: String): String {
+        val separator = storedKey.indexOf('-')
+        if (separator < 0) return storedKey
+        return overrideKey(storedKey.substring(0, separator), storedKey.substring(separator + 1))
     }
 
     /**

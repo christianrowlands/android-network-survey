@@ -12,6 +12,8 @@ import timber.log.Timber
  *
  * Overrides are stored as a JSON string in a dedicated SharedPreferences file. Keys are
  * "mcc-mnc" strings and values are palette indices (0–15) referencing [PlmnColorMapper.PALETTE].
+ * A key is matched by [PlmnColorMapper.overrideKey], so "440-10" and "440-010" are one provider;
+ * the stored key keeps the spelling it was last set with.
  * On every mutation the in-memory cache is updated and [PlmnColorMapper.refreshOverrides] is
  * called so the map renders the new color immediately.
  */
@@ -42,7 +44,7 @@ class PlmnColorOverrideManager(context: Context) {
      * Returns the override palette index for the given provider, or null if none is set.
      */
     fun getOverride(mcc: String, mnc: String): Int? {
-        return cache["$mcc-$mnc"]
+        return storedKeyFor(mcc, mnc)?.let { cache[it] }
     }
 
     /**
@@ -51,15 +53,16 @@ class PlmnColorOverrideManager(context: Context) {
     fun setOverride(mcc: String, mnc: String, paletteIndex: Int): Boolean {
         if (paletteIndex !in 0 until PlmnColorMapper.PALETTE_SIZE) return false
 
-        val key = "$mcc-$mnc"
+        val existingKey = storedKeyFor(mcc, mnc)
         val current = cache.toMutableMap()
 
-        if (!current.containsKey(key) && current.size >= MAX_OVERRIDES) {
+        if (existingKey == null && current.size >= MAX_OVERRIDES) {
             Timber.w("Cannot add color override - maximum of %d reached", MAX_OVERRIDES)
             return false
         }
 
-        current[key] = paletteIndex
+        existingKey?.let { current.remove(it) }
+        current["$mcc-$mnc"] = paletteIndex
         cache = current
         persist(current)
         PlmnColorMapper.refreshOverrides(cache)
@@ -70,7 +73,7 @@ class PlmnColorOverrideManager(context: Context) {
      * Removes the color override for a provider. Returns true if an override was removed.
      */
     fun removeOverride(mcc: String, mnc: String): Boolean {
-        val key = "$mcc-$mnc"
+        val key = storedKeyFor(mcc, mnc) ?: return false
         val current = cache.toMutableMap()
         val removed = current.remove(key) != null
         if (removed) {
@@ -95,6 +98,17 @@ class PlmnColorOverrideManager(context: Context) {
      */
     fun isAtMaxCapacity(): Boolean = cache.size >= MAX_OVERRIDES
 
+    /** The stored key that matches this provider at any MNC width, or null when none is set. */
+    private fun storedKeyFor(mcc: String, mnc: String): String? {
+        val key = PlmnColorMapper.overrideKey(mcc, mnc)
+        return cache.keys.firstOrNull { PlmnColorMapper.overrideKey(it) == key }
+    }
+
+    /**
+     * Reads the stored overrides. Older versions keyed the same provider at two widths (the
+     * tower sheet saved "440-010" while survey points looked up "440-10"); only the first of
+     * such duplicates is kept, and the cleaned map is saved back.
+     */
     private fun loadFromPrefs(): Map<String, Int> {
         val json = sharedPreferences.getString(KEY_OVERRIDES, null) ?: return emptyMap()
         return try {
@@ -103,7 +117,10 @@ class PlmnColorOverrideManager(context: Context) {
             for (key in jsonObject.keys()) {
                 val index = jsonObject.getInt(key)
                 if (index in 0 until PlmnColorMapper.PALETTE_SIZE) {
-                    map[key] = index
+                    val matchKey = PlmnColorMapper.overrideKey(key)
+                    if (map.keys.none { PlmnColorMapper.overrideKey(it) == matchKey }) {
+                        map[key] = index
+                    }
                 } else {
                     Timber.w(
                         "Ignoring PLMN color override with invalid palette index: %s=%d",
@@ -112,6 +129,7 @@ class PlmnColorOverrideManager(context: Context) {
                     )
                 }
             }
+            if (map.size < jsonObject.length()) persist(map)
             map
         } catch (e: Exception) {
             Timber.e(e, "Failed to parse PLMN color overrides JSON")

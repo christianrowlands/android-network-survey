@@ -1368,18 +1368,22 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
         }
-        if (mnc != Integer.MAX_VALUE && mnc != 0)
-        {
-            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        }
+        String mccStr = null;
+        String mncStr = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
         {
-            String mccStr = cellIdentity.getMccString();
-            String mncStr = cellIdentity.getMncString();
+            mccStr = cellIdentity.getMccString();
+            mncStr = cellIdentity.getMncString();
             if (mccStr != null && mncStr != null)
             {
                 dataBuilder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
             }
+        }
+        // 0 is also a real MNC (China Mobile 460-00, NTT docomo 440-00), so where the MNC string
+        // exists it decides whether the MNC is set; otherwise 0 means unset.
+        if (mnc != Integer.MAX_VALUE && (mnc != 0 || mncStr != null))
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         }
         if (lac != Integer.MAX_VALUE && lac != 0)
         {
