@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -119,6 +120,27 @@ class OnboardingScreenTest {
         assertEquals(OnboardingChoice.LOG_FILES, finishedWith)
         assertEquals(setOf(Destination.LOG_FILES), store.getCurrentSetup().destinations)
         assertFalse(store.onboardingPending)
+    }
+
+    @Test
+    fun continueTwiceInOneFrame_onTheLastButOneCard_staysOnTheLastCard() {
+        host(viewModel())
+        // The footer only leaves after a recomposition, so the clicks all land on the same button
+        val click = compose.onNodeWithText("Continue").fetchSemanticsNode().config[SemanticsActions.OnClick].action!!
+        compose.runOnUiThread { repeat(3) { click() } }
+
+        compose.onNodeWithText("Files on this phone").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun backTwiceInOneFrame_onTheSecondCard_staysOnTheFirstCard() {
+        host(viewModel())
+        compose.onNodeWithText("Continue").performClick()
+        compose.onNodeWithText("Permissions, and why").assertIsDisplayed()
+
+        compose.runOnUiThread { repeat(2) { compose.activity.onBackPressedDispatcher.onBackPressed() } }
+
+        compose.onNodeWithText(INTRO_TITLE).assertIsDisplayed()
     }
 
     @Test

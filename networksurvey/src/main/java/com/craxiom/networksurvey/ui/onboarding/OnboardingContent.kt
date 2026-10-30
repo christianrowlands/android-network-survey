@@ -38,8 +38,17 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsPrimaryCta
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
-/** The first run cards, in order. */
-enum class OnboardingStep { INTRO, PERMISSIONS, DESTINATION }
+/**
+ * The first run cards, in order. [next] and [previous] stop at the ends, because a second Continue
+ * or Back (two key presses in one frame) can land before the footer and Back handler catch up.
+ */
+enum class OnboardingStep {
+    INTRO, PERMISSIONS, DESTINATION;
+
+    fun next(): OnboardingStep = entries.getOrElse(ordinal + 1) { this }
+
+    fun previous(): OnboardingStep = entries.getOrElse(ordinal - 1) { this }
+}
 
 /** Everything the first run cards can ask for. */
 interface OnboardingActions {

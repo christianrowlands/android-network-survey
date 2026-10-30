@@ -44,11 +44,11 @@ fun OnboardingScreen(viewModel: OnboardingViewModel, onFinished: (OnboardingChoi
         step = OnboardingStep.DESTINATION
     }
 
-    BackHandler(enabled = step != OnboardingStep.INTRO) { step = OnboardingStep.entries[step.ordinal - 1] }
+    BackHandler(enabled = step != OnboardingStep.INTRO) { step = step.previous() }
 
     val actions = object : OnboardingActions {
         override fun onContinue() {
-            step = OnboardingStep.entries[step.ordinal + 1]
+            step = step.next()
         }
 
         override fun onAllowPermissions() {
