@@ -30,7 +30,7 @@
 <li>Map: towers from OpenCelliD and BTSearch, and the points your NS Analytics and Community database surveys covered, colored by signal strength</li>
 <li>Watchlist alerts when a saved Wi-Fi network is seen</li>
 <li>Cellular tools, PLMN lookup, OUI lookup and Wi-Fi spectrum</li>
-<li>Saved setups, light and dark themes, and nine accent colors</li>
+<li>Saved setups, light and dark themes, and twelve accent colors</li>
 <li>Managed configuration (MDM) per record type and destination, and an Intent API</li>
 </ul>
 

@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0) - 2026-10-29
+
+Network Survey 2.0 rebuilds the whole app.
+
+**WHAT'S NEW**
+* One survey with one Start and one Stop. On the Survey tab, pick the record types to survey (Cellular, Phone state, Wi-Fi, Bluetooth, GNSS, and Call records) and the destinations they go to (Log files, MQTT, gRPC, NS Analytics, OpenCelliD and BeaconDB).
+* Save what is selected as a named setup and switch between setups with one tap. Starred setups are listed first.
+* Four tabs replace the side menu: Survey (replacing the Dashboard and Survey Monitor), Signals (Cellular, Wi-Fi, Bluetooth and GNSS), Map, and More.
+* One Map tab replaces both the Tower Map and the Survey Monitor map, with the serving cell card and your survey points. It keeps the Tower Map's settings.
+* The tower sheet on the Map names the tower's provider, with its legal name and country, and the provider color can be changed from there.
+* Each destination has its own page with its status, and the Survey screen and the notification show the same status. MQTT can save more than one broker. Streams hold records while they connect, and the Survey tab lists anything still waiting to upload.
+* The Cellular, Wi-Fi, Bluetooth and GNSS screens are rebuilt. Every value is still there, long press copies one, and when a missing permission, location or a radio being off stops a screen, it says so with one button to fix it.
+* Signal quality is rated on published thresholds. RSRQ, SS-RSRQ, SNR and SS-SINR have their own scales, and the signal colors run dark green, light green, yellow, orange and red, so only weak readings look like a warning.
+* Filter the Bluetooth list by name, address or company, or show only named devices or only Find My trackers.
+* A short first run on a fresh install explains each permission and asks where your data should go. The "Enable Location" dialog and the "Please turn on GPS" toast no longer appear on every launch, and background location is only requested when the survey is set to start automatically.
+* A new look: light and dark themes (or follow the system), twelve accent colors, a new launcher icon, and a rebuilt Settings screen. Every screen can now be translated.
+
+**CHANGES TO KNOW ABOUT**
+* GeoPackage log files are removed. Log files are CSV, one file per record type.
+* Every destination receives every record type it can carry; the per-destination record type switches are gone. Phone state now follows Cellular.
+* The map button on the Cellular screen is gone. The Map tab is the way to the map.
+* Translations whose meaning changed were removed, so some screens show English until they are translated again on [Weblate](https://hosted.weblate.org/engage/network-survey-android-app/).
+* Managed configuration (MDM) has new keys for record types, destinations and auto start, and the existing keys still work. A setting the organization sets shows "Set by your organization" in Settings, on the Survey screen and on the destination pages.
+
+**BUG FIXES**
+* Fix OpenCelliD uploads: UMTS values no longer shift one column, missing values are left empty instead of "null", signal is whole dBm, and the measurement time is in epoch milliseconds.
+* Fix BeaconDB reports carrying the upload time instead of the time the record was observed.
+* Fix Wi-Fi access points that Android lists without a measured signal being recorded at 0 dBm. They are now recorded with no signal strength, and the Watchlist shows their signal as unknown.
+* Fix the serving cell not matching its tower (no highlight, serving cell line or coverage circle) where the tower database stores a 2-digit MNC padded to 3 digits, and provider colors now apply at either MNC width.
+* Fix GSM cells with an MNC of 0 (for example China Mobile 460-00) losing their MNC on Android 9 and later, which dropped them from OpenCelliD and BeaconDB uploads.
+* Fix the 250 MB and 1000 MB "Start a new file every" choices being capped at 200 MB.
+* CSV log files keep the phone's decimal separator but always write ASCII digits and minus signs.
+* Fix a crash when switching between SIM charts in the Cellular view.
+
 ## [2.0-beta01](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0-beta01) - 2026-10-27
 
 Network Survey 2.0 rebuilds the whole app. Your settings carry over on upgrade, and a one-time welcome shows what your survey became.
