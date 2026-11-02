@@ -35,6 +35,20 @@ enum class SignalsSubTab(
     ),
 }
 
+/**
+ * @param configured The survey's scan interval of each sub-tab, in seconds.
+ * @param liveRatesMs The faster scan interval, in milliseconds, of each radio an open screen makes
+ * scan faster (see [com.craxiom.networksurvey.services.controller.LiveScanRates]).
+ * @return The interval each sub-tab shows, in seconds: the faster one where there is one.
+ */
+fun shownIntervals(configured: Map<SignalsSubTab, Int>, liveRatesMs: Map<RecordType, Int>): Map<SignalsSubTab, Int> =
+    configured.mapValues { (subTab, seconds) ->
+        liveRatesMs[subTab.recordType]?.let { (it / MS_PER_SECOND).coerceAtLeast(1) } ?: seconds
+    }
+
+/** Milliseconds in a second, for turning scan intervals into the seconds the Signals tab shows. */
+internal const val MS_PER_SECOND = 1000
+
 /** The two pages of the GNSS view, in the order of its toggle. */
 enum class GnssPage(@StringRes val label: Int) {
     STATUS(R.string.gnss_page_status),

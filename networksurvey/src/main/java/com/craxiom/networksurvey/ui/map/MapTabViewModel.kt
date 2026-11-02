@@ -14,7 +14,9 @@ import androidx.core.location.LocationManagerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.SimChanges
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.TowerKey
@@ -47,7 +49,7 @@ import java.lang.ref.WeakReference
  * each visit; this one keeps what must survive a visit, and lets the Cellular view's map action
  * choose the SIM before the tab opens.
  */
-class MapTabViewModel(application: Application) : AndroidViewModel(application), ICellularSurveyRecordListener {
+class MapTabViewModel(application: Application) : AndroidViewModel(application), ICellularSurveyRecordListener, ILiveScanView {
 
     /** The map being fed, while the Map tab shows. */
     @Volatile
@@ -207,6 +209,9 @@ class MapTabViewModel(application: Application) : AndroidViewModel(application),
         val locationManager = getApplication<Application>().getSystemService(Context.LOCATION_SERVICE) as LocationManager?
         mutableLocationEnabled.value = locationManager?.let(LocationManagerCompat::isLocationEnabled) ?: true
     }
+
+    /** The Map tab polls the modem faster while open, though less often than the Cellular view. */
+    override fun getLiveScanIntervalMs(): Int = NetworkSurveyConstants.LIVE_MAP_CELLULAR_SCAN_INTERVAL_MS
 
     override fun onCellularBatch(cellularGroup: List<CellularRecordWrapper?>?, subscriptionId: Int) {
         // An empty batch is a scan that returned nothing (or failed), not a lost serving cell; the

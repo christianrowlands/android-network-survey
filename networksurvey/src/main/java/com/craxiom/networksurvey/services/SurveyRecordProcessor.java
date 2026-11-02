@@ -105,6 +105,7 @@ import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.ILiveScanView;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.CdrEvent;
@@ -633,6 +634,31 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Notification of a Bluetooth sighting the survey's duplicate filter dropped, sent only to the
+     * open live views (see {@link ILiveScanView}) so their signal strengths stay current. No other
+     * listener receives it, it is not counted, and it takes no record number.
+     *
+     * @param result The scan result from the Android Bluetooth scanning API.
+     */
+    public void onBluetoothLiveUpdate(android.bluetooth.le.ScanResult result)
+    {
+        execute(() -> notifyLiveBluetoothListeners(generateBluetoothSurveyRecord(result, result.getDevice(),
+                result.getRssi(), result.getTxPower(), ZonedDateTime.now(), SystemClock.elapsedRealtime(), false)));
+    }
+
+    /**
+     * The Bluetooth Classic version of {@link #onBluetoothLiveUpdate(android.bluetooth.le.ScanResult)}.
+     *
+     * @param device The Bluetooth device object associated with the scan.
+     * @param rssi   The RSSI value associated with the scan.
+     */
+    public void onBluetoothClassicLiveUpdate(BluetoothDevice device, int rssi)
+    {
+        execute(() -> notifyLiveBluetoothListeners(generateBluetoothSurveyRecord(null, device, rssi,
+                UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime(), false)));
+    }
+
+    /**
      * Notification for when the latest set of GNSS measurements are available to process.
      *
      * @param event The latest set of GNSS measurements.
@@ -1115,7 +1141,7 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothClassicResult(BluetoothDevice device, int rssi)
     {
-        BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(null, device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime());
+        BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(null, device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime(), true);
         if (bluetoothRecord != null)
         {
             notifyBluetoothRecordListeners(bluetoothRecord);
@@ -2224,17 +2250,19 @@ public class SurveyRecordProcessor
      */
     private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult result, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
-        return generateBluetoothSurveyRecord(result, result.getDevice(), result.getRssi(), result.getTxPower(), deviceTime, elapsedTimeMillis);
+        return generateBluetoothSurveyRecord(result, result.getDevice(), result.getRssi(), result.getTxPower(), deviceTime, elapsedTimeMillis, true);
     }
 
     /**
      * Pull out the appropriate values, and create a {@link BluetoothRecord}.
      *
      * @param scanResult Will be null for classic scan results, but will be present in the new approach.
+     * @param numbered   True to give the record the next record number; false for a record only the
+     *                   live views see, so the survey's record numbers stay sequential.
      * @return The Bluetooth record to send to any listeners.
      * @since 1.0.0
      */
-    private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult scanResult, BluetoothDevice device, int rssi, int txPowerLevel, ZonedDateTime deviceTime, long elapsedTimeMillis)
+    private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult scanResult, BluetoothDevice device, int rssi, int txPowerLevel, ZonedDateTime deviceTime, long elapsedTimeMillis, boolean numbered)
     {
         final String sourceAddress = device.getAddress();
 
@@ -2273,7 +2301,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(getMissionId());
-        dataBuilder.setRecordNumber(bluetoothRecordNumber.getAndIncrement());
+        if (numbered) dataBuilder.setRecordNumber(bluetoothRecordNumber.getAndIncrement());
 
         dataBuilder.setSourceAddress(sourceAddress);
 
@@ -3239,6 +3267,29 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notifies only the listeners that are live views of a Bluetooth record the survey does not keep.
+     * It is not counted as a processed record.
+     *
+     * @param bluetoothRecord The record, or null when it could not be built.
+     */
+    private void notifyLiveBluetoothListeners(BluetoothRecord bluetoothRecord)
+    {
+        if (bluetoothRecord == null) return;
+
+        for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
+        {
+            if (!(listener instanceof ILiveScanView)) continue;
+            try
+            {
+                listener.onBluetoothSurveyRecord(bluetoothRecord);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a live Bluetooth view because of an exception");
             }
         }
     }

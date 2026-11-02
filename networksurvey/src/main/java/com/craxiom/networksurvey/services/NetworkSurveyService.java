@@ -64,6 +64,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.ILiveScanView;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
@@ -1322,6 +1323,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             surveyRecordProcessor.registerCellularSurveyRecordListener(surveyRecordListener);
         }
 
+        // Before the start, so a scan that starts now starts at the live view's interval.
+        if (surveyRecordListener instanceof ILiveScanView liveView) cellularController.addLiveView(liveView);
         cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
         startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
@@ -1337,6 +1340,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void unregisterCellularSurveyRecordListener(ICellularSurveyRecordListener
                                                                surveyRecordListener)
     {
+        if (surveyRecordListener instanceof ILiveScanView liveView) cellularController.removeLiveView(liveView);
+
         if (surveyRecordProcessor != null)
         {
             surveyRecordProcessor.unregisterCellularSurveyRecordListener(surveyRecordListener);
@@ -1366,6 +1371,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             surveyRecordProcessor.registerWifiSurveyRecordListener(surveyRecordListener);
         }
 
+        // Before the start, so a scan that starts now starts at the live view's interval.
+        if (surveyRecordListener instanceof ILiveScanView liveView) wifiController.addLiveView(liveView);
         wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
         startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
@@ -1385,6 +1392,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener
                                                            surveyRecordListener)
     {
+        if (surveyRecordListener instanceof ILiveScanView liveView) wifiController.removeLiveView(liveView);
+
         if (surveyRecordProcessor != null)
         {
             surveyRecordProcessor.unregisterWifiSurveyRecordListener(surveyRecordListener);
@@ -1494,6 +1503,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             surveyRecordProcessor.registerBluetoothSurveyRecordListener(surveyRecordListener);
         }
 
+        // Before the start, so a scan that starts now starts at the live view's interval.
+        if (surveyRecordListener instanceof ILiveScanView liveView) bluetoothController.addLiveView(liveView);
         bluetoothController.startBluetoothRecordScanning(); // Only starts scanning if it is not already active.
         startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
@@ -1513,6 +1524,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void unregisterBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener
                                                                 surveyRecordListener)
     {
+        if (surveyRecordListener instanceof ILiveScanView liveView) bluetoothController.removeLiveView(liveView);
+
         if (surveyRecordProcessor != null)
         {
             surveyRecordProcessor.unregisterBluetoothSurveyRecordListener(surveyRecordListener);
@@ -2894,25 +2907,26 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             int smallestScanRate = Integer.MAX_VALUE;
 
-            // Find the smallest scan rate for all the scanning types that are active as a starting point
-            if (cellularController.isScanningActive() && cellularController.getScanRateMs() < smallestScanRate)
+            // Find the smallest scan rate for all the scanning types that are active as a starting
+            // point, using the faster rate a live view asks for so its scans get fresh locations
+            if (cellularController.isScanningActive() && cellularController.getEffectiveScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = cellularController.getScanRateMs();
+                smallestScanRate = cellularController.getEffectiveScanRateMs();
             }
 
-            if (wifiController.isScanningActive() && wifiController.getScanRateMs() < smallestScanRate)
+            if (wifiController.isScanningActive() && wifiController.getEffectiveScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = wifiController.getScanRateMs();
+                smallestScanRate = wifiController.getEffectiveScanRateMs();
             }
 
-            if (bluetoothController.isScanningActive() && bluetoothController.getScanRateMs() < smallestScanRate)
+            if (bluetoothController.isScanningActive() && bluetoothController.getEffectiveScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = bluetoothController.getScanRateMs();
+                smallestScanRate = bluetoothController.getEffectiveScanRateMs();
             }
 
-            if (gnssController.isScanningActive() && gnssController.getScanRateMs() < smallestScanRate)
+            if (gnssController.isScanningActive() && gnssController.getEffectiveScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = gnssController.getScanRateMs();
+                smallestScanRate = gnssController.getEffectiveScanRateMs();
             }
 
             if (deviceStatusActive.get() && deviceStatusScanRateMs < smallestScanRate)

@@ -87,9 +87,16 @@ class AndroidWifiThrottleProbe(private val context: Context) : WifiThrottleProbe
     override fun read(): WifiThrottleInputs {
         val wifiManager = context.getSystemService(WifiManager::class.java)
         return WifiThrottleInputs(
-            throttleEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wifiManager?.isScanThrottleEnabled == true,
+            throttleEnabled = isScanThrottleEnabled(wifiManager),
             developerOptionsOn = Settings.Global.getInt(context.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0,
             ignored = PreferenceUtils.getIgnoreWifiThrottlingWarningPreference(false, context),
         )
+    }
+
+    companion object {
+        /** @return Android 11+: whether Android throttles Wi-Fi scans; false below 11, which cannot say. */
+        @JvmStatic
+        fun isScanThrottleEnabled(wifiManager: WifiManager?): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wifiManager?.isScanThrottleEnabled == true
     }
 }

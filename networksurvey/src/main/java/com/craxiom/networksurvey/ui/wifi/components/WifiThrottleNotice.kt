@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.wifi.components
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +34,11 @@ fun WifiThrottleNotice(
         if (!warning.android9 && !warning.developerOptionsOn) {
             append("\n\n")
             append(stringResource(R.string.enable_developer_options))
+        }
+        // Only Android 11+ can tell the app the limit is off, so only there do the screens scan faster.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            append("\n\n")
+            append(stringResource(R.string.wifi_throttle_live_updates))
         }
     }
     NsPanel(

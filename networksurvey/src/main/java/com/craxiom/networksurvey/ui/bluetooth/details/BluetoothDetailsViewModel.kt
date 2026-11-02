@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.craxiom.messaging.BluetoothRecord
 import com.craxiom.messaging.BluetoothRecordData
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.RssiChartClock
 import com.craxiom.networksurvey.ui.RssiChartSink
@@ -45,7 +46,7 @@ class BluetoothDetailsViewModel internal constructor(
     environment: BluetoothEnvironment,
     private val chartSink: RssiChartSink,
     private val mainDispatcher: CoroutineDispatcher,
-) : AndroidViewModel(application), IBluetoothSurveyRecordListener {
+) : AndroidViewModel(application), IBluetoothSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
         application = application,

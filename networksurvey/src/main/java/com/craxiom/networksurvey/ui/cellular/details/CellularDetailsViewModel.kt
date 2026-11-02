@@ -13,7 +13,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.SimChanges
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.NetworkTechnologyInfo
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -58,7 +60,7 @@ class CellularDetailsViewModel internal constructor(
     private val charts: CellularChartSink,
     private val clock: () -> Long,
     private val mainDispatcher: CoroutineDispatcher,
-) : AndroidViewModel(application), ICellularSurveyRecordListener {
+) : AndroidViewModel(application), ICellularSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
         application = application,
@@ -151,6 +153,9 @@ class CellularDetailsViewModel internal constructor(
 
     /** Stops the charts' clock while the screen is away, and restarts it on return. */
     fun setChartsPaused(paused: Boolean) = charts.setPaused(paused)
+
+    /** The Cellular view polls the modem faster while open. */
+    override fun getLiveScanIntervalMs(): Int = NetworkSurveyConstants.LIVE_CELLULAR_SCAN_INTERVAL_MS
 
     override fun onNetworkType(technologyInfo: NetworkTechnologyInfo, subscriptionId: Int) {
         // Checked inside the update too: an unregister that clears the cells makes this retry and drop.

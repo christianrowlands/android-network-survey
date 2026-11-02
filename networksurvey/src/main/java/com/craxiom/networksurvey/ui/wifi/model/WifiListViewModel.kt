@@ -11,6 +11,7 @@ import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -49,7 +50,7 @@ class WifiListViewModel internal constructor(
     clock: () -> Long,
     private val mainDispatcher: CoroutineDispatcher,
     private val sdk: Int,
-) : AndroidViewModel(application), IWifiSurveyRecordListener {
+) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
         application = application,
@@ -148,6 +149,9 @@ class WifiListViewModel internal constructor(
         throttleDismissed = true
         _uiState.update { it.copy(throttleWarning = null) }
     }
+
+    /** The Wi-Fi screens scan faster while open, where Android does not throttle scans. */
+    override fun getLiveScanIntervalMs(): Int = NetworkSurveyConstants.LIVE_WIFI_SCAN_INTERVAL_MS
 
     /** Excluded networks show in the list, marked, so the user can see what is left out. */
     override fun wantsExcludedRecords(): Boolean = true

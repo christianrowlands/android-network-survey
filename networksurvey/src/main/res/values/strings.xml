@@ -327,6 +327,7 @@
     <string name="wifi_settings_content_description">Wi-Fi settings</string>
     <string name="wifi_scan_rate_info_content_description">About Wi-Fi scan rate</string>
     <string name="wifi_scan_rate_info_title">Wi-Fi scan rate</string>
+    <string name="wifi_scan_rate_live_info">While a Wi-Fi screen is open and Android does not throttle Wi-Fi scans, Network Survey scans faster so the screen stays current. These are real scans, and a running survey saves them like any other.</string>
     <string name="wifi_scan_rate_info_body">How often Wi-Fi networks are scanned for, in seconds. Smaller values use more battery; larger values leave the signal chart further behind.</string>
     <string name="wifi_radio_info_content_description">About the radio details</string>
     <string name="wifi_radio_info_title">Radio details</string>
@@ -2231,6 +2232,7 @@
     <string name="wifi_state_location_off_body">Android only finds Wi-Fi networks while location is on.</string>
     <string name="signals_wifi_empty">No Wi-Fi networks found yet</string>
     <string name="wifi_throttle_dismiss">Dismiss</string>
+    <string name="wifi_throttle_live_updates">With the limit lifted, the Wi-Fi screens also scan faster while they are open.</string>
     <string name="wifi_row_open_details">Open details</string>
     <string name="wifi_row_copy_ssid">Copy SSID</string>
     <string name="wifi_row_band_channel">%1$s, channel %2$d</string>
@@ -2249,6 +2251,7 @@
     <string name="bluetooth_scan_rate_info_content_description">About the Bluetooth scan rate</string>
     <string name="bluetooth_scan_rate_info_title">Bluetooth scan rate</string>
     <string name="bluetooth_scan_rate_info_body">How often Bluetooth devices are scanned for, in seconds. Smaller values use more battery; larger values leave the signal chart further behind. 24 seconds is the shortest Bluetooth scan rate, because one full scan takes that long.</string>
+    <string name="bluetooth_scan_rate_live_info">While a Bluetooth screen is open, signal strengths also update between scans as devices are heard. Only the screen shows those in-between updates; the survey\'s Bluetooth records stay the same.</string>
     <string name="bluetooth_settings_content_description">Bluetooth settings</string>
     <!-- Wi-Fi spectrum: one chart per band -->
     <string name="wifi_spectrum_band_24">2.4 GHz</string>

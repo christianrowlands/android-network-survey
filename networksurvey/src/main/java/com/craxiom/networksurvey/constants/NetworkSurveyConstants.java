@@ -146,6 +146,24 @@ public class NetworkSurveyConstants
      */
     public static final int MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS = 24;
 
+    /**
+     * How often the Cellular view polls the modem while it is open. Android serves a cached cell
+     * list to requests that come faster than it refreshes, so polling faster than this gains little.
+     */
+    public static final int LIVE_CELLULAR_SCAN_INTERVAL_MS = 2_000;
+
+    /**
+     * How often the Map tab polls the modem while it is open. Slower than the Cellular view because
+     * the map is often left open for a whole drive, and its serving cell changes far less often.
+     */
+    public static final int LIVE_MAP_CELLULAR_SCAN_INTERVAL_MS = 5_000;
+
+    /**
+     * How often the Wi-Fi screens scan while open, used only when Android does not throttle Wi-Fi
+     * scans (a throttled phone keeps its scan interval so the survey never runs out of scans).
+     */
+    public static final int LIVE_WIFI_SCAN_INTERVAL_MS = 5_000;
+
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "10";
 
     public static final boolean DEFAULT_INCLUDE_NEIGHBOR_CELLS = true;

@@ -110,6 +110,7 @@ public class GnssController extends AController
         return gnssStarted.get();
     }
 
+    @Override
     public int getScanRateMs()
     {
         return gnssScanRateMs;

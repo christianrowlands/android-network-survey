@@ -2,7 +2,9 @@ package com.craxiom.networksurvey.ui.wifi.model
 
 import android.os.Build
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** When the Wi-Fi list warns that Android throttles scans, per Android version. */
@@ -61,6 +63,18 @@ class WifiThrottlingTest {
 
         assertNull(warn(36, ignored, gap = null))
         assertNull(warn(Build.VERSION_CODES.Q, ignored, gap = 999_999))
+    }
+
+    @Test
+    fun fasterLiveScans_onlyWhereTheThrottleIsKnownToBeOff() {
+        // Android 8 has no throttle.
+        assertTrue(WifiThrottling.scansUnthrottled(Build.VERSION_CODES.O_MR1, throttleEnabled = true))
+        // Android 9 always throttles, and Android 10 cannot say whether it does.
+        assertFalse(WifiThrottling.scansUnthrottled(Build.VERSION_CODES.P, throttleEnabled = false))
+        assertFalse(WifiThrottling.scansUnthrottled(Build.VERSION_CODES.Q, throttleEnabled = false))
+        // Android 11+ follows the setting.
+        assertTrue(WifiThrottling.scansUnthrottled(Build.VERSION_CODES.R, throttleEnabled = false))
+        assertFalse(WifiThrottling.scansUnthrottled(36, throttleEnabled = true))
     }
 
     private fun warn(sdk: Int, inputs: WifiThrottleInputs, gap: Long?) = WifiThrottling.warning(sdk, inputs, gap, RATE_MS)

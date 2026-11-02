@@ -65,7 +65,7 @@ fun NsScanRateCard(seconds: Int, help: ScanRateHelp, onOpenSettings: () -> Unit,
 @Composable
 fun wifiScanRateHelp() = ScanRateHelp(
     title = stringResource(R.string.wifi_scan_rate_info_title),
-    body = stringResource(R.string.wifi_scan_rate_info_body),
+    body = stringResource(R.string.wifi_scan_rate_info_body) + PARAGRAPH_BREAK + stringResource(R.string.wifi_scan_rate_live_info),
     infoDescription = stringResource(R.string.wifi_scan_rate_info_content_description),
     settingsDescription = stringResource(R.string.wifi_settings_content_description),
 )
@@ -74,7 +74,10 @@ fun wifiScanRateHelp() = ScanRateHelp(
 @Composable
 fun bluetoothScanRateHelp() = ScanRateHelp(
     title = stringResource(R.string.bluetooth_scan_rate_info_title),
-    body = stringResource(R.string.bluetooth_scan_rate_info_body),
+    body = stringResource(R.string.bluetooth_scan_rate_info_body) + PARAGRAPH_BREAK + stringResource(R.string.bluetooth_scan_rate_live_info),
     infoDescription = stringResource(R.string.bluetooth_scan_rate_info_content_description),
     settingsDescription = stringResource(R.string.bluetooth_settings_content_description),
 )
+
+/** Separates the paragraphs of a scan rate's help. */
+private const val PARAGRAPH_BREAK = "\n\n"

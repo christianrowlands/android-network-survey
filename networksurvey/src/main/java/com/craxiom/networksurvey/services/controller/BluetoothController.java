@@ -17,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
@@ -89,6 +90,11 @@ public class BluetoothController extends AController
     private static final int RSSI_CHANGE_THRESHOLD = 10; // dBm
     private static final int MAX_RECENT_DEVICES = 2000; // Maximum devices to track
     private static final long CLEANUP_INTERVAL_MS = 60000; // Cleanup every 60 seconds
+    /**
+     * How often a device the duplicate filter drops may still refresh an open live view, so a list
+     * of busy advertisers does not redraw for every advertisement.
+     */
+    private static final long LIVE_REFRESH_INTERVAL_MS = 1_000;
 
     private enum ScanPhase
     {
@@ -116,6 +122,8 @@ public class BluetoothController extends AController
      */
     private volatile boolean sawClassicDiscoveryActivity = false;
     private final Map<String, DeviceInfo> recentDevices = new HashMap<>();
+    // When each device last refreshed the live views with a sighting the duplicate filter dropped.
+    private final Map<String, Long> lastLiveRefreshTimes = new HashMap<>();
     private long lastCleanupTime = 0;
 
     private record DeviceInfo(long lastSeenTime, int lastRssi)
@@ -232,6 +240,7 @@ public class BluetoothController extends AController
         return bluetoothScanningActive.get();
     }
 
+    @Override
     public int getScanRateMs()
     {
         return bluetoothScanRateMs;
@@ -619,6 +628,50 @@ public class BluetoothController extends AController
     }
 
     /**
+     * Bluetooth keeps its scan interval and scan mode for live views: scanning more often or more
+     * sensitively only while someone looks would bias the survey toward what was near them then.
+     * Live views get fresher signals from the sightings the duplicate filter drops instead (see
+     * {@link #shouldRefreshLiveViews(BluetoothDevice)}).
+     */
+    @Override
+    protected void onLiveViewsChanged()
+    {
+        if (!hasLiveViews())
+        {
+            synchronized (lastLiveRefreshTimes)
+            {
+                lastLiveRefreshTimes.clear();
+            }
+        }
+    }
+
+    /**
+     * Decides whether a sighting that {@link #shouldLogDevice(BluetoothDevice, int)} dropped should
+     * still update the open live views. Those updates reach only the live views, never the survey,
+     * so the survey's Bluetooth records are the same whether or not a screen is open.
+     *
+     * @param device The Bluetooth device.
+     * @return True when a live view is open and the device has not refreshed it in the last
+     * {@link #LIVE_REFRESH_INTERVAL_MS}.
+     */
+    private boolean shouldRefreshLiveViews(BluetoothDevice device)
+    {
+        if (!hasLiveViews() || device == null || device.getAddress() == null) return false;
+
+        final String address = device.getAddress();
+        final long now = SystemClock.elapsedRealtime();
+        synchronized (lastLiveRefreshTimes)
+        {
+            final Long lastRefresh = lastLiveRefreshTimes.get(address);
+            if (lastRefresh != null && now - lastRefresh < LIVE_REFRESH_INTERVAL_MS) return false;
+
+            if (lastLiveRefreshTimes.size() >= MAX_RECENT_DEVICES) lastLiveRefreshTimes.clear();
+            lastLiveRefreshTimes.put(address, now);
+            return true;
+        }
+    }
+
+    /**
      * Cleans up old device entries from the recentDevices map to prevent memory growth.
      * This method should be called with the recentDevices lock held.
      *
@@ -982,6 +1035,9 @@ public class BluetoothController extends AController
             if (ctrl.shouldLogDevice(result.getDevice(), result.getRssi()))
             {
                 ctrl.surveyRecordProcessor.onBluetoothScanUpdate(result);
+            } else if (ctrl.shouldRefreshLiveViews(result.getDevice()))
+            {
+                ctrl.surveyRecordProcessor.onBluetoothLiveUpdate(result);
             }
         }
 
@@ -1003,6 +1059,9 @@ public class BluetoothController extends AController
                 if (ctrl.shouldLogDevice(result.getDevice(), result.getRssi()))
                 {
                     filteredResults.add(result);
+                } else if (ctrl.shouldRefreshLiveViews(result.getDevice()))
+                {
+                    ctrl.surveyRecordProcessor.onBluetoothLiveUpdate(result);
                 }
             }
             if (!filteredResults.isEmpty())
@@ -1084,6 +1143,9 @@ public class BluetoothController extends AController
                 if (ctrl.shouldLogDevice(device, rssi))
                 {
                     ctrl.surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
+                } else if (ctrl.shouldRefreshLiveViews(device))
+                {
+                    ctrl.surveyRecordProcessor.onBluetoothClassicLiveUpdate(device, rssi);
                 }
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction()))
             {

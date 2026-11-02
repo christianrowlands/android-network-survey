@@ -32,4 +32,20 @@ object WifiThrottling {
         val throttled = !inputs.developerOptionsOn || scanGapMs > scanRateMs * GAP_FACTOR
         return if (throttled) ThrottleWarning(android9 = sdk == Build.VERSION_CODES.P, inputs.developerOptionsOn) else null
     }
+
+    /**
+     * Whether Wi-Fi may scan faster than the scan interval for a live view. Each throttled scan
+     * spends part of Android's allowance (4 scans every 2 minutes), and once it is spent no scan
+     * runs at all, so faster scans are only safe when the throttle is known to be off.
+     *
+     * @param throttleEnabled Android 11+: whether Android throttles scans; ignored below 11.
+     * @return True on Android 8 (no throttle) and on Android 11+ with the throttle off. False on
+     * Android 9 (always throttled) and 10 (whose throttle setting apps cannot read).
+     */
+    @JvmStatic
+    fun scansUnthrottled(sdk: Int, throttleEnabled: Boolean): Boolean = when {
+        sdk < Build.VERSION_CODES.P -> true
+        sdk >= Build.VERSION_CODES.R -> !throttleEnabled
+        else -> false
+    }
 }

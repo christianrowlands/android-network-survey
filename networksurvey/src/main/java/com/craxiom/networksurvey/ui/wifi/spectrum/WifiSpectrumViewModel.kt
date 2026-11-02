@@ -3,6 +3,8 @@ package com.craxiom.networksurvey.ui.wifi.spectrum
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -31,7 +33,7 @@ class WifiSpectrumViewModel internal constructor(
     application: Application,
     environment: WifiEnvironment,
     private val mainDispatcher: CoroutineDispatcher,
-) : AndroidViewModel(application), IWifiSurveyRecordListener {
+) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(application, AndroidWifiEnvironment(application), Dispatchers.Main)
 
@@ -71,6 +73,9 @@ class WifiSpectrumViewModel internal constructor(
         conditions.refresh()
         applyScanState()
     }
+
+    /** The Wi-Fi screens scan faster while open, where Android does not throttle scans. */
+    override fun getLiveScanIntervalMs(): Int = NetworkSurveyConstants.LIVE_WIFI_SCAN_INTERVAL_MS
 
     /** Excluded networks still use the air, so the spectrum shows them. */
     override fun wantsExcludedRecords(): Boolean = true

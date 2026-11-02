@@ -3,7 +3,9 @@ package com.craxiom.networksurvey.ui.wifi.details
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.data.SsidExclusionManager
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.model.WifiNetwork
@@ -54,7 +56,7 @@ class WifiDetailsViewModel internal constructor(
     watchlistMatches: (WifiNetwork) -> Flow<Boolean>,
     private val chartSink: RssiChartSink,
     private val mainDispatcher: CoroutineDispatcher,
-) : AndroidViewModel(application), IWifiSurveyRecordListener {
+) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
         application = application,
@@ -143,6 +145,9 @@ class WifiDetailsViewModel internal constructor(
         mutableExcluded.value = exclusions.isExcluded(ssid)
         return change
     }
+
+    /** The Wi-Fi screens scan faster while open, where Android does not throttle scans. */
+    override fun getLiveScanIntervalMs(): Int = NetworkSurveyConstants.LIVE_WIFI_SCAN_INTERVAL_MS
 
     /** Excluded networks are still shown here, so the page keeps plotting a network the user excluded. */
     override fun wantsExcludedRecords(): Boolean = true

@@ -6,12 +6,16 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.services.controller.LiveScanRates
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -29,8 +33,12 @@ class SignalsViewModel(application: Application) : AndroidViewModel(application)
 
     private val mutableIntervals = MutableStateFlow(SignalsSubTab.entries.associateWith { it.defaultIntervalSeconds })
 
-    /** The scan interval of each sub-tab in seconds, organization settings applied. */
-    val intervals: StateFlow<Map<SignalsSubTab, Int>> = mutableIntervals.asStateFlow()
+    /**
+     * The scan interval each sub-tab shows, in seconds: the survey's interval with organization
+     * settings applied, or the faster one while an open screen makes its radio scan faster.
+     */
+    val intervals: StateFlow<Map<SignalsSubTab, Int>> = combine(mutableIntervals, LiveScanRates.rates, ::shownIntervals)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, shownIntervals(mutableIntervals.value, LiveScanRates.rates.value))
 
     private val mutableGnssPage = MutableStateFlow(GnssPage.STATUS)
 
@@ -87,9 +95,5 @@ class SignalsViewModel(application: Application) : AndroidViewModel(application)
 
     override fun onCleared() {
         preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
-    }
-
-    private companion object {
-        const val MS_PER_SECOND = 1000
     }
 }

@@ -8,8 +8,10 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import androidx.core.app.ActivityCompat;
 
@@ -17,6 +19,9 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.WifiCsvLogger;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
+import com.craxiom.networksurvey.survey.model.RecordType;
+import com.craxiom.networksurvey.ui.wifi.model.AndroidWifiThrottleProbe;
+import com.craxiom.networksurvey.ui.wifi.model.WifiThrottling;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
@@ -45,6 +50,10 @@ public class WifiController extends AController
     private final SurveyRecordProcessor surveyRecordProcessor;
 
     private volatile int wifiScanRateMs;
+    // The interval the scheduled scan task repeats at, and when it last asked for a scan.
+    private volatile int scheduledScanRateMs;
+    private volatile long lastScanElapsedMs;
+    private volatile WifiManager wifiManager;
     private final WifiCsvLogger wifiCsvLogger;
     private BroadcastReceiver wifiScanReceiver;
     private final AtomicBoolean wasActiveBeforePause = new AtomicBoolean(false);
@@ -59,6 +68,8 @@ public class WifiController extends AController
         this.surveyRecordProcessor = surveyRecordProcessor;
 
         wifiCsvLogger = new WifiCsvLogger(surveyService);
+        // Scan tasks are replaced whenever a live view opens or closes; drop the replaced ones at once.
+        wifiScanExecutor.setRemoveOnCancelPolicy(true);
     }
 
     @Override
@@ -68,6 +79,7 @@ public class WifiController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (wifiLoggingEnabled)
         {
+            LiveScanRates.clear(RecordType.WIFI);
             wifiCsvLogger.onDestroy();
             wifiScanExecutor.shutdown();
             super.onDestroy();
@@ -84,9 +96,29 @@ public class WifiController extends AController
         return wifiScanningActive.get();
     }
 
+    @Override
     public int getScanRateMs()
     {
         return wifiScanRateMs;
+    }
+
+    /**
+     * Wi-Fi scans faster for a live view only when Android does not throttle scans. A throttled
+     * phone allows 4 scans every 2 minutes and then refuses every scan until the window passes, so
+     * faster scans would leave the survey with no Wi-Fi data at all.
+     */
+    @Override
+    protected boolean canScanFaster()
+    {
+        final WifiManager manager = wifiManager;
+        if (manager == null) return false;
+        return WifiThrottling.scansUnthrottled(Build.VERSION.SDK_INT, AndroidWifiThrottleProbe.isScanThrottleEnabled(manager));
+    }
+
+    @Override
+    protected void onLiveViewsChanged()
+    {
+        rescheduleFromLastScan();
     }
 
     public void onRolloverPreferenceChanged()
@@ -124,6 +156,109 @@ public class WifiController extends AController
             // Stop and restart scanning to use the new rate
             stopWifiRecordScanning();
             startWifiRecordScanning();
+        }
+    }
+
+    /**
+     * Moves the scan task to the current effective scan interval, with the next scan one interval
+     * after the last, never sooner, so screens opening and closing in quick succession do not scan
+     * in a burst. Does nothing while scanning is off.
+     */
+    private void rescheduleFromLastScan()
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null) return;
+
+            if (wifiScanningActive.get())
+            {
+                final long sinceLastScanMs = SystemClock.elapsedRealtime() - lastScanElapsedMs;
+                scheduleScans(Math.max(0, getEffectiveScanRateMs() - sinceLastScanMs));
+                surveyService.updateLocationListener();
+            }
+
+            publishLiveScanRate();
+        }
+    }
+
+    @Override
+    protected void publishLiveScanRate()
+    {
+        if (wifiScanningActive.get() && !isPaused())
+        {
+            LiveScanRates.publish(RecordType.WIFI, this);
+        } else
+        {
+            LiveScanRates.clear(RecordType.WIFI);
+        }
+    }
+
+    /**
+     * Replaces the scan task with one that repeats at the current effective scan interval. Called
+     * with the {@code wifiLoggingEnabled} lock held. The broadcast receiver is left alone, so no
+     * scan result is missed while the task changes.
+     *
+     * @param initialDelayMs How long to wait before the first scan.
+     */
+    private void scheduleScans(long initialDelayMs)
+    {
+        if (wifiScanFuture != null)
+        {
+            // Not interrupted: the task may be the caller, and a scan already asked for still delivers.
+            wifiScanFuture.cancel(false);
+            wifiScanFuture = null;
+        }
+
+        final int rateMs = getEffectiveScanRateMs();
+        scheduledScanRateMs = rateMs;
+        wifiScanFuture = wifiScanExecutor.scheduleWithFixedDelay(this::runScheduledScan, initialDelayMs, rateMs, TimeUnit.MILLISECONDS);
+
+        Timber.d("Scheduled Wi-Fi scanning every %d ms, starting in %d ms", rateMs, initialDelayMs);
+    }
+
+    /**
+     * Asks Android for a Wi-Fi scan; the results arrive through the broadcast receiver.
+     */
+    private void runScheduledScan()
+    {
+        try
+        {
+            if (!wifiScanningActive.get())
+            {
+                Timber.i("Wi-Fi scanning is no longer active, skipping scan");
+                return;
+            }
+
+            // Skip scan if paused for battery management
+            if (isPaused())
+            {
+                Timber.d("Wi-Fi scanning is paused for battery management");
+                return;
+            }
+
+            // The throttle can be turned back on while a live view is open. Going back to the scan
+            // interval before scanning keeps the faster scans from using up Android's allowance.
+            if (getEffectiveScanRateMs() != scheduledScanRateMs)
+            {
+                rescheduleFromLastScan();
+                return;
+            }
+
+            final WifiManager manager = wifiManager;
+            if (manager == null) return;
+
+            lastScanElapsedMs = SystemClock.elapsedRealtime();
+            boolean success = manager.startScan();
+
+            if (!success)
+            {
+                Timber.e("Kicking off a Wi-Fi scan failed");
+                // Continue trying on next iteration - don't stop the scheduled task
+            }
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not run a Wi-Fi scan");
+            // Continue trying on next iteration - don't stop the scheduled task
         }
     }
 
@@ -303,7 +438,7 @@ public class WifiController extends AController
             scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
             surveyService.registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
 
-            final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
+            wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
 
             if (wifiManager == null)
             {
@@ -312,45 +447,9 @@ public class WifiController extends AController
                 return;
             }
 
-            // Cancel any existing Wi-Fi scan task
-            if (wifiScanFuture != null)
-            {
-                wifiScanFuture.cancel(true);
-                wifiScanFuture = null;
-            }
+            scheduleScans(2000L);
 
-            // Schedule the Wi-Fi scan task at a fixed rate
-            wifiScanFuture = wifiScanExecutor.scheduleWithFixedDelay(() -> {
-                try
-                {
-                    if (!wifiScanningActive.get())
-                    {
-                        Timber.i("Wi-Fi scanning is no longer active, skipping scan");
-                        return;
-                    }
-
-                    // Skip scan if paused for battery management
-                    if (isPaused())
-                    {
-                        Timber.d("Wi-Fi scanning is paused for battery management");
-                        return;
-                    }
-
-                    boolean success = wifiManager.startScan();
-
-                    if (!success)
-                    {
-                        Timber.e("Kicking off a Wi-Fi scan failed");
-                        // Continue trying on next iteration - don't stop the scheduled task
-                    }
-                } catch (Exception e)
-                {
-                    Timber.e(e, "Could not run a Wi-Fi scan");
-                    // Continue trying on next iteration - don't stop the scheduled task
-                }
-            }, 2000L, wifiScanRateMs, TimeUnit.MILLISECONDS);
-
-            Timber.d("Started Wi-Fi scanning with interval %d ms", wifiScanRateMs);
+            publishLiveScanRate();
 
             surveyService.updateLocationListener();
         }
@@ -367,6 +466,7 @@ public class WifiController extends AController
             if (surveyService == null) return;
 
             wifiScanningActive.set(false);
+            publishLiveScanRate();
 
             // Cancel the scheduled Wi-Fi scan task
             if (wifiScanFuture != null)

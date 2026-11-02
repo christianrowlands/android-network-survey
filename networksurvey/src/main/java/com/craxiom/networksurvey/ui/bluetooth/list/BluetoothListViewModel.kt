@@ -12,6 +12,7 @@ import com.craxiom.messaging.BluetoothRecordData
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.data.BluetoothCompanyNameProvider
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener
+import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.services.controller.BluetoothController
 import com.craxiom.networksurvey.ui.bluetooth.list.model.AndroidBluetoothEnvironment
@@ -67,7 +68,7 @@ class BluetoothListViewModel internal constructor(
     private val scanRateMs: () -> Long,
     private val clock: () -> Long,
     private val dispatcher: CoroutineDispatcher,
-) : AndroidViewModel(application), IBluetoothSurveyRecordListener {
+) : AndroidViewModel(application), IBluetoothSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
         application = application,

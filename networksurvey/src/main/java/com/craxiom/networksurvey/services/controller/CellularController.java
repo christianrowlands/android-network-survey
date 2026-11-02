@@ -10,6 +10,7 @@ import android.database.ContentObserver;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.telephony.CellInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -38,6 +39,7 @@ import com.craxiom.networksurvey.logging.UmtsCsvLogger;
 import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
+import com.craxiom.networksurvey.survey.model.RecordType;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -76,6 +78,9 @@ public class CellularController extends AController
     private final SurveyRecordProcessor surveyRecordProcessor;
 
     private volatile int cellularScanRateMs;
+    // When the poll loop last asked for cell info, so a new loop never polls sooner than its interval.
+    private volatile long lastPollElapsedMs;
+    private final CellInfoFreshness cellInfoFreshness = new CellInfoFreshness();
 
     private final List<TelephonyManagerWrapper> telephonyManagerList = new ArrayList<>();
     private final Map<Integer, CellInfoCallbackWrapper> cellInfoCallbackMap = new HashMap<>();
@@ -146,6 +151,7 @@ public class CellularController extends AController
                 telephonyManagerList.clear();
             }
 
+            LiveScanRates.clear(RecordType.CELLULAR);
             phoneStateCsvLogger.onDestroy();
             nrCsvLogger.onDestroy();
             lteCsvLogger.onDestroy();
@@ -186,9 +192,54 @@ public class CellularController extends AController
         return cdrLoggingEnabled.get();
     }
 
+    @Override
     public int getScanRateMs()
     {
         return cellularScanRateMs;
+    }
+
+    /**
+     * Moves the poll loop to the new effective scan interval. The next poll comes one new interval
+     * after the last one, never sooner, so screens opening and closing in quick succession do not
+     * poll the modem in a burst.
+     */
+    @Override
+    protected void onLiveViewsChanged()
+    {
+        // A screen that just opened gets the next cell list even when it repeats the last one.
+        cellInfoFreshness.reset();
+
+        if (cellularScanningActive.get() && serviceHandler != null)
+        {
+            final long sinceLastPollMs = SystemClock.elapsedRealtime() - lastPollElapsedMs;
+            postScanLoop(Math.max(0, getEffectiveScanRateMs() - sinceLastPollMs));
+            if (surveyService != null) surveyService.updateLocationListener();
+        }
+
+        publishLiveScanRate();
+    }
+
+    /**
+     * Cellular polls faster only on API 30+, where {@link #isRepeatWhileScanningFaster(int, List)}
+     * can tell the modem's cached list from a new one. Below that, faster polls would save cached
+     * lists as new measurements.
+     */
+    @Override
+    protected boolean canScanFaster()
+    {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+    }
+
+    @Override
+    protected void publishLiveScanRate()
+    {
+        if (cellularScanningActive.get() && !isPaused())
+        {
+            LiveScanRates.publish(RecordType.CELLULAR, this);
+        } else
+        {
+            LiveScanRates.clear(RecordType.CELLULAR);
+        }
     }
 
     public List<SubscriptionInfo> getActiveSubscriptionInfoList()
@@ -235,6 +286,7 @@ public class CellularController extends AController
 
         cellularScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
+        publishLiveScanRate();
     }
 
     /**
@@ -648,6 +700,8 @@ public class CellularController extends AController
                             TelephonyManager telephonyManager = wrapper.getTelephonyManager();
                             if (surveyService == null) return;
 
+                            if (isRepeatWhileScanningFaster(subscriptionId, cellInfo)) return;
+
                             String networkOperatorName = telephonyManager.getNetworkOperatorName();
                             SignalStrength signalStrength = telephonyManager.getSignalStrength();
 
@@ -932,6 +986,43 @@ public class CellularController extends AController
     }
 
     /**
+     * While the radio polls faster for a live view, a cell list that repeats the previous one for the
+     * SIM is Android's cached answer, not a new measurement, so it is dropped rather than saved again
+     * under a new time. Otherwise every list goes through untouched, as before. While polling faster,
+     * each list's age against the previous one is logged, which shows how often the modem really
+     * refreshes on this phone.
+     * <p>
+     * Polling faster happens only on API 30+ (see {@link #canScanFaster()}), since this relies on
+     * {@link CellInfo#getTimestampMillis()}.
+     *
+     * @return True when the list should be dropped.
+     */
+    private boolean isRepeatWhileScanningFaster(int subscriptionId, List<CellInfo> cellInfo)
+    {
+        // Checked first so the lists of a radio at its survey interval take exactly the old path. The
+        // freshness memory is reset whenever a live view opens, so the first faster list is never stale.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || !isScanningFaster()) return false;
+
+        final long[] timestamps = new long[cellInfo.size()];
+        long newest = Long.MIN_VALUE;
+        for (int i = 0; i < timestamps.length; i++)
+        {
+            timestamps[i] = cellInfo.get(i).getTimestampMillis();
+            newest = Math.max(newest, timestamps[i]);
+        }
+
+        final Long previousNewest = cellInfoFreshness.newestPrevious(subscriptionId);
+        final boolean repeat = cellInfoFreshness.isRepeat(subscriptionId, timestamps);
+        if (previousNewest != null && timestamps.length > 0)
+        {
+            Timber.d("Cell info for subscription %d: newest measurement %d ms after the previous list's, repeat=%s",
+                    subscriptionId, newest - previousNewest, repeat);
+        }
+
+        return repeat;
+    }
+
+    /**
      * Gets the {@link TelephonyManager}, and then starts a regular poll of cellular records.
      * <p>
      * This method only starts scanning if the scan is not already active.
@@ -952,101 +1043,116 @@ public class CellularController extends AController
                 return;
             }
 
-            final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
-
             registerDisplayInfoCallbacks();
 
-            serviceHandler.postDelayed(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        if (!cellularScanningActive.get() || cellularScanningTaskId.get() != handlerTaskId)
-                        {
-                            Timber.i("Stopping the handler that pulls the latest cellular information; taskId=%d", handlerTaskId);
-                            return;
-                        }
-
-                        // Check if scanning is paused for battery management
-                        if (isPaused())
-                        {
-                            // Keep the handler alive but skip actual scanning
-                            serviceHandler.postDelayed(this, cellularScanRateMs);
-                            return;
-                        }
-
-                        // Need to synchronize because we use resources that are initialized on SIM
-                        // changes such as telephonyManagerList
-                        synchronized (activeSubscriptionInfoListLock)
-                        {
-                            // Android 10 (API 29) has a framework bug in TelephonyManager.CellInfoCallback where
-                            // ParcelableException can be null, causing NPE in the framework code when onError is called.
-                            // We skip the callback approach on Android 10 and use the same fallback as pre-API 29.
-                            // See: https://issuetracker.google.com/issues/141438333
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                            {
-                                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
-                                {
-                                    CellInfoCallbackWrapper callbackWrapper = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
-                                    if (callbackWrapper != null)
-                                    {
-                                        TelephonyManager.CellInfoCallback androidCallback = TelephonyCallbackFactory.getAndroidCellInfoCallback(callbackWrapper);
-                                        if (androidCallback != null)
-                                        {
-                                            wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, androidCallback);
-                                        }
-                                    } else
-                                    {
-                                        Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
-                                    }
-                                }
-                            } else
-                            {
-                                execute(() -> {
-                                    try
-                                    {
-                                        for (TelephonyManagerWrapper wrapper : telephonyManagerList)
-                                        {
-                                            TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
-
-                                            SignalStrength signalStrength = null;
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                                            {
-                                                signalStrength = subscriptionTelephonyManager.getSignalStrength();
-                                            }
-
-                                            NetworkTechnologyInfo technologyInfo = buildNetworkTechnologyInfo(
-                                                    subscriptionTelephonyManager, wrapper.getSubscriptionId(), "N/A");
-
-                                            surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                                    technologyInfo,
-                                                    wrapper.getSubscriptionId(),
-                                                    subscriptionTelephonyManager.getNetworkOperatorName(),
-                                                    signalStrength);
-                                        }
-                                    } catch (Throwable t)
-                                    {
-                                        Timber.e(t, "Failed to pass the cellular info to the survey record processor");
-                                    }
-                                });
-                            }
-                        }
-
-                        serviceHandler.postDelayed(this, cellularScanRateMs);
-                    } catch (SecurityException e)
-                    {
-                        Timber.e(e, "Could not get the required permissions to get the network details");
-                    } catch (Exception e)
-                    {
-                        Timber.e(e, "An exception occurred trying to get the latest cellular information");
-                    }
-                }
-            }, 1_000);
+            postScanLoop(1_000);
 
             surveyService.updateLocationListener();
+            publishLiveScanRate();
         }
+    }
+
+    /**
+     * Starts a new poll loop that first runs after the delay and then repeats at
+     * {@link #getEffectiveScanRateMs()}, read again before each wait so a live view opening or
+     * closing takes effect at once. Starting a loop ends the one already running.
+     *
+     * @param delayMs How long to wait before the first poll.
+     */
+    private void postScanLoop(long delayMs)
+    {
+        final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
+
+        serviceHandler.postDelayed(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    if (!cellularScanningActive.get() || cellularScanningTaskId.get() != handlerTaskId)
+                    {
+                        Timber.i("Stopping the handler that pulls the latest cellular information; taskId=%d", handlerTaskId);
+                        return;
+                    }
+
+                    // Check if scanning is paused for battery management
+                    if (isPaused())
+                    {
+                        // Keep the handler alive but skip actual scanning
+                        serviceHandler.postDelayed(this, getEffectiveScanRateMs());
+                        return;
+                    }
+
+                    lastPollElapsedMs = SystemClock.elapsedRealtime();
+
+                    // Need to synchronize because we use resources that are initialized on SIM
+                    // changes such as telephonyManagerList
+                    synchronized (activeSubscriptionInfoListLock)
+                    {
+                        // Android 10 (API 29) has a framework bug in TelephonyManager.CellInfoCallback where
+                        // ParcelableException can be null, causing NPE in the framework code when onError is called.
+                        // We skip the callback approach on Android 10 and use the same fallback as pre-API 29.
+                        // See: https://issuetracker.google.com/issues/141438333
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                        {
+                            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                            {
+                                CellInfoCallbackWrapper callbackWrapper = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
+                                if (callbackWrapper != null)
+                                {
+                                    TelephonyManager.CellInfoCallback androidCallback = TelephonyCallbackFactory.getAndroidCellInfoCallback(callbackWrapper);
+                                    if (androidCallback != null)
+                                    {
+                                        wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, androidCallback);
+                                    }
+                                } else
+                                {
+                                    Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
+                                }
+                            }
+                        } else
+                        {
+                            execute(() -> {
+                                try
+                                {
+                                    for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                                    {
+                                        TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+
+                                        SignalStrength signalStrength = null;
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                        {
+                                            signalStrength = subscriptionTelephonyManager.getSignalStrength();
+                                        }
+
+                                        NetworkTechnologyInfo technologyInfo = buildNetworkTechnologyInfo(
+                                                subscriptionTelephonyManager, wrapper.getSubscriptionId(), "N/A");
+
+                                        surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
+                                                technologyInfo,
+                                                wrapper.getSubscriptionId(),
+                                                subscriptionTelephonyManager.getNetworkOperatorName(),
+                                                signalStrength);
+                                    }
+                                } catch (Throwable t)
+                                {
+                                    Timber.e(t, "Failed to pass the cellular info to the survey record processor");
+                                }
+                            });
+                        }
+                    }
+
+                    serviceHandler.postDelayed(this, getEffectiveScanRateMs());
+                } catch (SecurityException e)
+                {
+                    Timber.e(e, "Could not get the required permissions to get the network details");
+                } catch (Exception e)
+                {
+                    Timber.e(e, "An exception occurred trying to get the latest cellular information");
+                }
+            }
+        }, delayMs);
     }
 
     /**
@@ -1056,6 +1162,7 @@ public class CellularController extends AController
     {
         Timber.d("Setting the cellular scanning active flag to false");
         cellularScanningActive.set(false);
+        publishLiveScanRate();
 
         unregisterDisplayInfoCallbacks();
 
