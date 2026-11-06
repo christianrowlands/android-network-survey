@@ -39,13 +39,13 @@ object SurveyPolicy {
             )
         }
 
-        val typeLocks = RecordType.entries.associateWith { snapshot.managedState(SurveyMdmKeys.keyFor(it)) }
+        val typeLocks = RecordType.entries.associateWith { typeLock(snapshot, it) }
         val v2DestinationLocks = Destination.entries.associateWith { snapshot.managedState(SurveyMdmKeys.keyFor(it)) }
         val v2AutoStart = snapshot.managedState(SurveyMdmKeys.AUTO_START_SURVEY)
 
         val legacy = LegacyMdmMapper.map(
             snapshot,
-            typesManagedByV2 = typeLocks.values.any { it.isManaged },
+            typesManagedByV2 = typeLocks.any { (type, state) -> shapesSetup(type, state) },
             destinationsManagedByV2 = v2DestinationLocks.values.any { it.isManaged },
             autoStartManagedByV2 = v2AutoStart.isManaged,
         )
@@ -67,6 +67,27 @@ object SurveyPolicy {
             fingerprint = snapshot.fingerprint(),
         )
     }
+
+    /**
+     * @return The lock state of [type]. A type only an NS Scout can record ([RecordType.needsScout])
+     * is off on a managed phone unless the organization names it, so a fleet that locked every
+     * type before the type existed stays fully locked.
+     */
+    private fun typeLock(snapshot: RestrictionsSnapshot, type: RecordType): ManagedState {
+        val key = SurveyMdmKeys.keyFor(type)
+        if (type.needsScout && snapshot.isManaged && !snapshot.contains(key)) return ManagedState.OFF
+        return snapshot.managedState(key)
+    }
+
+    /**
+     * @return True if [state] for [type] is part of the organization's survey setup. Turning off a
+     * Scout-only type only hides it (it is off on every managed phone by default, and consoles that
+     * push every default push it as off), so it never makes the organization shape the setup:
+     * otherwise every managed phone would have its record types seeded empty.
+     */
+    @JvmStatic
+    fun shapesSetup(type: RecordType, state: ManagedState): Boolean =
+        state.isManaged && !(type.needsScout && state == ManagedState.OFF)
 
     /**
      * @return The destinations the data policy gates forbid. On a managed phone, community uploads
@@ -99,7 +120,10 @@ object SurveyPolicy {
      */
     @JvmStatic
     fun hasOrganizationSetup(snapshot: RestrictionsSnapshot): Boolean {
-        val v2 = SurveyMdmKeys.ALL_SETUP_KEYS.any { snapshot.managedState(it).isManaged }
+        val v2Types = RecordType.entries.any { shapesSetup(it, snapshot.managedState(SurveyMdmKeys.keyFor(it))) }
+        val v2Others = (Destination.entries.map { SurveyMdmKeys.keyFor(it) } + SurveyMdmKeys.AUTO_START_SURVEY)
+            .any { snapshot.managedState(it).isManaged }
+        val v2 = v2Types || v2Others
         if (v2) return true
         val legacy = LegacyMdmMapper.map(snapshot, false, false, false)
         return !legacy.isEmpty
@@ -137,7 +161,11 @@ data class SurveyPolicyState(
 ) {
     /** True if any record type or destination is locked by the organization right now. */
     val hasSetupLocks: Boolean
-        get() = typeLocks.values.any { it.isManaged } || destinationLocks.values.any { it.isManaged }
+        get() = typesManaged || destinationLocks.values.any { it.isManaged }
+
+    /** True if the organization locks any record type, not counting a Scout-only type it turned off. */
+    private val typesManaged: Boolean
+        get() = typeLocks.any { (type, state) -> SurveyPolicy.shapesSetup(type, state) }
 
     /**
      * True if the organization shapes the survey setup right now (locks or a seed), so
@@ -211,7 +239,6 @@ data class SurveyPolicyState(
      * @return The seeded setup, or null when the organization does not shape the setup at all.
      */
     fun managedSeedSetup(current: SurveySetup): SurveySetup? {
-        val typesManaged = typeLocks.values.any { it.isManaged }
         val destinationsManaged = destinationLocks.values.any { it.isManaged }
         if (!typesManaged && !destinationsManaged && seedSetup == null) return null
 

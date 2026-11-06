@@ -36,6 +36,8 @@ import com.craxiom.networksurvey.ui.community.CommunityUploadLauncher
 import com.craxiom.networksurvey.ui.community.CommunityUploadRepository
 import com.craxiom.networksurvey.ui.community.UploadConfirmationDialog
 import com.craxiom.networksurvey.ui.main.SharedViewModel
+import com.craxiom.networksurvey.scout.ScoutManager
+import com.craxiom.networksurvey.survey.status.ScoutOutage
 import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.SurveyEvent
 import com.craxiom.networksurvey.ui.survey.model.SurveyUiState
@@ -227,10 +229,19 @@ private class ScreenActions(
 
     override fun onDisableQueueLimit() = viewModel.disableQueueLimit()
 
+    override fun onOpenScout() = sharedViewModel.triggerNavigationToScout()
+
+    override fun onUpdateScoutFirmware() = sharedViewModel.triggerNavigationToScoutFirmware()
+
+    override fun onUseScout() = viewModel.useScout()
+
+    override fun onUsePhoneWifi() = viewModel.usePhoneWifi()
+
     override fun onFixItem(item: AttentionItemUi) {
         when (item) {
             is AttentionItemUi.Type -> fixRecordType(item)
             is AttentionItemUi.Delivery -> onOpenDestination(item.destination)
+            is AttentionItemUi.Scout -> fixScout(item)
             is AttentionItemUi.Dest -> when (item.reason) {
                 SkipReason.NOT_CONFIGURED, SkipReason.NOT_REGISTERED -> onOpenDestination(item.destination)
                 SkipReason.NO_UPLOAD_TARGET -> sharedViewModel.triggerNavigationToUploadSettings()
@@ -251,6 +262,21 @@ private class ScreenActions(
 
             item.reason == SkipReason.PERMISSION_MISSING -> permissions.ensure(item.type) { viewModel.retrySkipped() }
             else -> viewModel.retrySkipped()
+        }
+    }
+
+    /** Bluetooth and the Nearby devices permission are fixed here; the rest on the Scout page. */
+    private fun fixScout(item: AttentionItemUi.Scout) {
+        when (item.outage) {
+            ScoutOutage.BLUETOOTH_OFF -> {
+                if (item.alsoBluetooth) viewModel.retryAfterFix()
+                open(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+            }
+
+            ScoutOutage.PERMISSION_MISSING ->
+                permissions.ensure(RecordType.BLUETOOTH) { ScoutManager.getInstance(context).refreshEnvironment() }
+
+            else -> onOpenScout()
         }
     }
 

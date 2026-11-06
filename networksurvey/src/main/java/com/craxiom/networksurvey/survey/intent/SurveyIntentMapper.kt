@@ -55,6 +55,11 @@ data class IntentSurveyRequest(
  * names: `record_types` (cellular, phone_state, wifi, bluetooth, gnss, cdr) and `destinations`
  * (log_files, ns_analytics, mqtt, grpc, community). `mqtt_config_json` still supplies the broker.
  *
+ * The Scout-only names `wifi_clients` and `wifi_raw` can't be started this way. They are mapped like
+ * any other name, not as invalid values, so that the one check for every Intent API request, in
+ * [com.craxiom.networksurvey.survey.engine.SurveyOrchestrator], refuses them with
+ * `NOT_ALLOWED_FROM_INTENT` and the rest of the request still starts.
+ *
  * The deprecated per-destination extras keep their names and are mapped as a union, because a
  * survey records one set of types for every destination:
  * - each `*_file_logging` extra adds its record type and the Log files destination;

@@ -1,9 +1,12 @@
 package com.craxiom.networksurvey.ui.survey
 
 import android.content.res.Resources
+import androidx.annotation.StringRes
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.engine.SkipReason
 import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.status.ScoutOutage
 import com.craxiom.networksurvey.ui.survey.components.labelRes
 import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.SurveyEvent
@@ -50,6 +53,16 @@ object SurveyEventMessages {
         is SurveyEvent.UploadBlockedByOrganization -> resources.getString(
             if (event.destination == Destination.COMMUNITY) R.string.community_not_allowed else R.string.ns_analytics_upload_status_mdm_blocked,
         )
+
+        SurveyEvent.WifiFromPhone -> resources.getString(R.string.scout_snackbar_phone)
+        is SurveyEvent.WifiFromScout -> resources.getString(R.string.scout_snackbar_scout, event.scoutName)
+        SurveyEvent.WifiSourceLocked -> resources.getString(R.string.wifi_scout_stop_to_switch)
+    }
+
+    /** @return The snackbar's action label for [event], or null when it has none. */
+    fun actionLabel(resources: Resources, event: SurveyEvent): String? = when (event) {
+        SurveyEvent.WifiFromPhone -> resources.getString(R.string.mqtt_undo)
+        else -> null
     }
 
     /** The one-line problem for a skipped record type or destination. */
@@ -59,12 +72,16 @@ object SurveyEventMessages {
             when (item.reason) {
                 SkipReason.RADIO_OFF -> resources.getString(R.string.survey_item_radio_off, name)
                 SkipReason.PERMISSION_MISSING -> resources.getString(R.string.survey_item_permission, name)
+                SkipReason.NEEDS_SCOUT -> resources.getString(R.string.survey_item_needs_scout, name)
+                SkipReason.NEEDS_LOG_FILES -> resources.getString(R.string.survey_item_needs_log_files, name)
                 else -> resources.getString(R.string.survey_item_failed, name)
             }
         }
 
         is AttentionItemUi.Delivery ->
             DestinationStatusText.problem(resources, item.destination, item.status.word, item.status.detail)
+
+        is AttentionItemUi.Scout -> scoutItemText(resources, item)
 
         is AttentionItemUi.Dest -> {
             val name = resources.getString(item.destination.labelRes)
@@ -77,12 +94,56 @@ object SurveyEventMessages {
         }
     }
 
+    /**
+     * Why the Scout's types aren't being recorded, naming each one the survey runs: "NS-ABCD is out
+     * of range, so Wi-Fi, Wi-Fi clients and Raw frames aren't being recorded". Wi-Fi alone keeps the
+     * singular sentence.
+     */
+    fun scoutItemText(resources: Resources, item: AttentionItemUi.Scout): String {
+        if (item.types == listOf(RecordType.WIFI) && !item.alsoBluetooth) {
+            return resources.getString(scoutItemRes(item.outage, several = false), item.scoutName)
+        }
+        val names = join(resources, scoutTypeNames(resources, item))
+        return if (item.outage == ScoutOutage.BLUETOOTH_OFF) {
+            resources.getString(R.string.scout_item_bluetooth_off_types, names)
+        } else {
+            resources.getString(scoutItemRes(item.outage, several = true), item.scoutName, names)
+        }
+    }
+
+    /**
+     * @return The names of what [item] leaves out, in order: Wi-Fi ("Wi-Fi from NS-ABCD" when
+     * Bluetooth is off, since the Scout isn't named otherwise), Wi-Fi clients, Raw frames, then
+     * Bluetooth when it is left out too.
+     */
+    fun scoutTypeNames(resources: Resources, item: AttentionItemUi.Scout): List<String> {
+        val names = item.types.map { type ->
+            if (type == RecordType.WIFI && item.outage == ScoutOutage.BLUETOOTH_OFF) {
+                resources.getString(R.string.survey_type_wifi_from, item.scoutName)
+            } else {
+                resources.getString(type.labelRes)
+            }
+        }
+        return if (item.alsoBluetooth) names + resources.getString(RecordType.BLUETOOTH.labelRes) else names
+    }
+
+    private fun scoutItemRes(outage: ScoutOutage, several: Boolean): Int = when (outage) {
+        ScoutOutage.OUT_OF_RANGE -> if (several) R.string.scout_item_out_of_range_types else R.string.scout_item_out_of_range
+        ScoutOutage.BLUETOOTH_OFF -> if (several) R.string.scout_item_bluetooth_off_types else R.string.scout_item_bluetooth_off
+        ScoutOutage.PERMISSION_MISSING -> if (several) R.string.scout_item_permission_types else R.string.scout_item_permission
+        ScoutOutage.NEEDS_FIRMWARE_UPDATE -> if (several) R.string.scout_item_firmware_types else R.string.scout_item_firmware
+        ScoutOutage.APP_UPDATE_NEEDED -> if (several) R.string.scout_item_app_update_types else R.string.scout_item_app_update
+        ScoutOutage.PAIRING_LOST -> if (several) R.string.scout_item_pairing_lost_types else R.string.scout_item_pairing_lost
+        ScoutOutage.CANT_CONNECT -> if (several) R.string.scout_item_cant_connect_types else R.string.scout_item_cant_connect
+        ScoutOutage.UPDATING_FIRMWARE -> if (several) R.string.scout_item_updating_types else R.string.scout_item_updating
+    }
+
     /** "A, B and C". */
-    fun join(resources: Resources, names: List<String>): String = when (names.size) {
+    fun join(resources: Resources, names: List<String>, @StringRes last: Int = R.string.survey_list_last): String = when (names.size) {
         0 -> ""
         1 -> names.first()
         else -> resources.getString(
-            R.string.survey_list_last,
+            last,
             names.dropLast(1).joinToString(resources.getString(R.string.survey_list_separator)),
             names.last(),
         )

@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
+import com.craxiom.networksurvey.scout.ScoutManager
 import com.craxiom.networksurvey.util.PreferenceUtils
 
 /** What stops the phone from scanning for Wi-Fi, in the order the screens report it. */
@@ -99,4 +100,19 @@ class AndroidWifiThrottleProbe(private val context: Context) : WifiThrottleProbe
         fun isScanThrottleEnabled(wifiManager: WifiManager?): Boolean =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wifiManager?.isScanThrottleEnabled == true
     }
+}
+
+/**
+ * The [WifiEnvironment] the Wi-Fi screens use: the phone's own conditions, which step aside while
+ * the paired NS Scout is the Wi-Fi source (the Scout does not need the phone's Wi-Fi, location or
+ * its permission to list networks). What stops the Scout is shown separately ([WifiScoutSource]).
+ */
+class SourceAwareWifiEnvironment(
+    context: Context,
+    private val phone: WifiEnvironment = AndroidWifiEnvironment(context),
+) : WifiEnvironment {
+    private val scout = ScoutManager.getInstance(context)
+
+    override fun scanState(): WifiScanState =
+        WifiScoutSource.phoneScanState(phone.scanState(), scout.wifiSource.value, scout.pairedScout.value != null)
 }

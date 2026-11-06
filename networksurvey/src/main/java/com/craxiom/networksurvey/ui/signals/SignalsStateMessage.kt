@@ -31,6 +31,7 @@ private val MESSAGE_ICON_SIZE = 40.dp
  * (a permission, a radio, nothing found yet), with at most one button that fixes it.
  *
  * @param prominent A tonal button for the fix; false shows a text button for a secondary action.
+ * @param title A short headline above [text], for a block that needs naming (the NS Scout's).
  */
 @Composable
 fun SignalsStateMessage(
@@ -39,6 +40,7 @@ fun SignalsStateMessage(
     action: String? = null,
     onAction: () -> Unit = {},
     prominent: Boolean = true,
+    title: String? = null,
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
@@ -55,6 +57,14 @@ fun SignalsStateMessage(
                 tint = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(MESSAGE_ICON_SIZE),
             )
+            if (title != null) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,

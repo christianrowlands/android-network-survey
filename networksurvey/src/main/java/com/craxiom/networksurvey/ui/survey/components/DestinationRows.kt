@@ -181,7 +181,10 @@ private fun RowControl(
 
 @Composable
 private fun DetailText(row: DestinationRowUi, info: DestinationInfo) {
-    val (text, color) = destinationDetail(row.destination, row.detail, info)
+    val (detail, color) = destinationDetail(row.destination, row.detail, info)
+    val text = if (row.notSent.isEmpty()) detail else {
+        stringResource(R.string.survey_destination_not_sent, detail, recordTypeNames(row.notSent)).trimStart(' ', '\u00b7')
+    }
     if (text.isNotBlank()) Text(text = text, style = MaterialTheme.typography.bodySmall, color = color)
 }
 
@@ -203,7 +206,9 @@ fun destinationDetail(destination: Destination, detail: DestinationDetail, info:
 /** The destination's own description: workspace, broker, address or targets. */
 @Composable
 fun defaultDetail(destination: Destination, info: DestinationInfo): String = when (destination) {
-    Destination.LOG_FILES -> stringResource(R.string.survey_dest_log_files_detail)
+    Destination.LOG_FILES -> stringResource(
+        if (info.logFilesSaveRawFrames) R.string.survey_dest_log_files_detail_raw else R.string.survey_dest_log_files_detail,
+    )
 
     Destination.NS_ANALYTICS -> info.workspaceName ?: stringResource(R.string.survey_dest_ns_analytics_connected)
     Destination.MQTT -> if (info.mqttFromOrganization) {

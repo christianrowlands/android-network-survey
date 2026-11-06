@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,6 +32,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
@@ -65,6 +67,12 @@ private val TAB_PILL_INSET_HORIZONTAL = 2.dp
 
 private val PILL = RoundedCornerShape(999.dp)
 
+/** A compact toggle segment's minimum height. */
+private val SEGMENT_MIN_HEIGHT = 34.dp
+
+/** How much a locked toggle is dimmed. */
+private const val LOCKED_ALPHA = 0.6f
+
 /**
  * A pill-shaped segmented control with one selected segment highlighted in the accent. As a
  * [SegmentedStyle.TOGGLE] it is the Watchlist "Match by" selector and the History List/Map switch;
@@ -72,6 +80,9 @@ private val PILL = RoundedCornerShape(999.dp)
  *
  * @param fillWidth when true each segment takes equal width (a full-width control); when false the
  *   control hugs its content (a compact switch). Tabs always fill the width.
+ * @param enabled false shows the choice dimmed and ignores taps (a choice locked for now).
+ * @param segmentMinHeight a toggle segment's minimum height; pass the touch target for a toggle that
+ *   is a page's main control rather than a compact view switch.
  */
 @Composable
 fun NsSegmentedToggle(
@@ -81,6 +92,8 @@ fun NsSegmentedToggle(
     modifier: Modifier = Modifier,
     fillWidth: Boolean = true,
     style: SegmentedStyle = SegmentedStyle.TOGGLE,
+    enabled: Boolean = true,
+    segmentMinHeight: Dp = SEGMENT_MIN_HEIGHT,
 ) {
     val tabs = style == SegmentedStyle.TABS
     val rowModifier = if (tabs) {
@@ -108,20 +121,21 @@ fun NsSegmentedToggle(
             if (tabs) {
                 Tab(option, selected, { onSelected(index) }, weight)
             } else {
-                Segment(option, selected, { onSelected(index) }, weight)
+                Segment(option, selected, { onSelected(index) }, weight.heightIn(min = segmentMinHeight), enabled)
             }
         }
     }
 }
 
 @Composable
-private fun RowScope.Segment(option: SegmentedOption, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun RowScope.Segment(option: SegmentedOption, selected: Boolean, onClick: () -> Unit, modifier: Modifier, enabled: Boolean) {
     Row(
         modifier = modifier
+            .alpha(if (enabled) 1f else LOCKED_ALPHA)
             .clip(PILL)
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-            .selectable(selected = selected, onClick = onClick)
-            .heightIn(min = 34.dp)
+            .selectable(selected = selected, enabled = enabled, onClick = onClick)
+            .heightIn(min = SEGMENT_MIN_HEIGHT)
             .padding(horizontal = 12.dp, vertical = 6.dp)
             .optionDescription(option),
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),

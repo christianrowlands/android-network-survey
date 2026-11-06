@@ -1,10 +1,13 @@
 package com.craxiom.networksurvey.ui.survey.model
 
+import com.craxiom.networksurvey.logging.RawFramesProgress
+import com.craxiom.networksurvey.scout.model.ScoutState
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.status.DeliveryQueues
+import com.craxiom.networksurvey.survey.status.ScoutWifiStatus
 
 /**
  * Everything [SurveyUiStateMapper] needs, gathered by the view model from the service, the
@@ -31,6 +34,11 @@ import com.craxiom.networksurvey.survey.status.DeliveryQueues
  *                                 databases, for their status and the "Still to do" panel.
  * @property wifiOff               True when Wi-Fi and Wi-Fi scanning are both off, so no Wi-Fi scan
  *                                 can run until one of them is turned on.
+ * @property scoutWifi             The NS Scout when it is the Wi-Fi source, null when the phone is.
+ * @property scout                 The NS Scout's state for its row and plates; [ScoutState.NotPaired]
+ *                                 without one, or when the organization doesn't allow it.
+ * @property scoutLastHeardAtMs    When the Scout last sent a status, for "Last heard 2 minutes ago".
+ * @property rawFrames             What the raw frames files saved this survey, null while none are saved.
  */
 data class SurveyInputs(
     val runtime: SurveyRuntimeState,
@@ -50,7 +58,14 @@ data class SurveyInputs(
     val selectedSetupId: String? = null,
     val queues: DeliveryQueues = DeliveryQueues(),
     val wifiOff: Boolean = false,
-)
+    val scoutWifi: ScoutWifiStatus? = null,
+    val scout: ScoutState = ScoutState.NotPaired,
+    val scoutLastHeardAtMs: Long? = null,
+    val rawFrames: RawFramesProgress? = null,
+) {
+    /** True when a Scout is paired (and the organization allows one), so Scout-only types are offered. */
+    val scoutPaired: Boolean get() = scout.scout != null
+}
 
 /**
  * Whether each destination can be used, and what its row says about it.
@@ -75,6 +90,7 @@ data class SurveyInputs(
  *                                 the user has not overridden it), so the app cannot change it.
  * @property batteryThresholdSetByOrganization True when the organization sets the battery pause
  *                                 threshold (and the user has not overridden it).
+ * @property logFilesSaveRawFrames True when the survey's Log files also save Raw frames (pcapng).
  */
 data class DestinationInfo(
     val nsAnalyticsRegistered: Boolean = false,
@@ -91,6 +107,7 @@ data class DestinationInfo(
     val communityAutoUpload: Boolean = true,
     val queueLimitSetByOrganization: Boolean = false,
     val batteryThresholdSetByOrganization: Boolean = false,
+    val logFilesSaveRawFrames: Boolean = false,
 ) {
     /** @return True if [destination] has everything it needs to receive records. */
     fun isReady(destination: Destination): Boolean = when (destination) {

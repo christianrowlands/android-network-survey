@@ -1,34 +1,27 @@
 package com.craxiom.networksurvey.services.controller;
 
-import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.net.wifi.ScanResult;
-import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
-
-import androidx.core.app.ActivityCompat;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.WifiCsvLogger;
+import com.craxiom.networksurvey.scout.ScoutManager;
+import com.craxiom.networksurvey.scout.model.WifiSource;
+import com.craxiom.networksurvey.board.v1.ApObservation;
+import com.craxiom.networksurvey.scout.wifi.ScoutHeard;
+import com.craxiom.networksurvey.scout.wifi.ScoutSourceWatcher;
+import com.craxiom.networksurvey.scout.wifi.ScoutWifiHost;
+import com.craxiom.networksurvey.scout.wifi.ScoutWifiSource;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.survey.model.RecordType;
-import com.craxiom.networksurvey.ui.wifi.model.AndroidWifiThrottleProbe;
-import com.craxiom.networksurvey.ui.wifi.model.WifiThrottling;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import timber.log.Timber;
@@ -36,27 +29,28 @@ import timber.log.Timber;
 /**
  * Handles all of the Wi-Fi related logic for Network Survey Service to include file logging
  * and managing the Wi-Fi scanning.
+ * <p>
+ * Wi-Fi comes from one {@link WifiScanSource} at a time: the phone's own scanner
+ * ({@link PhoneWifiSource}) or the paired NS Scout ({@link ScoutWifiSource}), never both. This
+ * class is the facade the service talks to either way: scanning active, the scan interval, pause
+ * and resume, and the Wi-Fi CSV logger work the same for both. The source switches under the
+ * same lock that guards logging and scanning, and never while a survey records, so one Mission
+ * never mixes Wi-Fi from two radios. Faster scans for live views, and the scan throttle that
+ * limits them, apply only to the phone.
  *
  * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
-public class WifiController extends AController
+public class WifiController extends AController implements ScoutWifiHost
 {
-    private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
-    private final ScheduledThreadPoolExecutor wifiScanExecutor = new ScheduledThreadPoolExecutor(1);
-    private ScheduledFuture<?> wifiScanFuture;
 
-    private final Handler serviceHandler;
     private final SurveyRecordProcessor surveyRecordProcessor;
+    private final ScoutManager scoutManager;
+    private final ScoutSourceWatcher sourceWatcher;
+    private final WifiSourceSelector selector;
+    private final WifiCsvLogger wifiCsvLogger;
 
     private volatile int wifiScanRateMs;
-    // The interval the scheduled scan task repeats at, and when it last asked for a scan.
-    private volatile int scheduledScanRateMs;
-    private volatile long lastScanElapsedMs;
-    private volatile WifiManager wifiManager;
-    private final WifiCsvLogger wifiCsvLogger;
-    private BroadcastReceiver wifiScanReceiver;
-    private final AtomicBoolean wasActiveBeforePause = new AtomicBoolean(false);
 
     public WifiController(NetworkSurveyService surveyService, ExecutorService executorService,
                           Looper serviceLooper, Handler serviceHandler,
@@ -64,12 +58,16 @@ public class WifiController extends AController
     {
         super(surveyService, executorService);
 
-        this.serviceHandler = serviceHandler;
         this.surveyRecordProcessor = surveyRecordProcessor;
 
         wifiCsvLogger = new WifiCsvLogger(surveyService);
-        // Scan tasks are replaced whenever a live view opens or closes; drop the replaced ones at once.
-        wifiScanExecutor.setRemoveOnCancelPolicy(true);
+        scoutManager = ScoutManager.getInstance(surveyService);
+        sourceWatcher = new ScoutSourceWatcher(scoutManager);
+
+        final Map<WifiSource, WifiScanSource> sources = new EnumMap<>(WifiSource.class);
+        sources.put(WifiSource.PHONE, new PhoneWifiSource(this, wifiLoggingEnabled, surveyRecordProcessor));
+        sources.put(WifiSource.SCOUT, new ScoutWifiSource(scoutManager, this, surveyService.getPrimaryLocationListener()));
+        selector = new WifiSourceSelector(sources, scoutManager.getWifiSource().getValue());
     }
 
     @Override
@@ -79,9 +77,10 @@ public class WifiController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (wifiLoggingEnabled)
         {
+            sourceWatcher.stop();
+            selector.destroy();
             LiveScanRates.clear(RecordType.WIFI);
             wifiCsvLogger.onDestroy();
-            wifiScanExecutor.shutdown();
             super.onDestroy();
         }
     }
@@ -91,9 +90,29 @@ public class WifiController extends AController
         return wifiLoggingEnabled.get();
     }
 
+    /**
+     * @return True while something needs Wi-Fi and the selected source is running for it, paused
+     * or not.
+     */
     public boolean isScanningActive()
     {
-        return wifiScanningActive.get();
+        return selector.isActive();
+    }
+
+    /**
+     * @return Where Wi-Fi comes from right now.
+     */
+    public WifiSource getWifiSource()
+    {
+        return selector.getSource();
+    }
+
+    /**
+     * @return True while the NS Scout is the Wi-Fi source and holds a capture for it.
+     */
+    public boolean isScoutInUse()
+    {
+        return selector.isActive() && selector.getSource() == WifiSource.SCOUT;
     }
 
     @Override
@@ -102,23 +121,88 @@ public class WifiController extends AController
         return wifiScanRateMs;
     }
 
-    /**
-     * Wi-Fi scans faster for a live view only when Android does not throttle scans. A throttled
-     * phone allows 4 scans every 2 minutes and then refuses every scan until the window passes, so
-     * faster scans would leave the survey with no Wi-Fi data at all.
-     */
     @Override
     protected boolean canScanFaster()
     {
-        final WifiManager manager = wifiManager;
-        if (manager == null) return false;
-        return WifiThrottling.scansUnthrottled(Build.VERSION.SDK_INT, AndroidWifiThrottleProbe.isScanThrottleEnabled(manager));
+        return selector.getCurrent().canScanFaster();
     }
 
     @Override
     protected void onLiveViewsChanged()
     {
-        rescheduleFromLastScan();
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null) return;
+            if (selector.isActive()) selector.getCurrent().onLiveViewsChanged();
+            publishLiveScanRate();
+        }
+    }
+
+    /**
+     * Asks to change where Wi-Fi comes from. Refused while a survey records, and for the Scout
+     * when none is paired. A switch while Wi-Fi runs stops the old source before starting the new
+     * one, so the two never run together.
+     *
+     * @param source The source the user chose.
+     * @return What happened.
+     */
+    public WifiSourceSwitch requestWifiSource(WifiSource source)
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null) return WifiSourceSwitch.UNCHANGED;
+
+            final WifiSourceSwitch result = selector.request(source, surveyService.isAnySurveyActive(),
+                    scoutManager.getPairedScout().getValue() != null);
+            if (result == WifiSourceSwitch.SWITCHED)
+            {
+                scoutManager.setWifiSource(source);
+                onSourceChanged();
+            }
+            Timber.i("Wi-Fi source request %s: %s", source, result);
+            return result;
+        }
+    }
+
+    /**
+     * Starts following the Scout manager's own source changes (pairing, removing the Scout).
+     * Called once the service is set up.
+     */
+    public void startWatchingWifiSource()
+    {
+        sourceWatcher.start(this::applyWifiSource);
+    }
+
+    private void applyWifiSource(WifiSource source)
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null) return;
+            if (source == WifiSource.SCOUT && selector.getSource() != source && surveyService.isAnySurveyActive())
+            {
+                // Pairing finished while a survey records: one Mission never mixes Wi-Fi from two
+                // radios, so the phone stays the source until the user switches after the survey.
+                Timber.i("The Scout was paired during a survey; keeping the phone as the Wi-Fi source");
+                scoutManager.setWifiSource(selector.getSource());
+                return;
+            }
+            if (selector.apply(source))
+            {
+                Timber.i("The Wi-Fi source is now %s", source);
+                onSourceChanged();
+            }
+        }
+    }
+
+    /**
+     * Republishes everything that depends on the source. Called with the lock held.
+     */
+    private void onSourceChanged()
+    {
+        publishLiveScanRate();
+        surveyService.updateLocationListener();
+        surveyService.updateServiceNotification();
+        surveyService.notifyLoggingChangedListeners();
     }
 
     public void onRolloverPreferenceChanged()
@@ -141,124 +225,33 @@ public class WifiController extends AController
      */
     public void refreshScanRate()
     {
-        if (surveyService == null) return;
-
-        final int oldScanRateMs = wifiScanRateMs;
-        wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
-                NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
-
-        // If scanning is active and the rate has changed, restart scanning to apply the new rate
-        if (wifiScanningActive.get() && oldScanRateMs != wifiScanRateMs)
-        {
-            Timber.i("Wi-Fi scan rate changed from %d ms to %d ms, restarting scanning to apply new rate",
-                    oldScanRateMs, wifiScanRateMs);
-
-            // Stop and restart scanning to use the new rate
-            stopWifiRecordScanning();
-            startWifiRecordScanning();
-        }
-    }
-
-    /**
-     * Moves the scan task to the current effective scan interval, with the next scan one interval
-     * after the last, never sooner, so screens opening and closing in quick succession do not scan
-     * in a burst. Does nothing while scanning is off.
-     */
-    private void rescheduleFromLastScan()
-    {
         synchronized (wifiLoggingEnabled)
         {
             if (surveyService == null) return;
 
-            if (wifiScanningActive.get())
+            final int oldScanRateMs = wifiScanRateMs;
+            wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
+                    NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
+
+            if (selector.isActive() && oldScanRateMs != wifiScanRateMs)
             {
-                final long sinceLastScanMs = SystemClock.elapsedRealtime() - lastScanElapsedMs;
-                scheduleScans(Math.max(0, getEffectiveScanRateMs() - sinceLastScanMs));
+                Timber.i("Wi-Fi scan rate changed from %d ms to %d ms", oldScanRateMs, wifiScanRateMs);
+                selector.getCurrent().onScanRateChanged();
+                publishLiveScanRate();
                 surveyService.updateLocationListener();
             }
-
-            publishLiveScanRate();
         }
     }
 
     @Override
     protected void publishLiveScanRate()
     {
-        if (wifiScanningActive.get() && !isPaused())
+        if (selector.isActive() && !isPaused() && selector.getSource() == WifiSource.PHONE)
         {
             LiveScanRates.publish(RecordType.WIFI, this);
         } else
         {
             LiveScanRates.clear(RecordType.WIFI);
-        }
-    }
-
-    /**
-     * Replaces the scan task with one that repeats at the current effective scan interval. Called
-     * with the {@code wifiLoggingEnabled} lock held. The broadcast receiver is left alone, so no
-     * scan result is missed while the task changes.
-     *
-     * @param initialDelayMs How long to wait before the first scan.
-     */
-    private void scheduleScans(long initialDelayMs)
-    {
-        if (wifiScanFuture != null)
-        {
-            // Not interrupted: the task may be the caller, and a scan already asked for still delivers.
-            wifiScanFuture.cancel(false);
-            wifiScanFuture = null;
-        }
-
-        final int rateMs = getEffectiveScanRateMs();
-        scheduledScanRateMs = rateMs;
-        wifiScanFuture = wifiScanExecutor.scheduleWithFixedDelay(this::runScheduledScan, initialDelayMs, rateMs, TimeUnit.MILLISECONDS);
-
-        Timber.d("Scheduled Wi-Fi scanning every %d ms, starting in %d ms", rateMs, initialDelayMs);
-    }
-
-    /**
-     * Asks Android for a Wi-Fi scan; the results arrive through the broadcast receiver.
-     */
-    private void runScheduledScan()
-    {
-        try
-        {
-            if (!wifiScanningActive.get())
-            {
-                Timber.i("Wi-Fi scanning is no longer active, skipping scan");
-                return;
-            }
-
-            // Skip scan if paused for battery management
-            if (isPaused())
-            {
-                Timber.d("Wi-Fi scanning is paused for battery management");
-                return;
-            }
-
-            // The throttle can be turned back on while a live view is open. Going back to the scan
-            // interval before scanning keeps the faster scans from using up Android's allowance.
-            if (getEffectiveScanRateMs() != scheduledScanRateMs)
-            {
-                rescheduleFromLastScan();
-                return;
-            }
-
-            final WifiManager manager = wifiManager;
-            if (manager == null) return;
-
-            lastScanElapsedMs = SystemClock.elapsedRealtime();
-            boolean success = manager.startScan();
-
-            if (!success)
-            {
-                Timber.e("Kicking off a Wi-Fi scan failed");
-                // Continue trying on next iteration - don't stop the scheduled task
-            }
-        } catch (Exception e)
-        {
-            Timber.e(e, "Could not run a Wi-Fi scan");
-            // Continue trying on next iteration - don't stop the scheduled task
         }
     }
 
@@ -268,26 +261,8 @@ public class WifiController extends AController
         synchronized (wifiLoggingEnabled)
         {
             if (surveyService == null) return;
-
-            // Remember if scanning was active before pause
-            wasActiveBeforePause.set(wifiScanningActive.get());
-
-            // Call parent to set isPaused flag
             super.pauseScanning();
-
-            // If scanning is active, unregister the broadcast receiver to stop receiving scan results
-            if (wifiScanningActive.get())
-            {
-                try
-                {
-                    surveyService.unregisterReceiver(wifiScanReceiver);
-                    Timber.d("Unregistered Wi-Fi scan receiver for battery pause");
-                } catch (Exception e)
-                {
-                    // Receiver might not be registered
-                    Timber.v(e, "Could not unregister the Wi-Fi scan receiver during pause");
-                }
-            }
+            selector.pause();
         }
     }
 
@@ -297,18 +272,8 @@ public class WifiController extends AController
         synchronized (wifiLoggingEnabled)
         {
             if (surveyService == null) return;
-
-            // Call parent to clear isPaused flag
             super.resumeScanning();
-
-            // If scanning was active before pause, re-register the broadcast receiver
-            if (wasActiveBeforePause.get() && wifiScanningActive.get())
-            {
-                final IntentFilter scanResultsIntentFilter = new IntentFilter();
-                scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-                surveyService.registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
-                Timber.d("Re-registered Wi-Fi scan receiver after battery resume");
-            }
+            selector.resume();
         }
     }
 
@@ -351,8 +316,10 @@ public class WifiController extends AController
                 }
             } else
             {
-                wifiCsvLogger.enableLogging(false);
+                // Unregister first: that hands the logger the Scout's open window, which it can
+                // only take while it is still open.
                 toggleWifiConfig(false);
+                wifiCsvLogger.enableLogging(false);
                 successful = true;
             }
 
@@ -366,64 +333,15 @@ public class WifiController extends AController
     }
 
     /**
-     * Create the Wi-Fi Scan broadcast receiver that will be notified of Wi-Fi scan events once
-     * {@link #startWifiRecordScanning()} is called.
+     * Kept for the service's startup order; the sources set themselves up when they start.
      */
     public void initializeWifiScanningResources()
     {
-        // Syncing on the wifiLoggingEnabled to ensure that surveyService won't be assigned null while we are using it
-        synchronized (wifiLoggingEnabled)
-        {
-            if (surveyService == null) return;
-
-            final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
-
-            if (wifiManager == null)
-            {
-                Timber.e("The WifiManager is null. Wi-Fi survey won't work");
-                return;
-            }
-
-            wifiScanReceiver = new BroadcastReceiver()
-            {
-                @Override
-                public void onReceive(Context c, Intent intent)
-                {
-                    boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
-                    if (success)
-                    {
-                        synchronized (wifiLoggingEnabled)
-                        {
-                            if (surveyService == null) return;
-
-                            if (ActivityCompat.checkSelfPermission(surveyService.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                                    != PackageManager.PERMISSION_GRANTED)
-                            {
-                                Timber.e("Could not get the Wi-FI scan results because the ACCESS_FINE_LOCATION permission is not granted.");
-                                return;
-                            }
-                            final List<ScanResult> results = wifiManager.getScanResults();
-                            if (results == null)
-                            {
-                                Timber.d("Null wifi scan results");
-                                return;
-                            }
-
-                            surveyRecordProcessor.onWifiScanUpdate(results);
-                        }
-                    } else
-                    {
-                        Timber.e("A Wi-Fi scan failed, ignoring the results.");
-                    }
-                }
-            };
-        }
+        startWatchingWifiSource();
     }
 
     /**
-     * Register a listener for Wi-Fi scans, and then kick off a scheduled Wi-Fi scan.
-     * <p>
-     * This method only starts scanning if the scan is not already active.
+     * Starts the selected Wi-Fi source. Only starts it if Wi-Fi is not already running.
      */
     public void startWifiRecordScanning()
     {
@@ -431,32 +349,31 @@ public class WifiController extends AController
         synchronized (wifiLoggingEnabled)
         {
             if (surveyService == null) return;
-
-            if (wifiScanningActive.getAndSet(true)) return;
-
-            final IntentFilter scanResultsIntentFilter = new IntentFilter();
-            scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-            surveyService.registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
-
-            wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
-
-            if (wifiManager == null)
-            {
-                Timber.wtf("The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
-                wifiScanningActive.set(false);
-                return;
-            }
-
-            scheduleScans(2000L);
+            if (!selector.start()) return;
 
             publishLiveScanRate();
-
             surveyService.updateLocationListener();
         }
     }
 
     /**
-     * Unregister the Wi-Fi scan broadcast receiver and stop the scanning service handler.
+     * Gives {@code listener}, a sink about to leave, the Wi-Fi records a source still holds back
+     * (the Scout's open aggregation window). The rest of the window still goes to the listeners
+     * that stay. Does nothing while Wi-Fi is not running, and never blocks on another thread.
+     *
+     * @param listener The sink that is about to be removed.
+     */
+    public void deliverPendingWifiTo(IWifiSurveyRecordListener listener)
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null || !selector.isActive()) return;
+            selector.getCurrent().peekPending(beacons -> surveyRecordProcessor.deliverScoutBeaconsTo(listener, beacons));
+        }
+    }
+
+    /**
+     * Stops the selected Wi-Fi source. A Scout is told to Stop when nothing else holds a capture.
      */
     public void stopWifiRecordScanning()
     {
@@ -465,28 +382,8 @@ public class WifiController extends AController
         {
             if (surveyService == null) return;
 
-            wifiScanningActive.set(false);
+            selector.stop();
             publishLiveScanRate();
-
-            // Cancel the scheduled Wi-Fi scan task
-            if (wifiScanFuture != null)
-            {
-                wifiScanFuture.cancel(true);
-                wifiScanFuture = null;
-                Timber.d("Cancelled Wi-Fi scanning task");
-            }
-
-            try
-            {
-                surveyService.unregisterReceiver(wifiScanReceiver);
-            } catch (Exception e)
-            {
-                // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
-                // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
-                // we don't have one registered.
-                //Timber.v(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
-            }
-
             surveyService.updateLocationListener();
         }
     }
@@ -512,5 +409,38 @@ public class WifiController extends AController
         {
             surveyService.unregisterWifiSurveyRecordListener(wifiCsvLogger);
         }
+    }
+
+    // ScoutWifiHost, called on the Scout Wi-Fi thread.
+
+    @Override
+    public int scanRateMs()
+    {
+        return wifiScanRateMs;
+    }
+
+    @Override
+    public int liveViewIntervalMs()
+    {
+        return getLiveViewIntervalMs();
+    }
+
+    @Override
+    public Long surveyStartMs()
+    {
+        final NetworkSurveyService service = surveyService;
+        return service != null ? service.getSurveySessionStartTimeMs() : null;
+    }
+
+    @Override
+    public void onScoutBeacons(List<ScoutHeard<ApObservation>> beacons)
+    {
+        surveyRecordProcessor.onScoutBeacons(beacons);
+    }
+
+    @Override
+    public void onScoutSnapshot(List<ScoutHeard<ApObservation>> beacons)
+    {
+        surveyRecordProcessor.onScoutSnapshot(beacons);
     }
 }

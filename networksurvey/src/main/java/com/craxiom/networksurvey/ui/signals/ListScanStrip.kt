@@ -76,7 +76,7 @@ private const val COUNT_SEPARATOR = " · "
  *                or null when all is well.
  * @param spokenStatus The state as TalkBack reads it ("Live view", "Recording", "Updates paused").
  * @param sweepKey Changes with each update shown, which plays the sweep.
- * @param sortLabel The current sort option.
+ * @param sortLabel The current sort option, or null for a list with one fixed order (no sort pill).
  * @param actions Icon buttons after the sort pill: the filter (badged while it is on), and on Wi-Fi
  *                in a short window the spectrum.
  * @param leadingControls Controls before the sort pill: the Wi-Fi mode pills in a short window,
@@ -87,7 +87,7 @@ fun ListScanStrip(
     counts: List<String>,
     warning: String?,
     spokenStatus: String,
-    sortLabel: String,
+    sortLabel: String?,
     onSortClick: () -> Unit,
     paused: Boolean,
     onTogglePause: () -> Unit,
@@ -128,11 +128,13 @@ fun ListScanStrip(
             ) {
                 // A wider gap after the mode pills sets them apart from the sort and the buttons
                 leadingControls?.let { Box(Modifier.padding(end = NsTheme.spacing.s)) { it() } }
-                NsSortPill(
-                    text = stringResource(R.string.wifi_sort_pill_label, sortLabel),
-                    onClick = onSortClick,
-                    contentDescription = stringResource(R.string.wifi_sort_pill_content_description, sortLabel),
-                )
+                if (sortLabel != null) {
+                    NsSortPill(
+                        text = stringResource(R.string.wifi_sort_pill_label, sortLabel),
+                        onClick = onSortClick,
+                        contentDescription = stringResource(R.string.wifi_sort_pill_content_description, sortLabel),
+                    )
+                }
                 actions.forEach { AppBarAction(it) }
                 PauseButton(paused = paused, onClick = onTogglePause)
             }

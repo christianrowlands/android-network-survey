@@ -54,7 +54,8 @@ private val HeroStackedGap = 8.dp
 
 /**
  * Hero card at the top of the Wi-Fi Details screen: big SSID + large dBm, the BSSID · vendor line,
- * a full-width meter, and a wrapping tag row (band chip, security, standard, passpoint).
+ * a full-width meter, and a wrapping tag row (band chip, security, standard, passpoint, and "Heard by"
+ * the NS Scout for an access point a Scout heard).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -104,6 +105,7 @@ fun WifiDetailsHeroCard(
                     variant = NetworkTagVariant.Passpoint,
                 )
             }
+            network.scout?.let { WifiHeardByChip(it.details.scoutName) }
         }
     }
 }

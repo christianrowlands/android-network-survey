@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "name": "Network Survey Board firmware",
+  "version": "0.1.0",
+  "min_version": "0.0.0",
+  "protocol_major": 1,
+  "protocol_minor": 0,
+  "released": "2026-10-24T11:19:30Z",
+  "images": [
+    {
+      "board": "esp32c5-devkitc1",
+      "board_model": "ESP32_C5_DEVKITC_1",
+      "chip": "ESP32_C5",
+      "file": "network-survey-board-esp32c5-devkitc1-0.1.0.bin",
+      "url": "https://github.com/christianrowlands/network-survey-esp32/releases/download/v0.1.0/network-survey-board-esp32c5-devkitc1-0.1.0.bin",
+      "size": 1235712,
+      "sha256": "95833391b799331f6376532c733aedbf2cd4f83d6c4841b0edb1d041cd26515c",
+      "signature": "9s8iqV9uxe0j7C32jJtvLWD8h83N6ItP10FCqyYHIgdKkPUV10s/44nvc0+P6ES/SmzXoAqmzS61C39V35jIAw=="
+    },
+    {
+      "board": "xiao-esp32c5",
+      "board_model": "XIAO_ESP32_C5",
+      "chip": "ESP32_C5",
+      "file": "network-survey-board-xiao-esp32c5-0.1.0.bin",
+      "url": "https://github.com/christianrowlands/network-survey-esp32/releases/download/v0.1.0/network-survey-board-xiao-esp32c5-0.1.0.bin",
+      "size": 1247712,
+      "sha256": "9d5c951edc1fb7ae52dacdcb31be4f820b65e3816699e5ae049beef4a959f1b3",
+      "signature": "l+9AOZojHV02XAo0/rd/df/Y/1i+OFfqVtUCVaH3C9dRtO+ch4X64ywOQ/6A9r6YOcQwiIWI+sdueBAsTPORAw=="
+    },
+    {
+      "board": "esp32c6-devkitc1",
+      "board_model": "ESP32_C6_GENERIC",
+      "chip": "ESP32_C6",
+      "file": "network-survey-board-esp32c6-devkitc1-0.1.0.bin",
+      "url": "https://github.com/christianrowlands/network-survey-esp32/releases/download/v0.1.0/network-survey-board-esp32c6-devkitc1-0.1.0.bin",
+      "size": 1219888,
+      "sha256": "ae1a96de7782f43262d64bb8297c095bf9ee7e02ddf4c43036f562ee8891a769",
+      "signature": "32gALKt/E5noeEQ15St0/6byqcCVJbSXZj9s5izOMYxeudvP/8cpPFEKnmg1gAk64cyQpengURKNU6AlrQcjAw=="
+    },
+    {
+      "board": "esp32s3-devkitc1",
+      "board_model": "ESP32_S3_GENERIC",
+      "chip": "ESP32_S3",
+      "file": "network-survey-board-esp32s3-devkitc1-0.1.0.bin",
+      "url": "https://github.com/christianrowlands/network-survey-esp32/releases/download/v0.1.0/network-survey-board-esp32s3-devkitc1-0.1.0.bin",
+      "size": 943760,
+      "sha256": "3db4cb9f8f7b16a6c8adcd7f01b8705446b52be31d750fe05268b70e6ce70ad8",
+      "signature": "ePrhUgMOT1w5Ljip4L+ez6c1JNwDW7qVFWQL0aXhLy5wPgYqntcyLejbqCciGq+nB8F4krcW39EKdbn4dJ0aDA=="
+    },
+    {
+      "board": "esp32c3-devkitm1",
+      "board_model": "ESP32_C3_GENERIC",
+      "chip": "ESP32_C3",
+      "file": "network-survey-board-esp32c3-devkitm1-0.1.0.bin",
+      "url": "https://github.com/christianrowlands/network-survey-esp32/releases/download/v0.1.0/network-survey-board-esp32c3-devkitm1-0.1.0.bin",
+      "size": 1004416,
+      "sha256": "6796e53df75c44cd5b28b438578ee986274904670c7312f83950a1903b4717ee",
+      "signature": "/dIcAOewkmHbh40WHQYqRjiXBfmhmLp459xfi1750M0pDD3nZ6s2qg6uVuI6B/Zse8oP7awJLuCo4hzfiVpcAg=="
+    }
+  ]
+}

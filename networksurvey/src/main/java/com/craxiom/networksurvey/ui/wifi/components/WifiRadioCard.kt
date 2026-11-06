@@ -42,7 +42,8 @@ private const val STANDARD_PREFIX = "802.11"
  * on the data. The Standard cell inverts the pattern: the constant "802.11" prefix is
  * dimmed and the variant suffix (e.g. "be") is emphasized, with a stacked Wi-Fi
  * generation pill (e.g. "Wi-Fi 7") underneath where applicable. A trailing info button
- * opens a dialog explaining what each cell means.
+ * opens a dialog explaining what each cell means. For an access point an NS Scout heard, beacon
+ * interval, SNR and the supported Wi-Fi generations follow, when the Scout heard them.
  */
 @Composable
 fun WifiRadioCard(network: WifiNetwork, modifier: Modifier = Modifier) {
@@ -109,6 +110,7 @@ fun WifiRadioCard(network: WifiNetwork, modifier: Modifier = Modifier) {
                     },
                 )
             }
+            network.scout?.let { WifiScoutRadioRows(it) }
         }
     }
 
@@ -167,7 +169,7 @@ private fun WifiGenerationPill(label: String) {
 }
 
 @Composable
-private fun RadioStatCell(
+internal fun RadioStatCell(
     label: String,
     primary: String,
     modifier: Modifier = Modifier,

@@ -115,7 +115,8 @@ class WatchlistDetectionManager(
     }
 
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {
-        val records = wifiBeaconRecords ?: return
+        // A Scout's backlog was heard minutes ago; an alert now would say the network is here now.
+        val records = wifiBeaconRecords?.let(WifiRecordWrapper::withoutLate) ?: return
         val entries = enabledSnapshot
         if (entries.isEmpty()) return
 

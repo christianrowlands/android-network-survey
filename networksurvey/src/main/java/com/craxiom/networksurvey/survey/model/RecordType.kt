@@ -10,14 +10,25 @@ package com.craxiom.networksurvey.survey.model
  *
  * This is deliberately separate from [com.craxiom.networksurvey.model.SurveyTypes], which only
  * describes what a community upload toggle started and has no phone state value.
+ *
+ * [needsScout] marks a type only an NS Scout can record ([WIFI_CLIENTS], [WIFI_RAW]).
+ * Such a type is hidden without a paired Scout ([RecordTypeAvailability]), is left out of a survey
+ * while the phone is the Wi-Fi source, and Remove Scout counts the saved setups that record it.
+ * Another app can't start one through the Intent API ([RecordTypeAvailability.canIntentStart]).
  */
-enum class RecordType(val wireName: String) {
+enum class RecordType(val wireName: String, val needsScout: Boolean = false) {
     CELLULAR("cellular"),
     PHONE_STATE("phone_state"),
     WIFI("wifi"),
     BLUETOOTH("bluetooth"),
     GNSS("gnss"),
-    CDR("cdr");
+    CDR("cdr"),
+
+    /** Wi-Fi clients and the probe requests they send, heard by an NS Scout. */
+    WIFI_CLIENTS("wifi_clients", needsScout = true),
+
+    /** Raw 802.11 frames heard by an NS Scout, saved as pcapng to Log files only. */
+    WIFI_RAW("wifi_raw", needsScout = true);
 
     companion object {
         /**

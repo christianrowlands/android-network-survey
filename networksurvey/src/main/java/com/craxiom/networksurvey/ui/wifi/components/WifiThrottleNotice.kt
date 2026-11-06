@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.common.InlineNotice
 import com.craxiom.networksurvey.ui.common.NsPanel
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -21,6 +23,9 @@ import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
  * Says that Android throttles Wi-Fi scans, so the list updates less often than the scan interval
  * asks, with a way to the setting (or to About phone, to turn developer options on first) and
  * Dismiss. It sits above the rows instead of covering them.
+ *
+ * @param onAboutScout Opens the NS Scout page; when set (no Scout paired, and the organization allows
+ *   one) a line under a rule says a Scout scans without this limit, with its own "About NS Scout".
  */
 @Composable
 fun WifiThrottleNotice(
@@ -28,6 +33,7 @@ fun WifiThrottleNotice(
     onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onAboutScout: (() -> Unit)? = null,
 ) {
     val text = buildString {
         append(stringResource(if (warning.android9) R.string.android_9_throttling_information else R.string.android_10_throttling_information))
@@ -61,5 +67,19 @@ fun WifiThrottleNotice(
                 NsTextAction(text = stringResource(R.string.open_settings), onClick = onOpenSettings)
             }
         }
+        if (onAboutScout != null) ScoutLine(onAboutScout)
+    }
+}
+
+/** The one place the Scout is suggested to someone without one: where the limit is already the topic. */
+@Composable
+private fun ScoutLine(onAboutScout: () -> Unit) {
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    InlineNotice(
+        text = stringResource(R.string.wifi_throttle_scout_line),
+        icon = R.drawable.ic_sensors,
+        modifier = Modifier.padding(top = NsTheme.spacing.xs),
+    ) {
+        NsTextAction(text = stringResource(R.string.wifi_throttle_scout_action), onClick = onAboutScout)
     }
 }

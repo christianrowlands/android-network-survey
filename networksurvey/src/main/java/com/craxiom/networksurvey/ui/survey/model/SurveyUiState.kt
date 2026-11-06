@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.survey.model
 
+import com.craxiom.networksurvey.logging.RawFramesProgress
 import com.craxiom.networksurvey.survey.engine.LinkFailure
 import com.craxiom.networksurvey.survey.engine.SkipReason
 import com.craxiom.networksurvey.survey.engine.SurveyOrigin
@@ -8,6 +9,7 @@ import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.status.DestinationStatus
 import com.craxiom.networksurvey.survey.status.LeftOutItem
+import com.craxiom.networksurvey.survey.status.ScoutOutage
 
 /**
  * Everything the Survey screen draws, as plain data. [SurveyUiStateMapper] builds it from the
@@ -42,6 +44,7 @@ data class SurveyUiState(
     val routing: RoutingTableUi? = null,
     val known: Boolean = true,
     val commandInFlight: Boolean = false,
+    val scoutRow: ScoutRowUi? = null,
 ) {
     /** True while a survey runs; the screen shows the Recording layout and the Stop button. */
     val isRecording: Boolean get() = recording != null
@@ -102,9 +105,21 @@ enum class ItemLock {
 
 /**
  * One record type tile. Types the organization turned off are not listed. [notSentAnywhere] is
- * true when the type is selected but no destination that is on takes it.
+ * true when the type is selected but no destination that is on takes it. [scoutName] is set on the
+ * Wi-Fi tile while an NS Scout is the Wi-Fi source ("From NS-ABCD").
  */
-data class RecordTypeTileUi(val type: RecordType, val on: Boolean, val lock: ItemLock, val notSentAnywhere: Boolean = false)
+data class RecordTypeTileUi(
+    val type: RecordType,
+    val on: Boolean,
+    val lock: ItemLock,
+    val notSentAnywhere: Boolean = false,
+    val scoutName: String? = null,
+    /**
+     * The paired Scout's name on an on Scout-only tile while this phone is the Wi-Fi source, so a
+     * saved setup still explains itself ("Needs NS-ABCD"); null otherwise.
+     */
+    val needsScoutName: String? = null,
+)
 
 /** "3 of 6 on" next to a section heading, or "Set by your organization" when [allLocked]. */
 data class SectionCount(val on: Int, val total: Int, val allLocked: Boolean = false)
@@ -148,6 +163,8 @@ data class DestinationRowUi(
     val control: DestinationControl,
     val lock: ItemLock,
     val detail: DestinationDetail,
+    /** Selected Scout-only types this destination can't take, for "· Wi-Fi clients not sent". */
+    val notSent: List<RecordType> = emptyList(),
 )
 
 /** One checkbox in the "Show on Survey screen" sheet. */
@@ -161,6 +178,7 @@ data class EditListItemUi(val destination: Destination, val shown: Boolean, val 
 data class SentenceUi(
     val receivesNothing: List<Destination>,
     val notSent: List<RecordType> = emptyList(),
+    val wifiScoutName: String? = null,
 )
 
 /** Why Start is disabled; the bar shows the reason and, where one exists, the fix. */
@@ -185,6 +203,7 @@ sealed interface OrgLineUi {
 /**
  * The Recording layout.
  *
+ * @property wifiScoutName       The NS Scout's name while it is the Wi-Fi source, for the Wi-Fi chip.
  * @property changeSeed          What the running survey asked for (or runs, when it asked for
  *                               nothing it said), which the Change sheet starts from: a survey an
  *                               Intent or the organization started may differ from the working setup.
@@ -196,6 +215,8 @@ sealed interface OrgLineUi {
  * @property countsSavedForUpload True when the community databases are the only destination, so the
  *                               counts and the heartbeat are of records saved for upload (which
  *                               only grow as the phone moves), not every record processed.
+ * @property rawFrames           What the raw frames files saved, for the Records panel's own raw
+ *                               line (never in [counts]); null when the survey saves no raw frames.
  */
 data class RecordingUi(
     val paused: Boolean,
@@ -214,6 +235,8 @@ data class RecordingUi(
     val changeSeed: SurveySetup = SurveySetup.empty(),
     val deviceStatusOnly: Boolean = false,
     val availableTypes: List<RecordType> = RecordType.entries,
+    val wifiScoutName: String? = null,
+    val rawFrames: RawFramesProgress? = null,
 )
 
 /**
@@ -254,6 +277,12 @@ sealed interface AttentionPlateUi {
 
     /** Ready: the last survey ended on its own because [destination], its only destination, gave up. */
     data class SurveyEnded(val destination: Destination, val failure: LinkFailure) : AttentionPlateUi
+
+    /**
+     * The NS Scout is the Wi-Fi source and can't deliver: before Start (once its connect grace is
+     * over) or while recording ([recording]), with the Scout's own fixes.
+     */
+    data class Scout(val item: AttentionItemUi.Scout, val recording: Boolean) : AttentionPlateUi
 }
 
 /**
@@ -266,12 +295,25 @@ sealed interface AttentionItemUi {
 
     /** A running destination whose records aren't arriving; the fix is on its page. */
     data class Delivery(val destination: Destination, val status: DestinationStatus) : AttentionItemUi
+
+    /**
+     * The types the NS Scout gives aren't being recorded (see [LeftOutItem.Scout]). [types] are the
+     * Scout's types the survey runs or the setup has (Wi-Fi, Wi-Fi clients, Raw frames, in that
+     * order), so every line names each of them.
+     */
+    data class Scout(
+        val scoutName: String,
+        val outage: ScoutOutage,
+        val alsoBluetooth: Boolean,
+        val types: List<RecordType> = listOf(RecordType.WIFI),
+    ) : AttentionItemUi
 }
 
 /** The row for something the running survey left out. */
 fun LeftOutItem.toAttentionItem(): AttentionItemUi = when (this) {
     is LeftOutItem.Type -> AttentionItemUi.Type(type, reason)
     is LeftOutItem.Dest -> AttentionItemUi.Dest(destination, reason)
+    is LeftOutItem.Scout -> AttentionItemUi.Scout(scoutName, outage, alsoBluetooth, types)
 }
 
 /** The compact Community upload row shown while an upload runs or waits to start ([running] false). */

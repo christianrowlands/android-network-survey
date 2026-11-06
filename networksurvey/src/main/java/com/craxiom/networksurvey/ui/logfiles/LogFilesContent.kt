@@ -117,7 +117,13 @@ fun LogFilesContent(
             val free = state.freeSpaceBytes?.let { stringResource(R.string.log_files_free, Formatter.formatShortFileSize(context, it)) }
             NsRow(
                 title = stringResource(R.string.log_files_location),
-                subtitle = listOfNotNull(stringResource(R.string.log_files_location_detail, LogFilesRepository.DISPLAY_PATH), free)
+                subtitle = listOfNotNull(
+                    stringResource(
+                        if (state.scoutPaired) R.string.log_files_location_detail_raw else R.string.log_files_location_detail,
+                        LogFilesRepository.DISPLAY_PATH,
+                    ),
+                    free,
+                )
                     .joinToString(LINE_BREAK),
                 icon = R.drawable.ic_folder,
                 onClickLabel = stringResource(R.string.log_files_open_folder),

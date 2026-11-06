@@ -38,4 +38,16 @@ interface SurveyActions {
     fun onDeleteSetup(id: String) {}
     fun onUploadNow(destination: Destination) {}
     fun onOpenSettings() {}
+
+    /** Opens the NS Scout page (the Scout row, a Scout plate). */
+    fun onOpenScout() {}
+
+    /** Opens the NS Scout firmware update (the "Needs a firmware update" plate). */
+    fun onUpdateScoutFirmware() {}
+
+    /** Makes the paired NS Scout the Wi-Fi source ("Use NS-ABCD", or Undo). */
+    fun onUseScout() {}
+
+    /** Makes this phone the Wi-Fi source instead of the NS Scout ("Use phone Wi-Fi instead"). */
+    fun onUsePhoneWifi() {}
 }

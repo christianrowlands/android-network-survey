@@ -209,26 +209,27 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     }
 
     @Override
-    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> allWifiBeaconRecords)
     {
         final long observedAt = System.currentTimeMillis();
         executorService.execute(() -> {
-            surveyedPointStore.observeWifi(wifiBeaconRecords, observedAt);
+            surveyedPointStore.observeWifi(allWifiBeaconRecords, observedAt);
+
+            // BeaconDB takes what was heard where the phone is now; an NS Scout's backlog from
+            // while it was out of range is saved to the other destinations only.
+            final List<WifiRecordWrapper> wifiBeaconRecords = WifiRecordWrapper.withoutLate(allWifiBeaconRecords);
 
             final List<WifiBeaconRecordEntity> wifiRecords = new ArrayList<>();
 
-            if (!wifiBeaconRecords.isEmpty())
-            {
-                WifiBeaconRecordData data = wifiBeaconRecords.get(0).getWifiBeaconRecord().getData();
+            // The movement gate looks at the first record that may be uploaded
+            final List<WifiRecordWrapper> located = wellLocated(wifiBeaconRecords);
 
-                if (isAccuracyBad(data.getAccuracy())) return;
+            if (!located.isEmpty())
+            {
+                WifiBeaconRecordData data = located.get(0).getWifiBeaconRecord().getData();
 
                 double latitude = data.getLatitude();
                 double longitude = data.getLongitude();
-                boolean hasLocation = latitude != 0d && longitude != 0d;
-
-                // First, check for a valid location
-                if (!hasLocation) return;
 
                 if (hasMovedEnough(latitude, longitude, new kotlin.Pair<>(lastWifiLatitude, lastWifiLongitude)))
                 {
@@ -241,7 +242,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                 }
             }
 
-            for (WifiRecordWrapper wifiRecordWrapper : wifiBeaconRecords)
+            for (WifiRecordWrapper wifiRecordWrapper : located)
             {
                 WifiBeaconRecordData wifiRecord = wifiRecordWrapper.getWifiBeaconRecord().getData();
                 WifiBeaconRecordEntity wifiEntity = mapWifiRecordToEntity(wifiRecord);
@@ -386,11 +387,32 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     }
 
     /**
+     * A phone scan shares one location across the batch. An NS Scout window spans seconds and each
+     * record has the place it was heard (or none when no phone fix was close), so every record is
+     * checked on its own: it needs a location and a good accuracy.
+     *
+     * @return The records that may be uploaded to BeaconDB, in their order.
+     */
+    static List<WifiRecordWrapper> wellLocated(List<WifiRecordWrapper> records)
+    {
+        final List<WifiRecordWrapper> located = new ArrayList<>();
+        for (WifiRecordWrapper wrapper : records)
+        {
+            final WifiBeaconRecordData data = wrapper.getWifiBeaconRecord().getData();
+            if (data.getLatitude() != 0d && data.getLongitude() != 0d && !isAccuracyBad(data.getAccuracy()))
+            {
+                located.add(wrapper);
+            }
+        }
+        return located;
+    }
+
+    /**
      * Checks to see if the accuracy is within the acceptable range.
      *
      * @return True if the accuracy is bad, false otherwise.
      */
-    private boolean isAccuracyBad(int accuracy)
+    private static boolean isAccuracyBad(int accuracy)
     {
         return accuracy <= 0 || accuracy > ACCURACY_THRESHOLD_METERS;
     }

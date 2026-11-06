@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.main.more
 
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.scout.model.ScoutState
 import com.craxiom.networksurvey.survey.mdm.ManagedState
 import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
@@ -19,7 +20,10 @@ class MoreItemsTest {
     @Test
     fun theGroups_comeInOrder() {
         val groups = MoreItems.build(DestinationInfo(), unmanaged, "1.0")
-        assertEquals(listOf(MoreSection.SETTINGS, MoreSection.DESTINATIONS, MoreSection.TOOLS, MoreSection.HELP), groups.map { it.section })
+        assertEquals(
+            listOf(MoreSection.SETTINGS, MoreSection.DESTINATIONS, MoreSection.HARDWARE, MoreSection.TOOLS, MoreSection.HELP),
+            groups.map { it.section },
+        )
         assertEquals(
             listOf(Destination.NS_ANALYTICS, Destination.MQTT, Destination.GRPC, Destination.COMMUNITY, Destination.LOG_FILES),
             destinations(groups).map { it.destination },
@@ -88,6 +92,19 @@ class MoreItemsTest {
     @Test
     fun eachDestination_opensItsOwnPage() {
         assertEquals(Destination.entries.size, Destination.entries.map { MoreItems.routeOf(it) }.toSet().size)
+    }
+
+    @Test
+    fun theHardwareGroup_holdsTheNsScout_evenBeforeOneIsPaired() {
+        val scout = MoreItems.build(DestinationInfo(), unmanaged, "1.0").first { it.section == MoreSection.HARDWARE }.items.single()
+        assertEquals(R.string.scout_page_title, scout.title)
+        assertEquals(MoreSubtitle.OfScout(ScoutState.NotPaired), scout.subtitle)
+        assertEquals(MoreAction.Open(NavOption.NsScout.name), scout.action)
+    }
+
+    @Test
+    fun anOrganizationThatDoesNotAllowNsScout_hidesTheHardwareGroup() {
+        assertTrue(MoreItems.build(DestinationInfo(), unmanaged, "1.0", scout = null).first { it.section == MoreSection.HARDWARE }.items.isEmpty())
     }
 
     private fun destinations(groups: List<MoreGroup>): List<MoreSubtitle.OfDestination> =

@@ -131,17 +131,19 @@ private fun GroupHeader(group: LogFileGroup, nowMs: Long, state: LogFileListStat
 @Composable
 private fun FileRow(file: LogFile, nowMs: Long, state: LogFileListState, actions: LogFileListActions) {
     val context = LocalContext.current
+    // A raw frames file says so in words and with its own icon, so it is never mistaken for a CSV file
     val detail = stringResource(
-        R.string.log_files_row_detail,
+        if (file.isRawFrames) R.string.log_files_row_detail_raw else R.string.log_files_row_detail,
         Formatter.formatShortFileSize(context, file.sizeBytes),
         friendlyTimeText(file.modifiedMs, nowMs),
     )
+    val icon = if (file.isRawFrames) R.drawable.ic_graphic_eq else R.drawable.ic_description
     if (state.selecting) {
         val checked = file.name in state.selected
         NsRow(
             title = breakableFileName(file.name),
             subtitle = detail,
-            icon = R.drawable.ic_description,
+            icon = icon,
             modifier = Modifier.toggleable(value = checked, role = Role.Checkbox) { actions.onSetSelected(listOf(file), it) },
         ) {
             // The row carries the semantics, so the checkbox itself is not a second target.
@@ -151,7 +153,7 @@ private fun FileRow(file: LogFile, nowMs: Long, state: LogFileListState, actions
         NsRow(
             title = breakableFileName(file.name),
             subtitle = detail,
-            icon = R.drawable.ic_description,
+            icon = icon,
             onClickLabel = stringResource(R.string.log_files_share, file.name),
             onClick = { actions.onShare(file) },
             onLongClickLabel = stringResource(R.string.log_files_select_named, file.name),

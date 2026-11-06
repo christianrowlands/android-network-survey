@@ -24,6 +24,9 @@ sealed class NavigationEvent {
     data object QrCodeShare : NavigationEvent()
     data class WifiDetails(val wifiNetwork: WifiNetwork) : NavigationEvent()
     data class BluetoothDetails(val bluetoothData: BluetoothRecordData) : NavigationEvent()
+
+    /** Client details for the Wi-Fi client (heard by an NS Scout) with [mac]. */
+    data class WifiClientDetails(val mac: String) : NavigationEvent()
     data object Watchlist : NavigationEvent()
     data object MqttConnection : NavigationEvent()
 
@@ -33,6 +36,10 @@ sealed class NavigationEvent {
     data object CommunityDatabases : NavigationEvent()
     data object OrganizationSettings : NavigationEvent()
     data object LogFiles : NavigationEvent()
+    data object NsScout : NavigationEvent()
+
+    /** The NS Scout firmware update. */
+    data object ScoutFirmware : NavigationEvent()
 }
 
 @HiltViewModel
@@ -143,6 +150,11 @@ class SharedViewModel @Inject constructor(application: Application) :
         _navigationEvent.value = NavigationEvent.WifiDetails(wifiNetwork)
     }
 
+    /** Opens Client details, from the Clients list or an access point's Connected clients. */
+    fun triggerNavigationToWifiClientDetails(mac: String) {
+        _navigationEvent.value = NavigationEvent.WifiClientDetails(mac)
+    }
+
     fun triggerNavigationToBluetooth(bluetoothRecordData: BluetoothRecordData) {
         _navigationEvent.value = NavigationEvent.BluetoothDetails(bluetoothRecordData)
     }
@@ -173,6 +185,16 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToLogFiles() {
         _navigationEvent.value = NavigationEvent.LogFiles
+    }
+
+    /** Opens the NS Scout page (from the Survey row, a plate, Signals or the throttle notice). */
+    fun triggerNavigationToScout() {
+        _navigationEvent.value = NavigationEvent.NsScout
+    }
+
+    /** Opens the NS Scout firmware update (from the firmware plate or the Signals blocked state). */
+    fun triggerNavigationToScoutFirmware() {
+        _navigationEvent.value = NavigationEvent.ScoutFirmware
     }
 
     /**

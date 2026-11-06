@@ -38,8 +38,8 @@ private val TAB_MIN_HEIGHT = 36.dp
 private val TAB_BORDER = 1.dp
 
 /**
- * Mode toggle tabs: Flat · BSSID vs Group by SSID, with the Wi-Fi spectrum button at the end of the
- * row. When the full labels and the button don't fit on one line (a narrow phone, a large font or a
+ * Mode toggle tabs: Flat · BSSID vs Group by SSID, and Clients while an NS Scout is the Wi-Fi
+ * source, with the Wi-Fi spectrum button at the end of the row. When the full labels and the button don't fit on one line (a narrow phone, a large font or a
  * long translation), the tabs show their short labels and TalkBack still reads the full ones. Band
  * filtering lives in the display filter sheet ([WifiFilterSheet]) opened from the scan strip.
  */
@@ -49,9 +49,11 @@ fun WifiModeTabs(
     onModeChanged: (WifiListMode) -> Unit,
     onOpenSpectrum: () -> Unit,
     modifier: Modifier = Modifier,
+    clients: ClientsPill? = null,
 ) {
     val flat = stringResource(R.string.wifi_mode_flat_bssid)
     val grouped = stringResource(R.string.wifi_mode_group_by_ssid)
+    val clientsLabel = stringResource(R.string.wifi_mode_clients)
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = NsTheme.textStyles.compact.copy(fontWeight = FontWeight.SemiBold)
     val density = LocalDensity.current
@@ -61,8 +63,10 @@ fun WifiModeTabs(
         val gutter = NsTheme.spacing.screenGutter - NsTheme.spacing.xxs
         val tabPadding = (NsTheme.spacing.m + NsTheme.spacing.xxs) * 2
         val fullWidth = with(density) {
-            listOf(flat, grouped).sumOf { textMeasurer.measure(it, labelStyle).size.width }.toDp()
-        } + tabPadding * 2 + NsTheme.spacing.s * 3 + NsTheme.spacing.touchTarget + gutter + NsTheme.spacing.xs
+            listOfNotNull(flat, grouped, clientsLabel.takeIf { clients != null })
+                .sumOf { textMeasurer.measure(it, labelStyle).size.width }.toDp()
+        } + tabPadding * (if (clients != null) 3 else 2) + NsTheme.spacing.s * (if (clients != null) 4 else 3) +
+            NsTheme.spacing.touchTarget + gutter + NsTheme.spacing.xs
         val short = fullWidth > maxWidth
 
         Row(
@@ -72,7 +76,7 @@ fun WifiModeTabs(
             horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            WifiModePills(mode, onModeChanged, short)
+            WifiModePills(mode, onModeChanged, short, clients = clients)
             Spacer(Modifier.weight(1f))
             AppBarAction(AppBarAction(R.drawable.ic_bar_chart, R.string.open_wifi_spectrum, onOpenSpectrum))
         }
@@ -80,15 +84,30 @@ fun WifiModeTabs(
 }
 
 /**
- * The Flat · BSSID and Group by SSID pills on their own, for the mode row or, in a short window,
- * the scan strip.
+ * The Clients pill, only while an NS Scout is the Wi-Fi source.
+ *
+ * @property selected True while the Clients list shows; the access point pills are then unselected.
+ * @property onSelect Shows the Clients list.
+ */
+data class ClientsPill(val selected: Boolean, val onSelect: () -> Unit)
+
+/**
+ * The Flat · BSSID and Group by SSID pills (and Clients, with [clients]) on their own, for the mode
+ * row or, in a short window, the scan strip.
  *
  * @param short True for the short labels ("BSSIDs", "By SSID"); TalkBack still reads the full ones.
  */
 @Composable
-fun WifiModePills(mode: WifiListMode, onModeChanged: (WifiListMode) -> Unit, short: Boolean, modifier: Modifier = Modifier) {
+fun WifiModePills(
+    mode: WifiListMode,
+    onModeChanged: (WifiListMode) -> Unit,
+    short: Boolean,
+    modifier: Modifier = Modifier,
+    clients: ClientsPill? = null,
+) {
     val flat = stringResource(R.string.wifi_mode_flat_bssid)
     val grouped = stringResource(R.string.wifi_mode_group_by_ssid)
+    val showingClients = clients?.selected == true
     Row(
         modifier = modifier.selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
@@ -97,15 +116,19 @@ fun WifiModePills(mode: WifiListMode, onModeChanged: (WifiListMode) -> Unit, sho
         ModeTab(
             label = if (short) stringResource(R.string.wifi_mode_flat_bssid_short) else flat,
             description = flat,
-            selected = mode == WifiListMode.FLAT,
+            selected = !showingClients && mode == WifiListMode.FLAT,
             onClick = { onModeChanged(WifiListMode.FLAT) },
         )
         ModeTab(
             label = if (short) stringResource(R.string.wifi_mode_group_by_ssid_short) else grouped,
             description = grouped,
-            selected = mode == WifiListMode.GROUPED,
+            selected = !showingClients && mode == WifiListMode.GROUPED,
             onClick = { onModeChanged(WifiListMode.GROUPED) },
         )
+        if (clients != null) {
+            val label = stringResource(R.string.wifi_mode_clients)
+            ModeTab(label = label, description = label, selected = showingClients, onClick = clients.onSelect)
+        }
     }
 }
 

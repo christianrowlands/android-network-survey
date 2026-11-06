@@ -44,6 +44,7 @@ import com.craxiom.networksurvey.ui.oui.OuiLookupScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnDetailsScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen
 import com.craxiom.networksurvey.ui.plmn.components.PlmnInfoSheet
+import com.craxiom.networksurvey.ui.scout.scoutPages
 import com.craxiom.networksurvey.ui.settings.settingsPages
 import com.craxiom.networksurvey.ui.watchlist.WATCHLIST_ENTRY_ID_KEY
 import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryDetailScreen
@@ -53,6 +54,7 @@ import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryViewModel
 import com.craxiom.networksurvey.ui.watchlist.WatchlistScreen
 import com.craxiom.networksurvey.ui.watchlist.WatchlistViewModel
 import com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel
+import com.craxiom.networksurvey.ui.wifi.clients.wifiClientPages
 import com.craxiom.networksurvey.ui.wifi.details.WifiDetailsRoute
 import com.craxiom.networksurvey.ui.wifi.spectrum.WifiSpectrumRoute
 
@@ -195,6 +197,8 @@ fun NavGraphBuilder.mainGraph(
         }
 
         settingsPages(mainNavController, sharedViewModel)
+        scoutPages(mainNavController)
+        wifiClientPages(mainNavController, sharedViewModel)
 
         // --------- Pages opened from other pages --------- //
 
@@ -333,6 +337,9 @@ enum class NavOption {
     MqttBrokerEditor,
     OrganizationSettings,
     LogFiles,
+    NsScout,
+    ScoutFirmware,
+    WifiClientDetails,
 }
 
 /** The saved-state key that carries the broker profile id to the broker editor (null adds one). */

@@ -32,6 +32,7 @@ import com.craxiom.networksurvey.survey.engine.SkipReason
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.ui.survey.SurveyEventMessages
+import com.craxiom.networksurvey.survey.status.ScoutOutage
 import com.craxiom.networksurvey.ui.survey.model.AttentionItemUi
 import com.craxiom.networksurvey.ui.survey.model.AttentionPlateUi
 import com.craxiom.networksurvey.ui.theme.NsColorPair
@@ -49,6 +50,15 @@ interface AttentionPlateActions {
     fun onOpenOrganizationSettings()
     fun onOpenDestination(destination: Destination)
     fun onFixItem(item: AttentionItemUi)
+
+    /** Opens the NS Scout page. */
+    fun onOpenScout() {}
+
+    /** Opens the NS Scout firmware update (a Scout that needs a firmware update). */
+    fun onUpdateScoutFirmware() {}
+
+    /** Makes this phone the Wi-Fi source instead of the NS Scout (Ready only). */
+    fun onUsePhoneWifi() {}
 }
 
 /**
@@ -142,11 +152,14 @@ fun AttentionPlate(plate: AttentionPlateUi, actions: AttentionPlateActions, modi
                 plate.items.forEach { item -> AttentionItemRow(item) { actions.onFixItem(item) } }
             }
         }
+
+        is AttentionPlateUi.Scout -> ScoutPlate(plate, actions, modifier)
     }
 }
 
+/** One plate: an icon in [colors], a title, an optional body and optional actions under it. */
 @Composable
-private fun Plate(
+internal fun Plate(
     colors: NsColorPair,
     @DrawableRes icon: Int,
     title: String,
@@ -216,10 +229,17 @@ private fun attentionActionText(item: AttentionItemUi): String? = when (item) {
             stringResource(R.string.survey_action_turn_on, stringResource(item.type.labelRes))
 
         item.reason == SkipReason.PERMISSION_MISSING -> stringResource(R.string.survey_action_allow)
+        // Fixed by making the Scout the Wi-Fi source, which the Scout row offers before Start
+        item.reason == SkipReason.NEEDS_SCOUT -> null
+        // Fixed by turning on Log files, on the Ready screen
+        item.reason == SkipReason.NEEDS_LOG_FILES -> null
         else -> stringResource(R.string.survey_action_try_again)
     }
 
     is AttentionItemUi.Delivery -> stringResource(R.string.survey_action_open)
+
+    // Scout items normally get a plate of their own (ScoutPlate); the other outages are fixed on its page
+    is AttentionItemUi.Scout -> scoutActionText(item.outage)
 
     is AttentionItemUi.Dest -> when (item.reason) {
         SkipReason.NOT_CONFIGURED -> stringResource(R.string.survey_action_set_up)
@@ -227,6 +247,14 @@ private fun attentionActionText(item: AttentionItemUi): String? = when (item) {
         SkipReason.NO_UPLOAD_TARGET -> stringResource(R.string.survey_action_choose)
         else -> stringResource(R.string.survey_action_try_again)
     }
+}
+
+/** The action for a Scout outage: Bluetooth and the permission are fixed in place, the rest on the Scout page. */
+@Composable
+internal fun scoutActionText(outage: ScoutOutage): String = when (outage) {
+    ScoutOutage.BLUETOOTH_OFF -> stringResource(R.string.survey_action_turn_on, stringResource(RecordType.BLUETOOTH.labelRes))
+    ScoutOutage.PERMISSION_MISSING -> stringResource(R.string.survey_action_allow)
+    else -> stringResource(R.string.scout_action_scout_page)
 }
 
 /** The record types whose radio the screen can offer to turn on. */

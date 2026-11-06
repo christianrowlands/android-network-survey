@@ -72,6 +72,24 @@ class OrganizationSettingsReaderTest {
         assertEquals(OrgValue.NotAllowed, permissions[NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD])
         assertEquals(OrgValue.Allowed, permissions[NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS])
         assertEquals(OrgValue.UserChooses, permissions[NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL])
+        // NS Scout is allowed unless the organization says otherwise
+        assertEquals(OrgValue.Allowed, permissions[NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT])
+    }
+
+    @Test
+    fun `the Wi-Fi source shows with a paired NS Scout, and NS Scout can be not allowed`() {
+        val restrictions = mapOf<String, Any?>(SurveyMdmKeys.SURVEY_CELLULAR to SurveyMdmKeys.VALUE_ON)
+        fun permissions(values: Map<String, Any?>, source: String?) = OrganizationSettingsReader
+            .read(RestrictionsSnapshot(values), definitions, overrideOn = false, scoutWifiSource = source)
+            .groups.first { it.group == OrgGroup.PERMISSIONS }.rows.associate { it.key to it.value }
+
+        assertEquals(OrgValue.Text("NS-A1B2"), permissions(restrictions, "NS-A1B2")[OrganizationSettingsReader.WIFI_SOURCE_ROW_KEY])
+        assertEquals(OrgValue.WifiFromPhone, permissions(restrictions, "")[OrganizationSettingsReader.WIFI_SOURCE_ROW_KEY])
+        assertFalse(OrganizationSettingsReader.WIFI_SOURCE_ROW_KEY in permissions(restrictions, null))
+
+        val notAllowed = permissions(restrictions + (NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT to false), "NS-A1B2")
+        assertEquals(OrgValue.NotAllowed, notAllowed[NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT])
+        assertFalse(OrganizationSettingsReader.WIFI_SOURCE_ROW_KEY in notAllowed)
     }
 
     @Test

@@ -20,10 +20,14 @@ import com.craxiom.networksurvey.ui.common.PermissionAccess
 import com.craxiom.networksurvey.ui.common.nsContentWidth
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.scout.clients.ScoutClient
+import com.craxiom.networksurvey.ui.wifi.clients.WifiConnectedClientsCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiBlockedNotice
 import com.craxiom.networksurvey.ui.wifi.components.WifiCapabilitiesCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiDetailsHeroCard
+import com.craxiom.networksurvey.ui.wifi.components.WifiLoadCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiRadioCard
+import com.craxiom.networksurvey.ui.wifi.components.WifiSecurityCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiScanFixes
 import com.craxiom.networksurvey.ui.wifi.components.WifiSurveyDataCard
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
@@ -34,6 +38,9 @@ interface WifiDetailsActions : WifiScanFixes {
     fun onToggleExcluded()
     fun onWatchlistClick()
     fun onOpenSettings()
+
+    /** Opens Client details for one of the access point's connected clients. */
+    fun onClientClick(client: ScoutClient) {}
 }
 
 /** What the Wi-Fi details page shows besides the network itself. */
@@ -43,11 +50,15 @@ data class WifiDetailsPageState(
     val scanState: WifiScanState,
     val excluded: Boolean,
     val watched: Boolean,
+    /** The clients an NS Scout heard talking to this access point; empty for a phone record. */
+    val connectedClients: List<ScoutClient> = emptyList(),
 )
 
 /**
- * The Wi-Fi details page: when the phone cannot scan, a notice with the one fix; then five cards
- * (hero, radio, signal history, capabilities, survey data).
+ * The Wi-Fi details page: when the phone cannot scan, a notice with the one fix; then the cards
+ * (hero, radio, signal history, capabilities, survey data). An access point an NS Scout heard has
+ * Security and, when the AP reports it, Load in place of the capabilities card, and Connected
+ * clients once the Scout hears any.
  */
 @Composable
 fun WifiDetailsScreen(
@@ -93,8 +104,20 @@ private fun LazyListScope.detailsCards(
     item(key = "signal") {
         NsSignalHistoryCard(title = stringResource(R.string.wifi_details_signal_last_2_min), chart = chart)
     }
-    item(key = "capabilities") {
-        WifiCapabilitiesCard(capabilities = network.capabilities)
+    val scout = network.scout
+    if (scout == null) {
+        item(key = "capabilities") {
+            WifiCapabilitiesCard(capabilities = network.capabilities)
+        }
+    } else {
+        // An NS Scout heard it: what the beacon said in place of Android's capabilities string
+        item(key = "security") { WifiSecurityCard(network = network, scout = scout) }
+        if (scout.details.stationCount != null || scout.details.channelUtilization != null) {
+            item(key = "load") { WifiLoadCard(details = scout.details) }
+        }
+        if (page.connectedClients.isNotEmpty()) {
+            item(key = "clients") { WifiConnectedClientsCard(page.connectedClients, actions::onClientClick) }
+        }
     }
     item(key = "survey") {
         WifiSurveyDataCard(

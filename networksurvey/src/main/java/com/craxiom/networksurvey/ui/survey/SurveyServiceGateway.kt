@@ -2,7 +2,10 @@ package com.craxiom.networksurvey.ui.survey
 
 import android.location.Location
 import android.location.LocationListener
+import com.craxiom.networksurvey.logging.RawFramesProgress
+import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.controller.WifiSourceSwitch
 import com.craxiom.networksurvey.survey.engine.SurveyOrigin
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.engine.SurveyStartResult
@@ -49,6 +52,12 @@ interface SurveyServiceGateway {
     fun registerLocationListener(listener: LocationListener)
 
     fun unregisterLocationListener(listener: LocationListener)
+
+    /** Asks to change where Wi-Fi comes from; refused while a survey records. */
+    fun requestWifiSource(source: WifiSource): WifiSourceSwitch = WifiSourceSwitch.UNCHANGED
+
+    /** What the raw frames files saved this survey, or null while raw frames are not saved. */
+    fun rawFrames(): RawFramesProgress? = null
 }
 
 /** The production [SurveyServiceGateway], a thin pass-through to the bound service. */
@@ -85,4 +94,8 @@ class NetworkSurveyServiceGateway(private val service: NetworkSurveyService) : S
     override fun unregisterLocationListener(listener: LocationListener) {
         service.primaryLocationListener?.unregisterListener(listener)
     }
+
+    override fun requestWifiSource(source: WifiSource): WifiSourceSwitch = service.requestWifiSource(source)
+
+    override fun rawFrames(): RawFramesProgress? = service.wifiRawProgress
 }

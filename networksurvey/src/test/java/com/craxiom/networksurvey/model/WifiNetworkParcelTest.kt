@@ -34,6 +34,21 @@ class WifiNetworkParcelTest {
     }
 
     @Test
+    fun whatAScoutHeard_survivesTheRoundTrip() {
+        val scout = WifiNetworkScout(
+            details = ScoutWifiDetails("NS-A1B2", 7, 59, 7, -87, pairwiseCiphers = listOf(3), groupCipher = 3),
+            akmSuites = listOf(8, 2),
+            cipherSuites = listOf(3),
+            wps = false,
+            beaconIntervalTu = 100,
+            snrDb = 39f,
+        )
+        val network = WifiNetwork("02:00:A4:11:F0:21", -48f, "Toast", 5180, 36, WifiBandwidth.MHZ_80, "WPA2/WPA3", null, "", Standard.IEEE80211AX, scout)
+
+        assertEquals(network, roundTrip(network))
+    }
+
+    @Test
     fun missingValues_comeBackMissing() {
         val network = WifiNetwork("02:00:70:20:1D:55", null, "", null, null, null, "", null, "", null)
 

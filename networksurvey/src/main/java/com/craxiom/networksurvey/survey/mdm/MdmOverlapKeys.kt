@@ -18,6 +18,8 @@ object MdmOverlapKeys {
         SurveyMdmKeys.SURVEY_BLUETOOTH,
         SurveyMdmKeys.SURVEY_GNSS,
         SurveyMdmKeys.SURVEY_CDR,
+        SurveyMdmKeys.SURVEY_WIFI_CLIENTS,
+        SurveyMdmKeys.SURVEY_WIFI_RAW,
         SurveyMdmKeys.DESTINATION_LOG_FILES,
         SurveyMdmKeys.DESTINATION_NS_ANALYTICS,
         SurveyMdmKeys.DESTINATION_MQTT,

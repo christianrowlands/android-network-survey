@@ -5,6 +5,7 @@ import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.DestinationCapabilities
 import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.model.RecordTypeAvailability
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import kotlin.math.roundToLong
 
@@ -22,8 +23,9 @@ object SurveyUiStateMapper {
         val policy = inputs.runtime.policy
         val form = FormFacts(inputs)
         val rows = destinationRows(form)
-        val readyRouting = RoutingTableUi.of(form.effectiveTypes, rows.filter { it.on }.map { it.destination }, form.info)
-        val tiles = tiles(form, readyRouting?.notSentAnywhere.orEmpty())
+        val readyRouting = RoutingTableUi.of(form.effectiveTypes, rows.filter { it.on }.map { it.destination }, form.info, form.availableTypes)
+        val scoutName = ScoutSurveyMapper.wifiSourceName(inputs)
+        val tiles = tiles(form, readyRouting?.notSentAnywhere.orEmpty(), scoutName, ScoutSurveyMapper.needsScoutName(inputs))
         val recording = if (inputs.runtime.isRecording) RecordingUiMapper.recording(inputs, form) else null
         val startBlock = if (recording == null) startBlock(form, rows) else null
 
@@ -40,18 +42,26 @@ object SurveyUiStateMapper {
             editList = form.availableDestinations.map {
                 EditListItemUi(it, shown = it !in inputs.hiddenDestinations || form.isOn(it), onInSetup = form.isOn(it))
             },
-            sentence = sentence(form, rows, readyRouting?.notSentAnywhere.orEmpty(), startBlock),
+            sentence = sentence(form, rows, readyRouting?.notSentAnywhere.orEmpty(), startBlock)?.copy(wifiScoutName = scoutName),
             startBlock = startBlock,
-            plates = if (recording != null) RecordingUiMapper.plates(inputs) else RecordingUiMapper.readyPlates(inputs),
+            plates = if (recording != null) {
+                RecordingUiMapper.plates(inputs)
+            } else {
+                RecordingUiMapper.readyPlates(inputs) + listOfNotNull(ScoutSurveyMapper.readyPlate(inputs, form.effectiveTypes))
+            },
             stopNeedsConfirmation = policy.isManaged && !policy.overrideOn,
             stopRestartsAtBoot = policy.isAutoStartEnabled(inputs.userAutoStart),
             communityUpload = inputs.communityUpload,
-            destinationInfo = inputs.destinationInfo,
+            // Log files says "CSV and pcapng" when the survey saves Raw frames too
+            destinationInfo = inputs.destinationInfo.copy(
+                logFilesSaveRawFrames = RecordType.WIFI_RAW in (if (recording != null) inputs.runtime.recordTypes else form.effectiveTypes),
+            ),
             userSetup = inputs.userSetup,
             savedSetups = savedSetups(inputs, form),
             nowMs = inputs.nowMs,
             stillToDo = if (recording == null) stillToDo(inputs) else emptyList(),
             routing = if (recording != null) RecordingUiMapper.routing(inputs) else readyRouting,
+            scoutRow = ScoutSurveyMapper.row(inputs, recording = recording != null),
         )
     }
 
@@ -91,15 +101,19 @@ object SurveyUiStateMapper {
         saved.firstOrNull { it.id == selectedId && it.hasSameContentAs(working) }
             ?: saved.firstOrNull { it.hasSameContentAs(working) }
 
-    private fun tiles(form: FormFacts, notSent: Set<RecordType>): List<RecordTypeTileUi> = RecordType.entries
-        .filter { form.policy.isRecordTypeAvailable(it) }
-        .map { type ->
+    private fun tiles(form: FormFacts, notSent: Set<RecordType>, scoutName: String?, needsScoutName: String?): List<RecordTypeTileUi> =
+        form.availableTypes.map { type ->
             val lock = when {
                 form.policy.lockFor(type) == ManagedState.ON -> ItemLock.ORGANIZATION
                 type == RecordType.PHONE_STATE && form.phoneStateIncluded -> ItemLock.INCLUDED_WITH_CELLULAR
                 else -> ItemLock.NONE
             }
-            RecordTypeTileUi(type, on = type in form.effectiveTypes, lock = lock, notSentAnywhere = type in notSent)
+            val on = type in form.effectiveTypes
+            RecordTypeTileUi(
+                type, on = on, lock = lock, notSentAnywhere = type in notSent,
+                scoutName = scoutName.takeIf { type == RecordType.WIFI },
+                needsScoutName = needsScoutName.takeIf { on && type.needsScout },
+            )
         }
 
     private fun destinationRows(form: FormFacts): List<DestinationRowUi> = form.visibleDestinations.map { destination ->
@@ -120,6 +134,7 @@ object SurveyUiStateMapper {
         DestinationRowUi(
             destination = destination,
             on = on,
+            notSent = if (on && detail != DestinationDetail.ReceivesNothing) form.scoutOnlyNotTaken(received) else emptyList(),
             control = when {
                 ready -> DestinationControl.SWITCH
                 destination == Destination.NS_ANALYTICS -> DestinationControl.CONNECT
@@ -168,7 +183,7 @@ object SurveyUiStateMapper {
     private fun orgLine(inputs: SurveyInputs, form: FormFacts): OrgLineUi? {
         val policy = form.policy
         if (!policy.isManaged) return null
-        val turnedOff = RecordType.entries.count { !policy.isRecordTypeAvailable(it) } +
+        val turnedOff = RecordTypeAvailability.candidates(form.scoutPaired).count { !policy.isRecordTypeAvailable(it) } +
             Destination.entries.count { !policy.isDestinationAvailable(it) }
         return when {
             policy.overrideOn && inputs.runtime.orgUpdatedWhileOverridden -> OrgLineUi.UpdatedWhileOverridden
@@ -205,15 +220,24 @@ internal class FormFacts(inputs: SurveyInputs) {
     val policy: SurveyPolicyState = inputs.runtime.policy
     val info: DestinationInfo = inputs.destinationInfo
     val effective: SurveySetup = policy.effectiveSetup(inputs.userSetup)
+    /** The setup's types after the organization and Phone state rules; a Scout-only type only with a paired Scout. */
     val effectiveTypes: Set<RecordType> = DestinationCapabilities.effectiveRecordTypes(
         effective.recordTypes, inputs.autoIncludePhoneState, policy.phoneStateForcedOff,
-    )
+    ).filterTo(linkedSetOf()) { RecordTypeAvailability.isCandidate(it, inputs.scoutPaired) }
     val phoneStateIncluded: Boolean = inputs.autoIncludePhoneState && !policy.phoneStateForcedOff &&
         RecordType.CELLULAR in effective.recordTypes
     val availableDestinations: List<Destination> = Destination.entries.filter { policy.isDestinationAvailable(it) }
     val visibleDestinations: List<Destination> =
         availableDestinations.filter { it !in inputs.hiddenDestinations || isOn(it) }
-    val allTypesManaged: Boolean = RecordType.entries.all { policy.lockFor(it).isManaged }
+    val scoutPaired: Boolean = inputs.scoutPaired
+
+    /** The record types offered: the organization's policy, and Scout-only types only with a paired Scout. */
+    val availableTypes: List<RecordType> = RecordTypeAvailability.available(policy, scoutPaired)
+    val allTypesManaged: Boolean = RecordTypeAvailability.candidates(scoutPaired).all { policy.lockFor(it).isManaged }
+
+    /** @return The selected Scout-only types a destination that takes [received] does not take, in display order. */
+    fun scoutOnlyNotTaken(received: Set<RecordType>): List<RecordType> =
+        availableTypes.filter { it.needsScout && it in effectiveTypes && it !in received }
     val allDestinationsManaged: Boolean =
         Destination.entries.all { policy.lockFor(it).isManaged || it in policy.blockedDestinations }
 

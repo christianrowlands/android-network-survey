@@ -15,6 +15,8 @@ import timber.log.Timber
 object LogFileSharing {
 
     private const val CSV_MIME_TYPE = "text/csv"
+    private const val PCAPNG_MIME_TYPE = "application/x-pcapng"
+    private const val ANY_MIME_TYPE = "*/*"
 
     /** The system storage provider; its documents are paths on the shared storage volume. */
     private const val EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents"
@@ -30,7 +32,7 @@ object LogFileSharing {
             } else {
                 Intent(Intent.ACTION_SEND_MULTIPLE).putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
             }
-            send.setType(CSV_MIME_TYPE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            send.setType(mimeTypeOf(files)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             // The read grant reaches the receiving app through the clip, for every file
             send.clipData = clipOf(uris)
             context.startActivity(Intent.createChooser(send, files.singleOrNull()?.name))
@@ -70,6 +72,13 @@ object LogFileSharing {
                 false
             }
         }
+    }
+
+    /** CSV, pcapng, or any type when the files mix both. */
+    private fun mimeTypeOf(files: List<LogFile>): String = when {
+        files.all { it.isRawFrames } -> PCAPNG_MIME_TYPE
+        files.none { it.isRawFrames } -> CSV_MIME_TYPE
+        else -> ANY_MIME_TYPE
     }
 
     private fun clipOf(uris: List<Uri>): ClipData {

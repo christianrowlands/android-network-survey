@@ -1,10 +1,43 @@
 package com.craxiom.networksurvey.logging.db
 
+import com.craxiom.messaging.WifiBeaconRecord
+import com.craxiom.messaging.WifiBeaconRecordData
+import com.craxiom.networksurvey.model.WifiRecordWrapper
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * The BeaconDB and OpenCelliD upload gates: the movement threshold, and the per-record location
+ * and accuracy check for NS Scout windows, whose records each carry their own fix.
+ */
 class DbUploadStoreTest {
+
+    private fun wifi(bssid: String, latitude: Double, accuracy: Int) = WifiRecordWrapper(
+        WifiBeaconRecord.newBuilder().setData(
+            WifiBeaconRecordData.newBuilder().setBssid(bssid).setLatitude(latitude).setLongitude(-102.0).setAccuracy(accuracy)
+        ).build(),
+        "",
+    )
+
+    @Test
+    fun `every Wi-Fi record needs its own location with a good accuracy`() {
+        val good = wifi("aa:bb:cc:dd:ee:01", 23.0, 8)
+        val badLater = wifi("aa:bb:cc:dd:ee:02", 23.001, DbUploadStore.ACCURACY_THRESHOLD_METERS + 1)
+        val noFix = wifi("aa:bb:cc:dd:ee:03", 0.0, 8)
+        val alsoGood = wifi("aa:bb:cc:dd:ee:04", 23.002, DbUploadStore.ACCURACY_THRESHOLD_METERS)
+
+        assertEquals(listOf(good, alsoGood), DbUploadStore.wellLocated(listOf(good, badLater, noFix, alsoGood)))
+    }
+
+    @Test
+    fun `a bad first Wi-Fi record does not hide the good ones after it`() {
+        val bad = wifi("aa:bb:cc:dd:ee:01", 23.0, 0)
+        val good = wifi("aa:bb:cc:dd:ee:02", 23.001, 12)
+
+        assertEquals(listOf(good), DbUploadStore.wellLocated(listOf(bad, good)))
+    }
 
     @Test
     fun `test first record always allows movement`() {

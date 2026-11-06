@@ -12,6 +12,8 @@ import com.craxiom.messaging.UmtsRecord
 import com.craxiom.messaging.WatchlistEntryUpdate
 import com.craxiom.messaging.WatchlistMatch
 import com.craxiom.messaging.WifiBeaconRecord
+import com.craxiom.messaging.WifiClientRecord
+import com.craxiom.messaging.WifiProbeRequestRecord
 
 /**
  * Sets the device name on outgoing messages, so the streaming destinations (MQTT and gRPC) name
@@ -41,6 +43,14 @@ object DeviceNameStamper {
 
     @JvmStatic
     fun stamp(record: WifiBeaconRecord, name: String?): WifiBeaconRecord =
+        if (name.isNullOrEmpty()) record else record.toBuilder().apply { dataBuilder.deviceName = name }.build()
+
+    @JvmStatic
+    fun stamp(record: WifiClientRecord, name: String?): WifiClientRecord =
+        if (name.isNullOrEmpty()) record else record.toBuilder().apply { dataBuilder.deviceName = name }.build()
+
+    @JvmStatic
+    fun stamp(record: WifiProbeRequestRecord, name: String?): WifiProbeRequestRecord =
         if (name.isNullOrEmpty()) record else record.toBuilder().apply { dataBuilder.deviceName = name }.build()
 
     @JvmStatic

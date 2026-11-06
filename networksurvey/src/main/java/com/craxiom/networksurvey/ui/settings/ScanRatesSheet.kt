@@ -18,6 +18,9 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
  * The five scan intervals in one form: a number field each, with what the interval does under it.
  * An interval the organization set shows as a locked row instead of a field. Save stores every
  * changed interval (Bluetooth is raised to its minimum by the view model).
+ *
+ * @param scoutName The paired NS Scout's name. The Scout listens all the time, so with one the Wi-Fi
+ *   interval is how often each network is saved, and the Wi-Fi field says so.
  */
 @Composable
 fun ScanRatesSheet(
@@ -25,6 +28,7 @@ fun ScanRatesSheet(
     onSave: (Map<ScanRate, Int>) -> Unit,
     onLocked: () -> Unit,
     onDismiss: () -> Unit,
+    scoutName: String? = null,
 ) {
     val drafts = remember { mutableStateMapOf<ScanRate, String>().apply { rates.forEach { (rate, value) -> put(rate, value.value.toString()) } } }
     val editable = ScanRate.entries.filterNot { rates.getValue(it).locked }
@@ -50,7 +54,10 @@ fun ScanRatesSheet(
                 if (setting.locked) {
                     NsRow(
                         title = stringResource(rate.title),
-                        subtitle = stringResource(R.string.settings_seconds, setting.value),
+                        subtitle = listOfNotNull(
+                            stringResource(R.string.settings_seconds, setting.value),
+                            scoutName?.takeIf { rate == ScanRate.WIFI }?.let { stringResource(R.string.settings_wifi_rate_scout_locked, it) },
+                        ).joinToString(LINE_BREAK),
                         locked = true,
                         onClick = onLocked,
                     )
@@ -60,7 +67,9 @@ fun ScanRatesSheet(
                         label = rate.title,
                         value = draft,
                         error = invalid.takeIf { rate in parsed && draft.isNotBlank() && parsed[rate].let { it == null || it <= 0 } },
-                        supporting = stringResource(rate.description),
+                        supporting = scoutName?.takeIf { rate == ScanRate.WIFI }
+                            ?.let { stringResource(R.string.settings_wifi_rate_scout, it) }
+                            ?: stringResource(rate.description),
                         keyboardType = KeyboardType.Number,
                         imeAction = if (rate == editable.lastOrNull()) ImeAction.Done else ImeAction.Next,
                         digitsOnly = true,
@@ -71,3 +80,5 @@ fun ScanRatesSheet(
         }
     }
 }
+
+private const val LINE_BREAK = "\n"

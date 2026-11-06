@@ -9,6 +9,7 @@ import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.status.DestinationStatus
 import com.craxiom.networksurvey.survey.status.LeftOutItem
+import com.craxiom.networksurvey.survey.status.ScoutOutage
 import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.R
 import org.junit.Assert.assertEquals
@@ -57,6 +58,94 @@ class SurveyNotificationBuilderTest {
     }
 
     @Test
+    fun scoutOutForTenMinutes_titleSaysNoWifiAndTheLineSaysWhy() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true,
+                scanningWifi = true,
+                sessionStartMs = sessionStart,
+                leftOut = listOf(LeftOutItem.Scout("NS-ABCD", ScoutOutage.OUT_OF_RANGE)),
+                noWifiMinutes = 10,
+            )
+        )
+
+        assertEquals("No Wi-Fi for 10 min", title(n))
+        assertEquals("NS-ABCD is out of range, so Wi-Fi isn't being recorded", text(n))
+    }
+
+    @Test
+    fun scoutAndBluetoothOff_isOneMergedLine() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true,
+                sessionStartMs = sessionStart,
+                leftOut = listOf(LeftOutItem.Scout("NS-ABCD", ScoutOutage.BLUETOOTH_OFF, alsoBluetooth = true)),
+            )
+        )
+
+        assertEquals("Recording", title(n))
+        assertEquals("Bluetooth is off, so Wi-Fi from NS-ABCD and Bluetooth aren't being recorded", text(n))
+    }
+
+    @Test
+    fun scoutOutage_comesBeforeTheDestinations_andNamesEveryScoutType() {
+        val scoutTypes = listOf(RecordType.WIFI, RecordType.WIFI_CLIENTS, RecordType.WIFI_RAW)
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true, communitySurvey = true, scanningCellular = true, scanningWifi = true,
+                scanningWifiClients = true, savingRawFrames = true, sessionStartMs = sessionStart,
+                destinationStatuses = mapOf(Destination.COMMUNITY to DestinationStatus(StatusWord.CANT_CONNECT)),
+                leftOut = listOf(LeftOutItem.Scout("NS-ABCD", ScoutOutage.OUT_OF_RANGE, types = scoutTypes)),
+            )
+        )
+
+        assertEquals("NS-ABCD is out of range, so Wi-Fi, Wi-Fi clients and Raw frames aren't being recorded", text(n))
+        // Nothing of the Scout's types is being recorded, so Scanning lists Cellular alone
+        assertTrue(bigText(n)!!, bigText(n)!!.endsWith("Scanning: Cellular"))
+    }
+
+    @Test
+    fun aScoutTypeAlone_usesThePluralSentence() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true, sessionStartMs = sessionStart,
+                leftOut = listOf(LeftOutItem.Scout("NS-ABCD", ScoutOutage.OUT_OF_RANGE, types = listOf(RecordType.WIFI_CLIENTS))),
+            )
+        )
+
+        assertEquals("NS-ABCD is out of range, so Wi-Fi clients aren't being recorded", text(n))
+    }
+
+    @Test
+    fun bluetoothOffMidSurvey_namesTheScoutTypesAndBluetooth() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true, sessionStartMs = sessionStart, scanningBluetooth = true,
+                leftOut = listOf(
+                    LeftOutItem.Scout(
+                        "NS-ABCD", ScoutOutage.BLUETOOTH_OFF, alsoBluetooth = true,
+                        types = listOf(RecordType.WIFI, RecordType.WIFI_CLIENTS, RecordType.WIFI_RAW),
+                    ),
+                ),
+            )
+        )
+
+        assertEquals("Bluetooth is off, so Wi-Fi from NS-ABCD, Wi-Fi clients, Raw frames and Bluetooth aren't being recorded", text(n))
+        assertFalse(bigText(n)!!, bigText(n)!!.contains("Scanning:"))
+    }
+
+    @Test
+    fun theScoutTypes_areListedWhileRecorded() {
+        val n = builder.build(
+            SurveyNotificationState(
+                fileLogging = true, scanningWifi = true, scanningWifiClients = true, savingRawFrames = true, sessionStartMs = sessionStart,
+            )
+        )
+
+        assertEquals("Log files\nScanning: Wi-Fi, Wi-Fi clients, Raw frames", bigText(n))
+    }
+
+    @Test
     fun fileLoggingOnly_listsLogFilesAndScannedProtocols() {
         val n = builder.build(
             SurveyNotificationState(
@@ -71,6 +160,43 @@ class SurveyNotificationBuilderTest {
         assertTrue(chronometer(n))
         assertEquals(sessionStart, n.`when`)
         assertEquals(R.drawable.ic_notification_survey, icon(n))
+    }
+
+    @Test
+    fun phoneWifiOff_staysBelowMqttDropping_andWifiStaysInTheScanningLine() {
+        val n = builder.build(
+            SurveyNotificationState(
+                mqttState = ConnectionState.CONNECTED, mqttDropping = true, scanningWifi = true, sessionStartMs = sessionStart,
+                leftOut = listOf(LeftOutItem.Type(RecordType.WIFI, SkipReason.RADIO_OFF)),
+            )
+        )
+
+        assertEquals("MQTT messages dropping", text(n))
+        assertEquals(
+            "MQTT messages dropping\nWi-Fi is off, so Wi-Fi isn't being recorded\nMQTT stream\nScanning: Wi-Fi",
+            bigText(n),
+        )
+    }
+
+    @Test
+    fun scoutOutage_comesBeforeMqttDropping_andOtherLeftOutItemsAfterIt() {
+        val state = SurveyNotificationState(
+            mqttState = ConnectionState.CONNECTED, mqttDropping = true, scanningCellular = true, sessionStartMs = sessionStart,
+            leftOut = listOf(
+                LeftOutItem.Type(RecordType.BLUETOOTH, SkipReason.RADIO_OFF),
+                LeftOutItem.Scout("NS-ABCD", ScoutOutage.OUT_OF_RANGE),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "NS-ABCD is out of range, so Wi-Fi isn't being recorded",
+                "MQTT messages dropping",
+                "Bluetooth is off, so Bluetooth isn't being recorded",
+            ),
+            builder.healthLines(state),
+        )
+        assertEquals("NS-ABCD is out of range, so Wi-Fi isn't being recorded", text(builder.build(state)))
     }
 
     @Test

@@ -2,11 +2,12 @@ package com.craxiom.networksurvey.ui.logfiles
 
 import android.os.Environment
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.logging.PcapngFileWriter
 import timber.log.Timber
 import java.io.File
 
 /**
- * One CSV log file on the phone.
+ * One log file on the phone: a CSV file, or a raw frames (pcapng) file.
  *
  * @property modifiedMs When it was last written.
  * @property startedMs  When it was started, from the time in its name, or [modifiedMs] without one.
@@ -17,7 +18,10 @@ data class LogFile(
     val sizeBytes: Long,
     val modifiedMs: Long,
     val startedMs: Long = LogFileGroups.startedMs(name) ?: modifiedMs,
-)
+) {
+    /** True for a raw frames file, which holds other people's addresses and opens in Wireshark, not a spreadsheet. */
+    val isRawFrames: Boolean get() = name.endsWith(PcapngFileWriter.PCAPNG_EXTENSION)
+}
 
 /** What the log files folder holds, as far as the app can see it. */
 sealed interface LogFilesListing {
@@ -32,7 +36,7 @@ sealed interface LogFilesListing {
 }
 
 /**
- * Lists the CSV log files every logger writes, grouped by survey. Android only shows an app the files
+ * Lists the log files every logger writes (CSV, and pcapng for raw frames), grouped by survey. Android only shows an app the files
  * it created, so files from before a reinstall are not listed. Reads storage, so call it off the
  * main thread.
  */

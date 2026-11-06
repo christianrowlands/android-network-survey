@@ -24,6 +24,8 @@ object SurveyMdmKeys {
     const val SURVEY_BLUETOOTH = "survey_bluetooth"
     const val SURVEY_GNSS = "survey_gnss"
     const val SURVEY_CDR = "survey_cdr"
+    const val SURVEY_WIFI_CLIENTS = "survey_wifi_clients"
+    const val SURVEY_WIFI_RAW = "survey_wifi_raw"
 
     const val DESTINATION_LOG_FILES = "destination_log_files"
     const val DESTINATION_NS_ANALYTICS = "destination_ns_analytics"
@@ -46,6 +48,8 @@ object SurveyMdmKeys {
         RecordType.BLUETOOTH -> SURVEY_BLUETOOTH
         RecordType.GNSS -> SURVEY_GNSS
         RecordType.CDR -> SURVEY_CDR
+        RecordType.WIFI_CLIENTS -> SURVEY_WIFI_CLIENTS
+        RecordType.WIFI_RAW -> SURVEY_WIFI_RAW
     }
 
     /** @return The restriction key that controls [destination]. */

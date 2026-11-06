@@ -24,6 +24,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.scout.model.ScoutState
+import com.craxiom.networksurvey.ui.scout.ScoutStatusText
+import androidx.compose.ui.platform.LocalResources
 import com.craxiom.networksurvey.ui.common.NsRow
 import com.craxiom.networksurvey.ui.common.NsRowDivider
 import com.craxiom.networksurvey.ui.common.NsRowGroup
@@ -94,6 +97,7 @@ private fun MoreRow(item: MoreItem, state: MoreUiState, actions: MoreActions) {
         is MoreSubtitle.Text -> stringResource(line.text) to MaterialTheme.colorScheme.onSurfaceVariant
         is MoreSubtitle.Literal -> line.text to MaterialTheme.colorScheme.onSurfaceVariant
         is MoreSubtitle.OfDestination -> destinationDetail(line.destination, line.detail, state.info)
+        is MoreSubtitle.OfScout -> scoutSubtitle(line.state) to MaterialTheme.colorScheme.onSurfaceVariant
     }
     val action = item.action
     NsRow(
@@ -125,6 +129,13 @@ private fun MoreRow(item: MoreItem, state: MoreUiState, actions: MoreActions) {
             MoreAction.CopyVersion -> TrailingGlyph(R.drawable.ic_content_copy)
         }
     }
+}
+
+/** "Optional board for more Wi-Fi detail" before a Scout is paired, then "NS-ABCD · Connected". */
+@Composable
+private fun scoutSubtitle(state: ScoutState): String {
+    val scout = state.scout ?: return stringResource(R.string.more_scout_subtitle)
+    return stringResource(R.string.dot_join, scout.name, ScoutStatusText.word(LocalResources.current, state, recording = false))
 }
 
 @Composable

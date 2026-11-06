@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.RestrictionEntry
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.survey.model.RecordType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -42,7 +43,7 @@ class AppRestrictionsSchemaTest {
     }
 
     @Test
-    fun `every survey setup key is a three way choice that defaults to user`() {
+    fun `every survey setup key is a three way choice that defaults to user, Scout-only types to off`() {
         val values = context.resources.getStringArray(R.array.mdm_survey_choice_values).toList()
         assertEquals(listOf(SurveyMdmKeys.VALUE_USER, SurveyMdmKeys.VALUE_ON, SurveyMdmKeys.VALUE_OFF), values)
 
@@ -51,7 +52,8 @@ class AppRestrictionsSchemaTest {
             assertTrue("missing $key", restriction != null)
             // The compiled schema stores the restriction type as its RestrictionEntry constant.
             assertEquals(key, RestrictionEntry.TYPE_CHOICE.toString(), restriction!!["type"])
-            assertEquals(key, SurveyMdmKeys.VALUE_USER, restriction["default"])
+            val scoutOnly = RecordType.entries.any { it.needsScout && SurveyMdmKeys.keyFor(it) == key }
+            assertEquals(key, if (scoutOnly) SurveyMdmKeys.VALUE_OFF else SurveyMdmKeys.VALUE_USER, restriction["default"])
         }
     }
 

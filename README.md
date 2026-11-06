@@ -54,6 +54,11 @@ The Network Survey user manual can be found [here](https://networksurvey.app/man
 * **Managed configuration (MDM)**: each record type and destination can be set to "Operator
   chooses", "Always on" or "Off", along with the MQTT broker, auto start and other settings.
 * **Intent API**: other apps can start and stop a survey (see [Intent API](#intent-api)).
+* **NS Scout** (optional): pair an [NS Scout](https://networksurvey.app/scout), an ESP32 board running
+  receive-only firmware, from More > Hardware > NS Scout. While it is the Wi-Fi source it replaces
+  the phone's Wi-Fi scans (no Android scan limit, more detail per access point) and adds the Wi-Fi
+  clients and Raw frames (pcapng, Log files only) record types. See the
+  [NS Scout manual](https://networksurvey.app/manual/ns-scout/overview/).
 
 ## CDR Log Files
 
@@ -155,7 +160,8 @@ Install Android Studio to work on this code.
 ## gRPC Survey Record Streaming
 
 The gRPC stream destination sends GSM, CDMA, UMTS, LTE, NR, 802.11, Bluetooth, GNSS, Phone State, and
-Device Status records to a gRPC server. The
+Device Status records to a gRPC server, plus Wi-Fi client and probe request records while an NS
+Scout records Wi-Fi clients. The
 [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
 library can be used to stand up a gRPC server. From there it is up to the implementation to handle
 the incoming survey messages.
@@ -179,6 +185,7 @@ records to a connected MQTT broker on the following MQTT topics:
 * 80211_beacon_message
 * bluetooth_message
 * gnss_message
+* 80211_client_message and 80211_probe_request_message (Wi-Fi clients, with an NS Scout)
 
 There is also a DeviceStatus and a PhoneState message that is published on
 the `device_status_message` topic.

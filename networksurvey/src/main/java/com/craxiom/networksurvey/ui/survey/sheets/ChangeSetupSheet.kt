@@ -18,6 +18,8 @@ import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.ui.common.NsFormBottomSheet
 import com.craxiom.networksurvey.ui.common.NsManagedLockSheet
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.survey.RawFramesConfirmation
+import com.craxiom.networksurvey.ui.survey.RawFramesDialog
 import com.craxiom.networksurvey.ui.survey.components.DestinationRows
 import com.craxiom.networksurvey.ui.survey.components.RecordTypeTiles
 import com.craxiom.networksurvey.ui.survey.model.ItemLock
@@ -28,6 +30,7 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
  * Changes a running survey. The same two questions as the Ready screen, on a draft that applies
  * to the running survey (without a new Mission ID) only when "Apply now" is tapped. The draft
  * survives a rotation, and a locked tile or row explains itself as it does on the Ready screen.
+ * Turning Raw frames on asks the raw frames question first ([RawFramesDialog]).
  *
  * @param initial  What the running survey asked for, which the draft starts from (not the working
  *                 setup: a survey another app or the organization started may differ from it).
@@ -50,6 +53,7 @@ fun ChangeSetupSheet(
     var destinations by rememberSaveable(stateSaver = enumSetSaver<Destination>()) { mutableStateOf(initial.destinations) }
     var showLock by rememberSaveable { mutableStateOf(false) }
     var explainPhoneState by rememberSaveable { mutableStateOf(false) }
+    var confirmRawFrames by rememberSaveable { mutableStateOf(false) }
     val draft = remember(types, destinations) { preview(types, destinations) }
     val canApply = draft.typeCount.on > 0 && draft.destinationCount.on > 0
 
@@ -69,7 +73,14 @@ fun ChangeSetupSheet(
         )
         RecordTypeTiles(
             tiles = draft.tiles,
-            onToggle = { type -> types = if (type in types) types - type else types + type },
+            onToggle = { type ->
+                when {
+                    type in types -> types = types - type
+                    // Asked here, before the draft holds it, so Cancel leaves the draft as it was
+                    RawFramesConfirmation.isNeeded(types, types + type, draft.tiles) -> confirmRawFrames = true
+                    else -> types = types + type
+                }
+            },
             onLocked = { tile ->
                 // The Survey screen's snackbar would sit under this sheet, so the sheet says it itself
                 if (tile.lock == ItemLock.INCLUDED_WITH_CELLULAR) explainPhoneState = true else showLock = true
@@ -113,6 +124,13 @@ fun ChangeSetupSheet(
                 color = NsTheme.colors.status.warningText,
             )
         }
+    }
+
+    if (confirmRawFrames) {
+        RawFramesDialog(
+            onConfirm = { types = types + RecordType.WIFI_RAW },
+            onDismiss = { confirmRawFrames = false },
+        )
     }
 
     if (showLock) {

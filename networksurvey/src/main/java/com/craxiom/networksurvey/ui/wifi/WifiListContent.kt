@@ -31,13 +31,20 @@ import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.signals.ListScanStrip
 import com.craxiom.networksurvey.ui.signals.SignalsStripWords
 import com.craxiom.networksurvey.ui.signals.SignalsStateMessage
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientsActions
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientsContent
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientsUiState
+import com.craxiom.networksurvey.ui.wifi.components.ClientsPill
 import com.craxiom.networksurvey.ui.wifi.components.WifiFilterSheet
 import com.craxiom.networksurvey.ui.wifi.components.WifiGroupChildRow
 import com.craxiom.networksurvey.ui.wifi.components.WifiGroupParentRow
 import com.craxiom.networksurvey.ui.wifi.components.WifiModePills
 import com.craxiom.networksurvey.ui.wifi.components.WifiModeTabs
 import com.craxiom.networksurvey.ui.wifi.components.WifiRowA
+import com.craxiom.networksurvey.ui.wifi.components.ScoutWifiFixes
 import com.craxiom.networksurvey.ui.wifi.components.WifiScanFixes
+import com.craxiom.networksurvey.ui.wifi.components.WifiScoutBlocked
+import com.craxiom.networksurvey.ui.wifi.components.scoutStripWord
 import com.craxiom.networksurvey.ui.wifi.components.WifiThrottleNotice
 import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
 import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
@@ -47,7 +54,7 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
 import com.craxiom.networksurvey.util.WifiBand
 
 /** What the user can do on the Wi-Fi list; the stateful screen wires these up. */
-interface WifiListActions : WifiScanFixes {
+interface WifiListActions : WifiScanFixes, ScoutWifiFixes, WifiClientsActions {
     fun onNetworkClick(bssid: String)
     fun onCopySsid(ssid: String)
     fun onCopyBssid(bssid: String)
@@ -62,6 +69,12 @@ interface WifiListActions : WifiScanFixes {
     fun onOpenSpectrum()
     fun onOpenThrottleSettings(warning: ThrottleWarning)
     fun onDismissThrottle()
+
+    /** Opens the NS Scout page, from the throttle notice's "About NS Scout". */
+    fun onAboutScout() {}
+
+    /** Shows the Clients list in place of the access points (only offered with an NS Scout as the source). */
+    fun onClientsSelected() {}
 }
 
 /**
@@ -72,6 +85,9 @@ interface WifiListActions : WifiScanFixes {
  *
  * @param stripWords The strip's warning (a paused survey) and the state TalkBack reads.
  * @param permissionAccess Whether the permission can still be asked for or only granted in Settings.
+ * @param nearbyAccess The same for the Nearby devices permission, which the NS Scout needs.
+ * @param clients The Clients mode; its pill shows only while an NS Scout is the Wi-Fi source.
+ * @param ssidOf The SSID of an access point in this list, so a client names the network it talks to.
  */
 @Composable
 fun WifiListContent(
@@ -80,12 +96,18 @@ fun WifiListContent(
     permissionAccess: PermissionAccess,
     actions: WifiListActions,
     modifier: Modifier = Modifier,
+    nearbyAccess: PermissionAccess = PermissionAccess.AVAILABLE,
+    clients: WifiClientsUiState = WifiClientsUiState(),
+    ssidOf: (String) -> String? = { null },
 ) {
     var sortSheetOpen by rememberSaveable { mutableStateOf(false) }
     var filterSheetOpen by rememberSaveable { mutableStateOf(false) }
     val sortOptions = stringArrayResource(R.array.wifi_network_sort_options).toList()
-    val ready = state.scanState == WifiScanState.READY
+    val scout = state.scout
+    val scoutBlock = scout?.block
+    val ready = state.scanState == WifiScanState.READY && scoutBlock == null
     val (warning, spokenStatus) = stripStatus(state, stripWords)
+    val clientsPill = if (clients.available) ClientsPill(clients.shown, actions::onClientsSelected) else null
     // In a short window (a phone in landscape) the mode pills and the spectrum join the strip, so
     // the list keeps the row they would take.
     val modesInStrip = rememberCompactHeight()
@@ -104,27 +126,29 @@ fun WifiListContent(
     Column(modifier.fillMaxSize()) {
         ListScanStrip(
             // While the scan cannot run the rows are hidden, so counting them would mislead.
-            counts = if (ready) stripCounts(state) else emptyList(),
+            counts = if (ready) stripCounts(state, clients) else emptyList(),
             warning = warning,
             spokenStatus = spokenStatus,
             sweepKey = state.scanNumber,
-            sortLabel = sortOptions.getOrElse(state.sortIndex) { sortOptions.first() },
+            // The access point sort and filter don't apply to clients, which are listed strongest first
+            sortLabel = if (clients.shown) null else sortOptions.getOrElse(state.sortIndex) { sortOptions.first() },
             onSortClick = { sortSheetOpen = true },
             paused = state.updatesPaused,
             onTogglePause = actions::onTogglePause,
-            actions = if (modesInStrip && ready) {
-                listOf(filterAction, AppBarAction(R.drawable.ic_bar_chart, R.string.open_wifi_spectrum, actions::onOpenSpectrum))
-            } else {
-                listOf(filterAction)
-            },
+            actions = listOfNotNull(
+                filterAction.takeUnless { clients.shown },
+                AppBarAction(R.drawable.ic_bar_chart, R.string.open_wifi_spectrum, actions::onOpenSpectrum).takeIf { modesInStrip && ready },
+            ),
             leadingControls = if (modesInStrip && ready) {
-                { WifiModePills(state.mode, actions::onModeChanged, short = true) }
+                { WifiModePills(state.mode, actions::onModeChanged, short = true, clients = clientsPill) }
             } else {
                 null
             },
         )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        if (!ready) {
+        if (scout != null && scoutBlock != null) {
+            WifiScoutBlocked(scout, nearbyAccess, actions)
+        } else if (!ready) {
             ScanBlocked(state.scanState, permissionAccess, actions)
         } else {
             state.throttleWarning?.let { warning ->
@@ -132,13 +156,21 @@ fun WifiListContent(
                     warning = warning,
                     onOpenSettings = { actions.onOpenThrottleSettings(warning) },
                     onDismiss = actions::onDismissThrottle,
+                    onAboutScout = if (state.suggestScout) actions::onAboutScout else null,
                 )
             }
             if (!modesInStrip) {
-                WifiModeTabs(mode = state.mode, onModeChanged = actions::onModeChanged, onOpenSpectrum = actions::onOpenSpectrum)
+                WifiModeTabs(
+                    mode = state.mode,
+                    onModeChanged = actions::onModeChanged,
+                    onOpenSpectrum = actions::onOpenSpectrum,
+                    clients = clientsPill,
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
             when {
+                clients.shown -> WifiClientsContent(clients, ssidOf, actions)
+
                 state.apCount == 0 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     NsEmptyState(text = stringResource(R.string.signals_wifi_empty), icon = R.drawable.ic_wifi)
                 }
@@ -156,7 +188,7 @@ fun WifiListContent(
         }
     }
 
-    if (sortSheetOpen) {
+    if (sortSheetOpen && !clients.shown) {
         NsSortSheet(
             options = sortOptions,
             selectedIndex = state.sortIndex,
@@ -165,7 +197,7 @@ fun WifiListContent(
         )
     }
 
-    if (filterSheetOpen) {
+    if (filterSheetOpen && !clients.shown) {
         WifiFilterSheet(
             filter = state.filter,
             visibleApCount = state.visibleApCount,
@@ -256,11 +288,18 @@ private fun ScanBlocked(scanState: WifiScanState, permissionAccess: PermissionAc
     }
 }
 
-/** "Scan #12" and "47 access points", or "3 of 47 access points" while filtered. */
+/**
+ * "Scan #12" and "47 access points", or "3 of 47 access points" while filtered, after the NS Scout's
+ * name while it is the source, so the strip says which radio heard them. The Clients list counts
+ * clients instead.
+ */
 @Composable
-private fun stripCounts(state: WifiListUiState): List<String> = listOf(
+private fun stripCounts(state: WifiListUiState, clients: WifiClientsUiState): List<String> = listOfNotNull(
+    state.scout?.name,
     stringResource(R.string.wifi_list_scan_number, state.scanNumber),
-    if (state.filter.isActive) {
+    if (clients.shown) {
+        pluralStringResource(R.plurals.wifi_clients_count, clients.clients.size, clients.clients.size)
+    } else if (state.filter.isActive) {
         pluralStringResource(R.plurals.wifi_list_access_points_filtered, state.apCount, state.visibleApCount, state.apCount)
     } else {
         pluralStringResource(R.plurals.wifi_list_access_points, state.apCount, state.apCount)
@@ -274,6 +313,7 @@ private fun stripCounts(state: WifiListUiState): List<String> = listOf(
 @Composable
 private fun stripStatus(state: WifiListUiState, stripWords: SignalsStripWords): Pair<String?, String> {
     val resources = LocalResources.current
+    state.scout?.block?.let { block -> return resources.getString(scoutStripWord(block)).let { it to it } }
     val word = when (state.scanState) {
         WifiScanState.PERMISSION_NEEDED -> resources.getString(R.string.cellular_state_permission)
         WifiScanState.LOCATION_OFF -> resources.getString(R.string.survey_location_off)

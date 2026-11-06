@@ -22,6 +22,8 @@ import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
+import com.craxiom.messaging.WifiClientRecord;
+import com.craxiom.messaging.WifiProbeRequestRecord;
 import com.craxiom.messaging.grpc.BluetoothSurveyResponse;
 import com.craxiom.messaging.grpc.CdmaSurveyResponse;
 import com.craxiom.messaging.grpc.ConnectionHandshakeGrpc;
@@ -36,6 +38,8 @@ import com.craxiom.messaging.grpc.PhoneStateResponse;
 import com.craxiom.messaging.grpc.StatusUpdateReply;
 import com.craxiom.messaging.grpc.UmtsSurveyResponse;
 import com.craxiom.messaging.grpc.WifiBeaconSurveyResponse;
+import com.craxiom.messaging.grpc.WifiClientSurveyResponse;
+import com.craxiom.messaging.grpc.WifiProbeRequestSurveyResponse;
 import com.craxiom.messaging.grpc.WirelessSurveyGrpc;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.networksurvey.R;
@@ -45,6 +49,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
+import com.craxiom.networksurvey.listeners.IWifiClientSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.survey.model.RecordType;
@@ -80,11 +85,9 @@ import timber.log.Timber;
  */
 public class GrpcConnectionService extends Service implements IDeviceStatusListener, IPhoneStateListener,
         ICellularSurveyRecordListener, IWifiSurveyRecordListener, IBluetoothSurveyRecordListener,
-        IGnssSurveyRecordListener
+        IGnssSurveyRecordListener, IWifiClientSurveyRecordListener
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
-    // number of concurrent linked queues.
-    private static final int NUMBER_OF_QUEUES_TO_PROCESS = 10;
     private static final int QUEUE_PROCESSING_SLEEP_TIME = 1_000;
 
     /**
@@ -122,6 +125,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private final StreamRecordQueue<LteRecord> lteRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
     private final StreamRecordQueue<NrRecord> nrRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
     private final StreamRecordQueue<WifiBeaconRecord> wifiBeaconRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<WifiClientRecord> wifiClientRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
+    private final StreamRecordQueue<WifiProbeRequestRecord> wifiProbeRequestRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
     private final StreamRecordQueue<BluetoothRecord> bluetoothRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
     private final StreamRecordQueue<GnssRecord> gnssRecordQueue = new StreamRecordQueue<>(QUEUE_HEALTH, () -> this.streamingQueueLimit);
 
@@ -137,6 +142,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private GrpcTask<LteRecord, LteSurveyResponse> lteRecordGrpcTask;
     private GrpcTask<NrRecord, NrSurveyResponse> nrRecordGrpcTask;
     private GrpcTask<WifiBeaconRecord, WifiBeaconSurveyResponse> wifiBeaconRecordGrpcTask;
+    private GrpcTask<WifiClientRecord, WifiClientSurveyResponse> wifiClientRecordGrpcTask;
+    private GrpcTask<WifiProbeRequestRecord, WifiProbeRequestSurveyResponse> wifiProbeRequestRecordGrpcTask;
     private GrpcTask<BluetoothRecord, BluetoothSurveyResponse> bluetoothRecordGrpcTask;
     private GrpcTask<GnssRecord, GnssSurveyResponse> gnssRecordGrpcTask;
     private ManagedChannel channel;
@@ -184,7 +191,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         surveyServiceConnection = new SurveyServiceConnection();
 
-        executorService = Executors.newScheduledThreadPool(NUMBER_OF_QUEUES_TO_PROCESS);
+        executorService = Executors.newScheduledThreadPool(GrpcStreams.MAX_CONCURRENT);
     }
 
     /**
@@ -501,6 +508,29 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             wifiBeaconRecordQueue.offerAll(wifiBeaconRecords.stream()
                     .map(wrapper -> DeviceNameStamper.stamp(wrapper.getWifiBeaconRecord(), deviceName))
+                    .collect(Collectors.toList()));
+        }
+    }
+
+    @Override
+    public void onWifiClientRecords(List<WifiClientRecord> clientRecords)
+    {
+        // A server without the Wi-Fi client stream (older than NS Messaging 2.7.0) ends just that task
+        if (clientRecords != null && accepts(RecordType.WIFI_CLIENTS, wifiClientRecordGrpcTask))
+        {
+            wifiClientRecordQueue.offerAll(clientRecords.stream()
+                    .map(record -> DeviceNameStamper.stamp(record, deviceName))
+                    .collect(Collectors.toList()));
+        }
+    }
+
+    @Override
+    public void onWifiProbeRequestRecords(List<WifiProbeRequestRecord> probeRecords)
+    {
+        if (probeRecords != null && accepts(RecordType.WIFI_CLIENTS, wifiProbeRequestRecordGrpcTask))
+        {
+            wifiProbeRequestRecordQueue.offerAll(probeRecords.stream()
+                    .map(record -> DeviceNameStamper.stamp(record, deviceName))
                     .collect(Collectors.toList()));
         }
     }
@@ -852,6 +882,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             case GNSS:
                 gnssRecordGrpcTask = startTask(gnssRecordQueue, stub::streamGnssSurvey);
                 return true;
+            case WIFI_CLIENTS:
+                wifiClientRecordGrpcTask = startTask(wifiClientRecordQueue, stub::streamWifiClientSurvey);
+                wifiProbeRequestRecordGrpcTask = startTask(wifiProbeRequestRecordQueue, stub::streamWifiProbeRequestSurvey);
+                return true;
             default:
                 // CDR is files only.
                 return false;
@@ -882,6 +916,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             case GNSS:
                 gnssRecordGrpcTask = cancelTask(gnssRecordGrpcTask, gnssRecordQueue, true);
                 break;
+            case WIFI_CLIENTS:
+                wifiClientRecordGrpcTask = cancelTask(wifiClientRecordGrpcTask, wifiClientRecordQueue, true);
+                wifiProbeRequestRecordGrpcTask = cancelTask(wifiProbeRequestRecordGrpcTask, wifiProbeRequestRecordQueue, true);
+                break;
             default:
                 break;
         }
@@ -911,6 +949,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             case GNSS:
                 networkSurveyService.registerGnssSurveyRecordListener(this);
                 return true;
+            case WIFI_CLIENTS:
+                networkSurveyService.registerWifiClientSurveyRecordListener(this);
+                return true;
             default:
                 return false;
         }
@@ -935,6 +976,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 break;
             case GNSS:
                 networkSurveyService.unregisterGnssSurveyRecordListener(this);
+                break;
+            case WIFI_CLIENTS:
+                networkSurveyService.unregisterWifiClientSurveyRecordListener(this);
                 break;
             default:
                 break;
@@ -999,6 +1043,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         lteRecordGrpcTask = cancelTask(lteRecordGrpcTask, lteRecordQueue, stopService);
         nrRecordGrpcTask = cancelTask(nrRecordGrpcTask, nrRecordQueue, stopService);
         wifiBeaconRecordGrpcTask = cancelTask(wifiBeaconRecordGrpcTask, wifiBeaconRecordQueue, stopService);
+        wifiClientRecordGrpcTask = cancelTask(wifiClientRecordGrpcTask, wifiClientRecordQueue, stopService);
+        wifiProbeRequestRecordGrpcTask = cancelTask(wifiProbeRequestRecordGrpcTask, wifiProbeRequestRecordQueue, stopService);
         bluetoothRecordGrpcTask = cancelTask(bluetoothRecordGrpcTask, bluetoothRecordQueue, stopService);
         gnssRecordGrpcTask = cancelTask(gnssRecordGrpcTask, gnssRecordQueue, stopService);
 
@@ -1029,6 +1075,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         networkSurveyService.unregisterWifiSurveyRecordListener(this);
         networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
         networkSurveyService.unregisterGnssSurveyRecordListener(this);
+        networkSurveyService.unregisterWifiClientSurveyRecordListener(this);
     }
 
     /**

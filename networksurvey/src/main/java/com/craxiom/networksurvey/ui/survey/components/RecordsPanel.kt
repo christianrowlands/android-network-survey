@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.logging.RawFramesProgress
 import com.craxiom.networksurvey.logging.db.DbUploadStore
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -36,7 +37,8 @@ import com.craxiom.networksurvey.ui.common.CountFormat
  * carries the numbers for TalkBack.
  *
  * With [savedForUpload] the counts are of records saved for the community databases, and a note
- * under the legend says why they hold still while the phone does.
+ * under the legend says why they hold still while the phone does. Raw frames, when the survey saves
+ * them, get their own line under the legend ([RawFramesLine]), never a bar segment.
  */
 @Composable
 fun RecordsPanel(
@@ -44,6 +46,7 @@ fun RecordsPanel(
     counts: Map<RecordType, Long>,
     savedForUpload: Boolean,
     modifier: Modifier = Modifier,
+    rawFrames: RawFramesProgress? = null,
 ) {
     NsPanel(modifier = modifier) {
         SectionHeader(
@@ -51,18 +54,21 @@ fun RecordsPanel(
             trailing = stringResource(if (savedForUpload) R.string.survey_records_saved_for_upload else R.string.survey_records_by_type),
             topPadding = 0.dp,
         )
-        StackedBar(types, counts)
-        // One column when a name and its count don't fit in half the width (large font)
-        NsAdaptiveGrid(
-            maxColumns = LEGEND_COLUMNS,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = NsTheme.spacing.s),
-            gap = NsTheme.spacing.l,
-            rowGap = NsTheme.spacing.s,
-        ) {
-            types.forEach { LegendItem(it, counts[it] ?: 0L) }
+        if (types.isNotEmpty()) {
+            StackedBar(types, counts)
+            // One column when a name and its count don't fit in half the width (large font)
+            NsAdaptiveGrid(
+                maxColumns = LEGEND_COLUMNS,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = NsTheme.spacing.s),
+                gap = NsTheme.spacing.l,
+                rowGap = NsTheme.spacing.s,
+            ) {
+                types.forEach { LegendItem(it, counts[it] ?: 0L) }
+            }
         }
+        rawFrames?.let { RawFramesLine(it, showDivider = types.isNotEmpty()) }
         if (savedForUpload) {
             Text(
                 text = stringResource(

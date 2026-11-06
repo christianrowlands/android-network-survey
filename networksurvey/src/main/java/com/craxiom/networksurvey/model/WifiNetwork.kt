@@ -19,6 +19,8 @@ data class WifiNetwork(
     val passpoint: Boolean?,
     val capabilities: String,
     val standard: Standard?,
+    /** What an NS Scout heard about it, null for the phone's own scans. */
+    val scout: WifiNetworkScout? = null,
 ) : Serializable, Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
@@ -31,6 +33,7 @@ data class WifiNetwork(
         parcel.readValue(Boolean::class.java.classLoader) as? Boolean,
         parcel.readString() ?: "",
         Standard.forNumber(parcel.readInt()) ?: Standard.UNKNOWN,
+        parcel.readValue(WifiNetworkScout::class.java.classLoader) as? WifiNetworkScout,
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -46,6 +49,7 @@ data class WifiNetwork(
         parcel.writeValue(passpoint)
         parcel.writeString(capabilities)
         parcel.writeInt(standard?.takeIf { it != Standard.UNRECOGNIZED }?.number ?: Standard.UNKNOWN_VALUE)
+        parcel.writeValue(scout)
     }
 
     override fun describeContents(): Int {
@@ -82,6 +86,7 @@ data class WifiNetwork(
                 passpoint = if (data.hasPasspoint()) data.passpoint.value else null,
                 capabilities = wrapper.capabilitiesString ?: "",
                 standard = data.standard,
+                scout = WifiNetworkScout.from(data, wrapper.scoutDetails),
             )
         }
     }

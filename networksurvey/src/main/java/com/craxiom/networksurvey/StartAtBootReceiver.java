@@ -16,6 +16,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.services.BootStartGate;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.survey.setup.SurveyAutoStart;
 
@@ -89,10 +90,7 @@ public class StartAtBootReceiver extends BroadcastReceiver
         // Try to start the service directly first
         try
         {
-            final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-            startServiceIntent.putExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, true);
-
-            context.startForegroundService(startServiceIntent);
+            context.startForegroundService(BootStartGate.newStartIntent(applicationContext));
             Timber.i("Successfully started NetworkSurveyService using startForegroundService");
         } catch (Exception e)
         {
@@ -154,10 +152,7 @@ public class StartAtBootReceiver extends BroadcastReceiver
 
             try
             {
-                Intent startServiceIntent = new Intent(context, NetworkSurveyService.class);
-                startServiceIntent.putExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, true);
-
-                context.startForegroundService(startServiceIntent);
+                context.startForegroundService(BootStartGate.newStartIntent(context));
 
                 Timber.i("ServiceStartWorker: Successfully started NetworkSurveyService at boot");
                 return Result.success();

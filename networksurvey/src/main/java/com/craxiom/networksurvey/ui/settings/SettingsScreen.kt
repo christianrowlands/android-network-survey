@@ -150,6 +150,7 @@ private fun SettingsPickerHost(
     when (picker) {
         SettingsPicker.SCAN_RATES -> ScanRatesSheet(
             rates = state.scanRates,
+            scoutName = state.scoutName,
             onSave = { changed -> changed.forEach { (rate, seconds) -> viewModel.setScanRate(rate, seconds) } },
             onLocked = {
                 onClose()

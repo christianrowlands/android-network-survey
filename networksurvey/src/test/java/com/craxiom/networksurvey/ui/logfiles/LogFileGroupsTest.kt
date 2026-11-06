@@ -18,6 +18,17 @@ class LogFileGroupsTest {
     }
 
     @Test
+    fun `a raw frames file is dated the same way and marked as raw frames`() {
+        val expected = LocalDateTime.of(2026, 11, 2, 18, 3, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        assertEquals(expected, LogFileGroups.startedMs("craxiom-wifi-raw-20261102-180300.pcapng", ZoneOffset.UTC))
+        assertEquals(expected, LogFileGroups.startedMs("craxiom-wifi-raw-20261102-180300-1.pcapng", ZoneOffset.UTC))
+        val raw = LogFile(File("craxiom-wifi-raw-20261102-180300.pcapng"), "craxiom-wifi-raw-20261102-180300.pcapng", 1L, 0L)
+        val csv = LogFile(File("craxiom-wifi-20261102-180300.csv"), "craxiom-wifi-20261102-180300.csv", 1L, 0L)
+        assertEquals(true, raw.isRawFrames)
+        assertEquals(false, csv.isRawFrames)
+    }
+
+    @Test
     fun `a name without a time has no start time, so the file falls back to when it was written`() {
         assertNull(LogFileGroups.startedMs("notes.csv", ZoneOffset.UTC))
         assertNull(LogFileGroups.startedMs("craxiom-lte-20261399-999999.csv", ZoneOffset.UTC))

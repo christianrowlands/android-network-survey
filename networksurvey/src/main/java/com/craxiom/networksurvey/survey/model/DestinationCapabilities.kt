@@ -6,16 +6,34 @@ package com.craxiom.networksurvey.survey.model
  *
  * Every destination receives everything the survey records, except where the destination cannot
  * accept a type:
- * - Log files accept every type (CDR is files only).
- * - NS Analytics, MQTT and gRPC accept everything except CDR.
+ * - Log files accept every type (CDR and Raw frames are files only).
+ * - MQTT and gRPC accept everything except CDR and Raw frames.
+ * - NS Analytics accepts the phone types only: not CDR, Wi-Fi clients or Raw frames.
  * - The community databases accept Cellular (OpenCelliD and BeaconDB) and Wi-Fi (BeaconDB only),
  *   narrowed further by which upload targets the user selected.
+ *
+ * Every set is listed explicitly, so a new record type reaches no destination until it is added
+ * here on purpose.
  */
 object DestinationCapabilities {
 
-    private val ALL_TYPES: Set<RecordType> = RecordType.entries.toSet()
-    private val STREAMING_TYPES: Set<RecordType> = ALL_TYPES - RecordType.CDR
+    /** The phone's own record types, which every streaming destination takes. */
+    private val PHONE_STREAMING_TYPES: Set<RecordType> = setOf(
+        RecordType.CELLULAR, RecordType.PHONE_STATE, RecordType.WIFI, RecordType.BLUETOOTH, RecordType.GNSS,
+    )
+    private val LOG_FILE_TYPES: Set<RecordType> =
+        PHONE_STREAMING_TYPES + RecordType.CDR + RecordType.WIFI_CLIENTS + RecordType.WIFI_RAW
+    private val NS_ANALYTICS_TYPES: Set<RecordType> = PHONE_STREAMING_TYPES
+    private val STREAM_TYPES: Set<RecordType> = PHONE_STREAMING_TYPES + RecordType.WIFI_CLIENTS
     private val COMMUNITY_TYPES: Set<RecordType> = setOf(RecordType.CELLULAR, RecordType.WIFI)
+
+    /**
+     * Types that only Log files take and that a start reports as left out without Log files
+     * ([com.craxiom.networksurvey.survey.engine.SkipReason.NEEDS_LOG_FILES]). CDR is files only too,
+     * but has always been left out quietly.
+     */
+    @JvmField
+    val LOG_FILES_ONLY_TYPES: Set<RecordType> = setOf(RecordType.WIFI_RAW)
 
     /** What OpenCelliD takes; matches `PreferenceUtils.getRequiredProtocolsForUpload`. */
     @JvmField
@@ -28,8 +46,9 @@ object DestinationCapabilities {
     /** @return Every record type [destination] can accept, before any user or upload target choice. */
     @JvmStatic
     fun accepts(destination: Destination): Set<RecordType> = when (destination) {
-        Destination.LOG_FILES -> ALL_TYPES
-        Destination.NS_ANALYTICS, Destination.MQTT, Destination.GRPC -> STREAMING_TYPES
+        Destination.LOG_FILES -> LOG_FILE_TYPES
+        Destination.NS_ANALYTICS -> NS_ANALYTICS_TYPES
+        Destination.MQTT, Destination.GRPC -> STREAM_TYPES
         Destination.COMMUNITY -> COMMUNITY_TYPES
     }
 

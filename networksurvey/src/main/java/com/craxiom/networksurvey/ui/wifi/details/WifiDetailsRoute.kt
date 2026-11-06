@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.WifiNetwork
+import com.craxiom.networksurvey.scout.clients.ScoutClient
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.common.PermissionRequest
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
@@ -29,6 +30,7 @@ import com.craxiom.networksurvey.ui.signals.SignalsSubTab
 import com.craxiom.networksurvey.ui.signals.SignalsViewModel
 import com.craxiom.networksurvey.ui.watchlist.WatchlistAddHelper
 import com.craxiom.networksurvey.ui.watchlist.WatchlistAddSheet
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientsViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -64,6 +66,8 @@ fun WifiDetailsRoute(network: WifiNetwork?, onBack: () -> Unit) {
     val scanState by viewModel.scanState.collectAsStateWithLifecycle()
     val excluded by viewModel.excluded.collectAsStateWithLifecycle()
     val watched by viewModel.watched.collectAsStateWithLifecycle()
+    val connectedClients by viewModel.connectedClients.collectAsStateWithLifecycle()
+    val clientsViewModel: WifiClientsViewModel = viewModel(viewModelStoreOwner = activity)
     var watchlistSheetOpen by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -75,11 +79,12 @@ fun WifiDetailsRoute(network: WifiNetwork?, onBack: () -> Unit) {
             scanState = scanState,
             excluded = excluded,
             watched = watched,
+            connectedClients = connectedClients,
         ),
         permissionAccess = permission.access,
         chart = viewModel.chart,
         actions = remember(viewModel, permission) {
-            RouteActions(context, viewModel, sharedViewModel, permission, onBack) { watchlistSheetOpen = true }
+            RouteActions(context, viewModel, sharedViewModel, clientsViewModel, permission, onBack) { watchlistSheetOpen = true }
         },
     )
 
@@ -118,6 +123,7 @@ private class RouteActions(
     private val context: Context,
     private val viewModel: WifiDetailsViewModel,
     private val sharedViewModel: SharedViewModel,
+    private val clientsViewModel: WifiClientsViewModel,
     private val permission: PermissionRequest,
     private val onBack: () -> Unit,
     private val onOpenWatchlistSheet: () -> Unit,
@@ -140,6 +146,11 @@ private class RouteActions(
     }
 
     override fun onOpenSettings() = sharedViewModel.triggerNavigationToSettings()
+
+    override fun onClientClick(client: ScoutClient) {
+        clientsViewModel.noteOpened(client)
+        sharedViewModel.triggerNavigationToWifiClientDetails(client.mac)
+    }
 
     override fun onAllow() = permission.request()
 

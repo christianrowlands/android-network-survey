@@ -183,6 +183,26 @@ class SurveyCoordinatorTest {
     }
 
     @Test
+    fun `an intent can't start a Scout type, and the last result says so`() {
+        coordinator.mergeIntoRunningSurvey(
+            SurveySetup.custom(setOf(RecordType.WIFI, RecordType.WIFI_RAW), setOf(Destination.LOG_FILES)), SurveyOrigin.INTENT,
+        ).get()
+
+        assertEquals(mapOf(RecordType.WIFI_RAW to SkipReason.NOT_ALLOWED_FROM_INTENT), coordinator.lastResult!!.recordTypeProblems)
+        assertEquals(setOf(RecordType.WIFI), outputs.fileTypes.toSet())
+    }
+
+    @Test
+    fun `a start from an intent that uses the working setup still can't start its Scout types`() {
+        store.setCurrentSetup(SurveySetup.custom(setOf(RecordType.WIFI, RecordType.WIFI_CLIENTS), setOf(Destination.LOG_FILES)))
+
+        val result = coordinator.startSurvey(null, SurveyOrigin.INTENT).get()
+
+        assertEquals(mapOf(RecordType.WIFI_CLIENTS to SkipReason.NOT_ALLOWED_FROM_INTENT), result.recordTypeProblems)
+        assertEquals(setOf(RecordType.WIFI), outputs.fileTypes.toSet())
+    }
+
+    @Test
     fun `a destination an intent asked for starts once set up, even if the user's setup leaves it out`() {
         outputs.destinationProblems[Destination.GRPC] = SkipReason.NOT_CONFIGURED
         coordinator.mergeIntoRunningSurvey(

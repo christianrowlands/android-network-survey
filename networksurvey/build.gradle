@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dependency.license.report)
+    alias(libs.plugins.protobuf)
 }
 
 // Exclude google-services and crashlytics if the json file is missing and for debug builds
@@ -117,6 +118,17 @@ android {
         }
     }
 
+    // The NS Scout firmware's wire fixtures (one copy, see src/scoutFixtures/scout-fixtures/README.md):
+    // decoder tests read them as resources and the debug-only fake Scout replays them as assets.
+    sourceSets {
+        test {
+            resources.srcDirs += 'src/scoutFixtures'
+        }
+        debug {
+            assets.srcDirs += 'src/scoutFixtures'
+        }
+    }
+
     namespace = 'com.craxiom.networksurvey'
 
     flavorDimensions = ["version"]
@@ -174,6 +186,9 @@ dependencies {
     }
 
     implementation(libs.commons.csv)
+
+    // Ed25519 for NS Scout firmware signatures (minSdk 26 has no platform Ed25519).
+    implementation(libs.tink)
 
     // The preference screens draw with RecyclerView; without this line Material's older one resolves.
     implementation(libs.androidx.recyclerview)
@@ -253,6 +268,21 @@ dependencies {
         exclude group: 'com.librato.metrics'
         exclude group: 'com.bugsnag'
         exclude group: 'com.h2database', module: 'h2'
+    }
+}
+
+// NS Scout board protocol (src/main/proto/ns_board.proto). Full protobuf-java, not lite, because
+// the app already ships the full runtime for NS Messaging and gRPC.
+protobuf {
+    protoc {
+        artifact = libs.protoc.get().toString()
+    }
+    generateProtoTasks {
+        all().configureEach { task ->
+            task.builtins {
+                java {}
+            }
+        }
     }
 }
 

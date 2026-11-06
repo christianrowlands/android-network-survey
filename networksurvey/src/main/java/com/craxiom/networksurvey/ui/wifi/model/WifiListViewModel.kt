@@ -10,23 +10,35 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
-import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
 import com.craxiom.networksurvey.listeners.ILiveScanView
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.craxiom.networksurvey.scout.ScoutManager
+import com.craxiom.networksurvey.scout.ScoutPolicy
+import com.craxiom.networksurvey.scout.model.ScoutState
+import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.controller.WifiSourceSwitch
 import com.craxiom.networksurvey.ui.signals.ScanConditions
 import com.craxiom.networksurvey.ui.signals.ScanListenerRegistration
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.craxiom.networksurvey.util.WifiBand
-import com.craxiom.networksurvey.util.WifiUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 
 /**
  * View model for the redesigned Wi-Fi list. Owns the raw scan wrapper list, the user's
@@ -50,11 +62,13 @@ class WifiListViewModel internal constructor(
     clock: () -> Long,
     private val mainDispatcher: CoroutineDispatcher,
     private val sdk: Int,
+    scoutStates: Flow<Pair<ScoutState, WifiSource>> = emptyFlow(),
+    private val scoutAllowed: () -> Boolean = { true },
 ) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
         application = application,
-        environment = AndroidWifiEnvironment(application),
+        environment = SourceAwareWifiEnvironment(application),
         throttleProbe = AndroidWifiThrottleProbe(application),
         scanRateMs = {
             PreferenceUtils.getScanRatePreferenceMs(
@@ -66,6 +80,8 @@ class WifiListViewModel internal constructor(
         clock = SystemClock::elapsedRealtime,
         mainDispatcher = Dispatchers.Main,
         sdk = Build.VERSION.SDK_INT,
+        scoutStates = ScoutManager.getInstance(application).let { combine(it.state, it.wifiSource, ::Pair) },
+        scoutAllowed = { ScoutPolicy.isAllowed(application) },
     )
 
     private val preferences: SharedPreferences =
@@ -111,6 +127,14 @@ class WifiListViewModel internal constructor(
 
     private val scanGap = WifiScanGap(clock)
     private var throttleDismissed = false
+    private var scout: Pair<ScoutState, WifiSource> = ScoutState.NotPaired to WifiSource.PHONE
+
+    // Read on each refresh only, so a Scout status update does not ask the system for the restrictions
+    private var scoutAllowedNow = false
+
+    // A recording survey locks the source, so the Scout block offers its page instead of phone Wi-Fi
+    private var recording = false
+    private var recordingWatch: Job? = null
 
     private val registration = ScanListenerRegistration(
         register = { it.registerWifiSurveyRecordListener(this) },
@@ -127,8 +151,25 @@ class WifiListViewModel internal constructor(
     )
     val uiState: StateFlow<WifiListUiState> = _uiState.asStateFlow()
 
+    /** The bound service's source switch, null while unbound so the service is not held. */
+    private var requestSource: ((WifiSource) -> WifiSourceSwitch)? = null
+
+    init {
+        // The Scout's state decides the strip's name, its blocks and the throttle notice
+        viewModelScope.launch(mainDispatcher) {
+            scoutStates.collect {
+                scout = it
+                refreshConditions()
+            }
+        }
+    }
+
     /** Called with the bound service, and with null before the screen unbinds. */
     fun onServiceChanged(service: NetworkSurveyService?) {
+        requestSource = service?.let { bound -> bound::requestWifiSource }
+        recordingWatch?.cancel()
+        recordingWatch = service?.surveyStateFlow?.map { it.isRecording }?.distinctUntilChanged()
+            ?.onEach { recording = it; applyScanState() }?.launchIn(viewModelScope + mainDispatcher)
         registration.onServiceChanged(service, conditions.state.value == WifiScanState.READY)
         // Only Android 9 and 10 measure the gap between scans
         if (sdk < Build.VERSION_CODES.R) scanGap.watchSurveyPauses(viewModelScope, service?.surveyStateFlow)
@@ -139,10 +180,18 @@ class WifiListViewModel internal constructor(
      * Android throttles scans, and registers or unregisters to match.
      */
     fun refresh() {
+        scoutAllowedNow = scoutAllowed()
+        refreshConditions()
+    }
+
+    private fun refreshConditions() {
         conditions.refresh()
         applyScanState()
         checkThrottling(scanGapMs = null)
     }
+
+    /** "Use phone Wi-Fi instead" through the bound service (refused while recording); null before it is bound. */
+    fun usePhoneWifi(): WifiSourceSwitch? = requestSource?.invoke(WifiSource.PHONE)
 
     /** Hides the throttling warning until the app is restarted. */
     fun dismissThrottleWarning() {
@@ -190,9 +239,15 @@ class WifiListViewModel internal constructor(
     /** A blocked list drops its rows (paused ones stay frozen), so none come back stale when it clears. */
     private fun applyScanState() {
         val scanState = conditions.state.value
-        _uiState.update { it.copy(scanState = scanState) }
+        val scoutUi = WifiScoutSource.of(scout.first, scout.second, recording)
+        val suggest = WifiScoutSource.suggestsScout(scout.first, scoutAllowedNow)
+        _uiState.update {
+            // Android's limit is on the phone's scans only, so the notice goes while the Scout is the source
+            it.copy(scanState = scanState, scout = scoutUi, suggestScout = suggest, throttleWarning = it.throttleWarning.takeIf { scoutUi == null })
+        }
+        // Registered even while the Scout is not connected: the live list is what asks it to connect
         registration.update(scanState == WifiScanState.READY)
-        if (scanState != WifiScanState.READY && !_uiState.value.updatesPaused) clearRows()
+        if ((scanState != WifiScanState.READY || scoutUi?.block != null) && !_uiState.value.updatesPaused) clearRows()
     }
 
     /** Forgets every network and the scan count; the filter, sort, mode and open groups stay. */
@@ -227,7 +282,7 @@ class WifiListViewModel internal constructor(
      */
     private fun checkThrottling(scanGapMs: Long?) {
         if (throttleDismissed) return
-        val warning = WifiThrottling.warning(sdk, throttleProbe.read(), scanGapMs, scanRateMs())
+        val warning = if (_uiState.value.scout != null) null else WifiThrottling.warning(sdk, throttleProbe.read(), scanGapMs, scanRateMs())
         if (warning != null || sdk >= Build.VERSION_CODES.R) {
             _uiState.update { it.copy(throttleWarning = warning) }
         }
@@ -235,12 +290,7 @@ class WifiListViewModel internal constructor(
 
     fun setMode(mode: WifiListMode) {
         if (_uiState.value.mode == mode) return
-        preferences.edit {
-            putBoolean(
-                NetworkSurveyConstants.PROPERTY_WIFI_GROUP_BY_SSID,
-                mode == WifiListMode.GROUPED,
-            )
-        }
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_WIFI_GROUP_BY_SSID, mode == WifiListMode.GROUPED) }
         // Mode flip needs the sorted displays but not a fresh per-wrapper map.
         rebuildGroups()
         _uiState.update { it.copy(mode = mode, items = interleave(mode)) }
@@ -248,9 +298,7 @@ class WifiListViewModel internal constructor(
 
     fun setSortIndex(index: Int) {
         if (_uiState.value.sortIndex == index) return
-        preferences.edit {
-            putInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, index)
-        }
+        preferences.edit { putInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, index) }
         // Sort change reorders existing cached displays; no per-wrapper mapping needed.
         latestSortedDisplays = latestSortedDisplays.sortedWith(apComparator(index))
         applyFilter()
@@ -272,12 +320,8 @@ class WifiListViewModel internal constructor(
     /** Toggles a band in the display filter's band set and re-derives the visible list. */
     fun toggleFilterBand(band: WifiBand) {
         updateFilter { filter ->
-            val bands = if (band in filter.selectedBands) {
-                filter.selectedBands - band
-            } else {
-                filter.selectedBands + band
-            }
-            filter.copy(selectedBands = bands)
+            val bands = filter.selectedBands
+            filter.copy(selectedBands = if (band in bands) bands - band else bands + band)
         }
     }
 
@@ -306,11 +350,7 @@ class WifiListViewModel internal constructor(
 
     /** Re-derives [latestFilteredDisplays] from [latestSortedDisplays] and the given filter. */
     private fun applyFilter(filter: WifiDisplayFilter = _uiState.value.filter) {
-        latestFilteredDisplays = if (!filter.isActive) {
-            latestSortedDisplays
-        } else {
-            latestSortedDisplays.filter(filter::matches)
-        }
+        latestFilteredDisplays = if (filter.isActive) latestSortedDisplays.filter(filter::matches) else latestSortedDisplays
     }
 
     fun toggleGroupExpanded(groupKey: String) {
@@ -341,23 +381,7 @@ class WifiListViewModel internal constructor(
             wrappersByBssid[wrapper.wifiBeaconRecord.data.bssid] = wrapper
         }
 
-        // Rebuild the display list, reusing cached entries whose value-equality matches.
-        val displays = dedupedWrappers.map { wrapper ->
-            val data = wrapper.wifiBeaconRecord.data
-            val fresh = WifiAccessPointDisplay.fromWrapper(
-                wrapper = wrapper,
-                bandwidthLabel = WifiUtils.formatBandwidth(data.bandwidth),
-                standardLabel = WifiUtils.formatStandard(data.standard),
-                encryptionLabel = WifiBeaconMessageConstants.getEncryptionTypeString(data.encryptionType),
-            )
-            val cached = displayCache[fresh.bssid]
-            if (cached == fresh) {
-                cached // Same BSSID + same value fields -> keep reference identity.
-            } else {
-                displayCache[fresh.bssid] = fresh
-                fresh
-            }
-        }
+        val displays = cachedDisplays(dedupedWrappers, displayCache)
 
         // Trim cached entries for APs that disappeared this scan.
         displayCache.keys.retainAll(wrappersByBssid.keys)
@@ -376,27 +400,5 @@ class WifiListViewModel internal constructor(
         latestGroups = buildGroupParents(latestFilteredDisplays, sortIndex, expandedGroupKeys)
     }
 
-    /**
-     * Interleaves cached filtered displays / groups into the final [WifiDisplayItem] list. Pure
-     * function of cached state, no per-wrapper mapping, no re-sort.
-     */
-    private fun interleave(mode: WifiListMode): List<WifiDisplayItem> {
-        if (latestFilteredDisplays.isEmpty()) return emptyList()
-        return if (mode == WifiListMode.FLAT) {
-            latestFilteredDisplays.map { WifiDisplayItem.Flat(it) }
-        } else {
-            val result = mutableListOf<WifiDisplayItem>()
-            for (group in latestGroups) {
-                result += group
-                if (group.expanded) {
-                    for (ap in group.aps) {
-                        result += WifiDisplayItem.GroupChild(group.groupKey, ap)
-                    }
-                }
-            }
-            result
-        }
-    }
-
+    private fun interleave(mode: WifiListMode): List<WifiDisplayItem> = interleaveItems(mode, latestFilteredDisplays, latestGroups)
 }
-

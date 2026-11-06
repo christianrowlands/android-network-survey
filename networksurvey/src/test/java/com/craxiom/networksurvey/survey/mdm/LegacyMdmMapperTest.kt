@@ -70,7 +70,23 @@ class LegacyMdmMapperTest {
         val policy = SurveyPolicy.evaluate(
             RestrictionsSnapshot(broker + mapOf(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED to true)), false,
         )
-        assertTrue(policy.typeLocks.values.all { it == ManagedState.USER })
+        assertTrue(policy.typeLocks.filterKeys { !it.needsScout }.values.all { it == ManagedState.USER })
+        // A Scout-only type is off on a managed phone by default
+        assertEquals(ManagedState.OFF, policy.lockFor(RecordType.WIFI_CLIENTS))
+    }
+
+    @Test
+    fun `every stream flag on still leaves Wi-Fi clients off, so no broker starts receiving them`() {
+        val result = map(
+            broker + mapOf(
+                NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED to true,
+                NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED to true,
+                NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED to true,
+                NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED to true,
+                NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED to true,
+            )
+        )
+        assertFalse(RecordType.WIFI_CLIENTS in result.seedSetup!!.recordTypes)
     }
 
     /** The broker with every stream flag the app restrictions offer set to false. */

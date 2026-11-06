@@ -58,12 +58,15 @@ data class RoutingTableUi(
          * @param destinations     The destinations that are on.
          * @param info             Which community upload targets are selected.
          * @param mqttDeviceStatus True when MQTT (one of [destinations]) sends only device status.
+         * @param offered          The record types the app offers (RecordTypeAvailability), so the
+         *                         "Not selected" line never names one this phone can't record.
          * @return The table, or null when there is nothing to record or nowhere to send it.
          */
         fun of(
             types: Set<RecordType>,
             destinations: Collection<Destination>,
             info: DestinationInfo,
+            offered: Collection<RecordType>,
             mqttDeviceStatus: Boolean = false,
         ): RoutingTableUi? {
             val deviceStatus = mqttDeviceStatus && Destination.MQTT in destinations
@@ -80,7 +83,7 @@ data class RoutingTableUi(
                 rows = RecordType.entries.filter { it in types }.map { type ->
                     RoutingRowUi(type, columns.filterTo(linkedSetOf()) { type in it.accepts() })
                 },
-                unselected = RecordType.entries.filter { it !in types },
+                unselected = RecordType.entries.filter { it !in types && it in offered },
                 mqttDeviceStatus = deviceStatus,
             )
         }

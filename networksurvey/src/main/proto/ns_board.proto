@@ -1,0 +1,497 @@
+// Vendored from network-survey-esp32 proto/ns_board.proto at commit aba8679.
+// Keep it byte for byte equal to the firmware copy except for this header.
+
+// Network Survey board protocol.
+//
+// This file is the source of truth for the messages a Network Survey board
+// exchanges with the phone app over BLE GATT. docs/protocol.md describes the
+// GATT layout, framing, flows and versioning rules that go with it.
+//
+// Compatibility rules (see docs/protocol.md, "Versioning"):
+// - Never change the number or type of an existing field, enum value or
+//   oneof case. Never reuse a number: mark removed ones as `reserved`.
+// - Adding fields, messages, enum values or commands is a MINOR change.
+//   Anything else is a MAJOR change.
+// - Receivers ignore unknown fields and treat unknown enum values as the
+//   default (0) value, or ignore them.
+//
+// Conventions:
+// - MAC addresses are 6 bytes in transmission order (the first byte is the
+//   one printed first).
+// - RSSI, noise floor and TX power are in dBm.
+// - board_time_ms is Unix epoch milliseconds once the phone has sent SetTime,
+//   otherwise milliseconds since the board booted. The board converts its
+//   monotonic clock when it encodes a message, so every record in one
+//   RecordBatch shares the time base given by RecordBatch.time_synced.
+// - Channel numbers: 2.4 GHz uses 1 to 14, 5 GHz uses 32 to 177. 6 GHz is not
+//   used by protocol 1.x boards; Band disambiguates if it ever is.
+// - Bitmask fields are uint32 values whose bits are listed by an enum.
+//
+// Maximum sizes for nanopb live in ns_board.options. Senders must not exceed
+// them; receivers on the phone accept larger values.
+
+syntax = "proto3";
+
+package ns.board.v1;
+
+option swift_prefix = "NSB";
+option java_package = "com.craxiom.networksurvey.board.v1";
+option java_multiple_files = true;
+option java_outer_classname = "NsBoardProto";
+
+// The protocol version this file defines. Firmware and the app read these
+// numbers from generated code. This enum is never sent on the wire.
+enum ProtocolVersion {
+  option allow_alias = true;
+  PROTOCOL_VERSION_UNSPECIFIED = 0;
+  PROTOCOL_VERSION_MAJOR = 1;
+  PROTOCOL_VERSION_MINOR = 0;
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+// What a board captures. Set by the phone in Configure.
+enum Role {
+  ROLE_AUTO = 0;           // Hop the configured channel list; interleave BLE scans if BLE is on.
+  ROLE_BAND_24 = 1;        // Hop 2.4 GHz channels only.
+  ROLE_BAND_5 = 2;         // Hop 5 GHz channels only.
+  ROLE_FIXED_CHANNEL = 3;  // Stay on Configure.channels[0].
+  ROLE_BLE_SNIFFER = 4;    // Continuous passive BLE scan, no Wi-Fi.
+}
+
+enum Band {
+  BAND_UNSPECIFIED = 0;
+  BAND_GHZ_2_4 = 1;
+  BAND_GHZ_5 = 2;
+  BAND_GHZ_6 = 3;
+}
+
+// Summary of an AP's security, derived by the board from the capability
+// privacy bit and the RSN and WPA elements (rules in docs/protocol.md).
+enum SecurityType {
+  SECURITY_TYPE_UNKNOWN = 0;
+  SECURITY_TYPE_OPEN = 1;
+  SECURITY_TYPE_WEP = 2;
+  SECURITY_TYPE_WPA = 3;
+  SECURITY_TYPE_WPA_WPA2 = 4;
+  SECURITY_TYPE_WPA2 = 5;
+  SECURITY_TYPE_WPA3 = 6;
+  SECURITY_TYPE_WPA2_WPA3 = 7;
+  SECURITY_TYPE_OWE = 8;
+}
+
+enum ChannelWidth {
+  CHANNEL_WIDTH_UNKNOWN = 0;
+  CHANNEL_WIDTH_MHZ_20 = 1;
+  CHANNEL_WIDTH_MHZ_40 = 2;
+  CHANNEL_WIDTH_MHZ_80 = 3;
+  CHANNEL_WIDTH_MHZ_160 = 4;
+  CHANNEL_WIDTH_MHZ_80P80 = 5;
+  CHANNEL_WIDTH_MHZ_320 = 6;
+}
+
+// Bits of ApObservation.phy_flags and ProbeObservation.phy_flags: which
+// capability elements were present.
+enum PhyFlag {
+  PHY_FLAG_NONE = 0;
+  PHY_FLAG_HT = 1;   // 802.11n HT Capabilities
+  PHY_FLAG_VHT = 2;  // 802.11ac VHT Capabilities
+  PHY_FLAG_HE = 4;   // 802.11ax HE Capabilities
+  PHY_FLAG_EHT = 8;  // 802.11be EHT Capabilities
+}
+
+// Bits of ClientObservation.source_flags: frame types the client sent.
+enum ClientSource {
+  CLIENT_SOURCE_NONE = 0;
+  CLIENT_SOURCE_DATA = 1;         // Data and QoS data
+  CLIENT_SOURCE_NULL_DATA = 2;    // Null and QoS null
+  CLIENT_SOURCE_PROBE_REQ = 4;
+  CLIENT_SOURCE_ASSOC_REQ = 8;
+  CLIENT_SOURCE_REASSOC_REQ = 16;
+  CLIENT_SOURCE_AUTH = 32;
+  CLIENT_SOURCE_ACTION = 64;
+}
+
+enum BleAddressType {
+  BLE_ADDRESS_TYPE_UNSPECIFIED = 0;
+  BLE_ADDRESS_TYPE_PUBLIC = 1;
+  BLE_ADDRESS_TYPE_RANDOM = 2;     // Static, resolvable or non-resolvable: see the top two address bits.
+  BLE_ADDRESS_TYPE_ANONYMOUS = 3;  // Extended advertising without an address.
+}
+
+// Advertising PDU type of the last advertisement in the observation.
+enum BleAdvType {
+  BLE_ADV_TYPE_UNSPECIFIED = 0;
+  BLE_ADV_TYPE_ADV_IND = 1;
+  BLE_ADV_TYPE_ADV_DIRECT_IND = 2;
+  BLE_ADV_TYPE_ADV_SCAN_IND = 3;
+  BLE_ADV_TYPE_ADV_NONCONN_IND = 4;
+  BLE_ADV_TYPE_EXTENDED = 5;  // Any extended advertising PDU.
+}
+
+// PHY of a received raw frame.
+enum FramePhy {
+  FRAME_PHY_UNSPECIFIED = 0;
+  FRAME_PHY_LEGACY = 1;  // DSSS/CCK or OFDM, see RawFrame.rate_500kbps
+  FRAME_PHY_HT = 2;
+  FRAME_PHY_VHT = 3;
+  FRAME_PHY_HE = 4;
+}
+
+// Value doubles as the board model byte in the advertising data.
+enum BoardModel {
+  BOARD_MODEL_UNSPECIFIED = 0;
+  BOARD_MODEL_OTHER = 1;  // Third-party board, see BoardInfo.model_name.
+  BOARD_MODEL_ESP32_C5_DEVKITC_1 = 2;
+  BOARD_MODEL_XIAO_ESP32_C5 = 3;
+  BOARD_MODEL_ESP32_C6_GENERIC = 4;
+  BOARD_MODEL_ESP32_S3_GENERIC = 5;
+  BOARD_MODEL_ESP32_C3_GENERIC = 6;
+}
+
+enum Chip {
+  CHIP_UNSPECIFIED = 0;
+  CHIP_OTHER = 1;
+  CHIP_ESP32_C5 = 2;
+  CHIP_ESP32_C6 = 3;
+  CHIP_ESP32_S3 = 4;
+  CHIP_ESP32_C3 = 5;
+}
+
+enum BoardState {
+  BOARD_STATE_UNSPECIFIED = 0;
+  BOARD_STATE_IDLE = 1;
+  BOARD_STATE_SURVEYING = 2;
+  BOARD_STATE_OTA = 3;
+  BOARD_STATE_ERROR = 4;
+}
+
+enum GpsState {
+  GPS_STATE_NOT_PRESENT = 0;
+  GPS_STATE_NO_FIX = 1;
+  GPS_STATE_FIX = 2;
+}
+
+enum ResultCode {
+  RESULT_CODE_UNSPECIFIED = 0;
+  RESULT_CODE_OK = 1;
+  RESULT_CODE_ERROR = 2;                   // Unexpected failure, see ControlResponse.message.
+  RESULT_CODE_INVALID_ARGUMENT = 3;
+  RESULT_CODE_INVALID_STATE = 4;           // Not allowed right now (for example OtaEnd without OtaBegin).
+  RESULT_CODE_UNSUPPORTED = 5;             // Unknown or unsupported command.
+  RESULT_CODE_INCOMPATIBLE = 6;            // Hello: protocol major versions differ.
+  RESULT_CODE_OTA_VERIFY_FAILED = 7;       // OtaEnd: size or SHA-256 mismatch, or the image is invalid.
+  RESULT_CODE_BUSY = 8;
+}
+
+enum OtaAckStatus {
+  OTA_ACK_STATUS_UNSPECIFIED = 0;
+  OTA_ACK_STATUS_OK = 1;
+  OTA_ACK_STATUS_OUT_OF_ORDER = 2;  // A chunk did not start at next_offset; resend from next_offset.
+  OTA_ACK_STATUS_WRITE_FAILED = 3;  // Flash write failed; the transfer is aborted.
+  OTA_ACK_STATUS_NOT_ACTIVE = 4;    // No transfer in progress; send OtaBegin first.
+  OTA_ACK_STATUS_OVERFLOW = 5;      // A chunk went past the image size; the transfer is aborted.
+}
+
+// ---------------------------------------------------------------------------
+// Info characteristic (read, no security)
+// ---------------------------------------------------------------------------
+
+message BoardInfo {
+  uint32 protocol_major = 1;
+  uint32 protocol_minor = 2;
+  string firmware_version = 3;  // Semantic version, for example "1.2.0".
+  BoardModel board_model = 4;
+  Chip chip = 5;
+  repeated Band bands = 6;      // Wi-Fi bands the board can receive on.
+  bool gps_present = 7;         // A GPS receiver is fitted or configured.
+  string short_id = 8;          // "XXXX" from the advertised name NS-XXXX.
+  uint32 preferred_mtu = 9;     // ATT MTU the board asks for.
+  bytes bt_address = 10;        // Board's BLE identity address, a stable board identifier.
+  string model_name = 11;       // Human-readable model, required for BOARD_MODEL_OTHER.
+}
+
+// ---------------------------------------------------------------------------
+// Control characteristic (write with response; responses by indication)
+// ---------------------------------------------------------------------------
+
+message ControlRequest {
+  uint32 request_id = 1;  // Chosen by the phone, echoed in ControlResponse.
+  oneof command {
+    Hello hello = 2;
+    SetTime set_time = 3;
+    Configure configure = 4;
+    Start start = 5;
+    Stop stop = 6;
+    EnterPairingMode enter_pairing_mode = 7;
+    ForgetBonds forget_bonds = 8;
+    OtaBegin ota_begin = 9;
+    OtaEnd ota_end = 10;
+    OtaAbort ota_abort = 11;
+    Ping ping = 12;
+  }
+}
+
+message ControlResponse {
+  uint32 request_id = 1;
+  ResultCode result = 2;
+  string message = 3;  // Optional detail for logs. Not for display.
+  oneof payload {
+    HelloResult hello = 4;
+    ConfigureResult configure = 5;
+    OtaBeginResult ota_begin = 6;
+    PingResult ping = 7;
+  }
+}
+
+// First command after connecting. The board answers RESULT_CODE_OK when the
+// major versions match and RESULT_CODE_INCOMPATIBLE otherwise, with
+// HelloResult either way.
+message Hello {
+  uint32 protocol_major = 1;
+  uint32 protocol_minor = 2;
+  string app_version = 3;
+}
+
+message HelloResult {
+  uint32 protocol_major = 1;
+  uint32 protocol_minor = 2;
+  bool compatible = 3;
+  string firmware_version = 4;
+  bool ota_image_confirmed = 5;  // First Hello since a firmware update: the new image is confirmed.
+}
+
+message SetTime {
+  uint64 unix_time_ms = 1;
+}
+
+message Configure {
+  bool wifi_ap = 1;          // Produce ApObservation.
+  bool wifi_client = 2;      // Produce ClientObservation.
+  bool wifi_probes = 3;      // Produce ProbeObservation.
+  bool ble = 4;              // Produce BleObservation (interleaved unless role is BLE_SNIFFER).
+  bool raw_frames = 5;       // Stream RawFrame on the Raw characteristic.
+  Role role = 6;
+  repeated uint32 channels = 7;     // Channels to hop. Empty means every supported channel for the role.
+  uint32 dwell_24_ms = 8;           // Base dwell per 2.4 GHz channel. 0 means board default.
+  uint32 dwell_5_ms = 9;            // Base dwell per 5 GHz channel. 0 means board default.
+  uint32 raw_snaplen = 10;          // Max captured bytes per raw frame. 0 means board default.
+  uint32 raw_max_frames_per_sec = 11;  // Raw frame rate limit. 0 means board default.
+  uint32 raw_type_mask = 12;        // Bit 0 management, bit 1 control, bit 2 data. 0 means management only.
+}
+
+// What the board will actually do after Configure.
+message ConfigureResult {
+  repeated uint32 channels = 1;  // Channels it will hop, after dropping unsupported ones.
+  Role role = 2;
+  uint32 raw_snaplen = 3;        // Effective snaplen after limits.
+}
+
+message Start {}
+
+message Stop {}
+
+message EnterPairingMode {}
+
+message ForgetBonds {}
+
+message OtaBegin {
+  uint32 image_size = 1;  // Bytes.
+  bytes sha256 = 2;       // SHA-256 of the whole image, 32 bytes.
+}
+
+message OtaBeginResult {
+  uint32 max_chunk_size = 1;  // Max image bytes per OTA write (after the 4-byte offset).
+  uint32 window_bytes = 2;    // Max unacknowledged image bytes in flight.
+  uint32 start_offset = 3;    // Where to start. Non-zero when resuming the same image.
+}
+
+message OtaEnd {}
+
+message OtaAbort {}
+
+message Ping {
+  uint32 nonce = 1;
+}
+
+message PingResult {
+  uint32 nonce = 1;
+  uint64 board_time_ms = 2;
+  bool time_synced = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Status characteristic (notify, about 1 Hz and on change)
+// ---------------------------------------------------------------------------
+
+message BoardStatus {
+  uint64 board_time_ms = 1;
+  bool time_synced = 2;
+  BoardState state = 3;
+  Role role = 4;
+  uint32 current_channel = 5;      // 0 when not on a Wi-Fi channel.
+  uint32 records_per_sec = 6;      // Records produced over the last second.
+  uint32 ring_fill_percent = 7;    // Records ring buffer fill, 0 to 100.
+  uint32 dropped_records = 8;      // Records dropped because the ring was full, since boot.
+  uint32 dropped_raw_frames = 9;   // Raw frames dropped by rate limit or ring, since boot.
+  uint32 dropped_rx_frames = 10;   // 802.11 frames lost before parsing (queue full), since boot.
+  uint32 rx_frames_per_sec = 11;   // 802.11 frames received over the last second.
+  uint64 uptime_ms = 12;
+  uint32 free_heap_bytes = 13;
+  uint32 min_free_heap_bytes = 14;
+  GpsState gps_state = 15;
+  optional uint32 battery_mv = 16;
+  bool pairing_mode = 17;          // Pairable: no bonds yet, or an explicit pairing window is open.
+  uint32 bond_count = 18;
+  uint32 mtu = 19;                 // Negotiated ATT MTU of this connection.
+}
+
+// ---------------------------------------------------------------------------
+// Records characteristic (notify)
+// ---------------------------------------------------------------------------
+
+message RecordBatch {
+  bool time_synced = 1;  // Time base of every board_time_ms in this batch.
+  repeated Record records = 2;
+}
+
+message Record {
+  oneof kind {
+    ApObservation ap = 1;
+    ClientObservation client = 2;
+    ProbeObservation probe = 3;
+    BleObservation ble = 4;
+    GpsFix gps = 5;
+  }
+}
+
+// One per BSSID per channel dwell, from beacons and probe responses.
+message ApObservation {
+  uint64 board_time_ms = 1;      // Time of the last frame.
+  uint32 channel = 2;            // Primary channel (DS Parameter Set or HT Operation, else the receive channel).
+  uint32 frequency_mhz = 3;      // Center frequency of the primary channel.
+  Band band = 4;
+  bytes bssid = 5;
+  bytes ssid = 6;                // Raw SSID octets, up to 32. Not necessarily UTF-8.
+  bool ssid_hidden = 7;          // SSID element empty or all zero bytes.
+  sint32 rssi_max = 8;
+  sint32 rssi_last = 9;
+  optional sint32 noise_floor_dbm = 10;  // From the receiver, for SNR.
+  uint32 beacon_count = 11;
+  uint32 probe_response_count = 12;
+  optional uint32 beacon_interval_tu = 13;
+  uint32 capability_info = 14;   // Raw 16-bit Capability Information field.
+  SecurityType security = 15;
+  // Cipher and AKM suite selectors from the RSN and WPA elements, each as
+  // (OUI << 8) | type. For example 0x000FAC04 is RSN CCMP and 0x0050F202 is
+  // WPA TKIP. 0 means not present.
+  uint32 group_cipher = 16;
+  repeated uint32 pairwise_ciphers = 17;
+  repeated uint32 akm_suites = 18;
+  uint32 phy_flags = 19;         // PhyFlag bits.
+  ChannelWidth channel_width = 20;
+  bool wps = 21;                 // WPS vendor element present.
+  bool passpoint = 22;           // Hotspot 2.0 indication element present.
+  bytes supported_rates = 23;    // Raw Supported Rates octets (500 kbps units, bit 7 = basic).
+  bytes extended_supported_rates = 24;  // Raw Extended Supported Rates octets.
+  optional uint32 station_count = 25;        // BSS Load element.
+  optional uint32 channel_utilization = 26;  // BSS Load element, 0 to 255.
+  bool detail_trimmed = 27;      // The board dropped optional detail so the record fits the MTU (docs/protocol.md section 4).
+}
+
+// One per client MAC per channel dwell. Only frames the client transmitted
+// (client MAC in address 2) count, so RSSI describes the client.
+message ClientObservation {
+  uint64 board_time_ms = 1;
+  uint32 channel = 2;            // Receive channel.
+  uint32 frequency_mhz = 3;
+  Band band = 4;
+  bytes client_mac = 5;
+  bytes associated_bssid = 6;    // From ToDS/FromDS addressing or the request target. Empty if unknown.
+  sint32 rssi_max = 7;
+  sint32 rssi_last = 8;
+  optional sint32 noise_floor_dbm = 9;
+  uint32 frame_count = 10;
+  uint32 source_flags = 11;      // ClientSource bits.
+  bool locally_administered = 12;  // Bit 0x02 of the first MAC byte (often a randomized MAC).
+}
+
+// One per (client MAC, SSID) per channel dwell.
+message ProbeObservation {
+  uint64 board_time_ms = 1;
+  uint32 channel = 2;            // Receive channel.
+  uint32 frequency_mhz = 3;
+  Band band = 4;
+  bytes client_mac = 5;          // Source address (address 2).
+  bytes ssid = 6;                // Empty means a wildcard probe.
+  sint32 rssi_max = 7;
+  sint32 rssi_last = 8;
+  optional sint32 noise_floor_dbm = 9;
+  uint32 count = 10;
+  bool locally_administered = 11;
+  bytes destination_address = 12;  // Address 1 of the last request (broadcast or a directed AP).
+  bytes bssid = 13;                // Address 3 of the last request.
+  uint32 phy_flags = 14;           // PhyFlag bits from the request's capability elements.
+}
+
+// One per advertiser address per scan window.
+message BleObservation {
+  uint64 board_time_ms = 1;
+  uint32 channel = 2;            // Advertising channel (37, 38, 39) if known, else 0.
+  bytes address = 3;
+  BleAddressType address_type = 4;
+  sint32 rssi_max = 5;
+  sint32 rssi_last = 6;
+  uint32 count = 7;              // Advertisements received.
+  BleAdvType adv_type = 8;
+  bytes adv_data = 9;            // Raw AD structures of the last advertisement.
+  bool adv_data_truncated = 10;  // Extended data longer than adv_data's limit, cut at an AD structure boundary.
+  bytes local_name = 11;         // Raw Complete or Shortened Local Name octets, if present. Usually UTF-8.
+  optional uint32 company_id = 12;  // First Manufacturer Specific Data company ID, if present.
+  optional sint32 tx_power = 13;    // TX Power Level, if present.
+}
+
+// From an optional GPS receiver on the board.
+message GpsFix {
+  uint64 board_time_ms = 1;
+  double latitude = 2;           // Degrees, WGS84.
+  double longitude = 3;
+  optional float altitude_m = 4; // Above mean sea level.
+  optional float hdop = 5;
+  uint32 satellites = 6;
+  uint64 fix_time_ms = 7;        // UTC epoch ms of the fix. 0 if the date is unknown.
+  uint32 fix_quality = 8;        // NMEA GGA quality indicator (0 invalid, 1 GPS, 2 DGPS, ...).
+  optional float speed_mps = 9;
+  optional float course_deg = 10;
+}
+
+// ---------------------------------------------------------------------------
+// Raw characteristic (notify, only when raw frames are on)
+// ---------------------------------------------------------------------------
+
+message RawFrame {
+  uint64 board_time_us = 1;      // Same time base as board_time_ms, in microseconds.
+  bool time_synced = 2;
+  uint32 channel = 3;
+  uint32 frequency_mhz = 4;
+  Band band = 5;
+  sint32 rssi = 6;
+  optional sint32 noise_floor_dbm = 7;
+  FramePhy phy = 8;
+  uint32 rate_500kbps = 9;       // Legacy rate. 0 for HT and later.
+  optional uint32 mcs = 10;      // HT and later.
+  uint32 orig_len = 11;          // Frame length on air, before snaplen.
+  bool fcs_included = 12;        // data ends with the 4-byte FCS.
+  bytes data = 13;               // 802.11 frame starting at Frame Control, up to the snaplen.
+}
+
+// ---------------------------------------------------------------------------
+// OTA characteristic (writes carry raw chunks; acks by notification)
+// ---------------------------------------------------------------------------
+
+message OtaAck {
+  uint32 next_offset = 1;  // Bytes received and written contiguously from 0.
+  OtaAckStatus status = 2;
+}

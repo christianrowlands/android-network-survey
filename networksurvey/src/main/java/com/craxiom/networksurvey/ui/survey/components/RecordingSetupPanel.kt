@@ -43,6 +43,7 @@ import com.craxiom.networksurvey.ui.common.NsTextAction
  * @param deviceStatusOnly True when the survey records no types and MQTT sends only device status;
  *                         the panel says so instead of six chips that are all off.
  * @param availableTypes   The types to show as chips: those the organization hasn't turned off.
+ * @param wifiScoutName    The NS Scout's name while it is the Wi-Fi source ("Wi-Fi · NS-ABCD").
  */
 @Composable
 fun RecordingSetupPanel(
@@ -55,6 +56,7 @@ fun RecordingSetupPanel(
     notSent: Set<RecordType> = emptySet(),
     deviceStatusOnly: Boolean = false,
     availableTypes: List<RecordType> = RecordType.entries,
+    wifiScoutName: String? = null,
 ) {
     NsPanel(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -82,7 +84,7 @@ fun RecordingSetupPanel(
                 modifier = Modifier.padding(top = NsTheme.spacing.s),
             )
         } else {
-            TypeChips(shown = availableTypes, on = types.toSet(), notSent = notSent, onNotSent = onWhatGoesWhere)
+            TypeChips(shown = availableTypes, on = types.toSet(), notSent = notSent, onNotSent = onWhatGoesWhere, wifiScoutName = wifiScoutName)
         }
         NsTextAction(stringResource(R.string.survey_what_goes_where), onWhatGoesWhere)
         if (canChange) {
@@ -108,6 +110,7 @@ fun TypeChips(
     notSent: Set<RecordType>,
     onNotSent: () -> Unit,
     modifier: Modifier = Modifier,
+    wifiScoutName: String? = null,
 ) {
     FlowRow(
         modifier = modifier.padding(top = NsTheme.spacing.s),
@@ -115,7 +118,7 @@ fun TypeChips(
         verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.s),
     ) {
         shown.forEach { type ->
-            if (type in notSent) NotSentChip(type, onNotSent) else TypeChip(type, type in on)
+            if (type in notSent) NotSentChip(type, onNotSent) else TypeChip(type, type in on, wifiScoutName.takeIf { type == RecordType.WIFI })
         }
     }
 }
@@ -143,7 +146,7 @@ private fun NotSentChip(type: RecordType, onClick: () -> Unit) {
 }
 
 @Composable
-private fun TypeChip(type: RecordType, on: Boolean) {
+private fun TypeChip(type: RecordType, on: Boolean, scoutName: String?) {
     val colors = MaterialTheme.colorScheme
     val outline = colors.outline
     val chipModifier = if (on) {
@@ -171,7 +174,7 @@ private fun TypeChip(type: RecordType, on: Boolean) {
             modifier = Modifier.size(CHIP_ICON),
         )
         Text(
-            text = stringResource(type.labelRes),
+            text = scoutName?.let { stringResource(R.string.survey_chip_wifi_scout, it) } ?: stringResource(type.labelRes),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
             color = if (on) colors.onSurface else outline,

@@ -42,4 +42,13 @@ sealed interface SurveyEvent {
 
     /** The organization doesn't allow uploads to [destination] on this phone. */
     data class UploadBlockedByOrganization(val destination: Destination) : SurveyEvent
+
+    /** Wi-Fi now comes from this phone; the snackbar offers Undo, back to the NS Scout. */
+    data object WifiFromPhone : SurveyEvent
+
+    /** Wi-Fi now comes from the NS Scout [scoutName]. */
+    data class WifiFromScout(val scoutName: String) : SurveyEvent
+
+    /** The Wi-Fi source can't change while a survey records. */
+    data object WifiSourceLocked : SurveyEvent
 }

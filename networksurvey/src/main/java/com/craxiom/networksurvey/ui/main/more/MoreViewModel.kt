@@ -10,9 +10,15 @@ import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import com.craxiom.networksurvey.util.NsUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import com.craxiom.networksurvey.scout.ScoutManager
+import com.craxiom.networksurvey.scout.ScoutPolicy
+import com.craxiom.networksurvey.scout.model.ScoutState
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -35,8 +41,18 @@ class MoreViewModel(application: Application) : AndroidViewModel(application) {
 
     private var reader: DestinationInfoReader? = null
 
-    private val mutableState = MutableStateFlow(MoreUiState(MoreItems.build(null, SurveyPolicyState.UNMANAGED, "")))
-    val state: StateFlow<MoreUiState> = mutableState.asStateFlow()
+    /** What [refresh] read: the destinations, the policy, the version and whether NS Scout is allowed. */
+    private data class Read(val info: DestinationInfo?, val policy: SurveyPolicyState, val version: String, val scoutAllowed: Boolean)
+
+    // NS Scout stays out until the first read says it is allowed, so a phone that bans it never shows the row
+    private val read = MutableStateFlow(Read(null, SurveyPolicyState.UNMANAGED, "", scoutAllowed = false))
+
+    /** The NS Scout's status for the Hardware row, live while the tab shows. */
+    private val scoutState: Flow<ScoutState> = ScoutManager.getInstance(application).state
+
+    val state: StateFlow<MoreUiState> = combine(read, scoutState) { read, scout ->
+        MoreUiState(MoreItems.build(read.info, read.policy, read.version, scout.takeIf { read.scoutAllowed }), read.info ?: DestinationInfo())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, MoreUiState(MoreItems.build(null, SurveyPolicyState.UNMANAGED, "", scout = null)))
 
     /** Re-reads the destinations and the policy. */
     fun refresh() {
@@ -44,7 +60,7 @@ class MoreViewModel(application: Application) : AndroidViewModel(application) {
             val application = getApplication<Application>()
             val info = (reader ?: DestinationInfoReader(application).also { reader = it }).read(null)
             val policy = SurveyTypeResolver.currentPolicy(application)
-            mutableState.value = MoreUiState(MoreItems.build(info, policy, NsUtils.getAppVersionName(application)), info)
+            read.value = Read(info, policy, NsUtils.getAppVersionName(application), ScoutPolicy.isAllowed(application))
         }
     }
 }

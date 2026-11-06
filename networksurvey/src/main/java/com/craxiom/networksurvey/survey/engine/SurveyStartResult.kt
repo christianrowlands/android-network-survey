@@ -8,7 +8,10 @@ enum class SurveyOrigin {
     /** The Survey screen (or another in-app control) operated by the person holding the phone. */
     USER,
 
-    /** The Intent API (`START_SURVEY` / `STOP_SURVEY`) from another app. */
+    /**
+     * The Intent API (`START_SURVEY` / `STOP_SURVEY`) from another app. It can't start a record type
+     * only an NS Scout records (see [SkipReason.NOT_ALLOWED_FROM_INTENT]).
+     */
     INTENT,
 
     /** The phone booted with auto start on. */
@@ -46,6 +49,21 @@ enum class SkipReason {
 
     /** The radio the record type needs (Wi-Fi, Bluetooth) is off. */
     RADIO_OFF,
+
+    /**
+     * Only an NS Scout can record the type (Wi-Fi clients), and none is paired or this phone is
+     * the Wi-Fi source.
+     */
+    NEEDS_SCOUT,
+
+    /** Only Log files take the record type (Raw frames), and Log files are not part of the survey. */
+    NEEDS_LOG_FILES,
+
+    /**
+     * Another app asked for a record type only an NS Scout records. Only the person using the phone
+     * or their organization can turn those on, so the rest of the request starts without it.
+     */
+    NOT_ALLOWED_FROM_INTENT,
 
     /** The destination tried to start and failed. */
     START_FAILED,

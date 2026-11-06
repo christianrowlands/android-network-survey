@@ -679,6 +679,8 @@
 
     <string name="allow_ns_analytics_title">Allow NS Analytics</string>
     <string name="allow_ns_analytics_mdm_description">True to allow users to register and upload survey records to NS Analytics, false to prevent it</string>
+    <string name="allow_ns_scout_title">Allow NS Scout</string>
+    <string name="allow_ns_scout_mdm_description">True to allow users to pair an NS Scout and get Wi-Fi from it, false to hide NS Scout and keep Wi-Fi on the phone</string>
 
 
     <string name="pref_file_location_output_title">Location</string>
@@ -1450,6 +1452,10 @@
     <string name="mdm_survey_bluetooth_title">Record Bluetooth</string>
     <string name="mdm_survey_gnss_title">Record GNSS</string>
     <string name="mdm_survey_cdr_title">Record call records</string>
+    <string name="mdm_survey_wifi_clients_title">Record Wi-Fi clients</string>
+    <string name="mdm_survey_wifi_raw_title">Save raw frames</string>
+    <string name="mdm_survey_wifi_raw_description">Raw 802.11 frames come only from an NS Scout and are saved only to log files on the phone; they include the addresses and network names of nearby devices. Off (the default) removes them from the Survey screen. Operator chooses leaves them to the person using the phone. Always on saves them in every survey with Log files while an NS Scout is the Wi-Fi source.</string>
+    <string name="mdm_survey_wifi_clients_description">Wi-Fi clients come only from an NS Scout. Off (the default) removes them from the Survey screen. Operator chooses leaves them to the person using the phone. Always on records them in every survey while an NS Scout is the Wi-Fi source.</string>
     <string name="mdm_destination_log_files_title">Send to log files</string>
     <string name="mdm_destination_ns_analytics_title">Send to NS Analytics</string>
     <string name="mdm_destination_mqtt_title">Send to the MQTT broker</string>
@@ -1479,6 +1485,20 @@
     <string name="survey_type_cdr">Call records</string>
     <string name="survey_type_cdr_description">Calls, texts, tower changes</string>
     <string name="survey_type_cdr_description_no_texts">Calls, tower changes</string>
+    <string name="survey_type_wifi_clients">Wi-Fi clients</string>
+    <string name="survey_type_wifi_clients_description">Devices and the networks they look for</string>
+    <string name="survey_type_wifi_raw">Raw frames</string>
+    <string name="survey_type_wifi_raw_description">802.11 frames as pcapng, Log files only</string>
+    <!-- On the Raw frames tile while it is on and Log files is off -->
+    <string name="survey_type_wifi_raw_needs_log_files">Turn on Log files to save these</string>
+    <!-- On a Scout-only record type's tile while this phone is the Wi-Fi source. %1$s is the Scout's name, "NS-ABCD" -->
+    <string name="survey_type_needs_scout">Needs %1$s</string>
+    <!-- A Scout-only record type the survey left out because no NS Scout is in use. %1$s is the type, "Wi-Fi clients" -->
+    <string name="survey_item_needs_scout">%1$s needs an NS Scout as the Wi-Fi source</string>
+    <!-- %1$s is the record type, "Raw frames" -->
+    <string name="survey_item_needs_log_files">Only Log files save %1$s</string>
+    <!-- After a destination row's subtitle when it can't take some selected types: "CSV on this phone · Wi-Fi clients not sent" -->
+    <string name="survey_destination_not_sent">%1$s · %2$s not sent</string>
     <string name="survey_type_included_with_cellular">Included with Cellular</string>
     <string name="survey_type_not_sent_anywhere">Not sent anywhere</string>
     <string name="survey_chip_not_sent">%1$s · not sent</string>
@@ -1493,6 +1513,8 @@
 
     <string name="survey_dest_log_files">Log files</string>
     <string name="survey_dest_log_files_detail">CSV on this phone</string>
+    <!-- The Log files row while the survey saves Raw frames (pcapng files) too -->
+    <string name="survey_dest_log_files_detail_raw">CSV and pcapng on this phone</string>
     <string name="survey_dest_ns_analytics">NS Analytics</string>
     <string name="survey_dest_ns_analytics_connected">Connected</string>
     <string name="survey_dest_mqtt">MQTT stream</string>
@@ -1526,6 +1548,7 @@
     </plurals>
     <string name="survey_list_separator">", "</string>
     <string name="survey_list_last">%1$s and %2$s</string>
+    <string name="survey_list_last_or">%1$s or %2$s</string>
     <string name="survey_dot_separator">" · "</string>
 
     <string name="survey_start">Start survey</string>
@@ -1730,6 +1753,31 @@
     <string name="survey_item_not_set_up">%1$s isn\'t set up</string>
     <string name="survey_item_not_connected">NS Analytics isn\'t connected</string>
     <string name="survey_item_no_upload_target">Choose OpenCelliD or BeaconDB to upload to</string>
+    <!-- NS Scout left-out items when only Wi-Fi comes from the Scout (%1$s is its name, like NS-ABCD) -->
+    <string name="scout_item_out_of_range">%1$s is out of range, so Wi-Fi isn\'t being recorded</string>
+    <string name="scout_item_bluetooth_off">Bluetooth is off, so Wi-Fi from %1$s isn\'t being recorded</string>
+    <string name="scout_item_permission">%1$s needs the Nearby devices permission, so Wi-Fi isn\'t being recorded</string>
+    <string name="scout_item_firmware">%1$s needs a firmware update, so Wi-Fi isn\'t being recorded</string>
+    <string name="scout_item_app_update">%1$s needs a newer Network Survey, so Wi-Fi isn\'t being recorded</string>
+    <string name="scout_item_pairing_lost">%1$s needs to be paired again, so Wi-Fi isn\'t being recorded</string>
+    <string name="scout_item_cant_connect">%1$s can\'t finish connecting, so Wi-Fi isn\'t being recorded</string>
+    <string name="scout_item_updating">%1$s is updating its firmware, so Wi-Fi isn\'t being recorded</string>
+    <!-- The same items when the Scout gives other types too. %1$s is the Scout's name, %2$s the types,
+         like "Wi-Fi, Wi-Fi clients and Raw frames" (or "Wi-Fi clients" alone) -->
+    <string name="scout_item_out_of_range_types">%1$s is out of range, so %2$s aren\'t being recorded</string>
+    <!-- %1$s is the types, like "Wi-Fi from NS-ABCD, Wi-Fi clients, Raw frames and Bluetooth" -->
+    <string name="scout_item_bluetooth_off_types">Bluetooth is off, so %1$s aren\'t being recorded</string>
+    <string name="scout_item_permission_types">%1$s needs the Nearby devices permission, so %2$s aren\'t being recorded</string>
+    <string name="scout_item_firmware_types">%1$s needs a firmware update, so %2$s aren\'t being recorded</string>
+    <string name="scout_item_app_update_types">%1$s needs a newer Network Survey, so %2$s aren\'t being recorded</string>
+    <string name="scout_item_pairing_lost_types">%1$s needs to be paired again, so %2$s aren\'t being recorded</string>
+    <string name="scout_item_cant_connect_types">%1$s can\'t finish connecting, so %2$s aren\'t being recorded</string>
+    <string name="scout_item_updating_types">%1$s is updating its firmware, so %2$s aren\'t being recorded</string>
+    <!-- Survey notification title once the NS Scout has kept Wi-Fi out for 10 minutes or more -->
+    <plurals name="scout_notification_no_wifi_title">
+        <item quantity="one">No Wi-Fi for %d min</item>
+        <item quantity="other">No Wi-Fi for %d min</item>
+    </plurals>
     <string name="survey_action_turn_on">Turn on %1$s</string>
     <string name="survey_action_allow">Allow</string>
     <string name="survey_action_try_again">Try again</string>
@@ -2506,4 +2554,438 @@
     <string name="upload_progress_records">Uploading records…</string>
     <string name="ns_analytics_upload_batch">Uploading batch %1$d of %2$d…</string>
     <string name="ns_analytics_upload_batch_done">Sent batch %1$d of %2$d</string>
+
+    <!-- NS Scout: Scout page, pairing, Survey, More -->
+    <!-- The one NS Scout status word every surface shows (Survey row, Scout page, More) -->
+    <string name="scout_word_connected">Connected</string>
+    <string name="scout_word_connecting">Connecting</string>
+    <string name="scout_word_out_of_range">Out of range</string>
+    <string name="scout_word_not_connected">Not connected</string>
+    <string name="scout_word_catching_up">Catching up</string>
+    <string name="scout_word_bluetooth_off">Bluetooth is off</string>
+    <string name="scout_word_permission">Allow Nearby devices</string>
+    <string name="scout_word_firmware">Needs a firmware update</string>
+    <string name="scout_word_app_update">Needs a newer app</string>
+    <string name="scout_word_updating">Updating firmware</string>
+    <string name="scout_word_not_in_use">Not in use</string>
+    <string name="scout_word_pairing_lost">Pairing lost</string>
+    <string name="scout_word_pairing_refused">Pairing refused</string>
+    <string name="scout_word_cant_connect">Can\'t connect</string>
+    <!-- The line under the Scout status word. %1$d is the channel, %2$s the frames heard per second, like 74 -->
+    <string name="scout_detail_capture">Ch %1$d · hearing %2$s frames/s</string>
+    <string name="scout_detail_capture_starting">Starting to listen</string>
+    <string name="scout_detail_data_missed">Some data missed</string>
+    <plurals name="scout_detail_catching_up">
+        <item quantity="one">%1$s record from its buffer · placed where it was heard</item>
+        <item quantity="other">%1$s records from its buffer · placed where they were heard</item>
+    </plurals>
+    <!-- %1$s is how long ago, like "2 minutes ago" -->
+    <string name="scout_detail_last_heard">Last heard %1$s</string>
+    <string name="scout_detail_still_listening">Still listening on the Scout · last heard %1$s</string>
+    <string name="scout_detail_battery_empty">Battery may be empty</string>
+    <string name="scout_detail_plug_in">Plug it in and hold it near this phone</string>
+    <string name="scout_detail_hold_near">Hold it near this phone</string>
+    <string name="scout_detail_bluetooth_off">This phone needs Bluetooth to reach the Scout</string>
+    <string name="scout_detail_permission">This phone needs the Nearby devices permission to reach the Scout</string>
+    <!-- %1$s is the firmware version, like 0.1.0 -->
+    <string name="scout_detail_firmware">Firmware %1$s is too old for this app</string>
+    <string name="scout_detail_app_update">Update Network Survey to use %1$s</string>
+    <string name="scout_detail_pairing_lost">Forget it in Android\'s Bluetooth settings, then pair it again</string>
+    <string name="scout_detail_pairing_refused">Hold its BOOT button for about 3 seconds, then pair it again</string>
+    <string name="scout_detail_updating">Keep it powered and next to this phone</string>
+    <string name="scout_detail_cant_connect">%1$s answers but won\'t finish connecting. Unplug it for 5 seconds and plug it back in.</string>
+    <!-- The Wi-Fi bands a Scout hears. %1$s is a list of numbers, like "2.4 and 5" -->
+    <string name="scout_bands">%1$s GHz</string>
+    <string name="scout_battery_percent">%1$d%% battery</string>
+    <string name="scout_usb_powered">USB powered</string>
+    <!-- The Survey tab's Scout row while this phone is the Wi-Fi source. %1$s is the Scout's name -->
+    <string name="scout_row_phone_title">Wi-Fi from this phone</string>
+    <string name="scout_row_phone_detail">%1$s not in use</string>
+    <string name="scout_action_use">Use %1$s</string>
+    <string name="scout_action_scout_page">Scout page</string>
+    <string name="scout_action_pair_again">Pair again</string>
+    <string name="scout_action_bluetooth_settings">Bluetooth settings</string>
+    <!-- Survey plates while the Scout is the Wi-Fi source and can't deliver. In the Ready plate bodies the types are like "Wi-Fi, Wi-Fi clients and Raw frames" (or "Wi-Fi" alone) -->
+    <!-- %1$s is the types, like "Wi-Fi from NS-ABCD, Wi-Fi clients and Bluetooth" -->
+    <string name="scout_plate_bluetooth_body">%1$s won\'t be recorded.</string>
+    <!-- %1$s is the Scout's name, %2$s the types -->
+    <string name="scout_plate_permission_body">This phone needs it to reach %1$s, so %2$s won\'t be recorded.</string>
+    <!-- %1$s is the types -->
+    <string name="scout_plate_firmware_body">%1$s won\'t be recorded until it is updated. It takes about a minute over Bluetooth.</string>
+    <!-- %1$s is the types -->
+    <string name="scout_plate_app_update_body">%1$s won\'t be recorded until Network Survey is updated.</string>
+    <!-- %1$s is the types -->
+    <string name="scout_plate_pairing_lost_body">%1$s won\'t be recorded until it is paired again.</string>
+    <string name="scout_plate_cant_connect_body">%1$s won\'t be recorded until it connects. Unplug the Scout for 5 seconds and plug it back in.</string>
+    <!-- %1$s is the types -->
+    <string name="scout_plate_updating_body">%1$s won\'t be recorded until the update finishes.</string>
+    <string name="scout_plate_out_of_range_body">The Scout keeps listening for up to 5 minutes and sends what it heard once it is back in range. The survey keeps going for everything else.</string>
+    <!-- Snackbars after the Wi-Fi source changes -->
+    <string name="scout_snackbar_phone">Wi-Fi now comes from this phone. Switch back from the Scout row.</string>
+    <string name="scout_snackbar_scout">Wi-Fi now comes from %1$s.</string>
+    <!-- Survey tiles and chips while the Scout is the Wi-Fi source. %1$s is the Scout's name -->
+    <string name="survey_type_wifi_from_scout">From %1$s</string>
+    <string name="survey_type_wifi_from">Wi-Fi from %1$s</string>
+    <string name="survey_chip_wifi_scout">Wi-Fi · %1$s</string>
+    <!-- More tab -->
+    <string name="more_section_hardware">Hardware</string>
+    <string name="more_scout_subtitle">Optional board for more Wi-Fi detail</string>
+    <!-- The NS Scout page with no Scout paired -->
+    <string name="scout_page_title">NS Scout</string>
+    <string name="scout_intro_tagline">A small add-on board that listens to Wi-Fi for this app</string>
+    <string name="scout_intro_no_limit">Listens continuously during a survey or on a Wi-Fi screen, without Android\'s scan limit.</string>
+    <string name="scout_intro_bands">Hears 2.4 GHz, and 5 GHz on ESP32-C5 boards.</string>
+    <string name="scout_intro_details">Adds security details, noise, and how busy each access point is.</string>
+    <string name="scout_intro_listens">It only listens. It never transmits Wi-Fi, and it talks to this phone over Bluetooth.</string>
+    <string name="scout_need_heading">What you need</string>
+    <!-- %1$s is the recommended board, ESP32-C5-DevKitC-1, shown in bold -->
+    <string name="scout_need_body">An Espressif %1$s is recommended: the ESP32-C5 is the only supported chip that hears 5 GHz. ESP32-C6, S3 and C3 boards are supported for 2.4 GHz. Power it from USB or a power bank.</string>
+    <string name="scout_install_heading">Install the Scout software</string>
+    <!-- %1$s is the installer address, install.networksurvey.app -->
+    <string name="scout_install_body">Do this once, from a computer with Chrome or Edge. Plug the board in with a USB data cable and open %1$s. Later updates install from this app over Bluetooth.</string>
+    <string name="scout_install_share">Share link</string>
+    <string name="scout_install_share_text">Install the NS Scout software from a computer with Chrome or Edge: %1$s</string>
+    <string name="scout_where_to_buy">Where to buy</string>
+    <string name="scout_add">Add a Scout</string>
+    <!-- The NS Scout page with a Scout paired. %1$s is the Scout's name -->
+    <string name="scout_not_in_use_body">Paired with this phone. Wi-Fi comes from this phone until you switch back.</string>
+    <string name="scout_out_hint">Check that it is plugged in (its light blinks) and within a few meters. If it was used with another phone, hold its BOOT button for about 3 seconds.</string>
+    <string name="scout_source_heading">Wi-Fi comes from</string>
+    <string name="scout_source_phone">This phone</string>
+    <string name="scout_source_note">Wi-Fi never comes from both. Bluetooth, cellular and GNSS always come from this phone.</string>
+    <string name="scout_source_locked_scout">A survey uses one Wi-Fi source from start to finish. Stop the survey to switch to phone Wi-Fi.</string>
+    <string name="scout_source_locked_phone">A survey uses one Wi-Fi source from start to finish. Stop the survey to switch to %1$s.</string>
+    <string name="scout_now_heading">Now</string>
+    <string name="scout_now_doing">Doing</string>
+    <!-- %1$d is how many channels the Scout hops, %2$d the channel it is on now -->
+    <string name="scout_now_doing_capture">All %1$d channels · now %2$d</string>
+    <string name="scout_now_doing_waiting">Waiting for a survey or a Wi-Fi screen</string>
+    <string name="scout_now_doing_nothing">Nothing</string>
+    <string name="scout_now_hearing">Hearing</string>
+    <string name="scout_now_hearing_value">%1$s frames/s</string>
+    <string name="scout_now_hearing_none">Not listening</string>
+    <string name="scout_now_missed">Data missed</string>
+    <string name="scout_now_missed_none">None</string>
+    <plurals name="scout_missed_records">
+        <item quantity="one">%1$s record dropped on the Scout</item>
+        <item quantity="other">%1$s records dropped on the Scout</item>
+    </plurals>
+    <plurals name="scout_missed_raw">
+        <item quantity="one">%1$s raw frame dropped</item>
+        <item quantity="other">%1$s raw frames dropped</item>
+    </plurals>
+    <plurals name="scout_missed_link">
+        <item quantity="one">%1$s Bluetooth packet lost</item>
+        <item quantity="other">%1$s Bluetooth packets lost</item>
+    </plurals>
+    <string name="scout_info_heading">Scout</string>
+    <string name="scout_info_model">Model</string>
+    <string name="scout_info_firmware">Firmware</string>
+    <!-- %1$s is the firmware version -->
+    <string name="scout_info_firmware_update">%1$s · Update needed</string>
+    <string name="scout_info_bands">Wi-Fi bands</string>
+    <string name="scout_info_battery">Battery</string>
+    <string name="scout_info_battery_unknown">Shows once it connects</string>
+    <string name="scout_info_unknown">Unknown</string>
+    <string name="scout_remove">Remove Scout</string>
+    <string name="scout_remove_blocked">Stop the survey to remove it</string>
+    <string name="scout_erase_blocked">Stop the survey to erase pairings</string>
+    <string name="scout_replace_blocked">Stop the survey to replace it</string>
+    <string name="scout_advanced_heading">Advanced</string>
+    <string name="scout_erase">Erase pairings on the Scout</string>
+    <string name="scout_erase_subtitle">Only needed before giving it away</string>
+    <string name="scout_erase_needs_link">Connect to the Scout first</string>
+    <!-- Remove and Erase dialogs. %1$s is the Scout's name -->
+    <string name="scout_remove_title">Remove %1$s?</string>
+    <string name="scout_remove_body">Wi-Fi will come from this phone.</string>
+    <!-- %1$s is the count, %2$s the record types that need a Scout, like "Wi-Fi clients or Raw frames" -->
+    <plurals name="scout_remove_setups">
+        <item quantity="one">%1$s saved setup records %2$s; it skips those until you add a Scout.</item>
+        <item quantity="other">%1$s saved setups record %2$s; they skip those until you add a Scout.</item>
+    </plurals>
+    <string name="scout_remove_bluetooth">To pair it again later, also forget %1$s in Android\'s Bluetooth settings.</string>
+    <string name="scout_removed">%1$s removed. Wi-Fi comes from this phone.</string>
+    <string name="scout_erase_title">Erase pairings on %1$s?</string>
+    <string name="scout_erase_body">The Scout forgets every phone it was paired with, including this one, and Network Survey removes it. To use it with this phone again, forget %1$s in Android\'s Bluetooth settings and add it again.</string>
+    <string name="scout_erase_confirm">Erase</string>
+    <string name="scout_erased">%1$s erased its pairings and was removed.</string>
+    <string name="scout_erase_failed">%1$s didn\'t erase its pairings. Keep it next to this phone and try again.</string>
+    <string name="scout_replace_title">Replace %1$s?</string>
+    <!-- %1$s is the paired Scout, %2$s the new one -->
+    <string name="scout_replace_body">This phone uses one Scout at a time. Pairing %2$s removes %1$s from Network Survey.</string>
+    <string name="scout_replace_confirm">Replace</string>
+    <!-- The Add a Scout sheet. %1$s is a Scout's name, like NS-ABCD -->
+    <string name="scout_pair_looking">Looking for Scouts</string>
+    <string name="scout_pair_status_ready">Ready to pair</string>
+    <string name="scout_pair_status_paired_here">Paired with this phone</string>
+    <string name="scout_pair_status_was_reset">Was reset since you used it</string>
+    <string name="scout_pair_status_other_phone">Paired with another phone. Hold its BOOT button for about 3 seconds to pair it here.</string>
+    <string name="scout_pair_status_app_update">Update Network Survey to use it</string>
+    <string name="scout_distance_very_close">very close</string>
+    <string name="scout_distance_nearby">nearby</string>
+    <string name="scout_distance_weak">weak signal</string>
+    <string name="scout_pair_action">Pair</string>
+    <string name="scout_pair_hint">Keep the Scout next to this phone. A new Scout is ready to pair right away: its light blinks fast.</string>
+    <string name="scout_pair_didnt_see">Didn\'t see your Scout?</string>
+    <!-- %1$s is the installer address, install.networksurvey.app -->
+    <string name="scout_pair_check_software">The Scout software is installed (one time, from a computer at %1$s).</string>
+    <string name="scout_pair_check_power">It has power: its light blinks.</string>
+    <string name="scout_pair_check_close">It is within a meter of this phone.</string>
+    <string name="scout_pair_check_name">Its name starts with NS-, like NS-ABCD.</string>
+    <string name="scout_pair_check_boot">If it was used with another phone, hold its BOOT button for about 3 seconds.</string>
+    <string name="scout_pair_look_again">Look again</string>
+    <string name="scout_pair_close">Close</string>
+    <string name="scout_pair_bonding">Pairing with %1$s. Tap Pair when Android asks. If nothing appears, check your notifications.</string>
+    <string name="scout_pair_contacts_note">Android may also offer to share contacts and call history. Network Survey doesn\'t need them, so you can leave that off.</string>
+    <string name="scout_pair_refused_title">%1$s refused to pair</string>
+    <string name="scout_pair_refused_body">If it was used with another phone, hold its BOOT button for about 3 seconds until its light blinks fast, then try again.</string>
+    <string name="scout_pair_bond_missing_body">Forget %1$s in Android\'s Bluetooth settings first, then try again.</string>
+    <string name="scout_pair_failed_title">Couldn\'t pair with %1$s</string>
+    <string name="scout_pair_failed_body">Keep it next to this phone and try again.</string>
+    <string name="scout_pair_needs_bluetooth">Turn on Bluetooth to look for Scouts.</string>
+    <string name="scout_pair_needs_permission">Allow Nearby devices so this phone can find Scouts.</string>
+    <!-- Before Android 12 the scan needs the Location permission; Nearby devices doesn't exist there -->
+    <string name="scout_pair_needs_location">Allow Location so this phone can find Scouts.</string>
+    <string name="scout_paired">%1$s is paired. Wi-Fi now comes from the Scout.</string>
+    <!-- Paired while a survey records: one survey never mixes Wi-Fi sources, so the phone stays the source -->
+    <string name="scout_paired_recording">%1$s is paired. This survey keeps using phone Wi-Fi; switch to the Scout here once it stops.</string>
+    <string name="scout_organization_off">Your organization doesn\'t use NS Scout on this phone.</string>
+    <!-- Organization settings: where Wi-Fi comes from, %1$s is the Scout's name -->
+    <string name="org_wifi_source">Wi-Fi source</string>
+
+    <!-- NS Scout: Signals, Wi-Fi details and Settings -->
+    <!-- Signals > Wi-Fi while the NS Scout is the Wi-Fi source and can't deliver. %1$s is the Scout's name, like NS-ABCD -->
+    <string name="wifi_scout_allow_body">This phone needs the Nearby devices permission to reach %1$s, which is where Wi-Fi comes from.</string>
+    <string name="wifi_scout_bluetooth_off_body">This phone needs Bluetooth to reach %1$s, which is where Wi-Fi comes from.</string>
+    <string name="wifi_scout_firmware_title">%1$s needs a firmware update</string>
+    <string name="wifi_scout_firmware_body">Wi-Fi from the Scout shows up here once it is updated. It takes about a minute.</string>
+    <string name="wifi_scout_app_update_body">The Scout runs newer software than this app understands. Wi-Fi from it shows up here once Network Survey is updated.</string>
+    <string name="wifi_scout_updating_title">%1$s is updating its firmware</string>
+    <string name="wifi_scout_updating_body">Wi-Fi from the Scout shows up here once the update finishes.</string>
+    <string name="wifi_scout_pairing_lost_title">%1$s needs to be paired again</string>
+    <string name="wifi_scout_pairing_lost_body">Pair it again from the NS Scout page, or use this phone\'s Wi-Fi for now.</string>
+    <string name="wifi_scout_pairing_lost_recording_body">Pair it again from the NS Scout page. The survey keeps recording everything else.</string>
+    <string name="wifi_scout_out_of_range_title">%1$s is out of range</string>
+    <string name="wifi_scout_cant_connect_title">Can\'t connect to %1$s</string>
+    <string name="wifi_scout_recording_reconnect_body">Wi-Fi shows up here once %1$s reconnects. The survey keeps recording everything else.</string>
+    <string name="wifi_scout_connecting_title">Connecting to %1$s</string>
+    <string name="wifi_scout_connecting_body">Hold it near this phone.</string>
+    <string name="wifi_scout_not_connected_title">%1$s isn\'t connected</string>
+    <string name="wifi_scout_not_connected_body">Plug it in and hold it near this phone. Wi-Fi shows up here as soon as it connects.</string>
+    <string name="wifi_scout_action_turn_on_bluetooth">Turn on Bluetooth</string>
+    <string name="wifi_scout_action_scout_page">Open NS Scout page</string>
+    <string name="wifi_scout_action_use_phone">Use phone Wi-Fi instead</string>
+    <!-- The short word on the Signals strip while the Scout can't deliver -->
+    <string name="wifi_scout_strip_update">Update needed</string>
+    <string name="wifi_scout_now_phone">Wi-Fi now comes from this phone.</string>
+    <string name="wifi_scout_stop_to_switch">Stop the survey to switch to phone Wi-Fi</string>
+    <!-- The line the Wi-Fi throttle notice adds while no NS Scout is paired -->
+    <string name="wifi_throttle_scout_line">An NS Scout, a small add-on board, scans Wi-Fi without Android\'s limit.</string>
+    <string name="wifi_throttle_scout_action">About NS Scout</string>
+    <!-- Wi-Fi details for an access point an NS Scout heard -->
+    <string name="wifi_details_heard_by">Heard by %1$s</string>
+    <string name="wifi_details_security">Security</string>
+    <string name="wifi_details_security_personal">Personal</string>
+    <string name="wifi_details_security_enterprise">Enterprise</string>
+    <string name="wifi_details_security_encryption">Encryption</string>
+    <string name="wifi_details_key_management">Key management</string>
+    <string name="wifi_details_pairwise_cipher">Pairwise cipher</string>
+    <string name="wifi_details_group_cipher">Group cipher</string>
+    <string name="wifi_details_ciphers">Ciphers</string>
+    <string name="wifi_details_wps">WPS</string>
+    <string name="wifi_details_wps_on">On</string>
+    <string name="wifi_details_wps_off">Off</string>
+    <string name="wifi_details_beacon_interval">Beacon interval</string>
+    <string name="wifi_details_snr">SNR</string>
+    <string name="wifi_details_noise">Noise %1$d dBm</string>
+    <string name="wifi_details_unit_db">dB</string>
+    <string name="wifi_details_unit_ms">ms</string>
+    <!-- The Wi-Fi generations an access point supports, shown as "Wi-Fi 4, 5, 6" -->
+    <string name="wifi_details_generations">Generations</string>
+    <string name="wifi_details_generation_prefix">Wi-Fi</string>
+    <string name="wifi_details_load">Load</string>
+    <string name="wifi_details_load_reported">reported by the AP</string>
+    <string name="wifi_details_stations">Stations</string>
+    <string name="wifi_details_channel_use">Channel use</string>
+    <string name="wifi_details_percent">%1$d%%</string>
+    <!-- Settings > Wi-Fi scan rate while an NS Scout is paired. %1$s is the Scout's name -->
+    <string name="settings_wifi_rate_scout">With %1$s: how often each network and client is saved. During a survey the Scout listens continuously.</string>
+    <string name="settings_wifi_rate_scout_locked">Your organization sets this interval, which also sets how often %1$s saves each network.</string>
+
+    <!-- Wi-Fi clients: Survey and Scout page -->
+    <!-- One of the things an NS Scout adds over the phone, on the Scout page before one is paired -->
+    <string name="scout_intro_clients">Records Wi-Fi clients and the networks they look for, and raw frames you can open in Wireshark.</string>
+    <!-- %1$s names the record types, "Wi-Fi, Wi-Fi clients and Raw frames" -->
+    <string name="scout_plate_not_connected_body_types">%1$s won\'t be recorded until it connects. Plug it in and hold it near this phone.</string>
+
+    <!-- Wi-Fi clients: Signals Clients view, Client details and Connected clients -->
+    <!-- The third Wi-Fi list mode, only while an NS Scout is the Wi-Fi source -->
+    <string name="wifi_mode_clients">Clients</string>
+    <string name="wifi_clients_by_client">By client</string>
+    <string name="wifi_clients_by_network">By network looked for</string>
+    <plurals name="wifi_clients_count">
+        <item quantity="one">%1$d client</item>
+        <item quantity="other">%1$d clients</item>
+    </plurals>
+    <!-- A text tag on a client whose MAC address has the locally administered bit set -->
+    <string name="wifi_client_tag_randomized">Randomized</string>
+    <!-- %1$s is a network name or an access point's BSSID -->
+    <string name="wifi_client_connected_to">Connected to %1$s</string>
+    <!-- %1$s is a list of network names, "eduroam, HOME-5G" -->
+    <string name="wifi_client_looking_for">Looking for %1$s</string>
+    <string name="wifi_client_heard_only">Heard sending, network unknown</string>
+    <string name="wifi_client_list_separator">", "</string>
+    <plurals name="wifi_clients_looked_for_by">
+        <item quantity="one">Looked for by %1$d client</item>
+        <item quantity="other">Looked for by %1$d clients</item>
+    </plurals>
+    <string name="wifi_clients_empty">No Wi-Fi clients heard yet. Phones, laptops and other devices show up here when %1$s hears them send.</string>
+    <string name="wifi_clients_networks_empty">No device has looked for a network by name yet.</string>
+    <string name="wifi_client_open_details">Open client details</string>
+    <!-- TalkBack for a client row: address, then the rest. %1$s is the address read in pairs -->
+    <string name="wifi_client_address_spoken">Address %1$s</string>
+
+    <!-- Client details -->
+    <string name="wifi_client_details_title">Wi-Fi client</string>
+    <!-- %1$s is how long ago, "just now"; %2$d is the channel -->
+    <string name="wifi_client_last_heard_channel">Last heard %1$s · channel %2$d</string>
+    <string name="wifi_client_last_heard">Last heard %1$s</string>
+    <string name="wifi_client_connected_to_title">Connected to</string>
+    <string name="wifi_client_looked_for_title">Networks it looked for</string>
+    <string name="wifi_client_looked_for_hint">from probe requests</string>
+    <string name="wifi_client_seen_in_title">Seen in</string>
+    <string name="wifi_client_randomized_explanation">Randomized means the device made up this address, so the manufacturer can\'t be looked up and the address may change later.</string>
+    <string name="wifi_client_signal_title">Signal</string>
+    <string name="wifi_client_not_heard">Not heard recently. It shows here again when %1$s hears it.</string>
+    <string name="wifi_client_open_network">Open network details</string>
+    <string name="wifi_frame_data">Data</string>
+    <string name="wifi_frame_null_data">Null data</string>
+    <string name="wifi_frame_probe_request">Probe request</string>
+    <string name="wifi_frame_association_request">Association request</string>
+    <string name="wifi_frame_reassociation_request">Reassociation request</string>
+    <string name="wifi_frame_authentication">Authentication</string>
+    <string name="wifi_frame_action">Action</string>
+
+    <!-- The Connected clients card on an access point's details -->
+    <string name="wifi_connected_clients_title">Connected clients</string>
+    <!-- %1$d clients heard talking to this access point -->
+    <plurals name="wifi_connected_clients_heard">
+        <item quantity="one">%1$d heard</item>
+        <item quantity="other">%1$d heard</item>
+    </plurals>
+
+    <!-- NS Scout firmware update. %1$s is the Scout's name, like NS-ABCD, unless noted -->
+    <string name="scout_fw_title">Update firmware</string>
+    <string name="scout_fw_row_checks">Checks for a newer version</string>
+    <!-- %1$s is a firmware version, like 0.2.0 -->
+    <string name="scout_fw_row_available">%1$s is available</string>
+    <string name="scout_fw_row_recording">Available after the survey stops</string>
+    <string name="scout_fw_row_updating">Updating now</string>
+    <!-- Scout page firmware line. %1$s is the firmware version -->
+    <string name="scout_info_firmware_up_to_date">%1$s · Up to date</string>
+    <string name="scout_info_firmware_available">%1$s · Update available</string>
+    <string name="scout_info_firmware_newer">%1$s · Newer than the latest release</string>
+    <string name="scout_fw_overline">Update</string>
+    <string name="scout_fw_versions_spoken">From firmware %1$s to %2$s</string>
+    <!-- A reinstall of the version the Scout already runs, %1$s like "0.1.0" -->
+    <string name="scout_fw_version_latest">%1$s · latest release</string>
+    <!-- %1$s is a date, like Oct 24, 2026 -->
+    <string name="scout_fw_released">Released %1$s · signed by Network Survey</string>
+    <string name="scout_fw_signed">Signed by Network Survey</string>
+    <!-- %1$s is a download size, like 1.2 MB; %2$s is the Scout's name -->
+    <string name="scout_fw_preflight">Downloads %1$s, then takes about a minute. Keep %2$s powered and next to this phone. If the connection drops, the update picks up where it stopped.</string>
+    <!-- %1$s is the Scout's name, %2$s the firmware version -->
+    <string name="scout_fw_same_title">%1$s already runs %2$s, the latest release</string>
+    <string name="scout_fw_older_title">The latest release, %2$s, is older than the firmware on %1$s</string>
+    <!-- %1$s is a firmware version -->
+    <string name="scout_fw_newer_seen">This phone saw a newer release (%1$s) before. The release server may be out of date.</string>
+    <string name="scout_fw_checking">Checking for updates</string>
+    <string name="scout_fw_action_update">Update</string>
+    <!-- %1$s is a firmware version -->
+    <string name="scout_fw_action_reinstall">Reinstall %1$s</string>
+    <string name="scout_fw_action_install_older">Install older %1$s</string>
+    <string name="scout_fw_action_done">Done</string>
+    <string name="scout_fw_action_resume">Resume update</string>
+    <string name="scout_fw_action_start_over">Start over</string>
+    <string name="scout_fw_action_cancel">Cancel update</string>
+    <string name="scout_fw_step_download">Downloading</string>
+    <string name="scout_fw_step_send">Sending firmware to the Scout</string>
+    <string name="scout_fw_step_verify">The Scout is checking the firmware</string>
+    <string name="scout_fw_step_restart">The Scout is restarting</string>
+    <string name="scout_fw_step_confirm">Checking the new version</string>
+    <string name="scout_fw_step_done">Done</string>
+    <string name="scout_fw_step_current">In progress</string>
+    <string name="scout_fw_step_waiting">Not started</string>
+    <!-- %1$d is the share of the firmware sent, 0 to 100 -->
+    <string name="scout_fw_sent_percent">%1$d%% sent</string>
+    <!-- %1$d is the attempt number -->
+    <string name="scout_fw_reconnecting">Connection lost. Reconnecting, attempt %1$d.</string>
+    <string name="scout_fw_keep_open">Keep the phone next to %1$s until the update finishes.</string>
+    <!-- %1$s is a firmware version -->
+    <string name="scout_fw_done_title">Updated to %1$s</string>
+    <string name="scout_fw_done_reinstalled">Reinstalled %1$s</string>
+    <string name="scout_fw_done_body">%1$s is ready to survey.</string>
+    <string name="scout_fw_done_incompatible">This firmware speaks a different protocol version than this app, so %1$s can\'t survey with it. Install a matching firmware or update Network Survey.</string>
+    <string name="scout_fw_failed_title">Update not installed</string>
+    <string name="scout_fw_blocked_title">Can\'t update now</string>
+    <string name="scout_fw_blocked_recording">Stop the survey before updating %1$s.</string>
+    <string name="scout_fw_blocked_waiting">Connect %1$s first: keep it powered and near this phone. It connects on its own while this screen is open.</string>
+    <string name="scout_fw_blocked_bluetooth">Turn on Bluetooth so this phone can reach %1$s.</string>
+    <string name="scout_fw_blocked_permission">Allow Nearby devices so this phone can reach %1$s.</string>
+    <string name="scout_fw_blocked_pairing">%1$s no longer knows this phone. Pair it again from the Scout page.</string>
+    <string name="scout_fw_cancel_title">Cancel the update?</string>
+    <string name="scout_fw_cancel_body">The transfer stops and %1$s keeps its current firmware.</string>
+    <string name="scout_fw_cancel_keep">Keep updating</string>
+    <string name="scout_fw_back_blocked">The update is still running. Wait for it to finish.</string>
+    <!-- The ongoing notification's title while firmware installs -->
+    <string name="scout_fw_notification_title">Updating Scout firmware</string>
+    <string name="scout_fw_consent_same">Reinstall the version the Scout already runs</string>
+    <string name="scout_fw_consent_older">Install an older version than the Scout runs</string>
+    <!-- %1$s is a firmware version -->
+    <string name="scout_fw_consent_stale">Install it although %1$s was released</string>
+    <string name="scout_fw_error_manifest_unavailable">Couldn\'t check for firmware updates. Check the internet connection and try again.</string>
+    <string name="scout_fw_error_manifest_invalid">The firmware release information couldn\'t be read. Try again later.</string>
+    <string name="scout_fw_error_manifest_signature">The firmware release isn\'t signed by a trusted key, so it wasn\'t used.</string>
+    <string name="scout_fw_error_format">This firmware release needs a newer version of Network Survey. Update the app first.</string>
+    <!-- %1$s is the offered version, %2$s the oldest version still considered safe -->
+    <string name="scout_fw_error_stale">The release server offers firmware %1$s, but versions below %2$s are no longer considered safe. The server may be out of date. Try again later.</string>
+    <!-- %1$s is the Scout's model -->
+    <string name="scout_fw_error_no_image">There is no official firmware for %1$s. To update it, install your own build from a computer over USB.</string>
+    <string name="scout_fw_error_download">The firmware download failed. Check the internet connection and try again.</string>
+    <string name="scout_fw_error_corrupt">The downloaded firmware is damaged. Try again.</string>
+    <string name="scout_fw_error_signature">The firmware signature doesn\'t match a trusted key. The file may have been changed.</string>
+    <!-- %1$s is the image's chip, %2$s the Scout's name, %3$s the Scout's chip -->
+    <string name="scout_fw_error_wrong_chip">This firmware is built for %1$s, but the chip in %2$s is %3$s.</string>
+    <string name="scout_fw_error_wrong_board">This firmware is for another board model, so it wasn\'t sent to %1$s. Start over to get the right firmware.</string>
+    <string name="scout_fw_error_busy">%1$s is busy. Wait a moment and try again.</string>
+    <string name="scout_fw_error_not_connected">%1$s isn\'t connected. Keep it powered and near this phone, then try again.</string>
+    <string name="scout_fw_error_connection_lost">The connection to %1$s was lost and couldn\'t be restored. Move the phone closer and resume. The update continues where it stopped.</string>
+    <string name="scout_fw_error_rejected">%1$s refused the update. Unplug it for a moment to restart it, then try again.</string>
+    <string name="scout_fw_error_too_large">This firmware doesn\'t fit on %1$s.</string>
+    <string name="scout_fw_error_flash">%1$s couldn\'t write the firmware to its memory. Try again. If it keeps failing, reinstall it from a computer with the web installer.</string>
+    <string name="scout_fw_error_verify">%1$s rejected the firmware after the transfer (the checksum or image check failed). It keeps its current firmware.</string>
+    <string name="scout_fw_error_protocol">The update stopped because of an unexpected answer from %1$s. Try again.</string>
+    <string name="scout_fw_error_did_not_return">%1$s didn\'t reconnect after restarting. Check that it is powered and nearby, then open the Scout page.</string>
+    <!-- %2$s is the firmware version the Scout went back to -->
+    <string name="scout_fw_error_rolled_back">%1$s went back to firmware %2$s: the new firmware didn\'t start correctly.</string>
+    <string name="scout_fw_error_not_confirmed">%1$s restarted with firmware %2$s but didn\'t confirm the new image, so it may have gone back to its previous copy. Check the Scout and install again if needed.</string>
+    <!-- %2$s is the version found, %3$s the version installed -->
+    <string name="scout_fw_error_unexpected">%1$s restarted with firmware %2$s instead of %3$s.</string>
+    <string name="scout_fw_error_canceled">The update was canceled. %1$s keeps its current firmware.</string>
+
+    <!-- NS Scout: Raw frames -->
+    <string name="survey_raw_confirm_title">Save raw Wi-Fi frames?</string>
+    <string name="survey_raw_confirm_body">Raw frames include the addresses and network names of nearby devices, including other people\'s. They\'re saved only to log files on this phone and never sent anywhere.</string>
+    <string name="survey_raw_confirm_action">Save raw frames</string>
+    <!-- The Records panel's raw frames line: %1$s is the number of frames, %2$s the size, "12,480 saved · 38 MB" -->
+    <string name="survey_records_raw_saved">%1$s saved · %2$s</string>
+    <string name="survey_records_raw_storage_full_word">Storage full</string>
+    <string name="survey_records_raw_failed_word">Stopped</string>
+    <string name="survey_records_raw_storage_full">This phone is almost out of storage, so raw frames stopped saving. The file so far is kept. Free up space, then start a new survey to save more.</string>
+    <string name="survey_records_raw_failed">Raw frames couldn\'t be written to log files, so they stopped saving. The file so far is kept.</string>
+    <!-- The Log files folder's description once an NS Scout is paired -->
+    <string name="log_files_location_detail_raw">%1$s · CSV, one file per record type (one per technology for cellular) plus device status, and Raw frames as pcapng files you can open in Wireshark. Raw frames files grow quickly.</string>
+    <!-- A raw frames file in the Log files list: %1$s is the size, %2$s when it was last written -->
+    <string name="log_files_row_detail_raw">Raw frames (pcapng) · %1$s · %2$s</string>
+
 </resources>

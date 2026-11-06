@@ -18,6 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.bluetooth.details.BLUETOOTH_DATA_KEY
+import com.craxiom.networksurvey.ui.wifi.clients.WIFI_CLIENT_MAC_KEY
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
 import com.craxiom.networksurvey.ui.common.findComponentActivity
 import com.craxiom.networksurvey.ui.onboarding.OnboardingChoice
@@ -159,6 +160,11 @@ private fun NavigationEventEffect(
                 mainNavController.navigate(NavOption.WifiDetails.name)
             }
 
+            is NavigationEvent.WifiClientDetails -> {
+                mainNavController.currentBackStackEntry?.savedStateHandle?.set(WIFI_CLIENT_MAC_KEY, event.mac)
+                mainNavController.navigate(NavOption.WifiClientDetails.name)
+            }
+
             is NavigationEvent.BluetoothDetails -> {
                 mainNavController.currentBackStackEntry?.savedStateHandle?.set(BLUETOOTH_DATA_KEY, event.bluetoothData)
                 mainNavController.navigate(NavOption.BluetoothDetails.name)
@@ -170,6 +176,8 @@ private fun NavigationEventEffect(
             NavigationEvent.CommunityDatabases -> mainNavController.navigate(NavOption.CommunityDatabases.name)
             NavigationEvent.OrganizationSettings -> mainNavController.navigate(NavOption.OrganizationSettings.name)
             NavigationEvent.LogFiles -> mainNavController.navigate(NavOption.LogFiles.name)
+            NavigationEvent.NsScout -> mainNavController.navigate(NavOption.NsScout.name) { launchSingleTop = true }
+            NavigationEvent.ScoutFirmware -> mainNavController.navigate(NavOption.ScoutFirmware.name) { launchSingleTop = true }
             // Back from the QR scanner to the NS Analytics page
             NavigationEvent.NsAnalyticsConnection -> mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
                 popUpTo(NavDrawerOption.None.name)

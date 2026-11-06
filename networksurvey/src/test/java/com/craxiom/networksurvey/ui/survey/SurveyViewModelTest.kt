@@ -12,7 +12,12 @@ import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.setup.SurveySetupStore
+import com.craxiom.networksurvey.scout.model.WifiSource
+import com.craxiom.networksurvey.services.controller.WifiSourceSwitch
+import com.craxiom.networksurvey.ui.survey.model.SurveyEvent
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
@@ -61,6 +66,39 @@ class SurveyViewModelTest {
         assertEquals(drafts, gateway.applied.map { it.recordTypes })
     }
 
+    @Test
+    fun usePhoneWifi_goesThroughTheService_andUndoGoesBackToTheScout() {
+        val viewModel = SurveyViewModel(application, preferences, store, ioDispatcher = Dispatchers.IO)
+        val gateway = StoreReadingGateway(store)
+        viewModel.onServiceChanged(gateway)
+        val events = Collections.synchronizedList(mutableListOf<SurveyEvent>())
+        val collector = CoroutineScope(Dispatchers.Unconfined).launch { viewModel.events.collect { events += it } }
+
+        viewModel.usePhoneWifi()
+        awaitTrue { events.isNotEmpty() }
+        assertEquals(listOf(WifiSource.PHONE), gateway.sources)
+        assertEquals(SurveyEvent.WifiFromPhone, events.single())
+
+        viewModel.onSnackbarAction(SurveyEvent.WifiFromPhone)
+        awaitTrue { events.size == 2 }
+        assertEquals(listOf(WifiSource.PHONE, WifiSource.SCOUT), gateway.sources)
+        collector.cancel()
+    }
+
+    @Test
+    fun aSourceChangeWhileRecording_isRefused_andSaysToStopFirst() {
+        val viewModel = SurveyViewModel(application, preferences, store, ioDispatcher = Dispatchers.IO)
+        val gateway = StoreReadingGateway(store, answer = WifiSourceSwitch.REJECTED_RECORDING)
+        viewModel.onServiceChanged(gateway)
+        val events = Collections.synchronizedList(mutableListOf<SurveyEvent>())
+        val collector = CoroutineScope(Dispatchers.Unconfined).launch { viewModel.events.collect { events += it } }
+
+        viewModel.usePhoneWifi()
+        awaitTrue { events.isNotEmpty() }
+        assertEquals(SurveyEvent.WifiSourceLocked, events.single())
+        collector.cancel()
+    }
+
     private fun awaitTrue(condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MS
         while (!condition()) {
@@ -71,8 +109,17 @@ class SurveyViewModelTest {
     }
 
     /** Applies what the store holds when the apply runs, as the service's survey coordinator does. */
-    private class StoreReadingGateway(private val store: SurveySetupStore) : SurveyServiceGateway {
+    private class StoreReadingGateway(
+        private val store: SurveySetupStore,
+        private val answer: WifiSourceSwitch = WifiSourceSwitch.SWITCHED,
+    ) : SurveyServiceGateway {
         val applied: MutableList<SurveySetup> = Collections.synchronizedList(mutableListOf())
+        val sources: MutableList<WifiSource> = Collections.synchronizedList(mutableListOf())
+
+        override fun requestWifiSource(source: WifiSource): WifiSourceSwitch {
+            sources += source
+            return answer
+        }
         private val result = SurveyStartResult(emptyMap(), emptyMap(), recording = true)
 
         override val state: StateFlow<SurveyRuntimeState> = MutableStateFlow(SurveyRuntimeState())

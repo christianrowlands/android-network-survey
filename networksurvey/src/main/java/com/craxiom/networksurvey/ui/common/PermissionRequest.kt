@@ -106,6 +106,11 @@ fun rememberPermissionRequest(
     return request
 }
 
+/** Asks for the permissions, or opens this app's system settings once they are denied for good. */
+fun PermissionRequest.requestOrOpenSettings(context: Context) {
+    if (access == PermissionAccess.BLOCKED) openAppSettings(context) else request()
+}
+
 /** Opens this app's page in the system settings, where a permission denied for good can be granted. */
 fun openAppSettings(context: Context) {
     context.startActivity(

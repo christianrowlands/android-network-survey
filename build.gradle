@@ -24,6 +24,7 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
+    alias(libs.plugins.protobuf) apply false
     alias(libs.plugins.dependency.license.report) apply false
 }
 

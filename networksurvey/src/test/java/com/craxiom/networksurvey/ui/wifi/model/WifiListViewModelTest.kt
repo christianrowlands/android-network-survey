@@ -6,6 +6,9 @@ import android.os.Build
 import android.os.Looper
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.scout.model.PairedScout
+import com.craxiom.networksurvey.scout.model.ScoutState
+import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.ui.wifi.model.WifiRecords.wifi
@@ -20,7 +23,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -234,10 +239,11 @@ class WifiListViewModelTest {
     }
 
     @Test
-    fun android11AndLater_neverWatchTheSurveyPauses() {
+    fun android11AndLater_readTheSurveyStateOnlyForRecording_neverForThePauses() {
         newViewModel().onServiceChanged(service)
 
-        verify(service, never()).surveyStateFlow
+        // Once, for the recording lock the Scout block follows; Android 9 and 10 read it again for the pauses
+        verify(service, times(1)).surveyStateFlow
     }
 
     @Test
@@ -293,6 +299,41 @@ class WifiListViewModelTest {
         viewModel.togglePaused()
         assertEquals(0, viewModel.uiState.value.apCount)
         assertEquals(emptyList<WifiDisplayItem>(), viewModel.uiState.value.items)
+    }
+
+    @Test
+    fun theRestrictionsAreReadOnRefresh_notOnEveryScoutStatus() {
+        var reads = 0
+        val scout = PairedScout("NS-ABCD", "02:00:00:00:AB:CD", "ABCD", 0, "", "0.1.0", 1, emptyList(), 0L)
+        val connected = ScoutState.Connected(scout, batteryPercent = null, channel = 36, framesPerSecond = 40, capturing = true, dataMissed = false)
+        val states = MutableStateFlow<Pair<ScoutState, WifiSource>>(ScoutState.NotPaired to WifiSource.PHONE)
+        val viewModel = WifiListViewModel(
+            application = RuntimeEnvironment.getApplication(),
+            environment = { scanState },
+            throttleProbe = { throttle },
+            scanRateMs = { RATE_MS },
+            clock = { now },
+            mainDispatcher = dispatcher,
+            sdk = 36,
+            scoutStates = states,
+            scoutAllowed = {
+                reads++
+                true
+            },
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(0, reads)
+
+        viewModel.refresh()
+        assertEquals(1, reads)
+        assertTrue(viewModel.uiState.value.suggestScout)
+
+        states.value = connected to WifiSource.SCOUT
+        dispatcher.scheduler.advanceUntilIdle()
+        states.value = connected.copy(framesPerSecond = 41) to WifiSource.SCOUT
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, reads)
+        assertFalse(viewModel.uiState.value.suggestScout)
     }
 
     private fun newViewModel(sdk: Int = 36) = WifiListViewModel(

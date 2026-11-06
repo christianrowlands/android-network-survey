@@ -57,6 +57,26 @@
         android:restrictionType="choice"
         android:title="@string/mdm_survey_cdr_title" />
 
+    <!-- Off by default: a managed phone records Wi-Fi clients only when the organization allows it -->
+    <restriction
+        android:defaultValue="off"
+        android:description="@string/mdm_survey_wifi_clients_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_wifi_clients"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_wifi_clients_title" />
+
+    <!-- Off by default: a managed phone saves raw frames only when the organization allows it -->
+    <restriction
+        android:defaultValue="off"
+        android:description="@string/mdm_survey_wifi_raw_description"
+        android:entries="@array/mdm_survey_choice_labels"
+        android:entryValues="@array/mdm_survey_choice_values"
+        android:key="survey_wifi_raw"
+        android:restrictionType="choice"
+        android:title="@string/mdm_survey_wifi_raw_title" />
+
     <restriction
         android:defaultValue="user"
         android:description="@string/mdm_destination_description"
@@ -380,6 +400,13 @@
         android:key="allow_ns_analytics"
         android:restrictionType="bool"
         android:title="@string/allow_ns_analytics_title" />
+
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/allow_ns_scout_mdm_description"
+        android:key="allow_ns_scout"
+        android:restrictionType="bool"
+        android:title="@string/allow_ns_scout_title" />
 
     <restriction
         android:defaultValue="0"

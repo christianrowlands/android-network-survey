@@ -21,23 +21,31 @@ import java.util.concurrent.TimeUnit
  * The same tick also calls [onTick] so the owner can re-post the ongoing notification if the user
  * swiped it away, which Android 14 and later allow for foreground services.
  *
+ * A known Wi-Fi outage (the NS Scout, the survey's Wi-Fi source, is out of range or blocked) is
+ * not a stall: the survey already lists why Wi-Fi isn't recorded. Instead, once it has lasted
+ * [NO_WIFI_ESCALATION_MINUTES], [noWifiMinutes] escalates the notification to "No Wi-Fi for N min",
+ * advancing in the same steps as a stall.
+ *
  * @param handler The handler whose thread runs the checks (the service's handler thread).
- * @param recordCount Supplies the survey session record counter.
+ * @param recordCount Supplies the survey session record counter (a long, so raw frames added to it cannot overflow).
  * @param isSurveyActive True while any survey output is running.
  * @param isPaused True while no records are expected: scanning is deliberately paused (battery or
  *                 queue backpressure), or the survey records no record types (device status only).
  * @param thresholdMs Supplies how long records may be absent before the survey counts as stalled.
  * @param onStallStateChanged Called on the handler thread when [stalledMinutes] changes.
  * @param onTick Called on the handler thread on every check while a survey is active.
+ * @param isWifiOutage True while Wi-Fi is known not to be recorded because of its source (the
+ *                     Scout), so a quiet record counter is expected.
  */
 class SurveyStallWatchdog(
     private val handler: Handler,
-    private val recordCount: () -> Int,
+    private val recordCount: () -> Long,
     private val isSurveyActive: () -> Boolean,
     private val isPaused: () -> Boolean,
     private val thresholdMs: () -> Long,
     private val onStallStateChanged: () -> Unit,
-    private val onTick: () -> Unit
+    private val onTick: () -> Unit,
+    private val isWifiOutage: () -> Boolean = { false },
 ) {
     /**
      * Minutes since the last record when stalled, or null while records are flowing.
@@ -46,7 +54,17 @@ class SurveyStallWatchdog(
     var stalledMinutes: Int? = null
         private set
 
-    private var lastCount = 0
+    /**
+     * Minutes Wi-Fi has been out because of its source, once that reaches
+     * [NO_WIFI_ESCALATION_MINUTES]; null otherwise.
+     */
+    @Volatile
+    var noWifiMinutes: Int? = null
+        private set
+
+    private var outageSinceElapsedMs: Long? = null
+
+    private var lastCount = 0L
     private var lastChangeElapsedMs = 0L
     private var running = false
 
@@ -80,6 +98,8 @@ class SurveyStallWatchdog(
         running = false
         handler.removeCallbacks(checkRunnable)
         stalledMinutes = null
+        noWifiMinutes = null
+        outageSinceElapsedMs = null
     }
 
     private fun check() {
@@ -91,10 +111,21 @@ class SurveyStallWatchdog(
             lastCount = count
             lastChangeElapsedMs = now
             updateStalledMinutes(null)
+            updateNoWifi(now, false)
             return
         }
 
         onTick()
+
+        val outage = isWifiOutage()
+        updateNoWifi(now, outage)
+        if (outage) {
+            // Known, and already said; not a stall.
+            lastCount = count
+            lastChangeElapsedMs = now
+            updateStalledMinutes(null)
+            return
+        }
 
         if (count != lastCount) {
             lastCount = count
@@ -112,6 +143,18 @@ class SurveyStallWatchdog(
         val quietMinutes = TimeUnit.MILLISECONDS.toMinutes(quietMs).toInt()
         val displayMinutes = (quietMinutes / STALL_DISPLAY_STEP_MINUTES) * STALL_DISPLAY_STEP_MINUTES
         updateStalledMinutes(displayMinutes.coerceAtLeast(STALL_DISPLAY_STEP_MINUTES))
+    }
+
+    private fun updateNoWifi(now: Long, outage: Boolean) {
+        val since = if (outage) outageSinceElapsedMs ?: now else null
+        outageSinceElapsedMs = since
+        val minutes = since?.let { TimeUnit.MILLISECONDS.toMinutes(now - it).toInt() }
+        val display = minutes?.takeIf { it >= NO_WIFI_ESCALATION_MINUTES }
+            ?.let { (it / STALL_DISPLAY_STEP_MINUTES) * STALL_DISPLAY_STEP_MINUTES }
+        if (noWifiMinutes == display) return
+        noWifiMinutes = display
+        if (display != null) Timber.w("No Wi-Fi from the survey's source for %d minutes", display)
+        onStallStateChanged()
     }
 
     private fun updateStalledMinutes(minutes: Int?) {
@@ -137,6 +180,9 @@ class SurveyStallWatchdog(
 
         /** The stalled minute value only advances in steps of this size to limit re-posts. */
         const val STALL_DISPLAY_STEP_MINUTES = 5
+
+        /** A known Wi-Fi outage escalates the notification after this many minutes. */
+        const val NO_WIFI_ESCALATION_MINUTES = 10
 
         /**
          * Derive the stall threshold from the scan intervals that are currently in use: three

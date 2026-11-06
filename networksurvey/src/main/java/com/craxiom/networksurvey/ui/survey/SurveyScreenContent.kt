@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import com.craxiom.networksurvey.ui.survey.components.RecordTypeTiles
 import com.craxiom.networksurvey.ui.survey.components.RecordingHero
 import com.craxiom.networksurvey.ui.survey.components.RecordingSetupPanel
 import com.craxiom.networksurvey.ui.survey.components.RecordsPanel
+import com.craxiom.networksurvey.ui.survey.components.ScoutRow
 import com.craxiom.networksurvey.ui.common.SectionHeader
 import com.craxiom.networksurvey.ui.survey.components.SurveyCtaBar
 import com.craxiom.networksurvey.ui.survey.components.StillToDoPanel
@@ -84,6 +86,10 @@ fun SurveyScreenContent(
     modifier: Modifier = Modifier,
 ) {
     var overlay by rememberSaveable { mutableStateOf(SurveyOverlay.NONE) }
+    // The Raw frames tile and a saved setup with raw frames ask first; what waits survives a rotation
+    var rawPending by rememberSaveable { mutableStateOf<String?>(null) }
+    val currentState = rememberUpdatedState(state)
+    val rawActions = remember(actions) { RawFramesConfirmingActions(actions, { currentState.value }) { rawPending = it } }
     val plateActions = remember(actions) { plateActions(actions) { overlay = SurveyOverlay.DISABLE_LIMIT } }
 
     // The bar slides away as the form scrolls, so a short (landscape) window has room for it
@@ -134,7 +140,7 @@ fun SurveyScreenContent(
                             label = "surveyState",
                         ) { recording ->
                             if (recording) RecordingBody(state, actions, onOverlay = { overlay = it })
-                            else ReadyBody(state, actions, onOverlay = { overlay = it })
+                            else ReadyBody(state, rawActions, onOverlay = { overlay = it })
                         }
                     }
                 }
@@ -155,7 +161,10 @@ fun SurveyScreenContent(
         }
     }
 
-    SurveyOverlays(overlay, state, actions, preview) { overlay = it }
+    SurveyOverlays(overlay, state, rawActions, preview) { overlay = it }
+    rawPending?.let { pending ->
+        RawFramesDialog(onConfirm = { rawActions.confirm(pending) }, onDismiss = { rawPending = null })
+    }
 }
 
 /**
@@ -178,6 +187,7 @@ private fun ReadyBody(state: SurveyUiState, actions: SurveyActions, onOverlay: (
         if (state.stillToDo.isNotEmpty()) {
             StillToDoPanel(state.stillToDo, state.nowMs, actions::onUploadNow, actions::onOpenDestination)
         }
+        state.scoutRow?.let { ScoutRow(it, actions::onOpenScout, actions::onUseScout) }
         SectionHeader(stringResource(R.string.survey_question_types), trailing = countText(state.typeCount))
         RecordTypeTiles(
             tiles = state.tiles,
@@ -206,6 +216,7 @@ private fun RecordingBody(state: SurveyUiState, actions: SurveyActions, onOverla
     val recording = state.recording ?: return
     Column(verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.panelGap)) {
         RecordingHero(recording, actions::onCopyMissionId)
+        state.scoutRow?.let { ScoutRow(it, actions::onOpenScout, actions::onUseScout) }
         RecordingSetupPanel(
             types = recording.types,
             canChange = recording.canChange,
@@ -215,9 +226,12 @@ private fun RecordingBody(state: SurveyUiState, actions: SurveyActions, onOverla
             notSent = recording.notSent,
             deviceStatusOnly = recording.deviceStatusOnly,
             availableTypes = recording.availableTypes,
+            wifiScoutName = recording.wifiScoutName,
         )
         val countedTypes = recording.types.filter { it in recording.counts }
-        if (countedTypes.isNotEmpty()) RecordsPanel(countedTypes, recording.counts, recording.countsSavedForUpload)
+        if (countedTypes.isNotEmpty() || recording.rawFrames != null) {
+            RecordsPanel(countedTypes, recording.counts, recording.countsSavedForUpload, rawFrames = recording.rawFrames)
+        }
         LiveDestinationRows(
             destinations = recording.destinations,
             info = state.destinationInfo,
@@ -291,6 +305,9 @@ private fun plateActions(actions: SurveyActions, confirmDisableLimit: () -> Unit
     override fun onOpenOrganizationSettings() = actions.onOpenOrganizationSettings()
     override fun onOpenDestination(destination: Destination) = actions.onOpenDestination(destination)
     override fun onFixItem(item: AttentionItemUi) = actions.onFixItem(item)
+    override fun onOpenScout() = actions.onOpenScout()
+    override fun onUpdateScoutFirmware() = actions.onUpdateScoutFirmware()
+    override fun onUsePhoneWifi() = actions.onUsePhoneWifi()
 }
 
 private const val TRANSITION_MS = 200

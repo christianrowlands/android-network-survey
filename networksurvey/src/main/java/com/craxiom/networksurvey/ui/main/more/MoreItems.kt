@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.main.more
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.scout.model.ScoutState
 import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.main.NavDrawerOption
@@ -16,6 +17,7 @@ import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 enum class MoreSection(@StringRes val title: Int?) {
     SETTINGS(null),
     DESTINATIONS(R.string.more_section_destinations),
+    HARDWARE(R.string.more_section_hardware),
     TOOLS(R.string.more_section_tools),
     HELP(R.string.more_section_help),
 }
@@ -30,6 +32,9 @@ sealed interface MoreSubtitle {
 
     /** A destination's state, in the Survey screen's words. */
     data class OfDestination(val destination: Destination, val detail: DestinationDetail) : MoreSubtitle
+
+    /** The NS Scout's status word ("NS-ABCD · Connected"), or what a Scout is when none is paired. */
+    data class OfScout(val state: ScoutState) : MoreSubtitle
 }
 
 /** What tapping a More row does. */
@@ -69,10 +74,21 @@ object MoreItems {
      * @param policy The organization policy: a destination it blocks or keeps off is not listed,
      *   exactly as on the Survey screen; a managed phone gets an Organization settings row.
      * @param versionName The version shown on the last row.
+     * @param scout The NS Scout's state for the Hardware row, or null when the organization doesn't
+     *   allow NS Scout (the row and its group are hidden then).
      */
-    fun build(info: DestinationInfo?, policy: SurveyPolicyState, versionName: String): List<MoreGroup> = listOf(
+    fun build(
+        info: DestinationInfo?,
+        policy: SurveyPolicyState,
+        versionName: String,
+        scout: ScoutState? = ScoutState.NotPaired,
+    ): List<MoreGroup> = listOf(
         MoreGroup(MoreSection.SETTINGS, listOf(SETTINGS)),
         MoreGroup(MoreSection.DESTINATIONS, destinations(info, policy)),
+        MoreGroup(
+            MoreSection.HARDWARE,
+            listOfNotNull(scout?.let { MoreItem(R.string.scout_page_title, R.drawable.ic_sensors, MoreSubtitle.OfScout(it), MoreAction.Open(NavOption.NsScout.name)) }),
+        ),
         MoreGroup(MoreSection.TOOLS, TOOLS),
         MoreGroup(MoreSection.HELP, help(versionName)),
     )

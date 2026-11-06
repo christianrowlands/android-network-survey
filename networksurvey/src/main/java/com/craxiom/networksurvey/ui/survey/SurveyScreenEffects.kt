@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.ui.survey
 
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +14,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
 import com.craxiom.networksurvey.ui.main.SharedViewModel
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 
 /**
  * The Survey screen's side effects: the lifecycle-bound service binding, re-checking settings on
@@ -33,6 +35,7 @@ fun SurveyScreenEffects(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) viewModel.onResume()
+            if (event == Lifecycle.Event.ON_PAUSE) viewModel.onPause()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -42,7 +45,14 @@ fun SurveyScreenEffects(
         viewModel.events.collect { event ->
             SurveyEventMessages.message(resources, event)?.let {
                 snackbarHostState.currentSnackbarData?.dismiss()
-                snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+                val action = SurveyEventMessages.actionLabel(resources, event)
+                // Launched, so the next event can replace this snackbar while it waits for its action
+                launch {
+                    val result = snackbarHostState.showSnackbar(
+                        it, actionLabel = action, duration = if (action != null) SnackbarDuration.Long else SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onSnackbarAction(event)
+                }
             }
         }
     }

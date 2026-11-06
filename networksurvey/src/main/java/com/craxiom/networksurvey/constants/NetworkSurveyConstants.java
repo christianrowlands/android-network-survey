@@ -57,6 +57,10 @@ public class NetworkSurveyConstants
     public static final String LTE_FILE_NAME_PREFIX = "craxiom-lte-";
     public static final String NR_FILE_NAME_PREFIX = "craxiom-nr-";
     public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
+    public static final String WIFI_CLIENT_FILE_NAME_PREFIX = "craxiom-wifi-client-";
+    public static final String WIFI_PROBE_FILE_NAME_PREFIX = "craxiom-wifi-probe-";
+    /** Raw 802.11 frames from an NS Scout, saved as pcapng (not CSV). */
+    public static final String WIFI_RAW_FILE_NAME_PREFIX = "craxiom-wifi-raw-";
     public static final String BLUETOOTH_FILE_NAME_PREFIX = "craxiom-bluetooth-";
     public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
     public static final String CDR_FILE_NAME_PREFIX = "craxiom-cdr-";
@@ -185,6 +189,8 @@ public class NetworkSurveyConstants
     // MDM Only Preferences
     public static final String MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD = "allow_external_data_upload";
     public static final String MDM_PROPERTY_ALLOW_NS_ANALYTICS = "allow_ns_analytics";
+    /** False hides the NS Scout row and page and keeps Wi-Fi on the phone; unset means allowed. */
+    public static final String MDM_PROPERTY_ALLOW_NS_SCOUT = "allow_ns_scout";
     public static final String PROPERTY_MDM_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     // Preferences

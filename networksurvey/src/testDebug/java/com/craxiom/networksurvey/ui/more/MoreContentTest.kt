@@ -9,6 +9,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.craxiom.networksurvey.scout.model.PairedScout
+import com.craxiom.networksurvey.scout.model.ScoutState
 import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
@@ -142,8 +144,42 @@ class MoreContentTest {
         }
     }
 
-    private fun show(info: DestinationInfo, policy: SurveyPolicyState = SurveyPolicyState.UNMANAGED, largeFont: Boolean = false) {
-        val state = MoreUiState(MoreItems.build(info, policy, "1.62.0"), info)
+    @Test
+    fun theNsScoutRow_sitsUnderHardware_andDescribesTheBoardBeforeOneIsPaired() {
+        show(info)
+        compose.onNodeWithText("Hardware").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Optional board for more Wi-Fi detail").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("NS Scout").performScrollTo().performClick()
+        assertEquals(listOf("open:${NavOption.NsScout.name}"), calls)
+    }
+
+    @Test
+    fun aPairedScout_showsItsNameAndTheSurveyRowsStatusWord() {
+        show(info, scout = ScoutState.NotInUse(SCOUT))
+        compose.onNodeWithText("NS-A1B2 · Not in use").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun anOrganizationThatDoesNotAllowNsScout_hasNoHardwareGroup() {
+        show(info, scout = null)
+        compose.onNodeWithText("Hardware").assertDoesNotExist()
+        compose.onNodeWithText("NS Scout").assertDoesNotExist()
+    }
+
+    private fun show(
+        info: DestinationInfo,
+        policy: SurveyPolicyState = SurveyPolicyState.UNMANAGED,
+        largeFont: Boolean = false,
+        scout: ScoutState? = ScoutState.NotPaired,
+    ) {
+        val state = MoreUiState(MoreItems.build(info, policy, "1.62.0", scout), info)
         compose.showPage(largeFont = largeFont) { MoreContent(state, actions, SnackbarHostState()) }
+    }
+
+    private companion object {
+        val SCOUT = PairedScout(
+            id = "NS-02000000A1B2", address = "02:00:00:00:A1:B2", shortId = "A1B2", boardModel = 2, modelName = "",
+            firmwareVersion = "0.1.0", protocolMajor = 1, bands = listOf(1, 2), pairedAtMs = 0L,
+        )
     }
 }

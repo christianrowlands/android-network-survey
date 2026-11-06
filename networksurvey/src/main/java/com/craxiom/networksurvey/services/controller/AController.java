@@ -74,6 +74,20 @@ public abstract class AController
     }
 
     /**
+     * @return The shortest scan interval an open live view asks for, or {@link Integer#MAX_VALUE}
+     * when none is open.
+     */
+    public int getLiveViewIntervalMs()
+    {
+        int liveMs = Integer.MAX_VALUE;
+        for (int intervalMs : liveViews.values())
+        {
+            liveMs = Math.min(liveMs, intervalMs);
+        }
+        return liveMs;
+    }
+
+    /**
      * @return The scan interval the radio runs at right now, in milliseconds: the shortest interval
      * an open live view asks for when that is shorter than {@link #getScanRateMs()} and
      * {@link #canScanFaster()} allows it, otherwise {@link #getScanRateMs()}.
@@ -81,11 +95,7 @@ public abstract class AController
     public int getEffectiveScanRateMs()
     {
         final int configuredMs = getScanRateMs();
-        int liveMs = Integer.MAX_VALUE;
-        for (int intervalMs : liveViews.values())
-        {
-            liveMs = Math.min(liveMs, intervalMs);
-        }
+        final int liveMs = getLiveViewIntervalMs();
 
         if (liveMs >= configuredMs || !canScanFaster()) return configuredMs;
         return liveMs;

@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import timber.log.Timber;
@@ -112,7 +113,7 @@ public abstract class CsvRecordLogger
      * @param enable True if logging is being turned on, false if the log file should be closed.
      * @return True if the toggling action was successful, false if the request could not be completed.
      */
-    public boolean enableLogging(boolean enable)
+    public synchronized boolean enableLogging(boolean enable)
     {
         synchronized (csvFileLock)
         {
@@ -125,10 +126,7 @@ public abstract class CsvRecordLogger
                         loggingEnabled = false;
                         loggingFileName = null;
                         // The printer can be null here for lazy loggers that were enabled but
-                        // never wrote a record (so the file was never created). Capture it into
-                        // a local so we don't re-read the field (which writeCsvRecord can mutate
-                        // under a different lock) between the null check and the close, mirroring
-                        // the catch-block pattern below.
+                        // never wrote a record (so the file was never created).
                         final CSVPrinter printerToClose = printer;
                         printer = null;
                         if (printerToClose != null)
@@ -188,6 +186,42 @@ public abstract class CsvRecordLogger
         printer.printRecord(row);
         if (flush) printer.flush();
         checkIfRolloverNeeded();
+    }
+
+    /**
+     * Writes a batch of records, one row each, and flushes once. A batch that arrives after logging
+     * was turned off (a sink that was still being notified when the survey stopped) is dropped, as
+     * a lazy logger would otherwise create a new file that nothing ever closes.
+     * <p>
+     * Holds the same lock as {@link #enableLogging(boolean)}, so a stop never closes the file
+     * between two rows of a batch.
+     *
+     * @param records The records to write.
+     * @param toRow   Turns a record into its row.
+     * @param <T>     The type of the records.
+     */
+    synchronized <T> void writeRows(List<T> records, Function<T, Object[]> toRow)
+    {
+        if (!loggingEnabled) return;
+
+        for (T record : records)
+        {
+            try
+            {
+                writeCsvRecord(toRow.apply(record), false);
+            } catch (IOException e)
+            {
+                Timber.e(e, "Could not log a record to the CSV file");
+            }
+        }
+
+        try
+        {
+            if (printer != null) printer.flush();
+        } catch (IOException e)
+        {
+            Timber.e(e, "Could not flush the records to the CSV file");
+        }
     }
 
     /**

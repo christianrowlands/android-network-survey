@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.ui.wifi.model
 
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.craxiom.networksurvey.util.WifiUtils
 import timber.log.Timber
 
 /**
@@ -119,4 +120,48 @@ internal fun dedupeByBssid(wrappers: List<WifiRecordWrapper>): List<WifiRecordWr
         Timber.d("Dropped %d duplicate-BSSID Wi-Fi wrappers in scan", duplicateBssidDropped)
     }
     return deduped
+}
+
+/**
+ * The display of each wrapper, reusing [cache]'s entry when its values did not change, so an
+ * unchanged access point keeps its reference and its row skips recomposition. New and changed
+ * entries are written to [cache].
+ */
+internal fun cachedDisplays(
+    wrappers: List<WifiRecordWrapper>,
+    cache: MutableMap<String, WifiAccessPointDisplay>,
+): List<WifiAccessPointDisplay> = wrappers.map { wrapper ->
+    val data = wrapper.wifiBeaconRecord.data
+    val fresh = WifiAccessPointDisplay.fromWrapper(
+        wrapper = wrapper,
+        bandwidthLabel = WifiUtils.formatBandwidth(data.bandwidth),
+        standardLabel = WifiUtils.formatStandard(data.standard),
+        encryptionLabel = WifiBeaconMessageConstants.getEncryptionTypeString(data.encryptionType),
+    )
+    val cached = cache[fresh.bssid]
+    if (cached == fresh) {
+        cached
+    } else {
+        cache[fresh.bssid] = fresh
+        fresh
+    }
+}
+
+/**
+ * Interleaves the filtered displays (flat) or the groups and their open children (grouped) into the
+ * list's items. Works off cached state only: no per-wrapper mapping, no re-sort.
+ */
+internal fun interleaveItems(
+    mode: WifiListMode,
+    filtered: List<WifiAccessPointDisplay>,
+    groups: List<WifiDisplayItem.GroupParent>,
+): List<WifiDisplayItem> {
+    if (filtered.isEmpty()) return emptyList()
+    if (mode == WifiListMode.FLAT) return filtered.map { WifiDisplayItem.Flat(it) }
+    val result = mutableListOf<WifiDisplayItem>()
+    for (group in groups) {
+        result += group
+        if (group.expanded) group.aps.mapTo(result) { WifiDisplayItem.GroupChild(group.groupKey, it) }
+    }
+    return result
 }

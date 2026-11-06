@@ -2,7 +2,9 @@ package com.craxiom.networksurvey.ui.organization
 
 import androidx.annotation.StringRes
 import com.craxiom.mqttlibrary.MqttConstants
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.scout.ScoutPolicy
 import com.craxiom.networksurvey.survey.mdm.ManagedState
 import com.craxiom.networksurvey.survey.mdm.RestrictionDefinition
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
@@ -44,6 +46,9 @@ sealed interface OrgValue {
     /** A secret, such as the broker password: only that it is set is shown. */
     data object Secret : OrgValue
 
+    /** Wi-Fi comes from this phone (an NS Scout is paired but not in use). */
+    data object WifiFromPhone : OrgValue
+
     data class Text(val text: String) : OrgValue
 }
 
@@ -57,8 +62,12 @@ object OrganizationSettingsReader {
     private val PERMISSION_KEYS = listOf(
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD,
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS,
+        NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT,
         NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL,
     )
+
+    /** The row for where Wi-Fi comes from; not a managed key, shown with the permissions. */
+    const val WIFI_SOURCE_ROW_KEY = "scout_wifi_source"
 
     private val MQTT_EXTRA_KEYS = setOf(
         NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED,
@@ -70,8 +79,15 @@ object OrganizationSettingsReader {
     /**
      * @param definitions The schema, from [com.craxiom.networksurvey.survey.mdm.AppRestrictionsDefinitions].
      * @param overrideOn  True while the user is using their own settings.
+     * @param scoutWifiSource Where Wi-Fi comes from while an NS Scout is paired: the Scout's name,
+     *                    or empty for this phone; null without a paired Scout (no row then).
      */
-    fun read(snapshot: RestrictionsSnapshot, definitions: List<RestrictionDefinition>, overrideOn: Boolean): OrganizationSettingsUi {
+    fun read(
+        snapshot: RestrictionsSnapshot,
+        definitions: List<RestrictionDefinition>,
+        overrideOn: Boolean,
+        scoutWifiSource: String? = null,
+    ): OrganizationSettingsUi {
         if (!snapshot.isManaged) return OrganizationSettingsUi(managed = false, overrideOn = overrideOn)
 
         val byKey = definitions.associateBy { it.key }
@@ -85,7 +101,9 @@ object OrganizationSettingsReader {
         }.toMutableMap()
         rows[OrgGroup.PERMISSIONS] = PERMISSION_KEYS.map { key ->
             OrgRowUi(key, byKey[key]?.titleRes ?: 0, permissionValue(key, snapshot))
-        }
+        } + listOfNotNull(scoutWifiSource?.takeIf { ScoutPolicy.isAllowed(snapshot) }?.let { source ->
+            OrgRowUi(WIFI_SOURCE_ROW_KEY, R.string.org_wifi_source, if (source.isEmpty()) OrgValue.WifiFromPhone else OrgValue.Text(source))
+        })
 
         val externalUploadSet = snapshot.contains(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD)
         return OrganizationSettingsUi(
@@ -124,6 +142,9 @@ object OrganizationSettingsReader {
 
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS ->
             if (snapshot.getBoolean(key) != false) OrgValue.Allowed else OrgValue.NotAllowed
+
+        NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT ->
+            if (ScoutPolicy.isAllowed(snapshot)) OrgValue.Allowed else OrgValue.NotAllowed
 
         else -> when (snapshot.getBoolean(key)) {
             true -> OrgValue.Allowed

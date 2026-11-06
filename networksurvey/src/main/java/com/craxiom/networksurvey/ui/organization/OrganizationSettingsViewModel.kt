@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.scout.ScoutManager
+import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
 import com.craxiom.networksurvey.survey.mdm.AppRestrictionsDefinitions
 import com.craxiom.networksurvey.survey.mdm.OrganizationOverride
@@ -46,8 +48,16 @@ class OrganizationSettingsViewModel(application: Application) : AndroidViewModel
                 restrictions.snapshot(),
                 AppRestrictionsDefinitions.read(getApplication<Application>().resources),
                 preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false),
+                scoutWifiSource(),
             )
         }
+    }
+
+    /** The paired NS Scout's name while it is the Wi-Fi source, empty for this phone, null without one. */
+    private fun scoutWifiSource(): String? {
+        val manager = ScoutManager.getInstance(getApplication())
+        val scout = manager.pairedScout.value ?: return null
+        return if (manager.wifiSource.value == WifiSource.SCOUT) scout.name else ""
     }
 
     /** Turns "Override organization settings" on (true) or restores the organization's (false). */

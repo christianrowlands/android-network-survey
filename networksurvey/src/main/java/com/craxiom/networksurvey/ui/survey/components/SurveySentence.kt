@@ -23,7 +23,7 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
 fun SurveySentence(sentence: SentenceUi, modifier: Modifier = Modifier) {
     val text = listOfNotNull(
         sentence.notSent.takeIf { it.isNotEmpty() }?.let {
-            pluralStringResource(R.plurals.survey_sentence_not_sent, it.size, recordTypeNames(it))
+            pluralStringResource(R.plurals.survey_sentence_not_sent, it.size, recordTypeNames(it, sentence.wifiScoutName))
         },
         sentence.receivesNothing.takeIf { it.isNotEmpty() }?.let {
             stringResource(R.string.survey_sentence_receives_nothing, destinationNames(it))

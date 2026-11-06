@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.ui.wifi
 
 import android.content.Context
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -10,12 +11,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.craxiom.networksurvey.AppPermissions
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.scout.ScoutManager
+import com.craxiom.networksurvey.services.controller.WifiSourceSwitch
+import com.craxiom.networksurvey.ui.bluetooth.rememberTurnOnBluetooth
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.common.PermissionRequest
 import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
 import com.craxiom.networksurvey.ui.common.findComponentActivity
 import com.craxiom.networksurvey.ui.common.openAppSettings
+import com.craxiom.networksurvey.ui.common.requestOrOpenSettings
 import com.craxiom.networksurvey.ui.common.openLocationSettings
 import com.craxiom.networksurvey.ui.common.openSystemSettings
 import com.craxiom.networksurvey.ui.common.openWifiSettings
@@ -24,6 +30,10 @@ import com.craxiom.networksurvey.ui.main.SharedViewModel
 import com.craxiom.networksurvey.ui.signals.SignalsSubTab
 import com.craxiom.networksurvey.ui.signals.signalsStripWords
 import com.craxiom.networksurvey.ui.util.copyWithSystemConfirmation
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientsView
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientsViewModel
+import com.craxiom.networksurvey.ui.wifi.clients.ssidOf
+import com.craxiom.networksurvey.ui.wifi.components.ScoutWifiFixes
 import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
 import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
@@ -44,11 +54,15 @@ fun WifiListScreen(onOpenSpectrum: () -> Unit, onManageExclusionList: () -> Unit
     val activity = context.findComponentActivity() ?: return
     val viewModel: WifiListViewModel = viewModel(viewModelStoreOwner = activity)
     val sharedViewModel: SharedViewModel = viewModel(viewModelStoreOwner = activity)
+    val clientsViewModel: WifiClientsViewModel = viewModel(viewModelStoreOwner = activity)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val clients by clientsViewModel.uiState.collectAsStateWithLifecycle()
     val openSpectrum by rememberUpdatedState(onOpenSpectrum)
     val manageExclusionList by rememberUpdatedState(onManageExclusionList)
 
     ServiceConnectionHandler(viewModel::onServiceChanged)
+    // Its own binding, so the Scout captures clients only while the Clients list shows
+    ServiceConnectionHandler(clientsViewModel::onServiceChanged)
     LifecycleResumeEffect(viewModel) {
         viewModel.refresh()
         onPauseOrDispose { }
@@ -57,26 +71,67 @@ fun WifiListScreen(onOpenSpectrum: () -> Unit, onManageExclusionList: () -> Unit
     val permission = rememberPermissionRequest(WifiEnvironment.PERMISSIONS, onAnswered = viewModel::refresh) {
         viewModel.refresh()
     }
+    // The NS Scout's Nearby devices permission; the Scout manager re-reads it after an answer
+    val nearby = rememberPermissionRequest(AppPermissions.BLUETOOTH_PERMISSIONS, onAnswered = { refreshScout(context) }) {
+        refreshScout(context)
+    }
+    val turnOnBluetooth = rememberTurnOnBluetooth(onResult = { refreshScout(context) })
 
     WifiListContent(
         state = state,
         stripWords = signalsStripWords(SignalsSubTab.WIFI),
         permissionAccess = permission.access,
-        actions = remember(viewModel, permission) {
-            ScreenActions(context, viewModel, sharedViewModel, permission, { openSpectrum() }, { manageExclusionList() })
+        nearbyAccess = nearby.access,
+        clients = clients,
+        ssidOf = viewModel::ssidOf,
+        actions = remember(viewModel, clientsViewModel, permission, nearby, turnOnBluetooth) {
+            ScreenActions(
+                context, viewModel, clientsViewModel, sharedViewModel, permission, { openSpectrum() }, { manageExclusionList() },
+                ScoutFixes(context, viewModel, sharedViewModel, nearby, turnOnBluetooth),
+            )
         },
     )
+}
+
+private fun refreshScout(context: Context) = ScoutManager.getInstance(context).refreshEnvironment()
+
+/** The NS Scout's fixes: its permission, Bluetooth, its page, and phone Wi-Fi instead. */
+private class ScoutFixes(
+    private val context: Context,
+    private val viewModel: WifiListViewModel,
+    private val sharedViewModel: SharedViewModel,
+    private val nearby: PermissionRequest,
+    private val turnOnBluetooth: () -> Unit,
+) : ScoutWifiFixes {
+    override fun onAllowNearby() = nearby.requestOrOpenSettings(context)
+
+    override fun onTurnOnBluetooth() = turnOnBluetooth()
+
+    override fun onOpenScoutPage() = sharedViewModel.triggerNavigationToScout()
+
+    override fun onUpdateFirmware() = sharedViewModel.triggerNavigationToScoutFirmware()
+
+    override fun onUsePhoneWifi() {
+        val message = when (viewModel.usePhoneWifi()) {
+            WifiSourceSwitch.SWITCHED -> R.string.wifi_scout_now_phone
+            WifiSourceSwitch.REJECTED_RECORDING -> R.string.wifi_scout_stop_to_switch
+            else -> return
+        }
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
 }
 
 /** Wires [WifiListActions] to the view models, the permission request and the system screens. */
 private class ScreenActions(
     private val context: Context,
     private val viewModel: WifiListViewModel,
+    private val clientsViewModel: WifiClientsViewModel,
     private val sharedViewModel: SharedViewModel,
     private val permission: PermissionRequest,
     private val openSpectrum: () -> Unit,
     private val manageExclusionList: () -> Unit,
-) : WifiListActions {
+    scoutFixes: ScoutWifiFixes,
+) : WifiListActions, ScoutWifiFixes by scoutFixes {
 
     override fun onNetworkClick(bssid: String) {
         val wrapper = viewModel.wrapperFor(bssid) ?: return
@@ -99,11 +154,28 @@ private class ScreenActions(
 
     override fun onToggleGroup(groupKey: String) = viewModel.toggleGroupExpanded(groupKey)
 
-    override fun onModeChanged(mode: WifiListMode) = viewModel.setMode(mode)
+    override fun onModeChanged(mode: WifiListMode) {
+        clientsViewModel.setSelected(false)
+        viewModel.setMode(mode)
+    }
+
+    override fun onClientsSelected() = clientsViewModel.setSelected(true)
+
+    override fun onClientsViewChanged(view: WifiClientsView) = clientsViewModel.setView(view)
+
+    override fun onToggleProbedNetwork(ssid: String) = clientsViewModel.toggleNetwork(ssid)
+
+    override fun onClientClick(mac: String) {
+        clientsViewModel.uiState.value.clients.firstOrNull { it.mac == mac }?.let(clientsViewModel::noteOpened)
+        sharedViewModel.triggerNavigationToWifiClientDetails(mac)
+    }
 
     override fun onSortSelected(index: Int) = viewModel.setSortIndex(index)
 
-    override fun onTogglePause() = viewModel.togglePaused()
+    override fun onTogglePause() {
+        viewModel.togglePaused()
+        clientsViewModel.setPaused(viewModel.uiState.value.updatesPaused)
+    }
 
     override fun onClearFilter() = viewModel.clearFilter()
 
@@ -130,4 +202,6 @@ private class ScreenActions(
     )
 
     override fun onDismissThrottle() = viewModel.dismissThrottleWarning()
+
+    override fun onAboutScout() = sharedViewModel.triggerNavigationToScout()
 }

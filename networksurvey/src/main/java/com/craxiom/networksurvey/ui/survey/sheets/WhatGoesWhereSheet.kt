@@ -48,6 +48,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.survey.components.joinNames
 import com.craxiom.networksurvey.ui.survey.components.labelRes
+import com.craxiom.networksurvey.ui.survey.components.notSentAnywhereRes
 import com.craxiom.networksurvey.ui.survey.components.recordTypeNames
 import com.craxiom.networksurvey.ui.survey.model.RoutingColumn
 import com.craxiom.networksurvey.ui.survey.model.RoutingRowUi
@@ -189,7 +190,7 @@ private fun TypeCell(row: RoutingRowUi, columns: List<RoutingColumn>, modifier: 
         Text(name, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         if (row.notSentAnywhere) {
             Text(
-                text = stringResource(R.string.survey_type_not_sent_anywhere),
+                text = stringResource(row.type.notSentAnywhereRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = NsTheme.colors.status.warningText,
             )

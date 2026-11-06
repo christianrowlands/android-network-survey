@@ -6,8 +6,12 @@ import android.os.Bundle
 import android.os.Environment
 import com.craxiom.messaging.DeviceStatus
 import com.craxiom.messaging.DeviceStatusData
+import com.craxiom.messaging.WifiClientRecord
+import com.craxiom.messaging.WifiClientRecordData
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -90,6 +94,24 @@ class CsvRecordLoggerLifecycleTest {
             "Disabling when logging was never enabled should report no-op",
             logger.enableLogging(false)
         )
+    }
+
+    @Test
+    fun `a batch that arrives after logging stopped creates no new file`() {
+        val service = mock(NetworkSurveyService::class.java)
+        `when`(service.applicationContext).thenReturn(RuntimeEnvironment.getApplication())
+        val logger = WifiClientCsvLogger(service)
+        val record = WifiClientRecord.newBuilder()
+            .setData(WifiClientRecordData.newBuilder().setSourceAddress("3e:7b:20:d4:91:01"))
+            .build()
+
+        assertTrue(logger.enableLogging(true))
+        logger.onWifiClientRecords(listOf(record))
+        assertNotNull("A batch while logging is on opens the file", logger.printer)
+
+        assertTrue(logger.enableLogging(false))
+        logger.onWifiClientRecords(listOf(record))
+        assertNull("A batch after the stop must not open a new file", logger.printer)
     }
 
     private fun buildDeviceStatus(): DeviceStatus {

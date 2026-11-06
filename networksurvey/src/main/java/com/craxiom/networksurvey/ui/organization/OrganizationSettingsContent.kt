@@ -100,6 +100,7 @@ private fun valueText(value: OrgValue): String = when (value) {
     OrgValue.Allowed -> stringResource(R.string.org_value_allowed)
     OrgValue.NotAllowed -> stringResource(R.string.survey_lock_not_allowed)
     OrgValue.Secret -> stringResource(R.string.org_value_set)
+    OrgValue.WifiFromPhone -> stringResource(R.string.scout_source_phone)
     is OrgValue.Text -> value.text
 }
 

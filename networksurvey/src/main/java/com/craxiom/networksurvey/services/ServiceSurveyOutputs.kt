@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.services
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.craxiom.networksurvey.constants.CdrPermissions
+import com.craxiom.networksurvey.scout.ScoutPolicy
 import com.craxiom.networksurvey.survey.engine.SkipReason
 import com.craxiom.networksurvey.survey.engine.SurveyOutputs
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
@@ -50,6 +51,11 @@ class ServiceSurveyOutputs(private val service: NetworkSurveyService) : SurveyOu
 
         RecordType.CDR -> if (hasAll(CdrPermissions.CDR_REQUIRED_PERMISSIONS)) null else SkipReason.PERMISSION_MISSING
 
+        // Only the Scout hears Wi-Fi clients and raw frames; a Scout outage keeps the type, like Wi-Fi.
+        // The policy is read here too: the source switch it causes lands on the Scout thread later.
+        RecordType.WIFI_CLIENTS, RecordType.WIFI_RAW ->
+            if (service.canRecordWifiClients() && ScoutPolicy.isAllowed(service)) null else SkipReason.NEEDS_SCOUT
+
         else -> null
     }
 
@@ -67,6 +73,8 @@ class ServiceSurveyOutputs(private val service: NetworkSurveyService) : SurveyOu
             RecordType.BLUETOOTH -> service.toggleBluetoothLogging(enabled)
             RecordType.GNSS -> service.toggleGnssLogging(enabled)
             RecordType.CDR -> service.toggleCdrLogging(enabled)
+            RecordType.WIFI_CLIENTS -> service.toggleWifiClientsLogging(enabled)
+            RecordType.WIFI_RAW -> service.toggleWifiRawLogging(enabled)
         }
         return result == enabled
     }
@@ -113,5 +121,7 @@ class ServiceSurveyOutputs(private val service: NetworkSurveyService) : SurveyOu
         RecordType.BLUETOOTH -> service.isBluetoothLoggingEnabled
         RecordType.GNSS -> service.isGnssLoggingEnabled
         RecordType.CDR -> service.isCdrLoggingEnabled
+        RecordType.WIFI_CLIENTS -> service.isWifiClientsLoggingEnabled
+        RecordType.WIFI_RAW -> service.isWifiRawLoggingEnabled
     }
 }

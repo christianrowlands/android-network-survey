@@ -14,6 +14,15 @@ object ExternalLinks {
     const val GITHUB = "https://github.com/christianrowlands/android-network-survey"
     const val PRIVACY_POLICY = "https://networksurvey.app/privacy-policy"
 
+    /** The NS Scout page: what it is, which boards, where to buy them. */
+    const val NS_SCOUT = "https://networksurvey.app/scout"
+
+    /** The NS Scout web installer's address, as the app shows it. */
+    const val NS_SCOUT_INSTALLER_HOST = "install.networksurvey.app"
+
+    /** The NS Scout web installer, opened from a computer. */
+    const val NS_SCOUT_INSTALLER = "https://$NS_SCOUT_INSTALLER_HOST/"
+
     /** Opens [url] in the browser. @return False when no app on the phone can open it. */
     fun open(context: Context, url: String): Boolean = try {
         context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))

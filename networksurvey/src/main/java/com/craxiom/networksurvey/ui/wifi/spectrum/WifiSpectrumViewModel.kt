@@ -10,7 +10,7 @@ import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.signals.ScanConditions
 import com.craxiom.networksurvey.ui.signals.ScanListenerRegistration
-import com.craxiom.networksurvey.ui.wifi.model.AndroidWifiEnvironment
+import com.craxiom.networksurvey.ui.wifi.model.SourceAwareWifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfo
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
@@ -35,7 +35,7 @@ class WifiSpectrumViewModel internal constructor(
     private val mainDispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
-    constructor(application: Application) : this(application, AndroidWifiEnvironment(application), Dispatchers.Main)
+    constructor(application: Application) : this(application, SourceAwareWifiEnvironment(application), Dispatchers.Main)
 
     private val conditions = ScanConditions(
         context = application,

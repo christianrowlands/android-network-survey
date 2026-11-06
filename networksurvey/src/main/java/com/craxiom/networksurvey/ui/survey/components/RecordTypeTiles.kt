@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -73,13 +74,16 @@ private fun RecordTypeTile(
     modifier: Modifier = Modifier,
 ) {
     val name = stringResource(tile.type.labelRes)
+    val warning = tile.needsScoutName != null || tile.notSentAnywhere
     val description = when {
-        tile.notSentAnywhere -> stringResource(R.string.survey_type_not_sent_anywhere)
+        tile.needsScoutName != null -> stringResource(R.string.survey_type_needs_scout, tile.needsScoutName)
+        tile.notSentAnywhere -> stringResource(tile.type.notSentAnywhereRes)
         tile.lock == ItemLock.INCLUDED_WITH_CELLULAR -> stringResource(R.string.survey_type_included_with_cellular)
+        tile.scoutName != null -> stringResource(R.string.survey_type_wifi_from_scout, tile.scoutName)
         else -> stringResource(tile.type.descriptionRes)
     }
     val colors = MaterialTheme.colorScheme
-    val descriptionColor = if (tile.notSentAnywhere) NsTheme.colors.status.warningText else colors.onSurfaceVariant
+    val descriptionColor = if (warning) NsTheme.colors.status.warningText else colors.onSurfaceVariant
     val interaction = when (tile.lock) {
         ItemLock.NONE -> Modifier.toggleable(value = tile.on, role = Role.Checkbox, onValueChange = { onToggle() })
         ItemLock.ORGANIZATION -> Modifier
@@ -137,8 +141,15 @@ private fun TileBadge(tile: RecordTypeTileUi, shown: Boolean, modifier: Modifier
     when {
         !shown -> Spacer(modifier.size(SMALL_ICON))
 
+        tile.needsScoutName != null -> Icon(
+            painter = painterResource(R.drawable.ic_sensors),
+            contentDescription = null,
+            tint = NsTheme.colors.status.warningText,
+            modifier = modifier.size(SMALL_ICON),
+        )
+
         tile.notSentAnywhere -> Icon(
-            imageVector = Icons.Filled.Warning,
+            imageVector = if (tile.type == RecordType.WIFI_RAW) Icons.Filled.Info else Icons.Filled.Warning,
             contentDescription = null,
             tint = NsTheme.colors.status.warningText,
             modifier = modifier.size(SMALL_ICON),

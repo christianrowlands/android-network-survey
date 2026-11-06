@@ -6,6 +6,9 @@ package com.craxiom.networksurvey.ui.wifi.model
  * [scanState] says what stops a scan, if anything; [throttleWarning] is set while Android throttles
  * scans and the user has not dismissed the warning.
  *
+ * [scout] is set while the NS Scout is the Wi-Fi source (its name and what blocks it, if anything);
+ * [suggestScout] lets the throttle notice mention the Scout, only while none is paired.
+ *
  * [apCount] is the deduped total from the latest scan while [visibleApCount] is the number of
  * APs that pass the display [filter]; the two only differ when the filter is active.
  */
@@ -20,4 +23,6 @@ data class WifiListUiState(
     val updatesPaused: Boolean = false,
     val mode: WifiListMode = WifiListMode.GROUPED,
     val sortIndex: Int = 0,
+    val scout: WifiScoutUi? = null,
+    val suggestScout: Boolean = false,
 )

@@ -50,6 +50,73 @@ class SurveyPolicyTest {
     }
 
     @Test
+    fun `Wi-Fi clients are off on a managed phone that doesn't name them, without shaping the setup`() {
+        val brokerOnly = policy(mapOf(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST to "broker.example"))
+        assertEquals(ManagedState.OFF, brokerOnly.lockFor(RecordType.WIFI_CLIENTS))
+        assertFalse(brokerOnly.isRecordTypeAvailable(RecordType.WIFI_CLIENTS))
+        // Only hides the type: no seeding, no override switch, nothing else locked
+        assertFalse(brokerOnly.hasSetupLocks)
+        assertFalse(brokerOnly.hasOrganizationSetup)
+        assertNull(brokerOnly.managedSeedSetup(SurveySetup.custom(setOf(RecordType.WIFI), setOf(Destination.MQTT))))
+        val user = SurveySetup.custom(setOf(RecordType.WIFI, RecordType.WIFI_CLIENTS), setOf(Destination.LOG_FILES))
+        assertEquals(setOf(RecordType.WIFI), brokerOnly.effectiveSetup(user).recordTypes)
+    }
+
+    @Test
+    fun `a fleet that locked every type before Wi-Fi clients existed stays fully locked`() {
+        val sixLocked = RecordType.entries.filter { !it.needsScout }.associate { SurveyMdmKeys.keyFor(it) to SurveyMdmKeys.VALUE_ON }
+        val policy = policy(sixLocked)
+        assertTrue(RecordType.entries.all { policy.lockFor(it).isManaged })
+        assertEquals(ManagedState.OFF, policy.lockFor(RecordType.WIFI_CLIENTS))
+    }
+
+    @Test
+    fun `the organization can leave Wi-Fi clients to the user or turn them on, and an unmanaged phone has them`() {
+        assertEquals(ManagedState.USER, policy(mapOf(SurveyMdmKeys.SURVEY_WIFI_CLIENTS to "user")).lockFor(RecordType.WIFI_CLIENTS))
+        val on = policy(mapOf(SurveyMdmKeys.SURVEY_WIFI_CLIENTS to "on"))
+        assertEquals(ManagedState.ON, on.lockFor(RecordType.WIFI_CLIENTS))
+        assertTrue(on.hasSetupLocks)
+        assertEquals(ManagedState.USER, policy(emptyMap()).lockFor(RecordType.WIFI_CLIENTS))
+        val overridden = policy(mapOf(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST to "b"), overrideOn = true)
+        assertEquals(ManagedState.USER, overridden.lockFor(RecordType.WIFI_CLIENTS))
+    }
+
+    @Test
+    fun `a console that pushes every default, Wi-Fi clients as off, shapes nothing`() {
+        val defaults = SurveyMdmKeys.ALL_SETUP_KEYS.associateWith { SurveyMdmKeys.VALUE_USER } +
+            (SurveyMdmKeys.SURVEY_WIFI_CLIENTS to SurveyMdmKeys.VALUE_OFF)
+        val policy = policy(defaults)
+        assertFalse(policy.hasSetupLocks)
+        assertFalse(policy.hasOrganizationSetup)
+        assertEquals(ManagedState.OFF, policy.lockFor(RecordType.WIFI_CLIENTS))
+    }
+
+    @Test
+    fun `Raw frames are off on a managed phone that doesn't name them, and the organization can block or allow them`() {
+        val brokerOnly = policy(mapOf(MqttConstants.PROPERTY_MQTT_CONNECTION_HOST to "broker.example"))
+        assertEquals(ManagedState.OFF, brokerOnly.lockFor(RecordType.WIFI_RAW))
+        assertFalse(brokerOnly.isRecordTypeAvailable(RecordType.WIFI_RAW))
+        assertFalse(brokerOnly.hasSetupLocks)
+        val user = SurveySetup.custom(setOf(RecordType.WIFI, RecordType.WIFI_RAW), setOf(Destination.LOG_FILES))
+        assertEquals(setOf(RecordType.WIFI), brokerOnly.effectiveSetup(user).recordTypes)
+
+        val blocked = policy(mapOf(SurveyMdmKeys.SURVEY_WIFI_RAW to SurveyMdmKeys.VALUE_OFF))
+        assertFalse(blocked.isRecordTypeAvailable(RecordType.WIFI_RAW))
+        assertFalse(blocked.hasSetupLocks)
+        assertEquals(ManagedState.USER, policy(mapOf(SurveyMdmKeys.SURVEY_WIFI_RAW to "user")).lockFor(RecordType.WIFI_RAW))
+        assertEquals(ManagedState.ON, policy(mapOf(SurveyMdmKeys.SURVEY_WIFI_RAW to "on")).lockFor(RecordType.WIFI_RAW))
+        // An unmanaged phone leaves them to the user
+        assertEquals(ManagedState.USER, policy(emptyMap()).lockFor(RecordType.WIFI_RAW))
+    }
+
+    @Test
+    fun `the Raw frames key is a setup key and a Settings overlap key`() {
+        assertEquals("survey_wifi_raw", SurveyMdmKeys.keyFor(RecordType.WIFI_RAW))
+        assertTrue(SurveyMdmKeys.SURVEY_WIFI_RAW in SurveyMdmKeys.ALL_SETUP_KEYS)
+        assertTrue(SurveyMdmKeys.SURVEY_WIFI_RAW in MdmOverlapKeys.ALL)
+    }
+
+    @Test
     fun `a full form push of every key as user locks nothing`() {
         val everyKeyUser = SurveyMdmKeys.ALL_SETUP_KEYS.associateWith { SurveyMdmKeys.VALUE_USER }
         val policy = policy(everyKeyUser)

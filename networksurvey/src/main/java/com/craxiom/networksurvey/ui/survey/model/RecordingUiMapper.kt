@@ -4,6 +4,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.model.RecordTypeAvailability
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import com.craxiom.networksurvey.survey.status.DeliveryQueues
 import com.craxiom.networksurvey.survey.status.DestinationStatus
@@ -27,7 +28,8 @@ internal object RecordingUiMapper {
         // record processed would climb while standing still; they show what was saved instead.
         val savedForUpload = isCommunityOnly(inputs)
         val communityTypes = runtime.destinations[Destination.COMMUNITY]?.types.orEmpty()
-        val countedTypes = if (savedForUpload) types.filter { it in communityTypes } else types
+        // Raw frames get their own line under the records: in the bar they would dwarf the rest
+        val countedTypes = (if (savedForUpload) types.filter { it in communityTypes } else types).filter { it != RecordType.WIFI_RAW }
         val counts = if (savedForUpload) inputs.communityCounts else inputs.counts
         val lastRecordTimeMs = if (savedForUpload) inputs.communityLastRecordTimeMs else inputs.lastRecordTimeMs
         return RecordingUi(
@@ -48,8 +50,11 @@ internal object RecordingUiMapper {
             countsSavedForUpload = savedForUpload,
             changeSeed = runtime.requested ?: SurveySetup.custom(runtime.recordTypes, runtime.destinations.keys),
             deviceStatusOnly = runtime.recordTypes.isEmpty() && isMqttDeviceStatusOnly(runtime),
-            // A type the organization turned off can't be turned on, so it isn't shown as an off chip
-            availableTypes = RecordType.entries.filter { form.policy.isRecordTypeAvailable(it) || it in runtime.recordTypes },
+            // A type the organization turned off (or a Scout-only type without a Scout) can't be
+            // turned on, so it isn't shown as an off chip
+            availableTypes = RecordType.entries.filter { it in form.availableTypes || it in runtime.recordTypes },
+            wifiScoutName = ScoutSurveyMapper.wifiSourceName(inputs),
+            rawFrames = inputs.rawFrames?.takeIf { RecordType.WIFI_RAW in runtime.recordTypes },
         )
     }
 
@@ -75,9 +80,11 @@ internal object RecordingUiMapper {
     fun routing(inputs: SurveyInputs): RoutingTableUi? {
         val runtime = inputs.runtime
         return RoutingTableUi.of(
-            types = runtime.requested?.recordTypes ?: runtime.recordTypes,
+            types = (runtime.requested?.recordTypes ?: runtime.recordTypes)
+                .filterTo(linkedSetOf()) { RecordTypeAvailability.isCandidate(it, inputs.scoutPaired) },
             destinations = runningDestinations(runtime),
             info = inputs.destinationInfo,
+            offered = FormFacts(inputs).availableTypes,
             mqttDeviceStatus = isMqttDeviceStatusOnly(runtime),
         )
     }
@@ -181,7 +188,8 @@ internal object RecordingUiMapper {
         if (stalled != null && !runtime.pausedForBattery && !runtime.pausedForBackpressure) {
             plates += AttentionPlateUi.Stalled(stalled)
         }
-        val items = attentionItems(inputs) + deliveryItems(inputs, runtime.mqttDropping)
+        val (scoutPlates, items) = ScoutSurveyMapper.splitRecording(attentionItems(inputs) + deliveryItems(inputs, runtime.mqttDropping))
+        plates += scoutPlates
         if (items.isNotEmpty()) plates += AttentionPlateUi.NeedsAttention(items)
         return plates
     }
@@ -212,7 +220,7 @@ internal object RecordingUiMapper {
      * survey notification lists. An item disappears here as soon as it runs.
      */
     private fun attentionItems(inputs: SurveyInputs): List<AttentionItemUi> =
-        LeftOutItems.of(inputs.runtime, inputs.wifiOff).map { it.toAttentionItem() }
+        LeftOutItems.of(inputs.runtime, inputs.wifiOff, inputs.scoutWifi).map { it.toAttentionItem() }
 
     private const val MILLIS_PER_SECOND = 1_000L
 }

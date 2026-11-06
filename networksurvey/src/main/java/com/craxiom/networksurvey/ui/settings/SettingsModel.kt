@@ -69,6 +69,8 @@ data class SettingsUiState(
     val nsAnalyticsBlocked: Boolean = false,
     val deviceSerial: String? = null,
     val appInstanceId: String? = null,
+    /** The paired NS Scout's name, which changes what the Wi-Fi interval means; null without one. */
+    val scoutName: String? = null,
 )
 
 /**
@@ -87,6 +89,7 @@ object SettingsReader {
         val batteryOptimizationOff: Boolean,
         val deviceSerial: String?,
         val appInstanceId: String?,
+        val scoutName: String? = null,
     )
 
     /** Every stored key the page shows; a change to any other leaves the page as it is. */
@@ -142,6 +145,7 @@ object SettingsReader {
             nsAnalyticsBlocked = managed && !environment.nsAnalyticsAllowed,
             deviceSerial = environment.deviceSerial,
             appInstanceId = environment.appInstanceId,
+            scoutName = environment.scoutName,
         )
     }
 

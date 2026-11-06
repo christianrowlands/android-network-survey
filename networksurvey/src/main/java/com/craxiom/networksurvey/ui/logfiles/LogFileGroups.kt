@@ -25,8 +25,11 @@ object LogFileGroups {
     /** A file started at most this long after the survey's last write still belongs to it. */
     private val SAME_SURVEY_MS = TimeUnit.SECONDS.toMillis(60)
 
-    /** "craxiom-lte-20261006-091204.csv", or "...-091204-1.csv" when the name was taken. */
-    private val NAME_TIME = Regex("""(\d{8}-\d{6})(?:-\d+)?\.csv$""")
+    /**
+     * "craxiom-lte-20261006-091204.csv", or "...-091204-1.csv" when the name was taken; raw frames
+     * files are named the same way with ".pcapng".
+     */
+    private val NAME_TIME = Regex("""(\d{8}-\d{6})(?:-\d+)?\.(?:csv|pcapng)$""")
 
     /**
      * @return When the file named [name] was started, from the time in its name (written in the

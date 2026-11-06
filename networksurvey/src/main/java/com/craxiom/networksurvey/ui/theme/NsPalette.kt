@@ -97,6 +97,8 @@ object NsPalette {
         val BluetoothLight = Color(0xFF2F6BFF)
         val GnssLight = Color(0xFF1E8E3E)
         val CdrLight = Color(0xFFD9486B)
+        val WifiClientsLight = Color(0xFF00897B)
+        val WifiRawLight = Color(0xFF6B7A8F)
 
         val CellularDark = Color(0xFFA48BFF)
         val PhoneStateDark = Color(0xFFF2C15A)
@@ -104,6 +106,8 @@ object NsPalette {
         val BluetoothDark = Color(0xFF7FA4FF)
         val GnssDark = Color(0xFF5DC777)
         val CdrDark = Color(0xFFFF8AA6)
+        val WifiClientsDark = Color(0xFF4DD0B5)
+        val WifiRawDark = Color(0xFFA9B6C8)
     }
 
     /**

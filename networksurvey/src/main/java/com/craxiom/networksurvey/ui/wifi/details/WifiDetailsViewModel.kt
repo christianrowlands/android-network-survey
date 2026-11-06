@@ -10,6 +10,7 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.craxiom.networksurvey.scout.clients.ScoutClient
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.services.watchlist.WatchlistMatcher
 import com.craxiom.networksurvey.ui.RssiChartClock
@@ -18,7 +19,8 @@ import com.craxiom.networksurvey.ui.StoredRssiChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.signals.ScanConditions
 import com.craxiom.networksurvey.ui.signals.ScanListenerRegistration
-import com.craxiom.networksurvey.ui.wifi.model.AndroidWifiEnvironment
+import com.craxiom.networksurvey.ui.wifi.clients.WifiClientFeed
+import com.craxiom.networksurvey.ui.wifi.model.SourceAwareWifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
 import kotlinx.coroutines.CoroutineDispatcher
@@ -60,7 +62,7 @@ class WifiDetailsViewModel internal constructor(
 
     constructor(application: Application) : this(
         application = application,
-        environment = AndroidWifiEnvironment(application),
+        environment = SourceAwareWifiEnvironment(application),
         exclusions = SsidExclusionManager(application),
         watchlistMatches = { network -> watchedIn(application, network) },
         chartSink = StoredRssiChart(),
@@ -86,6 +88,14 @@ class WifiDetailsViewModel internal constructor(
         register = { it.registerWifiSurveyRecordListener(this) },
         unregister = { it.unregisterWifiSurveyRecordListener(this) },
     )
+
+    /** The Wi-Fi clients an NS Scout heard, only for an access point the Scout heard. */
+    private val clientFeed = WifiClientFeed(viewModelScope, mainDispatcher)
+
+    /** The clients heard talking to this access point, strongest first; empty for a phone record. */
+    val connectedClients: StateFlow<List<ScoutClient>> = combine(clientFeed.snapshot, mutableNetwork) { snapshot, network ->
+        network?.takeIf { it.scout != null }?.let { snapshot.connectedTo(it.bssid) }.orEmpty()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val mutableExcluded = MutableStateFlow(false)
 
@@ -117,11 +127,16 @@ class WifiDetailsViewModel internal constructor(
         mutableNetwork.value = network
         mutableExcluded.value = exclusions.isExcluded(network.ssid)
         chartSink.start(network.signalStrength ?: UNKNOWN_RSSI)
+        // The page may bind before it says which network it shows
+        clientFeed.update(network.scout != null)
     }
 
     /** Called with the bound service, and with null before the page unbinds. */
-    fun onServiceChanged(service: NetworkSurveyService?) =
+    fun onServiceChanged(service: NetworkSurveyService?) {
         registration.onServiceChanged(service, conditions.state.value == WifiScanState.READY)
+        // Only a Scout's access point has clients; asking for them makes the Scout capture them
+        clientFeed.onServiceChanged(service, mutableNetwork.value?.scout != null)
+    }
 
     /** Re-reads whether the phone can scan (on resume and after a permission answer). */
     fun refresh() {
@@ -164,6 +179,7 @@ class WifiDetailsViewModel internal constructor(
 
     override fun onCleared() {
         registration.release()
+        clientFeed.release()
         conditions.close()
         chartSink.clear()
     }

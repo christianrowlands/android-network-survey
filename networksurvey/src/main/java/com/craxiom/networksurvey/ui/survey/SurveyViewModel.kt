@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
+import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
 import com.craxiom.networksurvey.survey.mdm.OrganizationOverride
@@ -67,6 +68,7 @@ class SurveyViewModel @JvmOverloads constructor(
     private val gateway = MutableStateFlow<SurveyServiceGateway?>(null)
     private val locationTracker = SurveyLocationTracker(application)
     private val wifiEnvironment = AndroidWifiEnvironment(application)
+    private val scout = SurveyScoutBridge(application, viewModelScope, ioDispatcher, ::emit) { gateway.value }
     private val commands = SurveyCommandRunner(viewModelScope, ioDispatcher, ::emit)
     private val organizationWatcher = OrganizationChangeWatcher()
 
@@ -142,10 +144,25 @@ class SurveyViewModel @JvmOverloads constructor(
     fun onResume() {
         locationTracker.refresh()
         refreshDestinationInfo()
+        scout.onResume()
         if (retryOnResume) {
             retryOnResume = false
             retrySkipped()
         }
+    }
+
+    /** Called when the screen pauses: the Scout no longer needs a link for this screen. */
+    fun onPause() = scout.onPause()
+
+    /** "Use NS-ABCD", or Undo after "Use phone Wi-Fi instead". */
+    fun useScout() = scout.request(WifiSource.SCOUT)
+
+    /** "Use phone Wi-Fi instead": the snackbar then offers Undo. */
+    fun usePhoneWifi() = scout.request(WifiSource.PHONE)
+
+    /** The snackbar for [event] had its action tapped. */
+    fun onSnackbarAction(event: SurveyEvent) {
+        if (event == SurveyEvent.WifiFromPhone) useScout()
     }
 
     /** The user went to fix a skipped item (a radio, a permission); retry it when they come back. */
@@ -323,6 +340,7 @@ class SurveyViewModel @JvmOverloads constructor(
         runtime.filterNotNull(), storeVersion, destinationInfo, locationTracker.status, tick,
     ) { runtime, _, info, location, now -> buildInputs(service, runtime, info, location, now) }
         .combine(CommunityUploadRepository.get(getApplication()).progress) { inputs, upload -> inputs.copy(communityUpload = upload) }
+        .combine(scout.inputs()) { inputs, scoutInputs -> scout.apply(inputs, scoutInputs) }
         // No empty placeholder first: it would briefly say "Nothing waiting" while records wait
         .combine(DeliveryQueueReader(getApplication()).queues()) { inputs, queues ->
             // Ready has no ticker, so the queue refresh also brings "next upload in" up to date
@@ -348,6 +366,7 @@ class SurveyViewModel @JvmOverloads constructor(
             lastRecordTimeMs = service.lastRecordTimeMs(),
             communityCounts = service.communityCounts(),
             communityLastRecordTimeMs = service.communityLastRecordTimeMs(),
+            rawFrames = service.rawFrames(),
             wifiOff = wifiEnvironment.scanState() == WifiScanState.WIFI_OFF,
             nowMs = now,
             hiddenDestinations = store.hiddenDestinations,
@@ -380,6 +399,7 @@ class SurveyViewModel @JvmOverloads constructor(
     }
 
     override fun onCleared() {
+        onPause()
         preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
         locationTracker.attach(null)
     }

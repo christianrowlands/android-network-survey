@@ -157,4 +157,9 @@
     <!-- Joins: two parts with a middle dot, and a color name marked as the default -->
     <string name="dot_join">%1$s · %2$s</string>
     <string name="provider_color_default_marker">%1$s*</string>
+
+    <!-- One item of a checklist: %1$s is the item -->
+    <string name="scout_bullet">• %1$s</string>
+    <!-- A firmware change: %1$s is the installed version, %2$s the new one -->
+    <string name="scout_fw_versions">%1$s → %2$s</string>
 </resources>

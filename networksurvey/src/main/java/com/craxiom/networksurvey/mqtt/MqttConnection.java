@@ -14,6 +14,8 @@ import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WatchlistEntryUpdate;
 import com.craxiom.messaging.WatchlistMatch;
 import com.craxiom.messaging.WifiBeaconRecord;
+import com.craxiom.messaging.WifiClientRecord;
+import com.craxiom.messaging.WifiProbeRequestRecord;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
@@ -22,6 +24,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWatchlistListener;
+import com.craxiom.networksurvey.listeners.IWifiClientSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.DeviceNameStamper;
@@ -37,7 +40,8 @@ import timber.log.Timber;
  * @since 0.1.1
  */
 public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
-        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener, IPhoneStateListener, IWatchlistListener
+        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener, IPhoneStateListener, IWatchlistListener,
+        IWifiClientSurveyRecordListener
 {
     /**
      * When true, incoming survey records will be dropped instead of being queued for MQTT publishing.
@@ -53,6 +57,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     private static final String MQTT_LTE_MESSAGE_TOPIC = "lte_message";
     private static final String MQTT_NR_MESSAGE_TOPIC = "nr_message";
     private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
+    private static final String MQTT_WIFI_CLIENT_MESSAGE_TOPIC = "80211_client_message";
+    private static final String MQTT_WIFI_PROBE_REQUEST_MESSAGE_TOPIC = "80211_probe_request_message";
     private static final String MQTT_BLUETOOTH_MESSAGE_TOPIC = "bluetooth_message";
     private static final String MQTT_GNSS_MESSAGE_TOPIC = "gnss_message";
     private static final String MQTT_DEVICE_STATUS_MESSAGE_TOPIC = "device_status_message";
@@ -188,6 +194,24 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
             wifiBeaconRecord = DeviceNameStamper.stamp(wifiBeaconRecord, effectiveDeviceName);
             publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
         });
+    }
+
+    @Override
+    public void onWifiClientRecords(List<WifiClientRecord> clientRecords)
+    {
+        if (dropMessages.get()) return;
+
+        clientRecords.forEach(record -> publishMessage(MQTT_WIFI_CLIENT_MESSAGE_TOPIC,
+                DeviceNameStamper.stamp(record, effectiveDeviceName)));
+    }
+
+    @Override
+    public void onWifiProbeRequestRecords(List<WifiProbeRequestRecord> probeRecords)
+    {
+        if (dropMessages.get()) return;
+
+        probeRecords.forEach(record -> publishMessage(MQTT_WIFI_PROBE_REQUEST_MESSAGE_TOPIC,
+                DeviceNameStamper.stamp(record, effectiveDeviceName)));
     }
 
     @Override

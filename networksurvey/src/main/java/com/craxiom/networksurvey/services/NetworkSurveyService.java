@@ -35,6 +35,7 @@ import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
 import android.telephony.SubscriptionInfo;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -67,8 +68,11 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILiveScanView;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
+import com.craxiom.networksurvey.listeners.IWifiClientLiveListener;
+import com.craxiom.networksurvey.listeners.IWifiClientSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
+import com.craxiom.networksurvey.logging.RawFramesProgress;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
 import com.craxiom.networksurvey.logging.db.NsAnalyticsDataStore;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
@@ -92,6 +96,8 @@ import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfileStore;
 import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
+import com.craxiom.networksurvey.services.controller.WifiClientsController;
+import com.craxiom.networksurvey.services.controller.WifiRawController;
 import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.services.watchlist.WatchlistChangePublisher;
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
@@ -99,6 +105,11 @@ import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
 import com.craxiom.networksurvey.survey.engine.DestinationRuntime;
 import com.craxiom.networksurvey.survey.status.DestinationStatusRules;
 import com.craxiom.networksurvey.survey.status.LeftOutItems;
+import com.craxiom.networksurvey.scout.ScoutManager;
+import com.craxiom.networksurvey.scout.ScoutPolicy;
+import com.craxiom.networksurvey.scout.model.WifiSource;
+import com.craxiom.networksurvey.scout.wifi.ScoutSurveyStatusMonitor;
+import com.craxiom.networksurvey.services.controller.WifiSourceSwitch;
 import com.craxiom.networksurvey.survey.engine.MissionSessionTracker;
 import com.craxiom.networksurvey.survey.engine.SurveyCoordinator;
 import com.craxiom.networksurvey.survey.engine.SurveyOrchestrator;
@@ -143,6 +154,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -193,6 +205,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private CellularController cellularController;
     private WifiController wifiController;
+    private WifiClientsController wifiClientsController;
+    private WifiRawController wifiRawController;
     private WatchlistDetectionManager watchlistDetectionManager;
     private boolean watchlistRegistered = false;
     // Volatile because it is written on the thread that starts the MQTT connection and read from the
@@ -250,6 +264,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private SurveyNotificationBuilder surveyNotificationBuilder;
     private SurveyStallWatchdog surveyStallWatchdog;
     private final AtomicBoolean foregroundStarted = new AtomicBoolean(false);
+    private ScoutSurveyStatusMonitor scoutStatusMonitor;
 
     private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 
@@ -364,6 +379,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
+        wifiClientsController = new WifiClientsController(this, wifiController);
+        wifiRawController = new WifiRawController(this);
+        scoutStatusMonitor = new ScoutSurveyStatusMonitor(ScoutManager.getInstance(context), serviceHandler,
+                wifiController::getWifiSource, missionSessionTracker::sessionStartTimeMs, this::updateServiceNotification);
         bluetoothController = new BluetoothController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
         gnssController = new GnssController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
 
@@ -382,6 +401,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController.initialize();
         wifiController.initializeWifiScanningResources();
+        wifiClientsController.start();
+        wifiRawController.start();
+        scoutStatusMonitor.start();
         bluetoothController.initializeBtScanningResources();
         gnssController.initializeGnssScanningResources();
 
@@ -430,8 +452,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         ensureForegroundForStartRequest(startId);
 
         // If we are started at boot, then that means the NetworkSurveyActivity was never run, so the
-        // auto start setting is applied here.
+        // auto start setting is applied here. This service is exported, so another app can send the
+        // extra too: it is refused, and not sticky, so Android never replays it as a real boot start.
         final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
+        if (startedAtBoot && !BootStartGate.accept(intent, flags))
+        {
+            Timber.w("Ignoring a boot start that did not come from this app");
+            stopSelfAfterRequestIfUnused(startId);
+            return START_NOT_STICKY;
+        }
+
         if (startedAtBoot)
         {
             Timber.i("Received the startedAtBoot flag in the NetworkSurveyService. Applying the auto start setting");
@@ -732,6 +762,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopAllLogging();
 
         if (surveyStallWatchdog != null) surveyStallWatchdog.stop();
+        if (scoutStatusMonitor != null) scoutStatusMonitor.stop();
         serviceLooper.quitSafely();
         shutdownNotifications();
         executorService.shutdown();
@@ -739,6 +770,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController.onDestroy();
         wifiController.onDestroy();
+        wifiClientsController.onDestroy();
+        wifiRawController.onDestroy();
         bluetoothController.onDestroy();
         gnssController.onDestroy();
 
@@ -761,8 +794,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             case NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB:
                 cellularController.onRolloverPreferenceChanged();
                 wifiController.onRolloverPreferenceChanged();
+                wifiClientsController.onRolloverPreferenceChanged();
                 bluetoothController.onRolloverPreferenceChanged();
                 gnssController.onRolloverPreferenceChanged();
+                wifiRawController.onRolloverSizeChanged();
 
                 deviceStatusCsvLogger.onSharedPreferenceChanged();
                 break;
@@ -969,7 +1004,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         synchronized (mqttStreamTypes)
         {
             applyListenerTypes(mqttStreamTypes, types, mqttConnection, mqttConnection, mqttConnection,
-                    mqttConnection, mqttConnection);
+                    mqttConnection, mqttConnection, mqttConnection);
         }
     }
 
@@ -986,14 +1021,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Registers and unregisters one destination's record listeners so that it receives exactly the
-     * given record types, and updates {@code current} to match.
+     * given record types, and updates {@code current} to match. Every record type has a case, so a
+     * new type fails here instead of being silently dropped.
+     *
+     * @param wifiClientListener Null for a destination that never takes Wi-Fi clients.
      */
     private void applyListenerTypes(Set<RecordType> current, Set<RecordType> wanted,
                                     ICellularSurveyRecordListener cellularListener,
                                     IPhoneStateListener phoneStateListener,
                                     IWifiSurveyRecordListener wifiListener,
                                     IBluetoothSurveyRecordListener bluetoothListener,
-                                    IGnssSurveyRecordListener gnssListener)
+                                    IGnssSurveyRecordListener gnssListener,
+                                    IWifiClientSurveyRecordListener wifiClientListener)
     {
         // Register additions first so a type swap never leaves a scanner without a listener in between.
         for (RecordType type : RecordType.values())
@@ -1007,9 +1046,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     case WIFI -> registerWifiSurveyRecordListener(wifiListener);
                     case BLUETOOTH -> registerBluetoothSurveyRecordListener(bluetoothListener);
                     case GNSS -> registerGnssSurveyRecordListener(gnssListener);
-                    default ->
+                    case WIFI_CLIENTS -> registerWifiClientSurveyRecordListener(
+                            Objects.requireNonNull(wifiClientListener, "This destination does not take Wi-Fi clients"));
+                    case CDR, WIFI_RAW ->
                     {
-                        // CDR is files only.
+                        // CDR and raw frames are files only.
                         continue;
                     }
                 }
@@ -1027,8 +1068,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     case WIFI -> unregisterWifiSurveyRecordListener(wifiListener);
                     case BLUETOOTH -> unregisterBluetoothSurveyRecordListener(bluetoothListener);
                     case GNSS -> unregisterGnssSurveyRecordListener(gnssListener);
-                    default ->
+                    case WIFI_CLIENTS ->
                     {
+                        if (wifiClientListener != null) unregisterWifiClientSurveyRecordListener(wifiClientListener);
+                    }
+                    case CDR, WIFI_RAW ->
+                    {
+                        // CDR and raw frames are files only.
                     }
                 }
                 current.remove(type);
@@ -1396,6 +1442,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (surveyRecordProcessor != null)
         {
+            // A sink that leaves takes the NS Scout's open aggregation window with it (live views
+            // never get windows). Cheap and non-blocking, so a screen may call this on the main thread.
+            if (!(surveyRecordListener instanceof ILiveScanView)) wifiController.deliverPendingWifiTo(surveyRecordListener);
             surveyRecordProcessor.unregisterWifiSurveyRecordListener(surveyRecordListener);
             if (!surveyRecordProcessor.isWifiBeingUsed())
             {
@@ -1408,6 +1457,103 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
         if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Registers a listener for the Wi-Fi clients record type (clients and probe requests). The NS
+     * Scout captures clients while any such listener is registered and the Scout is the Wi-Fi source.
+     *
+     * @param listener The survey sink (log files, MQTT, gRPC).
+     */
+    public void registerWifiClientSurveyRecordListener(IWifiClientSurveyRecordListener listener)
+    {
+        wifiClientsController.registerListener(listener);
+    }
+
+    /**
+     * Unregisters a Wi-Fi clients listener, giving it what the Scout's open window holds first. Stops
+     * this service if nothing else uses it.
+     */
+    public void unregisterWifiClientSurveyRecordListener(IWifiClientSurveyRecordListener listener)
+    {
+        wifiClientsController.unregisterListener(listener);
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Registers a live client screen. While one is registered the NS Scout captures Wi-Fi clients
+     * (when it is the Wi-Fi source) and the screen gets a snapshot every few seconds.
+     */
+    public void registerWifiClientLiveListener(IWifiClientLiveListener listener)
+    {
+        wifiClientsController.registerLiveListener(listener);
+    }
+
+    /** Unregisters a live client screen; the capture stops soon after nothing wants clients, the service once unused. */
+    public void unregisterWifiClientLiveListener(IWifiClientLiveListener listener)
+    {
+        wifiClientsController.unregisterLiveListener(listener);
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Toggles the Wi-Fi clients CSV files (one for clients, one for probe requests).
+     *
+     * @param enable True to start logging, false to stop.
+     * @return The new state of logging, or null if it could not be toggled.
+     */
+    public Boolean toggleWifiClientsLogging(boolean enable)
+    {
+        final Boolean result = wifiClientsController.toggleLogging(enable);
+        if (result != null)
+        {
+            if (enable && result)
+            {
+                onSurveyStarted(true);
+                startDeviceStatusReportIfLoggingEnabled();
+            } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
+        }
+        return result;
+    }
+
+    /**
+     * Toggles saving the NS Scout's raw 802.11 frames to pcapng files. Only Log files take raw
+     * frames, so this is the only way they are recorded.
+     *
+     * @param enable True to start saving, false to stop.
+     * @return The new state, or null if it could not be toggled.
+     */
+    public Boolean toggleWifiRawLogging(boolean enable)
+    {
+        final Boolean result = wifiRawController.toggleLogging(enable);
+        if (result != null)
+        {
+            if (enable && result)
+            {
+                onSurveyStarted(true);
+                startDeviceStatusReportIfLoggingEnabled();
+            } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
+        }
+        return result;
+    }
+
+    /**
+     * @return True while raw frames are being saved to pcapng files.
+     */
+    public boolean isWifiRawLoggingEnabled()
+    {
+        return wifiRawController.isLoggingEnabled();
+    }
+
+    /**
+     * @return What the raw frames files saved this survey, or null while raw frames are not saved.
+     */
+    @Nullable
+    public RawFramesProgress getWifiRawProgress()
+    {
+        return wifiRawController == null ? null : wifiRawController.progress();
     }
 
     /**
@@ -1737,6 +1883,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularController.isLoggingEnabled()
                 || cellularController.isPhoneStateLoggingEnabled()
                 || wifiController.isLoggingEnabled()
+                || wifiController.isScoutInUse()
+                || wifiClientsController.isLoggingEnabled()
+                || wifiClientsController.hasListeners()
+                || wifiRawController.isLoggingEnabled()
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled()
                 || cellularController.isCdrLoggingEnabled()
@@ -2444,7 +2594,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (dataStore == null) return;
         synchronized (nsAnalyticsTypes)
         {
-            applyListenerTypes(nsAnalyticsTypes, types, dataStore, dataStore, dataStore, dataStore, dataStore);
+            // NS Analytics never takes Wi-Fi clients (DestinationCapabilities), so it has no listener for them
+            applyListenerTypes(nsAnalyticsTypes, types, dataStore, dataStore, dataStore, dataStore, dataStore, null);
         }
     }
 
@@ -2467,6 +2618,30 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public boolean isWifiLoggingEnabled()
     {
         return wifiController.isLoggingEnabled();
+    }
+
+    /**
+     * @return True while the Wi-Fi clients and probe request CSV files are being written.
+     */
+    public boolean isWifiClientsLoggingEnabled()
+    {
+        return wifiClientsController.isLoggingEnabled();
+    }
+
+    /**
+     * @return True when an NS Scout is paired and is the Wi-Fi source, so Wi-Fi clients can be recorded.
+     */
+    public boolean canRecordWifiClients()
+    {
+        return wifiClientsController.isScoutTheWifiSource();
+    }
+
+    /**
+     * @return This phone's device serial number, which every record carries.
+     */
+    public String getSurveyDeviceId()
+    {
+        return deviceId;
     }
 
     public boolean isBluetoothLoggingEnabled()
@@ -2562,9 +2737,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private boolean isAnyMissionRelevantSurveyActive()
     {
-        return isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() ||
-                isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled() ||
-                isMqttStreamingActive() || isGrpcActiveOrConnecting() || isNsAnalyticsScanningActive();
+        return isAnyFileLoggingEnabled() || isMqttStreamingActive() || isGrpcActiveOrConnecting() || isNsAnalyticsScanningActive();
+    }
+
+    /** @return True while Log files saves any record type, Wi-Fi clients and Raw frames included. */
+    private boolean isAnyFileLoggingEnabled()
+    {
+        return isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() || isBluetoothLoggingEnabled()
+                || isGnssLoggingEnabled() || isCdrLoggingEnabled() || isWifiClientsLoggingEnabled() || isWifiRawLoggingEnabled();
     }
 
     /**
@@ -2578,12 +2758,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private boolean hasOtherActiveOutputs()
     {
-        // Check if file logging is enabled for any protocol
-        if (isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() ||
-                isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled())
-        {
-            return true;
-        }
+        if (isAnyFileLoggingEnabled()) return true;
 
         // Check if gRPC streaming is connected
         if (isGrpcConnectionActive())
@@ -2919,6 +3094,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = wifiController.getEffectiveScanRateMs();
             }
 
+            // Wi-Fi clients from the NS Scout are saved once per Wi-Fi scan interval, so they need fixes that often
+            if (wifiClientsController.isInUse() && wifiController.getScanRateMs() < smallestScanRate)
+            {
+                smallestScanRate = wifiController.getScanRateMs();
+            }
+
             if (bluetoothController.isScanningActive() && bluetoothController.getEffectiveScanRateMs() < smallestScanRate)
             {
                 smallestScanRate = bluetoothController.getEffectiveScanRateMs();
@@ -3080,6 +3261,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (cellularController.isLoggingEnabled()
                 || wifiController.isLoggingEnabled()
+                || wifiClientsController.isLoggingEnabled()
+                || wifiRawController.isLoggingEnabled()
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled())
         {
@@ -3597,13 +3780,41 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Asks to change where Wi-Fi comes from: the paired NS Scout or this phone. Refused while a
+     * survey records, so one Mission never mixes Wi-Fi from two radios.
+     *
+     * @param source The source the user chose.
+     * @return What happened.
+     */
+    public WifiSourceSwitch requestWifiSource(WifiSource source)
+    {
+        return wifiController.requestWifiSource(source);
+    }
+
+    /**
+     * @return Where Wi-Fi comes from right now.
+     */
+    public WifiSource getWifiSource()
+    {
+        return wifiController.getWifiSource();
+    }
+
+    /**
+     * @return When the current survey session started, Unix epoch milliseconds, or null when no
+     * survey runs.
+     */
+    public Long getSurveySessionStartTimeMs()
+    {
+        return missionSessionTracker.sessionStartTimeMs();
+    }
+
+    /**
      * Snapshots everything the survey notification reflects. Kept as one method so the notification
      * always sees a consistent view of the service state.
      */
     private SurveyNotificationState buildNotificationState()
     {
-        final boolean fileLogging = isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled()
-                || isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled();
+        final boolean fileLogging = isAnyFileLoggingEnabled();
         final ConnectionState mqttState = mqttConnection != null ? mqttConnection.getConnectionState() : ConnectionState.DISCONNECTED;
 
         return new SurveyNotificationState(
@@ -3631,7 +3842,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         PreferenceUtils.isAutoUploadEnabled(this),
                         System.currentTimeMillis()),
                 LeftOutItems.INSTANCE.of(surveyStateHolder.getState().getValue(),
-                        new AndroidWifiEnvironment(this).scanState() == WifiScanState.WIFI_OFF));
+                        new AndroidWifiEnvironment(this).scanState() == WifiScanState.WIFI_OFF,
+                        scoutStatusMonitor != null ? scoutStatusMonitor.status() : null),
+                surveyStallWatchdog != null ? surveyStallWatchdog.getNoWifiMinutes() : null,
+                wifiClientsController.isRecording(), isWifiRawLoggingEnabled());
     }
 
     /**
@@ -3652,8 +3866,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private SurveyStallWatchdog createStallWatchdog()
     {
+        // Raw frames are not counted as records, but a survey saving them is not stalled
         return new SurveyStallWatchdog(serviceHandler,
-                () -> missionSessionTracker.getRecordCount().get(),
+                () -> (long) missionSessionTracker.getRecordCount().get() + wifiRawController.framesSaved(),
                 this::isAnySurveyActive,
                 () -> isPausedForBattery() || isPausedForQueueBackpressure() || isRecordingNoRecordTypes(),
                 this::getStallThresholdMs,
@@ -3664,7 +3879,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 () -> {
                     repostNotificationIfMissing();
                     return Unit.INSTANCE;
-                });
+                },
+                () -> scoutStatusMonitor != null && scoutStatusMonitor.isWifiOutage(surveyStateHolder.getState().getValue()));
     }
 
     /**
@@ -3675,7 +3891,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         final List<Integer> intervals = new ArrayList<>();
         if (cellularController.isScanningActive()) intervals.add(cellularController.getScanRateMs());
-        if (wifiController.isScanningActive()) intervals.add(wifiController.getScanRateMs());
+        if (wifiController.isScanningActive() || wifiClientsController.isInUse()) intervals.add(wifiController.getScanRateMs());
         if (bluetoothController.isScanningActive()) intervals.add(bluetoothController.getScanRateMs());
         if (gnssController.isScanningActive()) intervals.add(gnssController.getScanRateMs());
         return SurveyStallWatchdog.Companion.thresholdFor(intervals);
@@ -3710,6 +3926,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         cellularController.stopAllLogging();
         wifiController.stopAllLogging();
+        if (wifiClientsController != null) wifiClientsController.toggleLogging(false);
+        if (wifiRawController != null) wifiRawController.toggleLogging(false);
         bluetoothController.stopAllLogging();
         gnssController.stopAllLogging();
         if (deviceStatusCsvLogger != null) deviceStatusCsvLogger.enableLogging(false);
@@ -3740,6 +3958,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             public void onReceive(Context context, Intent intent)
             {
                 setScanRateValues();
+                enforceScoutPolicy();
                 // Applies a changed survey setup to the running survey and moves a running MQTT
                 // stream to a changed broker. A configuration push never starts an idle survey.
                 mdmOverrideController.onRestrictionsChanged();
@@ -3748,14 +3967,28 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 cellularController.onMdmPreferenceChanged();
                 wifiController.onMdmPreferenceChanged();
+                wifiClientsController.onMdmPreferenceChanged();
                 bluetoothController.onMdmPreferenceChanged();
                 gnssController.onMdmPreferenceChanged();
+                wifiRawController.onRolloverSizeChanged();
 
                 deviceStatusCsvLogger.onMdmPreferenceChanged();
             }
         };
 
         registerReceiver(managedConfigurationListener, restrictionsFilter);
+        enforceScoutPolicy();
+    }
+
+    /**
+     * An organization that doesn't allow NS Scout (`allow_ns_scout` false) keeps Wi-Fi on the
+     * phone, since every Scout screen is hidden then. Applied at start and on every configuration
+     * push, like the organization's other changes, also to a survey that is recording.
+     */
+    private void enforceScoutPolicy()
+    {
+        // A recording survey drops the Scout-only types now (their probe reads the policy too)
+        if (ScoutPolicy.enforce(this)) surveyCoordinator.retrySkipped();
     }
 
     /**
@@ -3861,10 +4094,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // Only resume if not paused due to battery
             if (!isPausedForBattery())
             {
-                cellularController.resumeScanning();
-                wifiController.resumeScanning();
-                bluetoothController.resumeScanning();
-                gnssController.resumeScanning();
+                resumeScanningControllers();
             }
 
             updateServiceNotification();
@@ -3890,10 +4120,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             if (!isPausedForBattery())
             {
-                cellularController.resumeScanning();
-                wifiController.resumeScanning();
-                bluetoothController.resumeScanning();
-                gnssController.resumeScanning();
+                resumeScanningControllers();
             }
         }
     }
@@ -4034,10 +4261,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Only resume if not paused due to battery
                 if (!isPausedForBattery())
                 {
-                    cellularController.resumeScanning();
-                    wifiController.resumeScanning();
-                    bluetoothController.resumeScanning();
-                    gnssController.resumeScanning();
+                    resumeScanningControllers();
                 }
             }
         }
@@ -4136,10 +4360,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         saveBatteryPauseState();
 
         // Pause all controllers
-        cellularController.pauseScanning();
-        wifiController.pauseScanning();
-        bluetoothController.pauseScanning();
-        gnssController.pauseScanning();
+        pauseScanningControllers();
 
         // Remove location listeners to save battery
         removeLocationListener();
@@ -4165,10 +4386,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         // Resume all controllers (they will check their internal state)
-        cellularController.resumeScanning();
-        wifiController.resumeScanning();
-        bluetoothController.resumeScanning();
-        gnssController.resumeScanning();
+        resumeScanningControllers();
 
         // Restore location listeners
         updateLocationListener();
@@ -4276,13 +4494,32 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             // Pause all controllers
-            cellularController.pauseScanning();
-            wifiController.pauseScanning();
-            bluetoothController.pauseScanning();
-            gnssController.pauseScanning();
+            pauseScanningControllers();
 
             updateServiceNotification();
         }
+    }
+
+    /** Pauses every scanner and NS Scout capture, for the battery and backpressure pauses. */
+    private void pauseScanningControllers()
+    {
+        cellularController.pauseScanning();
+        wifiController.pauseScanning();
+        wifiClientsController.pauseScanning();
+        wifiRawController.pauseScanning();
+        bluetoothController.pauseScanning();
+        gnssController.pauseScanning();
+    }
+
+    /** Resumes every scanner and NS Scout capture a pause stopped; each checks its own state. */
+    private void resumeScanningControllers()
+    {
+        cellularController.resumeScanning();
+        wifiController.resumeScanning();
+        wifiClientsController.resumeScanning();
+        wifiRawController.resumeScanning();
+        bluetoothController.resumeScanning();
+        gnssController.resumeScanning();
     }
 
     @Override
@@ -4317,10 +4554,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         // Resume all controllers
-        cellularController.resumeScanning();
-        wifiController.resumeScanning();
-        bluetoothController.resumeScanning();
-        gnssController.resumeScanning();
+        resumeScanningControllers();
 
         updateServiceNotification();
     }

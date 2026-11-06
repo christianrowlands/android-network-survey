@@ -5,6 +5,7 @@ import com.craxiom.networksurvey.survey.mdm.SurveyPolicyState
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.survey.model.DestinationCapabilities
 import com.craxiom.networksurvey.survey.model.RecordType
+import com.craxiom.networksurvey.survey.model.RecordTypeAvailability
 import com.craxiom.networksurvey.survey.model.SurveySetup
 import timber.log.Timber
 
@@ -21,6 +22,9 @@ import timber.log.Timber
  *   that an Intent API merge never widens what NS Analytics receives (paid quota). A survey with
  *   no record types at all (from the organization, the upgrade migration or the Intent API) still
  *   runs MQTT when it has a device status heartbeat or watchlist to send.
+ * - **Another app can't start a Scout-only record type.** A request from the Intent API loses them
+ *   here, whatever fed it, with [SkipReason.NOT_ALLOWED_FROM_INTENT], and the rest of it starts.
+ *   The organization's `on` still adds them, and one the running survey already asked for stays.
  * - **Only report what could matter.** A record type problem (a radio off, a missing permission)
  *   is reported only when some destination that may start would take that type.
  * - **Add before remove.** When a running survey changes, new destinations and types are started
@@ -112,7 +116,7 @@ class SurveyOrchestrator(
             setup.recordTypes
         }
         Timber.i("Merging an %s request into the running survey: %s", origin, merged)
-        return reconcile(merged, nsAnalyticsCap, origin)
+        return reconcile(merged, nsAnalyticsCap, origin, alreadyAsked = base.recordTypes)
     }
 
     /** Stops every destination, then ends the session. */
@@ -177,8 +181,25 @@ class SurveyOrchestrator(
         return SurveySetup.custom(types, running.toSet())
     }
 
-    private fun reconcile(requested: SurveySetup, nsAnalyticsCap: Set<RecordType>?, origin: SurveyOrigin): SurveyStartResult {
+    /**
+     * @param asked        What to run.
+     * @param alreadyAsked The record types the running survey already asked for, which an Intent
+     *                     API merge may keep but did not start.
+     */
+    private fun reconcile(
+        asked: SurveySetup,
+        nsAnalyticsCap: Set<RecordType>?,
+        origin: SurveyOrigin,
+        alreadyAsked: Set<RecordType> = emptySet(),
+    ): SurveyStartResult {
         val policy = policyProvider()
+        val refused: Set<RecordType> = if (origin == SurveyOrigin.INTENT) {
+            asked.recordTypes.filterNotTo(mutableSetOf()) { RecordTypeAvailability.canIntentStart(it, policy) } - alreadyAsked
+        } else {
+            emptySet()
+        }
+        if (refused.isNotEmpty()) Timber.w("Another app can't start %s, so it is left out of the survey", refused)
+        val requested = asked.copy(recordTypes = asked.recordTypes - refused)
         val effectiveSetup = policy.effectiveSetup(requested)
 
         val recordTypeProblems = linkedMapOf<RecordType, SkipReason>()
@@ -215,7 +236,8 @@ class SurveyOrchestrator(
             takeableTypes += typesFor(destination, requestedTypes, communityTargets, nsAnalyticsCap)
             val destinationTypes = typesFor(destination, types, communityTargets, nsAnalyticsCap)
             if (destinationTypes.isEmpty()) {
-                if (isHeartbeatOnlyMqtt(destination, requestedTypes)) {
+                // A request that named only refused types did name record types, so it is no heartbeat
+                if (isHeartbeatOnlyMqtt(destination, requestedTypes + refused)) {
                     targets[destination] = emptySet()
                     continue
                 }
@@ -227,6 +249,13 @@ class SurveyOrchestrator(
         // A problem only matters for a type some destination could take: fixing it changes nothing
         // otherwise (Bluetooth off for a survey that only sends to the community databases).
         recordTypeProblems.keys.retainAll(takeableTypes)
+        // Raw frames go only to Log files: say so instead of dropping them quietly (the organization
+        // turning them on for a survey with MQTT only). It replaces a Scout problem, which turning
+        // on Log files must come before.
+        for (type in DestinationCapabilities.LOG_FILES_ONLY_TYPES) {
+            if (type in requestedTypes && type !in takeableTypes) recordTypeProblems[type] = SkipReason.NEEDS_LOG_FILES
+        }
+        for (type in refused) recordTypeProblems[type] = SkipReason.NOT_ALLOWED_FROM_INTENT
 
         if (targets.isEmpty()) {
             if (isRecording() && origin == SurveyOrigin.ORGANIZATION) {
@@ -387,6 +416,8 @@ class SurveyOrchestrator(
             RecordType.BLUETOOTH,
             RecordType.GNSS,
             RecordType.CDR,
+            RecordType.WIFI_CLIENTS,
+            RecordType.WIFI_RAW,
         )
 
         /** Mission relevant destinations last, so the community databases never hold the session alone. */

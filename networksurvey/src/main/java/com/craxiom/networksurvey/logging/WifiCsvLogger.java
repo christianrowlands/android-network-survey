@@ -32,20 +32,21 @@ import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.SUPPORTED
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.WPA;
 
 import com.craxiom.messaging.WifiBeaconRecordData;
-import com.craxiom.messaging.wifi.CipherSuite;
+import com.craxiom.messaging.wifi.NodeType;
+import com.craxiom.messaging.wifi.ServiceSetType;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import timber.log.Timber;
-
 /**
  * Responsible for taking in Wi-Fi survey records and logging them to a CSV file.
+ * <p>
+ * The phone's own scans leave the service set type, rates, AKM suites, beacon interval, SNR and
+ * node type blank; records from an NS Scout fill them.
  */
 public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordListener
 {
@@ -73,25 +74,9 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
     }
 
     @Override
-    public synchronized void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        wifiBeaconRecords.forEach(wrapper -> {
-            try
-            {
-                writeCsvRecord(convertToObjectArray(wrapper), false);
-            } catch (IOException e)
-            {
-                Timber.e(e, "Could not log the Wi-Fi record to the CSV file");
-            }
-        });
-
-        try
-        {
-            printer.flush();
-        } catch (IOException e)
-        {
-            Timber.e(e, "Could not flush the Wi-Fi records to the CSV file");
-        }
+        writeRows(wifiBeaconRecords, this::convertToObjectArray);
     }
 
     /**
@@ -102,13 +87,10 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
     {
         WifiBeaconRecordData data = wrapper.getWifiBeaconRecord().getData();
 
-        final List<CipherSuite> cipherSuitesList = data.getCipherSuitesList();
-        String cipherSuites = "";
-        if (!cipherSuitesList.isEmpty())
-        {
-            cipherSuites = cipherSuitesList.stream().map(Enum::toString)
-                    .collect(Collectors.joining(";"));
-        }
+        final String cipherSuites = joinNames(data.getCipherSuitesList());
+        final String akmSuites = joinNames(data.getAkmSuitesList());
+        final ServiceSetType serviceSetType = data.getServiceSetType();
+        final NodeType nodeType = data.getNodeType();
 
         return new String[]{
                 data.getDeviceTime(),
@@ -123,24 +105,32 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
                 data.getDestinationAddress(),
                 data.getBssid(),
                 data.hasBeaconInterval() ? String.valueOf(data.getBeaconInterval().getValue()) : "",
-                "", // Service Set Type, not supported by NS
+                serviceSetType == ServiceSetType.UNKNOWN || serviceSetType == ServiceSetType.UNRECOGNIZED ? "" : serviceSetType.name(),
                 data.getSsid(),
-                "", // Supported Rates, not supported by NS
-                "", // Extended Supported Rates, not supported by NS
+                data.getSupportedRates(),
+                data.getExtendedSupportedRates(),
                 cipherSuites,
-                "", // AKM Suites, not supported by NS
+                akmSuites,
                 data.getEncryptionType().toString(),
                 data.hasWps() ? String.valueOf(data.getWps().getValue()) : "",
                 data.hasChannel() ? String.valueOf(data.getChannel().getValue()) : "",
                 data.hasFrequencyMhz() ? String.valueOf(data.getFrequencyMhz().getValue()) : "",
                 data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
                 data.hasSnr() ? String.valueOf(data.getSnr().getValue()) : "",
-                "", // Node Type, not supported by NS
+                nodeType == NodeType.UNKNOWN || nodeType == NodeType.UNRECOGNIZED ? "" : nodeType.name(),
                 data.getStandard().toString(),
                 data.hasPasspoint() ? String.valueOf(data.getPasspoint().getValue()) : "",
                 data.getBandwidth().toString(),
                 data.getDeviceSerialNumber(),
                 data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
         };
+    }
+
+    /**
+     * @return The enum names joined with ";", empty for none.
+     */
+    private static String joinNames(List<? extends Enum<?>> values)
+    {
+        return values.stream().map(Enum::toString).collect(Collectors.joining(";"));
     }
 }

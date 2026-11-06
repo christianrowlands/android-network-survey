@@ -24,6 +24,8 @@ import com.craxiom.networksurvey.survey.status.LeftOutItem
  * @property scanningWifi True when Wi-Fi scanning is running.
  * @property scanningBluetooth True when Bluetooth scanning is running.
  * @property scanningGnss True when GNSS scanning is running.
+ * @property scanningWifiClients True when the NS Scout's Wi-Fi clients are recorded.
+ * @property savingRawFrames True when the NS Scout's raw frames are saved to pcapng.
  * @property phoneStateActive True when phone state events are being collected.
  * @property cdrActive True when CDR events are being collected.
  * @property pausedForBattery True when scanning is paused because the battery is low.
@@ -32,6 +34,8 @@ import com.craxiom.networksurvey.survey.status.LeftOutItem
  * MQTT is the only output.
  * @property stalledMinutes Minutes since the last record when the stall watchdog has fired, or null
  * while records are flowing (or the watchdog is not applicable).
+ * @property noWifiMinutes Minutes Wi-Fi has been out because the NS Scout, its source, is out of
+ * range or blocked, once that reaches ten; null otherwise.
  * @property sessionStartMs Epoch millis of the survey session start, or null when nothing is running.
  * @property destinationStatuses What is happening to each destination's records, the same status
  * the Survey screen shows, for the health lines.
@@ -59,6 +63,9 @@ data class SurveyNotificationState(
     val overrideOn: Boolean = false,
     val destinationStatuses: Map<Destination, DestinationStatus> = emptyMap(),
     val leftOut: List<LeftOutItem> = emptyList(),
+    val noWifiMinutes: Int? = null,
+    val scanningWifiClients: Boolean = false,
+    val savingRawFrames: Boolean = false,
 ) {
     /** True when the MQTT connection is up or being (re)established. */
     val mqttActive: Boolean

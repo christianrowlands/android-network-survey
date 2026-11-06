@@ -86,6 +86,7 @@ import com.craxiom.messaging.wifi.WifiBandwidth;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
+import com.craxiom.networksurvey.board.v1.ApObservation;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
@@ -117,6 +118,8 @@ import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.TowerKey;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.scout.wifi.ScoutBeaconRecordBuilder;
+import com.craxiom.networksurvey.scout.wifi.ScoutHeard;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.survey.model.RecordType;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
@@ -217,6 +220,7 @@ public class SurveyRecordProcessor
     private final AtomicInteger cellularGroupNumber = new AtomicInteger(0); // This will be incremented to 1 the first time it is used.
 
     private final AtomicInteger wifiRecordNumber = new AtomicInteger(1);
+    private final ScoutBeaconRecordBuilder scoutBeacons;
     private final AtomicInteger bluetoothRecordNumber = new AtomicInteger(1);
 
     private final AtomicInteger gnssRecordNumber = new AtomicInteger(1);
@@ -260,6 +264,7 @@ public class SurveyRecordProcessor
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
 
         ssidExclusionManager = new SsidExclusionManager(context);
+        scoutBeacons = new ScoutBeaconRecordBuilder(wifiRecordNumber, deviceId, this::getMissionId, ssidExclusionManager::isExcluded);
         towerDetectionWrapper = new TowerDetectionJavaWrapper(context);
     }
 
@@ -597,6 +602,53 @@ public class SurveyRecordProcessor
     public void onWifiScanUpdate(List<ScanResult> apScanResults)
     {
         execute(() -> processAccessPoints(apScanResults));
+    }
+
+    /**
+     * One window of access point records from an NS Scout, for every Wi-Fi listener except the live
+     * views (they get {@link #onScoutSnapshot(List)} instead, so the list never shows one channel's
+     * worth of access points). Each record keeps the time and place the Scout heard it.
+     *
+     * @param beacons The Scout's observations, at most one per access point.
+     */
+    public void onScoutBeacons(List<ScoutHeard<ApObservation>> beacons)
+    {
+        execute(() -> notifyWifiBeaconRecordListeners(scoutBeacons.closed(beacons), false));
+    }
+
+    /**
+     * Every access point an NS Scout heard in its last sweep, for the live views only. Not counted
+     * and takes no record numbers, like {@link #onBluetoothLiveUpdate}.
+     *
+     * @param beacons The latest observation of each access point.
+     */
+    public void onScoutSnapshot(List<ScoutHeard<ApObservation>> beacons)
+    {
+        execute(() -> notifyLiveWifiListeners(scoutBeacons.live(beacons)));
+    }
+
+    /**
+     * Gives one listener that is about to leave a part of the NS Scout's open window, on the calling
+     * thread so the listener still takes it before it closes. Not counted: the whole window is
+     * counted when it closes for the listeners that stay. Each record takes the number it keeps
+     * when the window closes, so the leaving and the staying sinks agree and no number is skipped.
+     *
+     * @param listener The leaving listener.
+     * @param beacons  What the Scout has heard so far in one open window.
+     */
+    public void deliverScoutBeaconsTo(IWifiSurveyRecordListener listener, List<ScoutHeard<ApObservation>> beacons)
+    {
+        final List<WifiRecordWrapper> all = scoutBeacons.peeked(beacons);
+        if (all.isEmpty()) return;
+        final List<WifiRecordWrapper> records = listener.wantsExcludedRecords()
+                ? all : all.stream().filter(record -> !record.isExcluded()).collect(Collectors.toList());
+        try
+        {
+            if (!records.isEmpty()) listener.onWifiBeaconSurveyRecords(records);
+        } catch (Exception e)
+        {
+            Timber.e(e, "Unable to give a leaving Wi-Fi listener the open window");
+        }
     }
 
     /**
@@ -3200,6 +3252,14 @@ public class SurveyRecordProcessor
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords)
     {
+        notifyWifiBeaconRecordListeners(wifiBeaconRecords, true);
+    }
+
+    /**
+     * @param includeLiveViews False for NS Scout windows, whose live views get snapshots instead.
+     */
+    private void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords, boolean includeLiveViews)
+    {
         if (wifiBeaconRecords == null || wifiBeaconRecords.isEmpty()) return;
 
         // Filter out excluded SSIDs for persistence and streaming
@@ -3217,6 +3277,7 @@ public class SurveyRecordProcessor
         // Watchlist detector); send only non-excluded records to logging/streaming listeners.
         for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
         {
+            if (!includeLiveViews && listener instanceof ILiveScanView) continue;
             try
             {
                 if (listener.wantsExcludedRecords())
@@ -3242,6 +3303,29 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a passive Wi-Fi Survey Record Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notifies only the Wi-Fi listeners that are live views. Not counted as processed records.
+     * Live views show excluded SSIDs too, so they get every record.
+     *
+     * @param wifiBeaconRecords The records, possibly empty.
+     */
+    private void notifyLiveWifiListeners(List<WifiRecordWrapper> wifiBeaconRecords)
+    {
+        if (wifiBeaconRecords.isEmpty()) return;
+
+        for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
+        {
+            if (!(listener instanceof ILiveScanView)) continue;
+            try
+            {
+                listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a live Wi-Fi view because of an exception");
             }
         }
     }

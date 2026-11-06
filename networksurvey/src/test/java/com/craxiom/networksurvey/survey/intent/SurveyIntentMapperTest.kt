@@ -102,6 +102,36 @@ class SurveyIntentMapperTest {
     }
 
     @Test
+    fun `wifi_clients is mapped, not an unknown value, so the orchestrator can refuse it with a reason`() {
+        val request = map(
+            NetworkSurveyConstants.EXTRA_RECORD_TYPES to "wifi,wifi_clients",
+            NetworkSurveyConstants.EXTRA_DESTINATIONS to "log_files,mqtt",
+        )!!
+        assertEquals(setOf(RecordType.WIFI, RecordType.WIFI_CLIENTS), request.setup.recordTypes)
+        assertTrue(request.invalidValues.isEmpty())
+    }
+
+    @Test
+    fun `wifi_raw is mapped, not an unknown value, so the orchestrator can refuse it with a reason`() {
+        val request = map(
+            NetworkSurveyConstants.EXTRA_RECORD_TYPES to "wifi,wifi_raw",
+            NetworkSurveyConstants.EXTRA_DESTINATIONS to "log_files",
+        )!!
+        assertEquals(setOf(RecordType.WIFI, RecordType.WIFI_RAW), request.setup.recordTypes)
+        assertTrue(request.invalidValues.isEmpty())
+    }
+
+    @Test
+    fun `MQTT stream flags never add Wi-Fi clients`() {
+        val flags = listOf("cellular", "wifi", "bluetooth", "gnss", "phone_state").joinToString(",") { "\"${it}_stream_enabled\":true" }
+        val json = "{\"mqtt_host\":\"broker\",\"mqtt_port\":1883,\"mqtt_client\":\"d1\",$flags}"
+        val request = map(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON to json)!!
+        assertEquals(5, request.setup.recordTypes.size)
+        assertFalse(RecordType.WIFI_CLIENTS in request.setup.recordTypes)
+        assertFalse(RecordType.WIFI_RAW in request.setup.recordTypes)
+    }
+
+    @Test
     fun `new extras accept a string array`() {
         val request = map(
             NetworkSurveyConstants.EXTRA_RECORD_TYPES to arrayOf("cellular", "bluetooth"),

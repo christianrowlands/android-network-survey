@@ -2,5 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Debug only: lets the instrumented destination tests reach MockWebServer on localhost. -->
-    <application android:networkSecurityConfig="@xml/network_security_config" />
+    <application android:networkSecurityConfig="@xml/network_security_config">
+
+        <!-- Debug only: the adb-driven NS Scout hardware check (see ScoutDebugActivity). Exported so
+             `adb shell am start` can reach it; release builds never contain it. -->
+        <activity
+            android:name=".scout.debug.ScoutDebugActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.DeviceDefault" />
+    </application>
 </manifest>

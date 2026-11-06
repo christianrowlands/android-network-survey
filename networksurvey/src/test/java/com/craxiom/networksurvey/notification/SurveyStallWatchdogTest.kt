@@ -22,6 +22,7 @@ class SurveyStallWatchdogTest {
     private val recordCount = AtomicInteger(0)
     private val surveyActive = AtomicBoolean(true)
     private val paused = AtomicBoolean(false)
+    private val wifiOutage = AtomicBoolean(false)
     private var stallChanges = 0
     private var ticks = 0
 
@@ -29,12 +30,13 @@ class SurveyStallWatchdogTest {
 
     private val watchdog = SurveyStallWatchdog(
         handler = handler,
-        recordCount = { recordCount.get() },
+        recordCount = { recordCount.get().toLong() },
         isSurveyActive = { surveyActive.get() },
         isPaused = { paused.get() },
         thresholdMs = { SurveyStallWatchdog.MIN_STALL_THRESHOLD_MS },
         onStallStateChanged = { stallChanges++ },
-        onTick = { ticks++ }
+        onTick = { ticks++ },
+        isWifiOutage = { wifiOutage.get() },
     )
 
     private fun advanceMinutes(minutes: Long) {
@@ -112,6 +114,36 @@ class SurveyStallWatchdogTest {
 
         assertNull(watchdog.stalledMinutes)
         assertEquals(0, ticks)
+    }
+
+    @Test
+    fun scoutOutage_isNotAStallAndEscalatesToNoWifiAfterTenMinutes() {
+        wifiOutage.set(true)
+        watchdog.start()
+
+        advanceMinutes(9)
+        assertNull(watchdog.stalledMinutes)
+        assertNull(watchdog.noWifiMinutes)
+
+        advanceMinutes(2)
+        assertEquals(10, watchdog.noWifiMinutes)
+        assertNull(watchdog.stalledMinutes)
+
+        // Five minute steps, like a stall, and the notification keeps being re-posted
+        advanceMinutes(4)
+        assertEquals(10, watchdog.noWifiMinutes)
+        advanceMinutes(1)
+        assertEquals(15, watchdog.noWifiMinutes)
+        assertEquals(16, ticks)
+
+        // The Scout is back: the escalation clears and stalls are measured from now
+        wifiOutage.set(false)
+        advanceMinutes(1)
+        assertNull(watchdog.noWifiMinutes)
+        advanceMinutes(3)
+        assertNull(watchdog.stalledMinutes)
+        advanceMinutes(1)
+        assertEquals(5, watchdog.stalledMinutes)
     }
 
     @Test

@@ -27,6 +27,8 @@ data class NsProtocolColors(
     val bluetooth: Color,
     val gnss: Color,
     val cdr: Color,
+    val wifiClients: Color,
+    val wifiRaw: Color,
 )
 
 /** A foreground color and the tinted container it sits on. */
@@ -126,6 +128,8 @@ private val lightProtocol = NsProtocolColors(
     bluetooth = NsPalette.Protocol.BluetoothLight,
     gnss = NsPalette.Protocol.GnssLight,
     cdr = NsPalette.Protocol.CdrLight,
+    wifiClients = NsPalette.Protocol.WifiClientsLight,
+    wifiRaw = NsPalette.Protocol.WifiRawLight,
 )
 
 private val darkProtocol = NsProtocolColors(
@@ -135,6 +139,8 @@ private val darkProtocol = NsProtocolColors(
     bluetooth = NsPalette.Protocol.BluetoothDark,
     gnss = NsPalette.Protocol.GnssDark,
     cdr = NsPalette.Protocol.CdrDark,
+    wifiClients = NsPalette.Protocol.WifiClientsDark,
+    wifiRaw = NsPalette.Protocol.WifiRawDark,
 )
 
 private val lightTags = NsTagColors(

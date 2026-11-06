@@ -2,6 +2,9 @@ package com.craxiom.networksurvey.ui.wifi
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -21,6 +24,7 @@ import com.craxiom.networksurvey.ui.showPage
 import com.craxiom.networksurvey.ui.signals.SignalsStripWords
 import com.craxiom.networksurvey.ui.string
 import com.craxiom.networksurvey.ui.textLayout
+import com.craxiom.networksurvey.ui.wifi.model.ScoutWifiBlock
 import com.craxiom.networksurvey.ui.wifi.model.ThrottleWarning
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayFilter
@@ -28,6 +32,7 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
 import com.craxiom.networksurvey.ui.wifi.model.WifiListUiState
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
+import com.craxiom.networksurvey.ui.wifi.model.WifiScoutUi
 import com.craxiom.networksurvey.util.WifiBand
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -306,6 +311,78 @@ class WifiListContentTest {
     }
 
     @Test
+    fun theScoutSource_namesTheScoutOnTheStrip_andShowsNoThrottleNotice() {
+        show(flat.copy(scout = WifiScoutUi("NS-A1B2", null)))
+
+        compose.onNodeWithText("NS-A1B2 · Scan #4 · 2 APs", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Acme-Corp", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun aBlockedScout_replacesTheRows_withItsOneFix() {
+        val expected = mapOf(
+            ScoutWifiBlock.ALLOW_NEARBY to ("Allow" to "allow nearby"),
+            ScoutWifiBlock.BLUETOOTH_OFF to ("Turn on Bluetooth" to "bluetooth"),
+            ScoutWifiBlock.FIRMWARE_UPDATE to ("Update firmware" to "update firmware"),
+            ScoutWifiBlock.APP_UPDATE to ("Open NS Scout page" to "scout page"),
+            ScoutWifiBlock.NOT_CONNECTED to ("Use phone Wi-Fi instead" to "phone wifi"),
+            ScoutWifiBlock.CONNECTING to ("Use phone Wi-Fi instead" to "phone wifi"),
+        )
+        var state by mutableStateOf(flat.copy(scout = WifiScoutUi("NS-A1B2", ScoutWifiBlock.ALLOW_NEARBY)))
+        compose.showPage { WifiListContent(state, live, PermissionAccess.AVAILABLE, actions) }
+        expected.forEach { (block, fix) ->
+            actions.calls.clear()
+            state = flat.copy(scout = WifiScoutUi("NS-A1B2", block))
+            compose.waitForIdle()
+            compose.onAllNodesWithText("Acme-Corp", useUnmergedTree = true).assertCountEquals(0)
+            compose.onNodeWithText(fix.first).performClick()
+            assertEquals(block.toString(), listOf(fix.second), actions.calls)
+        }
+        compose.onNodeWithText("Connecting to NS-A1B2").assertIsDisplayed()
+    }
+
+    @Test
+    fun whileRecording_anOutOfRangeScout_offersItsPage_andUsesTheSurveyWord() {
+        show(flat.copy(scout = WifiScoutUi("NS-A1B2", ScoutWifiBlock.OUT_OF_RANGE, recording = true)))
+
+        compose.onNodeWithText("NS-A1B2 is out of range").assertIsDisplayed()
+        compose.onNodeWithText("Wi-Fi shows up here once NS-A1B2 reconnects. The survey keeps recording everything else.")
+            .assertIsDisplayed()
+        compose.onAllNodesWithText("Use phone Wi-Fi instead").assertCountEquals(0)
+        compose.onNodeWithText("Out of range", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Open NS Scout page").performClick()
+        assertEquals(listOf("scout page"), actions.calls)
+    }
+
+    @Test
+    fun phoneWifiOff_doesNotBlockTheScout_butBluetoothOffDoes() {
+        // The view model reports the phone's Wi-Fi as no block while the Scout is the source
+        show(flat.copy(scout = WifiScoutUi("NS-A1B2", ScoutWifiBlock.BLUETOOTH_OFF)))
+
+        compose.onNodeWithText("Bluetooth is off").assertIsDisplayed()
+        compose.onNodeWithText("This phone needs Bluetooth to reach NS-A1B2, which is where Wi-Fi comes from.").assertIsDisplayed()
+        compose.onAllNodesWithText("Wi-Fi is off", useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun withNoScoutPaired_theThrottleNotice_suggestsOne() {
+        show(flat.copy(throttleWarning = ThrottleWarning(android9 = false, developerOptionsOn = true), suggestScout = true))
+
+        compose.onNodeWithText(string(R.string.wifi_throttle_scout_line)).assertIsDisplayed()
+        compose.onNodeWithText("About NS Scout").performClick()
+
+        assertEquals(listOf("about scout"), actions.calls)
+    }
+
+    @Test
+    fun withAScoutPairedOrNotAllowed_theThrottleNotice_saysNothingAboutIt() {
+        show(flat.copy(throttleWarning = ThrottleWarning(android9 = false, developerOptionsOn = true), suggestScout = false))
+
+        compose.onNodeWithText(string(R.string.android_10_throttling_information), substring = true).assertIsDisplayed()
+        compose.onAllNodesWithText("About NS Scout").assertCountEquals(0)
+    }
+
+    @Test
     fun android9Throttling_hasNothingToOpen() {
         show(flat.copy(throttleWarning = ThrottleWarning(android9 = true, developerOptionsOn = true)))
 
@@ -380,5 +457,11 @@ class WifiListContentTest {
         override fun onTurnOnWifi() { calls += "wifi" }
         override fun onOpenThrottleSettings(warning: ThrottleWarning) { calls += "throttle ${warning.developerOptionsOn}" }
         override fun onDismissThrottle() { calls += "dismiss" }
+        override fun onAboutScout() { calls += "about scout" }
+        override fun onAllowNearby() { calls += "allow nearby" }
+        override fun onTurnOnBluetooth() { calls += "bluetooth" }
+        override fun onOpenScoutPage() { calls += "scout page" }
+        override fun onUpdateFirmware() { calls += "update firmware" }
+        override fun onUsePhoneWifi() { calls += "phone wifi" }
     }
 }

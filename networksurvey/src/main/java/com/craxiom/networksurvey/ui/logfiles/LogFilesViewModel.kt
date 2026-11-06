@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.scout.ScoutManager
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
 import com.craxiom.networksurvey.survey.mdm.OrganizationOverride
 import com.craxiom.networksurvey.util.PreferenceUtils
@@ -17,7 +18,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/** What the Log files page shows; [nowMs] is when the folder was read, for "12 minutes ago". */
+/**
+ * What the Log files page shows; [nowMs] is when the folder was read, for "12 minutes ago".
+ * [scoutPaired] adds raw frames (pcapng) to the folder's description, as only a Scout records them.
+ */
 data class LogFilesUiState(
     val loading: Boolean = true,
     val listing: LogFilesListing = LogFilesListing.Files(emptyList()),
@@ -26,10 +30,11 @@ data class LogFilesUiState(
     val rolloverMb: Int = NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB.toInt(),
     val rolloverChoices: List<Int> = emptyList(),
     val rolloverLocked: Boolean = false,
+    val scoutPaired: Boolean = false,
 )
 
 /**
- * The Log files page: lists the recent CSV files and sets when a new file starts. The rollover size
+ * The Log files page: lists the recent files (CSV, and pcapng raw frames) and sets when a new file starts. The rollover size
  * an organization sets wins, and the row is then locked.
  */
 class LogFilesViewModel @JvmOverloads constructor(
@@ -63,6 +68,7 @@ class LogFilesViewModel @JvmOverloads constructor(
                 rolloverChoices = app.resources.getStringArray(R.array.log_rollover_size_values).mapNotNull { it.toIntOrNull() },
                 rolloverLocked = !overrideOn &&
                     restrictions.snapshot().contains(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB),
+                scoutPaired = ScoutManager.getInstance(app).pairedScout.value != null,
             )
         }
     }

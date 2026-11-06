@@ -320,8 +320,10 @@ class SurveyUiStateMapperTest {
         val restrictions = mapOf(SurveyMdmKeys.SURVEY_GNSS to SurveyMdmKeys.VALUE_OFF)
         val recording = SurveyUiStateMapper.map(inputs(restrictions = restrictions, runtime = recording())).recording!!
 
-        assertEquals(RecordType.entries - RecordType.GNSS, recording.availableTypes)
-        assertEquals(RecordType.entries, SurveyUiStateMapper.map(inputs(runtime = recording())).recording!!.availableTypes)
+        // Without a paired Scout the Scout-only types are never offered either
+        val phoneTypes = RecordType.entries.filter { !it.needsScout }
+        assertEquals(phoneTypes - RecordType.GNSS, recording.availableTypes)
+        assertEquals(phoneTypes, SurveyUiStateMapper.map(inputs(runtime = recording())).recording!!.availableTypes)
     }
 
     @Test

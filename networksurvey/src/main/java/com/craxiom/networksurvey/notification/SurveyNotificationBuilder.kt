@@ -11,7 +11,9 @@ import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.survey.model.Destination
+import com.craxiom.networksurvey.survey.model.RecordType
 import com.craxiom.networksurvey.survey.status.DestinationStatus
+import com.craxiom.networksurvey.survey.status.LeftOutItem
 import com.craxiom.networksurvey.survey.status.StatusLevel
 import com.craxiom.networksurvey.survey.status.StatusWord
 import com.craxiom.networksurvey.ui.survey.DestinationStatusText
@@ -24,7 +26,8 @@ import com.craxiom.networksurvey.ui.survey.components.labelRes
  *
  * Layout rules, in plain terms:
  *  - The title carries the state in the Survey screen's words: Paused, No records for N min,
- *    Recording, or Ready, in that priority order.
+ *    No Wi-Fi for N min (the NS Scout has been out that long), Recording, or Ready, in that
+ *    priority order. The left-out line under it says why Wi-Fi is out.
  *  - The collapsed text is the most important health line if there is one (battery, network
  *    interrupted, MQTT dropping, connecting), otherwise the list of destinations records are
  *    going to (Log files, MQTT stream, gRPC stream, Community databases, NS Analytics).
@@ -88,21 +91,30 @@ class SurveyNotificationBuilder(private val context: Context) {
             state.stalledMinutes != null -> context.resources.getQuantityString(
                 R.plurals.survey_plate_stall_title, state.stalledMinutes, state.stalledMinutes
             )
+            state.noWifiMinutes != null -> context.resources.getQuantityString(
+                R.plurals.scout_notification_no_wifi_title, state.noWifiMinutes, state.noWifiMinutes
+            )
             state.anyOutputActive -> context.getString(R.string.survey_badge_recording)
             else -> context.getString(R.string.survey_state_ready)
         }
     }
 
     /**
-     * Every health line that applies, most important first. Empty when the survey is healthy.
+     * Every health line that applies, most important first: a pause, then an NS Scout outage (it
+     * stops whole record types), then the destinations, then what else the survey leaves out. Empty
+     * when the survey is healthy.
      */
     fun healthLines(state: SurveyNotificationState): List<String> = buildList {
+        val (scoutItems, otherItems) = state.leftOut.partition { it is LeftOutItem.Scout }
+        val itemLine = { item: LeftOutItem -> SurveyEventMessages.itemText(context.resources, item.toAttentionItem()) }
+
         if (state.pausedForBattery) {
             add(context.getString(R.string.notification_health_battery_low, state.batteryLevel))
         }
         if (state.pausedForBackpressure) {
             add(context.getString(R.string.notification_health_network_interrupted))
         }
+        addAll(scoutItems.map(itemLine))
         if (state.mqttDropping) {
             add(context.getString(R.string.mqtt_drop_mode_title))
             // Only reassure about file logging when Log files is part of this survey
@@ -111,7 +123,7 @@ class SurveyNotificationBuilder(private val context: Context) {
         state.destinationStatuses.forEach { (destination, status) ->
             if (needsHealthLine(destination, status, state)) add(healthLine(destination, status))
         }
-        state.leftOut.forEach { add(SurveyEventMessages.itemText(context.resources, it.toAttentionItem())) }
+        addAll(otherItems.map(itemLine))
     }
 
     /**
@@ -144,20 +156,31 @@ class SurveyNotificationBuilder(private val context: Context) {
     }
 
     /**
-     * The record types being scanned, in the Survey screen's order, or null when nothing is being scanned.
+     * The record types being scanned, in the Survey screen's order, or null when nothing is. A type
+     * an NS Scout outage covers is not listed, since nothing of it is being recorded.
      */
     fun protocolsLine(state: SurveyNotificationState): String? {
-        val names = buildList {
-            if (state.scanningCellular) add(context.getString(R.string.survey_type_cellular))
-            if (state.phoneStateActive) add(context.getString(R.string.survey_type_phone_state))
-            if (state.scanningWifi) add(context.getString(R.string.survey_type_wifi))
-            if (state.scanningBluetooth) add(context.getString(R.string.survey_type_bluetooth))
-            if (state.scanningGnss) add(context.getString(R.string.survey_type_gnss))
-            if (state.cdrActive) add(context.getString(R.string.survey_type_cdr))
-        }
+        val leftOut = scoutOutageTypes(state)
+        val running = listOf(
+            RecordType.CELLULAR to state.scanningCellular,
+            RecordType.PHONE_STATE to state.phoneStateActive,
+            RecordType.WIFI to state.scanningWifi,
+            RecordType.BLUETOOTH to state.scanningBluetooth,
+            RecordType.GNSS to state.scanningGnss,
+            RecordType.CDR to state.cdrActive,
+            RecordType.WIFI_CLIENTS to state.scanningWifiClients,
+            RecordType.WIFI_RAW to state.savingRawFrames,
+        )
+        val names = running.filter { (type, on) -> on && type !in leftOut }.map { (type, _) -> context.getString(type.labelRes) }
         val joined = joinOrNull(names) ?: return null
         return context.getString(R.string.notification_protocols_line, joined)
     }
+
+    /** The record types an NS Scout outage says aren't being recorded. */
+    private fun scoutOutageTypes(state: SurveyNotificationState): Set<RecordType> =
+        state.leftOut.filterIsInstance<LeftOutItem.Scout>().flatMapTo(mutableSetOf()) { item ->
+            if (item.alsoBluetooth) item.types + RecordType.BLUETOOTH else item.types
+        }
 
     @DrawableRes
     private fun smallIcon(state: SurveyNotificationState): Int {
