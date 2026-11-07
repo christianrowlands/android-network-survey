@@ -43,9 +43,17 @@ class FirmwareTrust(private val keys: List<FirmwareSigningKey>) {
          */
         const val RELEASE_KEY_BASE64 = "Ek1bybFsmuhEjknuauGaTa7N2zut111qFfKpziDEBwY="
 
+        /**
+         * The backup signing key, unused until the release key is lost or replaced, so installed
+         * apps keep accepting new firmware after that. The firmware repository has the same public
+         * key in scripts/keys/release-backup-signing-key.pub and the iOS app in
+         * `FirmwareTrust.releaseKeys`; its private half is kept offline.
+         */
+        const val BACKUP_KEY_BASE64 = "9Nf7h0z9KjJzQaIZ1GnO9n2ohErJqFwRYDTSzWu7r/c="
+
         /** What the app trusts. */
         @JvmField
-        val RELEASE = FirmwareTrust(listOf(FirmwareSigningKey.fromBase64(RELEASE_KEY_BASE64)))
+        val RELEASE = FirmwareTrust(listOf(RELEASE_KEY_BASE64, BACKUP_KEY_BASE64).map(FirmwareSigningKey::fromBase64))
 
         /**
          * @return A signature from a signature file or manifest field: base64 text (as
