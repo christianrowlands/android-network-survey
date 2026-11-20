@@ -223,11 +223,64 @@
     <string name="new_tower_alert_channel_description">Notifications when new cellular towers are detected</string>
     <string name="new_tower_alert_title">New tower found</string>
     <!-- %1$s is the radio technology (LTE, NR, ...), %2$s-%3$s is MCC-MNC, %4$d is the Cell ID -->
-    <string name="new_tower_alert_content">%1$s  %2$s-%3$s  Cell ID %4$d</string>
-    <string name="new_tower_alert_details">Technology: %1$s\nMCC-MNC: %2$s-%3$s\nTAC/LAC: %4$d\nCell ID: %5$d</string>
-    <plurals name="new_tower_alert_session_count">
-        <item quantity="one">%d new tower this survey</item>
-        <item quantity="other">%d new towers this survey</item>
+    <string name="new_tower_alert_content">%1$s %2$s-%3$s · Cell ID %4$d</string>
+    <!-- One tower in the expanded alert. %1$s is new_tower_alert_content, %2$s the time it was found ("2:04 PM") -->
+    <string name="new_tower_alert_line">%1$s · %2$s</string>
+    <!-- Under the expanded alert's list when more towers were found than it shows. %d is how many are not listed -->
+    <plurals name="new_tower_alert_more">
+        <item quantity="one">+%d more</item>
+        <item quantity="other">+%d more</item>
+    </plurals>
+    <!-- Title of the silent notification that replaces the new tower alert when the survey stops -->
+    <string name="new_tower_summary_title">Survey stopped</string>
+
+    <!-- New towers page: the towers the new tower alerts found -->
+    <string name="new_towers_title">New towers</string>
+    <!-- A count of towers found. The New towers page's count and the Community databases row subtitle (%d is how many are on the list), and the alert's expanded title and the end-of-survey summary (%d is how many this survey found) -->
+    <plurals name="new_towers_found_count">
+        <item quantity="one">%d tower found that wasn\'t in the tower database</item>
+        <item quantity="other">%d towers found that weren\'t in the tower database</item>
+    </plurals>
+    <string name="new_towers_none_found">No new towers found yet</string>
+    <string name="new_towers_what_is_checked">Only the tower your phone connects to is checked, while a survey sends to Community databases.</string>
+    <string name="new_towers_alerts_off">New tower alerts are off, so towers aren\'t checked against the tower database.</string>
+    <string name="new_towers_turn_on_alerts">Turn on new tower alerts</string>
+    <string name="new_towers_empty">When your phone connects to a tower that isn\'t in the tower database, you get an alert and the tower is listed here.</string>
+    <!-- %1$s is how long ago, mid-sentence ("5 minutes ago", "yesterday") -->
+    <string name="new_towers_found_ago">Found %1$s</string>
+    <string name="new_towers_in_database">Now in the tower database</string>
+    <string name="new_towers_not_in_database">Not in the tower database when checked</string>
+    <string name="new_towers_show_details">Show details</string>
+    <string name="new_towers_clear">Clear list</string>
+    <string name="new_towers_clear_title">Clear new towers?</string>
+    <string name="new_towers_clear_message">This removes every tower from the list. A tower you clear can alert again in a later survey.</string>
+    <string name="new_towers_identifiers">Identifiers</string>
+    <string name="new_towers_copy_identifiers">Copy identifiers</string>
+    <string name="new_towers_last_checked">Last checked</string>
+    <string name="new_towers_last_seen">Last seen</string>
+    <string name="new_towers_where_found">Where you were</string>
+    <string name="new_towers_where_found_note">Where your phone was when it connected, not where the tower is.</string>
+    <string name="new_towers_no_location">No location was recorded for this find.</string>
+    <string name="new_towers_tower_location">Tower location from the tower database</string>
+    <!-- Coordinates as text. %1$s is latitude, %2$s longitude -->
+    <!-- New towers Map view legend. The dots are where the phone was, never the tower -->
+    <string name="new_towers_map_legend_sighting">Where you were when your phone connected, not where the tower is.</string>
+    <string name="new_towers_map_legend_unknown_tower">A tower is drawn once it\'s in the tower database.</string>
+    <!-- Legend note: finds with no recorded location are not drawn -->
+    <plurals name="new_towers_map_unplaced">
+        <item quantity="one">%d tower has no recorded location, so it isn\'t on the map.</item>
+        <item quantity="other">%d towers have no recorded location, so they aren\'t on the map.</item>
+    </plurals>
+    <!-- Map view when no find has a location -->
+    <string name="new_towers_map_no_locations">None of these towers has a recorded location, so there is nothing to show on the map.</string>
+    <!-- TalkBack summary of the New towers map, followed by the legend sentences -->
+    <plurals name="new_towers_map_description">
+        <item quantity="one">Map of %d new tower.</item>
+        <item quantity="other">Map of %d new towers.</item>
+    </plurals>
+    <plurals name="new_towers_map_description_towers">
+        <item quantity="one">%d tower location from the tower database is shown.</item>
+        <item quantity="other">%d tower locations from the tower database are shown.</item>
     </plurals>
 
     <!-- NS Analytics notification channel -->
@@ -664,7 +717,7 @@
 
     <string name="new_tower_alerts_title">New tower alerts</string>
     <string name="new_tower_alerts_summary_off">No notifications for new cellular towers</string>
-    <string name="new_tower_alerts_summary_on">Receive notifications when connected to a tower that hasn\'t been uploaded to the OpenCelliD database yet (requires a survey that sends to the Community databases)</string>
+    <string name="new_tower_alerts_summary_on">Receive notifications when connected to a tower that isn\'t in the tower database yet (requires a survey that sends to the Community databases)</string>
 
     <string name="auto_upload_title">Upload automatically</string>
     <string name="auto_upload_summary_off">Data will only be uploaded when manually triggered</string>

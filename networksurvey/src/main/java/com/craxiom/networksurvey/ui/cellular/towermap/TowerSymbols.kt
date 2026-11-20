@@ -45,6 +45,13 @@ private const val TOWER_SOURCE_KEY = "tower-source"
 private const val COUNT_BADGE_LAYER_KEY = "tower-count-badge-layer"
 private const val OPERATOR_BADGE_LAYER_KEY = "operator-count-badge-layer"
 
+/** The width of the halo around a tower icon, so it stands out from the basemap. */
+const val TOWER_ICON_HALO_WIDTH = 5f
+
+/** The halo color around a tower icon on a dark or a light basemap. */
+fun towerIconHaloColor(isDarkMap: Boolean): String =
+    if (isDarkMap) "rgba(255,255,255,0.8)" else "rgba(0,0,0,0.3)"
+
 /**
  * Renders every tower as one feature in a single GeoJSON source with three symbol layers on
  * top of it: the tower icon, the tower count badge, and the operator count badge. Features
@@ -184,8 +191,8 @@ internal class TowerSymbolsNode(
                     color(android.graphics.Color.GRAY)
                 }
             ),
-            iconHaloColor(if (isDarkMap) "rgba(255,255,255,0.8)" else "rgba(0,0,0,0.3)"),
-            iconHaloWidth(5f),
+            iconHaloColor(towerIconHaloColor(isDarkMap)),
+            iconHaloWidth(TOWER_ICON_HALO_WIDTH),
         )
     }
 

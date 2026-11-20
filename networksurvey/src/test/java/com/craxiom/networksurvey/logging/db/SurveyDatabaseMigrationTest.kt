@@ -14,12 +14,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
 /**
- * Guards the hand-written surveyed_point migration against the schema Room generates. A mismatch
- * would trigger the destructive fallback on every upgraded device and wipe the watchlist, so the
- * migrated table is compared column by column with a freshly created one.
+ * Guards the hand-written migrations against the schema Room generates. A mismatch would trigger
+ * the destructive fallback on every upgraded device and wipe the watchlist and un-uploaded survey
+ * data, so each migrated table is compared column by column with a freshly created one.
  *
- * Room validates every table when a database opens and {@code exportSchema} is off, so this test
- * runs the migration on a raw v15 copy of the one table rather than through a full database.
+ * Room validates every table when a database opens and {@code exportSchema} is off, so these tests
+ * run each migration on a raw copy of the tables it touches rather than through a full database.
  */
 @RunWith(RobolectricTestRunner::class)
 class SurveyDatabaseMigrationTest {
@@ -32,22 +32,16 @@ class SurveyDatabaseMigrationTest {
         "CREATE INDEX index_surveyed_point_source_time ON surveyed_point (source, time)",
     )
 
+    private val v16TowerCacheDdl = listOf(
+        "CREATE TABLE tower_cache (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, mcc TEXT, mnc TEXT, " +
+                "area INTEGER NOT NULL, cid INTEGER NOT NULL, timestamp INTEGER NOT NULL, radio TEXT)",
+        "CREATE UNIQUE INDEX index_tower_cache_mcc_mnc_area_cid ON tower_cache (mcc, mnc, area, cid)",
+    )
+
     @Test
     fun migration15To16MatchesTheGeneratedSchemaAndKeepsRows() {
         val context: Context = RuntimeEnvironment.getApplication()
-        val helper = FrameworkSQLiteOpenHelperFactory().create(
-            SupportSQLiteOpenHelper.Configuration.builder(context)
-                .name(null)
-                .callback(object : SupportSQLiteOpenHelper.Callback(15) {
-                    override fun onCreate(db: SupportSQLiteDatabase) = v15Ddl.forEach(db::execSQL)
-                    override fun onUpgrade(
-                        db: SupportSQLiteDatabase,
-                        oldVersion: Int,
-                        newVersion: Int
-                    ) = Unit
-                })
-                .build()
-        )
+        val helper = rawDatabase(context, 15, v15Ddl)
         val db = helper.writableDatabase
         db.execSQL(
             "INSERT INTO surveyed_point (latitude, longitude, time, source, observedMask, uploadedMask) " +
@@ -76,4 +70,50 @@ class SurveyDatabaseMigrationTest {
         room.close()
         helper.close()
     }
+
+    @Test
+    fun migration16To17AddsTheNewTowerFindTableRoomExpects_andKeepsExistingTables() {
+        val context: Context = RuntimeEnvironment.getApplication()
+        val helper = rawDatabase(context, 16, v16TowerCacheDdl)
+        val db = helper.writableDatabase
+        db.execSQL(
+            "INSERT INTO tower_cache (mcc, mnc, area, cid, timestamp, radio) VALUES ('310', '260', 1, 2, 3, 'LTE')"
+        )
+
+        SurveyDatabase.MIGRATION_16_17.migrate(db)
+
+        val room = Room.inMemoryDatabaseBuilder(context, SurveyDatabase::class.java)
+            .allowMainThreadQueries().build()
+        val roomDb = room.openHelper.writableDatabase
+        assertEquals(TableInfo.read(roomDb, "new_tower_find"), TableInfo.read(db, "new_tower_find"))
+        assertEquals(TableInfo.read(roomDb, "tower_cache"), TableInfo.read(db, "tower_cache"))
+
+        db.query("SELECT COUNT(*) FROM tower_cache").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+        }
+        db.execSQL(
+            "INSERT INTO new_tower_find (mcc, mnc, area, cellId, radio, firstSeenAt, lastSeenAt, " +
+                    "sessionStartedAt, inDatabase, lastCheckedAt) VALUES ('310', '260', 1, 2, 'LTE', 4, 4, 3, 0, 4)"
+        )
+
+        room.close()
+        helper.close()
+    }
+
+    /** An unmanaged database at [version] holding only the tables [ddl] creates. */
+    private fun rawDatabase(context: Context, version: Int, ddl: List<String>): SupportSQLiteOpenHelper =
+        FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(null)
+                .callback(object : SupportSQLiteOpenHelper.Callback(version) {
+                    override fun onCreate(db: SupportSQLiteDatabase) = ddl.forEach(db::execSQL)
+                    override fun onUpgrade(
+                        db: SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
 }

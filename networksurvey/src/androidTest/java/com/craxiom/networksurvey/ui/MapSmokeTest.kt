@@ -16,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.rule.ServiceTestRule
 import com.craxiom.networksurvey.NetworkSurveyActivity
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.services.DestinationTestSupport
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -35,7 +36,8 @@ import org.junit.runner.RunWith
 
 /**
  * The Map tab on the real activity: it mounts, a layer toggle is saved, the Cellular map action
- * and the new-tower notification open it, and the screen stays on across it while recording.
+ * opens it, and the screen stays on across it while recording. Also the new-tower notification,
+ * which once opened the Map and now opens the New towers page.
  * MapLibre needs no tiles for any of this; the checks are on the tab's own chrome.
  */
 @RunWith(AndroidJUnit4::class)
@@ -96,21 +98,22 @@ class MapSmokeTest {
     }
 
     @Test
-    fun theNewTowerNotificationTap_coldStart_landsOnMap() {
+    fun theNewTowerNotificationTap_coldStart_opensNewTowers() {
         scenario = ActivityScenario.launch(newTowerTap())
-        shell.waitForMap()
-        shell.tab("Map").assertIsSelected()
+        shell.waitForHeading(newTowersTitle())
     }
 
     @Test
-    fun theNewTowerNotificationTap_onARunningApp_landsOnMap() {
+    fun theNewTowerNotificationTap_onARunningApp_opensNewTowers_andBackReturnsToTheTabs() {
         launch()
         shell.tab("More").performClick()
         shell.heading("More").assertIsDisplayed()
 
         context().startActivity(newTowerTap().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        shell.waitForMap()
-        shell.tab("Map").assertIsSelected()
+        shell.waitForHeading(newTowersTitle())
+
+        Espresso.pressBack()
+        shell.waitForHeading("More")
     }
 
     @Test
@@ -156,8 +159,10 @@ class MapSmokeTest {
         shell.waitForHeading("Survey")
     }
 
+    private fun newTowersTitle() = context().getString(R.string.new_towers_title)
+
     /** What the new-tower notification's tap sends. */
     private fun newTowerTap(): Intent = activityIntent()
-        .putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP, true)
+        .putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_NEW_TOWERS, true)
         .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 }

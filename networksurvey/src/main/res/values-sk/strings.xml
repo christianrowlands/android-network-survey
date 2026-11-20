@@ -797,13 +797,6 @@
     <string name="new_tower_alert_channel_description">Upozornenia pri zistení nových mobilných vysielačov</string>
     <string name="new_tower_alert_title">Nájdená nová základňová stanica</string>
     <string name="new_tower_alert_content">%1$s %2$s-%3$s ID bunky %4$d</string>
-    <string name="new_tower_alert_details">Technológia: %1$s\nMCC-MNC: %2$s-%3$s\nTAC/LAC: %4$d\nID bunky: %5$d</string>
-    <plurals name="new_tower_alert_session_count">
-        <item quantity="one">%d nová základňová stanica v tomto prieskume</item>
-        <item quantity="few">%d nové základňové stanice v tomto prieskume</item>
-        <item quantity="many">%d nových základňových staníc v tomto prieskume</item>
-        <item quantity="other">%d nových základňových staníc v tomto prieskume</item>
-    </plurals>
     <string name="ns_analytics_notification_channel_name">NS Analytics</string>
     <string name="ns_analytics_notification_channel_description">Oznámenia o nahrávaní údajov do NS Analytics, napríklad keď je nahrávanie pozastavené</string>
     <string name="survey_points_layer_title">Body môjho prieskumu</string>
@@ -1106,7 +1099,6 @@
     <string name="survey_points_empty">Zatiaľ nie sú žiadne body prieskumu. Spustite prieskum, ktorý odosiela dáta do komunitných databáz alebo NS Analytics, a pokryté body sa zobrazia tu.</string>
     <string name="survey_points_about_sources">Body sa zaznamenávajú iba počas prieskumu, ktorý odosiela dáta do komunitných databáz alebo NS Analytics, a iba pre typy záznamov, ktoré prieskum zaznamenáva. Súbory denníka, MQTT a gRPC nepridávajú body. Body Bluetooth pochádzajú iba z NS Analytics.</string>
     <string name="survey_points_about_filters">Filter Kedy bolo merané dokáže vybrať prieskum iba vtedy, keď odoslal dáta do NS Analytics; potom zobrazí všetky body daného prieskumu vrátane tých, ktoré boli zároveň zhromaždené pre OpenCelliD a BeaconDB. Pre prieskum, ktorý odoslal dáta iba do OpenCelliD a BeaconDB, použite časový rozsah.</string>
-    <string name="new_tower_alerts_summary_on">Prijímať upozornenia pri pripojení k základňovej stanici, ktorá ešte nebola nahraná do databázy OpenCelliD (vyžaduje prieskum odosielajúci dáta do komunitných databáz)</string>
     <string name="not_supported_description">Network Survey neprijíma z telefónu surové GNSS merania, ktoré sú potrebné na generovanie súborov GNSS CSV alebo streamovanie GNSS záznamov cez MQTT. Ďalšie informácie a zoznam zariadení podporujúcich surové GNSS merania nájdete v príručke Androidu <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a>.</string>
     <string name="gps_num_sats_label">Použité / zaznamenané</string>
     <string name="menu_option_filter_content_description_active">Filtrovať signály. Filter je aktívny.</string>

@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -8,27 +9,30 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.net.Uri
+import android.text.format.DateFormat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.logging.db.model.NewTowerFindEntity
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.Date
 
 /**
- * Helper for the "New Tower Detected" alert.
+ * Helper for the "New tower found" alert and the summary that replaces it when the survey stops.
  *
- * Every detection replaces the previous alert instead of stacking a new one, so a long community
- * survey never leaves the user with dozens of notifications to clear. The body ends with a running
- * count of new towers seen during the current community survey, which the service resets when
- * that survey stops. The alert still sounds on every replacement because it is the sound, not the
- * row, that tells a driver something new was found.
+ * Every find replaces the previous alert instead of stacking a new one, so a long community
+ * survey never leaves the user with dozens of notifications to clear. The alert still sounds on
+ * every replacement because it is the sound, not the row, that tells a driver something was found.
+ * Expanded, it lists this session's newest finds. When the survey stops, a silent summary of the
+ * session's finds replaces it, or it is removed when there were none. Both open the New towers page.
  */
 object NewTowerNotificationHelper {
 
-    private val sessionCount = AtomicInteger(0)
+    /** How many finds the expanded alert lists before summarizing the rest as "+N more". */
+    const val MAX_LINES = 5
 
     /**
      * Get the notification sound URI with fallback to system default.
@@ -69,38 +73,70 @@ object NewTowerNotificationHelper {
     }
 
     /**
-     * Reset the per-survey tower counter. Called when the community survey stops.
+     * Show (or replace) the sounding new tower alert.
+     *
+     * @param newest This session's newest finds, newest first; the first is the tower just found.
+     * At most [MAX_LINES] are listed.
+     * @param sessionCount How many towers this session has found, including the newest.
      */
-    fun resetSessionCount() {
-        sessionCount.set(0)
+    fun showNewTowerNotification(context: Context, newest: List<NewTowerFindEntity>, sessionCount: Int) {
+        val latest = newest.firstOrNull() ?: return
+        createNotificationChannel(context)
+
+        val style = NotificationCompat.InboxStyle()
+            .setBigContentTitle(countText(context, sessionCount))
+        newest.take(MAX_LINES).forEach { style.addLine(line(context, it)) }
+        val more = sessionCount - newest.size.coerceAtMost(MAX_LINES)
+        if (more > 0) style.setSummaryText(context.resources.getQuantityString(R.plurals.new_tower_alert_more, more, more))
+
+        val notification = builder(context)
+            .setContentTitle(context.getString(R.string.new_tower_alert_title))
+            .setContentText(line(context, latest))
+            .setStyle(style)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            // Each replacement should sound again; the sound is the alert.
+            .setOnlyAlertOnce(false)
+            .setVibrate(longArrayOf(0, 250, 250, 250))
+            .setSound(getNotificationSoundUri(context))
+            .build()
+
+        if (post(context, notification)) {
+            Timber.i("New tower notification shown for %s-%s-%d-%d (%s), #%d this survey",
+                latest.mcc, latest.mnc, latest.area, latest.cellId, latest.radio, sessionCount)
+        }
     }
 
     /**
-     * Show (or replace) the new tower alert.
+     * Replace the alert with a silent summary of the session that just stopped. A session that
+     * found nothing posted nothing, so it leaves the shade alone: an earlier survey's summary
+     * stays until the person dismisses it or clears the list.
      *
-     * @param context Application context
-     * @param mcc Mobile Country Code (string to preserve leading zeros)
-     * @param mnc Mobile Network Code (string to preserve leading zeros)
-     * @param area TAC/LAC
-     * @param cellId Cell ID
-     * @param technology Radio technology (LTE, NR, GSM, UMTS)
+     * @param sessionCount How many towers the stopped session found.
      */
-    fun showNewTowerNotification(
-        context: Context,
-        mcc: String,
-        mnc: String,
-        area: Int,
-        cellId: Long,
-        technology: String
-    ) {
+    fun showSessionSummary(context: Context, sessionCount: Int) {
+        if (sessionCount <= 0) return
         createNotificationChannel(context)
 
-        val count = sessionCount.incrementAndGet()
+        val notification = builder(context)
+            .setContentTitle(context.getString(R.string.new_tower_summary_title))
+            .setContentText(countText(context, sessionCount))
+            // The channel is high importance; the summary must not sound or peek.
+            .setSilent(true)
+            .build()
 
-        // A tap opens the Map tab, where the serving-cell card tags the tower NEW
+        if (post(context, notification)) Timber.i("New tower summary shown: %d this survey", sessionCount)
+    }
+
+    /** Removes the new tower alert or summary. */
+    fun cancel(context: Context) {
+        NotificationManagerCompat.from(context).cancel(NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_ID)
+    }
+
+    /** The parts the alert and the summary share: channel, icon, tap target. */
+    private fun builder(context: Context): NotificationCompat.Builder {
         val intent = Intent(context, NetworkSurveyActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP, true)
+            putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_NEW_TOWERS, true)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -108,34 +144,31 @@ object NewTowerNotificationHelper {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
-        val contentText = context.getString(R.string.new_tower_alert_content, technology, mcc, mnc, cellId)
-        val details = context.getString(R.string.new_tower_alert_details, technology, mcc, mnc, area, cellId)
-        val countLine = context.resources.getQuantityString(R.plurals.new_tower_alert_session_count, count, count)
-
-        val notification = NotificationCompat.Builder(context, NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_CHANNEL_ID)
+        return NotificationCompat.Builder(context, NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_cell_tower)
-            .setContentTitle(context.getString(R.string.new_tower_alert_title))
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(details + "\n" + countLine))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
-            // Each replacement should sound again; the sound is the alert.
-            .setOnlyAlertOnce(false)
             .setContentIntent(pendingIntent)
-            .setVibrate(longArrayOf(0, 250, 250, 250))
-            .setSound(getNotificationSoundUri(context))
-            .build()
+    }
 
-        try {
-            NotificationManagerCompat.from(context)
-                .notify(NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_ID, notification)
-            Timber.i("New tower notification shown for $technology tower: MCC=$mcc, MNC=$mnc, CID=$cellId (#$count this survey)")
-        } catch (e: SecurityException) {
-            Timber.e(e, "Permission denied for showing notification")
-        } catch (e: Exception) {
-            Timber.e(e, "Error showing new tower notification")
-        }
+    private fun post(context: Context, notification: Notification): Boolean = try {
+        NotificationManagerCompat.from(context).notify(NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_ID, notification)
+        true
+    } catch (e: SecurityException) {
+        Timber.e(e, "Permission denied for showing notification")
+        false
+    } catch (e: Exception) {
+        Timber.e(e, "Error showing new tower notification")
+        false
+    }
+
+    private fun countText(context: Context, count: Int): String =
+        context.resources.getQuantityString(R.plurals.new_towers_found_count, count, count)
+
+    /** "LTE 310-260 · Cell ID 129595 · 2:04 PM" */
+    private fun line(context: Context, find: NewTowerFindEntity): String {
+        val tower = context.getString(R.string.new_tower_alert_content, find.radio, find.mcc, find.mnc, find.cellId)
+        val time = DateFormat.getTimeFormat(context).format(Date(find.firstSeenAt))
+        return context.getString(R.string.new_tower_alert_line, tower, time)
     }
 }

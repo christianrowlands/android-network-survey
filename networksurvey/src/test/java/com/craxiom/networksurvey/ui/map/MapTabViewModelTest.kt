@@ -203,8 +203,7 @@ class MapTabViewModelTest {
     @Test
     fun newTowers_followTheRegistry() {
         val tower = TowerKey.from(CellRecords.lte())!!
-        NewTowerRegistry.startSession()
-        NewTowerRegistry.add(tower)
+        NewTowerRegistry.add(tower, NewTowerRegistry.startSession())
 
         assertEquals(setOf(tower), viewModel.newTowers.value)
         NewTowerRegistry.endSession()

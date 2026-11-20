@@ -74,6 +74,7 @@ import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
 import com.craxiom.networksurvey.ui.common.InlineNotice
+import com.craxiom.networksurvey.ui.common.NsMapStyles
 import com.craxiom.networksurvey.ui.map.MAP_TOP_STACK_MAX_WIDTH
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.watchlist.SheetDetent
@@ -87,7 +88,7 @@ private const val TOWER_RESPONSE_LIMIT = 5_000
 
 private const val OPENSTREETMAP_STYLE_URL =
     "https://raw.githubusercontent.com/christianrowlands/ns-map-style-uri/refs/heads/main/openstreetmap.json"
-private const val OPENFREEMAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+private const val OPENFREEMAP_STYLE_URL = NsMapStyles.OPENFREEMAP_LIBERTY
 private const val MAPTILER_MAP_ID = "basic-v2-dark"
 
 /**

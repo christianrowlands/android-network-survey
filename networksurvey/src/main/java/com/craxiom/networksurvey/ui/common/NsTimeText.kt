@@ -29,9 +29,12 @@ object NsTimeText {
     /** Which wording a moment gets; see [NsTimeText]. */
     enum class Bucket { RELATIVE, TODAY, YESTERDAY, THIS_YEAR, OLDER }
 
-    /** @return The wording for [thenMs] seen at [nowMs] in [zone]. */
-    fun bucket(thenMs: Long, nowMs: Long, zone: ZoneId): Bucket {
-        if (nowMs - thenMs in 0 until TimeUnit.HOURS.toMillis(1)) return Bucket.RELATIVE
+    /**
+     * @return The wording for [thenMs] seen at [nowMs] in [zone]. With [relative] false, the
+     * moment is bucketed by its date alone and never reads as [Bucket.RELATIVE].
+     */
+    fun bucket(thenMs: Long, nowMs: Long, zone: ZoneId, relative: Boolean = true): Bucket {
+        if (relative && nowMs - thenMs in 0 until TimeUnit.HOURS.toMillis(1)) return Bucket.RELATIVE
         val then = Instant.ofEpochMilli(thenMs).atZone(zone).toLocalDate()
         val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
         return when {
@@ -51,9 +54,21 @@ object NsTimeText {
         return SimpleDateFormat(pattern, locale).apply { timeZone = TimeZone.getTimeZone(zone) }.format(Date(ms))
     }
 
-    /** @return [ms] in the wording its [Bucket] calls for. */
-    fun format(ms: Long, nowMs: Long, locale: Locale, use24Hour: Boolean, zone: ZoneId = ZoneId.systemDefault()): String =
-        when (val bucket = bucket(ms, nowMs, zone)) {
+    /**
+     * @return [ms] in the wording its [Bucket] calls for. With [relative] false, a moment within
+     * the hour reads as its day and time ("Today, 09:12", or "Yesterday, 23:50" just after
+     * midnight) instead of "12 minutes ago", for a label that should not change while it is on
+     * screen.
+     */
+    fun format(
+        ms: Long,
+        nowMs: Long,
+        locale: Locale,
+        use24Hour: Boolean,
+        zone: ZoneId = ZoneId.systemDefault(),
+        relative: Boolean = true,
+    ): String =
+        when (val bucket = bucket(ms, nowMs, zone, relative)) {
             Bucket.RELATIVE -> RelativeAge.of(ms, nowMs).format(locale)
             Bucket.TODAY, Bucket.YESTERDAY -> {
                 val formatter = RelativeDateTimeFormatter.getInstance(
@@ -80,13 +95,16 @@ object NsTimeText {
 
 /**
  * [ms] the way [NsTimeText] words it, in the phone's language and 12 or 24 hour setting. Kept
- * across recompositions, since a list can show many of these.
+ * across recompositions, since a list can show many of these. With [relative] false, a moment
+ * within the hour reads as its day and time; see [NsTimeText.format].
  */
 @Composable
-fun friendlyTimeText(ms: Long, nowMs: Long): String {
+fun friendlyTimeText(ms: Long, nowMs: Long, relative: Boolean = true): String {
     val locale = LocalConfiguration.current.locales[0]
     val use24Hour = DateFormat.is24HourFormat(LocalContext.current)
-    return remember(ms, nowMs, locale, use24Hour) { NsTimeText.format(ms, nowMs, locale, use24Hour) }
+    return remember(ms, nowMs, locale, use24Hour, relative) {
+        NsTimeText.format(ms, nowMs, locale, use24Hour, relative = relative)
+    }
 }
 
 /** [ms] as a full date and time ("Oct 13, 2026, 08:05") in the phone's language and hour setting. */

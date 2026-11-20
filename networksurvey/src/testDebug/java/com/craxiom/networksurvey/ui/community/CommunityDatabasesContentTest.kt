@@ -17,6 +17,7 @@ import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
 import com.craxiom.networksurvey.ui.survey.model.DestinationInfo
 import com.craxiom.networksurvey.ui.plural
 import com.craxiom.networksurvey.ui.showPage
+import com.craxiom.networksurvey.ui.string
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -40,6 +41,7 @@ class CommunityDatabasesContentTest {
         override fun onSetAutoUpload(on: Boolean) { calls += "auto:$on" }
         override fun onUploadNow() { calls += "upload" }
         override fun onCancelUpload() { calls += "cancel" }
+        override fun onOpenNewTowers() { calls += "newTowers" }
     }
     private val ready = UploadUiState(
         cellularQueueCount = 1204, wifiQueueCount = 351, uploadButtonEnabled = true,
@@ -106,6 +108,26 @@ class CommunityDatabasesContentTest {
         compose.onNodeWithText("The upload failed. It will try again later.").assertDoesNotExist()
         compose.onNodeWithText("Stop retrying").performClick()
         assertEquals(listOf("cancel"), calls)
+    }
+
+    @Test
+    fun newTowers_isHidden_untilTheAlertsAreOnOrATowerWasFound() {
+        show(ready)
+        compose.onNodeWithText(string(R.string.new_towers_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun newTowers_withAlertsOn_saysNoneYet_andOpensThePage() {
+        show(ready.copy(newTowerAlertsOn = true))
+        compose.onNodeWithText(string(R.string.new_towers_none_found)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.new_towers_title)).performScrollTo().performClick()
+        assertEquals(listOf("newTowers"), calls)
+    }
+
+    @Test
+    fun newTowers_withFinds_showsTheCount_evenWithTheAlertsOff() {
+        show(ready.copy(newTowerCount = 7))
+        compose.onNodeWithText(plural(R.plurals.new_towers_found_count, 7, 7)).performScrollTo().assertIsDisplayed()
     }
 
     @Test

@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
 import com.craxiom.networksurvey.survey.status.CommunityUploadFailure
 import com.craxiom.networksurvey.util.MdmUtils
@@ -15,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -35,10 +37,17 @@ class CommunityUploadViewModel(application: Application) : AndroidViewModel(appl
     private val restrictions = AndroidRestrictionsSource(application)
     private val queue = MutableStateFlow(UploadUiState(visible = MdmUtils.isExternalDataUploadAllowed(application)))
 
+    private val newTowerCount = SurveyDatabase.getInstance(application).newTowerFindDao().observeCount()
+        .catch { e ->
+            Timber.e(e, "Could not count the new tower finds")
+            emit(0)
+        }
+
     /** The page's state, refreshed every few seconds while it is on screen. */
-    val state: StateFlow<UploadUiState> = combine(queue.onStart { startPolling() }, repository.state) { queue, upload ->
-        queue.copy(uploadProgress = upload)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), queue.value)
+    val state: StateFlow<UploadUiState> =
+        combine(queue.onStart { startPolling() }, repository.state, newTowerCount) { queue, upload, towers ->
+            queue.copy(uploadProgress = upload, newTowerCount = towers)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), queue.value)
 
     private var polling = false
 
@@ -148,6 +157,9 @@ class CommunityUploadViewModel(application: Application) : AndroidViewModel(appl
                 openCelliDOn = uploadToOpenCelliD(),
                 openCelliDKey = openCelliDKey(),
                 beaconDbOn = uploadToBeaconDb(),
+                newTowerAlertsOn = preferences.getBoolean(
+                    NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, NetworkSurveyConstants.DEFAULT_NEW_TOWER_ALERTS_ENABLED,
+                ),
             )
         } catch (e: Exception) {
             Timber.e(e, "Could not read the community upload queue")

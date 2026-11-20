@@ -87,7 +87,7 @@ import com.craxiom.networksurvey.notification.NotificationChannels;
 import com.craxiom.networksurvey.notification.SurveyNotificationBuilder;
 import com.craxiom.networksurvey.notification.SurveyNotificationState;
 import com.craxiom.networksurvey.notification.SurveyStallWatchdog;
-import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
+import com.craxiom.networksurvey.ui.activesurvey.NewTowerDetector;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerRegistry;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsNotificationHelper;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
@@ -696,8 +696,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onDestroy()
     {
         destroyed = true;
-        // A Community upload ends with the service, so no tower stays tagged NEW on the map
-        NewTowerRegistry.endSession();
+        // A Community upload ends with the service, so no tower stays tagged NEW on the map, and the
+        // new tower alert becomes a summary of what this upload found
+        NewTowerDetector.endSession(this);
         // Drop any queued survey control task; nothing may run against the torn down controllers.
         surveyControlExecutor.shutdownNow();
 
@@ -2299,8 +2300,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Track survey session end
                 onSurveyStopped();
                 updateWakeLock();
-                NewTowerNotificationHelper.INSTANCE.resetSessionCount();
-                NewTowerRegistry.endSession();
+                // No tower stays tagged NEW, and the new tower alert becomes a summary of this upload
+                NewTowerDetector.endSession(this);
                 updateServiceNotification();
 
                 // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is

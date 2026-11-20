@@ -162,4 +162,7 @@
     <string name="scout_bullet">• %1$s</string>
     <!-- A firmware change: %1$s is the installed version, %2$s the new one -->
     <string name="scout_fw_versions">%1$s → %2$s</string>
+
+    <!-- A latitude and longitude pair on the New towers detail sheet -->
+    <string name="new_towers_coordinates">%1$s, %2$s</string>
 </resources>

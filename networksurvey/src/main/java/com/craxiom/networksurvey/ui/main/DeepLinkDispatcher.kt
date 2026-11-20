@@ -30,6 +30,7 @@ class DeepLinkDispatcher(private val context: Context, private val deepLinkViewM
             DeepLinkTarget.NsAnalyticsPage -> deepLinkViewModel.navigateToPage(NavDrawerOption.NsAnalyticsConnection.name)
             DeepLinkTarget.WatchlistHistory -> deepLinkViewModel.navigateToPage(NavOption.WatchlistHistory.name)
             DeepLinkTarget.CommunityPage -> deepLinkViewModel.navigateToPage(NavOption.CommunityDatabases.name)
+            DeepLinkTarget.NewTowers -> deepLinkViewModel.navigateToPage(NavOption.NewTowers.name)
             is DeepLinkTarget.HomeTab -> deepLinkViewModel.navigateToHomeTab(target.route)
         }
     }

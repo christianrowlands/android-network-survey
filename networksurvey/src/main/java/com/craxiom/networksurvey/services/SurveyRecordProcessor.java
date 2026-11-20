@@ -122,9 +122,8 @@ import com.craxiom.networksurvey.scout.wifi.ScoutBeaconRecordBuilder;
 import com.craxiom.networksurvey.scout.wifi.ScoutHeard;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.survey.model.RecordType;
-import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
+import com.craxiom.networksurvey.ui.activesurvey.NewTowerDetector;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerRegistry;
-import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
 import com.craxiom.networksurvey.util.CellularBandwidthUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
@@ -213,7 +212,7 @@ public class SurveyRecordProcessor
     private final Context context;
     private NetworkSurveyService networkSurveyService;
     private final SsidExclusionManager ssidExclusionManager;
-    private final TowerDetectionJavaWrapper towerDetectionWrapper;
+    private final NewTowerDetector newTowerDetector;
     private volatile TowerKey lastServingCellKey = null;
 
     private final AtomicInteger cellularRecordNumber = new AtomicInteger(1);
@@ -265,7 +264,7 @@ public class SurveyRecordProcessor
 
         ssidExclusionManager = new SsidExclusionManager(context);
         scoutBeacons = new ScoutBeaconRecordBuilder(wifiRecordNumber, deviceId, this::getMissionId, ssidExclusionManager::isExcluded);
-        towerDetectionWrapper = new TowerDetectionJavaWrapper(context);
+        newTowerDetector = new NewTowerDetector(context);
     }
 
     /**
@@ -3188,7 +3187,7 @@ public class SurveyRecordProcessor
         if (cellularRecords == null || cellularRecords.isEmpty()) return;
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean newTowerAlertsEnabled = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false);
+        boolean newTowerAlertsEnabled = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, NetworkSurveyConstants.DEFAULT_NEW_TOWER_ALERTS_ENABLED);
         boolean uploadRunning = networkSurveyService != null && networkSurveyService.isUploadScanningActive();
         if (!NewTowerRegistry.shouldCheck(newTowerAlertsEnabled, uploadRunning)) return;
 
@@ -3205,8 +3204,8 @@ public class SurveyRecordProcessor
 
     /**
      * Forgets the last serving cell checked, so the next upload session checks the cell the phone
-     * is already on. The tower service's answers stay cached, so a cell checked recently does not
-     * alert again.
+     * is already on. A tower already on the New towers list never alerts again, and the tower
+     * service's answers stay cached, so a cell checked recently is not asked about again.
      */
     void resetNewTowerDetection()
     {
@@ -3214,7 +3213,10 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Check if the serving cell is a new tower and fire notification if needed.
+     * Checks the serving cell against the tower service when it differs from the last one checked.
+     * A check that fails is deliberately not retried on the next scan, so a tower service outage
+     * does not spend the shared API quota on every scan: the tower is asked about again the next
+     * time the phone connects to it after being on another cell, or in the next survey.
      *
      * @param cellularRecord The serving cell record to check
      */
@@ -3226,21 +3228,7 @@ public class SurveyRecordProcessor
         if (key == null || key.equals(lastServingCellKey)) return;
         lastServingCellKey = key;
 
-        towerDetectionWrapper.checkIfTowerIsNewAsync(
-                key.getMcc(), key.getMnc(), key.getArea(), key.getCellId(), key.getRadio(),
-                (Boolean isNewTower) -> {
-                    if (isNewTower)
-                    {
-                        Timber.i("New tower detected: %s", key);
-
-                        NewTowerRegistry.add(key);
-                        NewTowerNotificationHelper.INSTANCE.showNewTowerNotification(
-                                context,
-                                key.getMcc(), key.getMnc(), key.getArea(), key.getCellId(), key.getRadio()
-                        );
-                    }
-                }
-        );
+        newTowerDetector.check(key, cellularRecord);
     }
 
     /**

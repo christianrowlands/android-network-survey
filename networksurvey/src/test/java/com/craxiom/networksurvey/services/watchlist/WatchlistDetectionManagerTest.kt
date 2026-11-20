@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
 import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.craxiom.networksurvey.waitFor
 import com.google.protobuf.FloatValue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -111,18 +112,8 @@ class WatchlistDetectionManagerTest {
         return notification!!.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
     }
 
-    private fun <T> waitFor(attempt: () -> T?): T? {
-        repeat(WAIT_ATTEMPTS) {
-            attempt()?.let { return it }
-            Thread.sleep(WAIT_STEP_MS)
-        }
-        return null
-    }
-
     private companion object {
         const val SSID = "Watched-Net"
         const val LABEL = "Office AP"
-        const val WAIT_ATTEMPTS = 100
-        const val WAIT_STEP_MS = 50L
     }
 }

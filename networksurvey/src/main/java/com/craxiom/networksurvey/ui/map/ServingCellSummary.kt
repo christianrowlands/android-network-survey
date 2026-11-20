@@ -107,11 +107,7 @@ data class ServingCellSummary(
                         lteBand = if (data.hasEarfcn()) CellularUtils.downlinkEarfcnToBand(data.earfcn.value).takeIf { it > 0 } else null,
                         signalDbm = primary,
                         signalBucket = bucket(SurveyedPointEntity.PROTOCOL_LTE, primary),
-                        enbSector = if (eci > 0) {
-                            CalculationUtils.getEnodebIdFromCellId(eci) to CalculationUtils.getSectorIdFromCellId(eci)
-                        } else {
-                            null
-                        },
+                        enbSector = enbSectorOf(eci.toLong()),
                         metrics = listOfNotNull(
                             metric(LABEL_RSRP, primary),
                             metric(LABEL_RSRQ, secondary),
@@ -133,7 +129,7 @@ data class ServingCellSummary(
                             ?.joinToString(NR_BAND_SEPARATOR) { NR_BAND_PREFIX + it },
                         signalDbm = primary,
                         signalBucket = bucket(SurveyedPointEntity.PROTOCOL_NR, primary),
-                        identity = CellMetric(LABEL_NCI, data.nci.value.toString()),
+                        identity = identityOf(CellularProtocol.NR, data.nci.value),
                         metrics = listOfNotNull(
                             metric(LABEL_SS_RSRP, primary),
                             metric(LABEL_SS_RSRQ, secondary),
@@ -152,7 +148,7 @@ data class ServingCellSummary(
                         plmn = plmn(data.hasPlmn(), data.plmn?.value, data.mcc?.value ?: 0, data.mnc?.value ?: 0),
                         signalDbm = primary,
                         signalBucket = bucket(SurveyedPointEntity.PROTOCOL_GSM, primary),
-                        identity = CellMetric(LABEL_CID, data.ci.value.toString()),
+                        identity = identityOf(CellularProtocol.GSM, data.ci.value.toLong()),
                         metrics = listOfNotNull(
                             metric(LABEL_RSSI, primary),
                             plmnMetric(data.hasPlmn(), data.plmn?.value, data.mcc?.value ?: 0, data.mnc?.value ?: 0),
@@ -170,7 +166,7 @@ data class ServingCellSummary(
                         plmn = plmn(data.hasPlmn(), data.plmn?.value, data.mcc?.value ?: 0, data.mnc?.value ?: 0),
                         signalDbm = secondary ?: primary,
                         signalBucket = bucket(SurveyedPointEntity.PROTOCOL_UMTS, secondary ?: primary),
-                        identity = CellMetric(LABEL_CID, data.cid.value.toString()),
+                        identity = identityOf(CellularProtocol.UMTS, data.cid.value.toLong()),
                         metrics = listOfNotNull(
                             metric(LABEL_RSSI, primary),
                             metric(LABEL_RSCP, secondary),
@@ -196,6 +192,27 @@ data class ServingCellSummary(
 
                 else -> base
             }
+        }
+
+        /**
+         * @return The LTE eNB ID and sector of [eci] ("eNB 100000 · Sector 3" on the card), or
+         * null when it is not a valid ECI.
+         */
+        internal fun enbSectorOf(eci: Long): Pair<Int, Int>? =
+            if (eci in 1..Int.MAX_VALUE) {
+                CalculationUtils.getEnodebIdFromCellId(eci.toInt()) to CalculationUtils.getSectorIdFromCellId(eci.toInt())
+            } else {
+                null
+            }
+
+        /**
+         * @return How the card names a cell that has no eNB and sector ("NCI", "123"), or null for
+         * LTE (see [enbSectorOf]) and technologies the card does not name this way.
+         */
+        internal fun identityOf(protocol: CellularProtocol, cellId: Long): CellMetric? = when (protocol) {
+            CellularProtocol.NR -> CellMetric(LABEL_NCI, cellId.toString())
+            CellularProtocol.GSM, CellularProtocol.UMTS -> CellMetric(LABEL_CID, cellId.toString())
+            else -> null
         }
 
         private fun plmn(hasPlmn: Boolean, plmn: String?, mcc: Int, mnc: Int): String? = when {

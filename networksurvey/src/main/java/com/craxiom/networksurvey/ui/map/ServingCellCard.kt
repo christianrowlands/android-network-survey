@@ -49,9 +49,6 @@ import com.craxiom.networksurvey.ui.common.signalTextColor
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.MeasurementFormatter
 
-/** Joins the parts of a card line ("Mint · LTE Band 66 · -79 dBm"). */
-private const val PART_SEPARATOR = " · "
-
 /** The lines of the collapsed card; each may wrap once at large font sizes. */
 private const val CARD_LINE_MAX_LINES = 2
 
@@ -192,15 +189,11 @@ private fun CardHeader(state: ServingCellCardState, expanded: Boolean, onToggle:
 /** "Mint · LTE Band 66 · -79 dBm", with the signal colored by its strength. */
 @Composable
 private fun titleLine(summary: ServingCellSummary) = buildAnnotatedString {
-    val technology = buildList {
-        add(summary.protocol.name)
-        summary.lteBand?.let { add(stringResource(R.string.map_card_band_lte, it)) }
-        summary.nrBands?.let { add(it) }
-    }.joinToString(" ")
-    val leading = listOfNotNull(summary.operator ?: summary.plmn, technology).joinToString(PART_SEPARATOR)
+    val technology = listOfNotNull(summary.protocol.name, bandText(summary.lteBand, summary.nrBands)).joinToString(" ")
+    val leading = listOfNotNull(summary.operator ?: summary.plmn, technology).joinToString(CELL_PART_SEPARATOR)
     append(leading)
     summary.signalDbm?.let { dBm ->
-        append(PART_SEPARATOR)
+        append(CELL_PART_SEPARATOR)
         withStyle(SpanStyle(color = signalTextColor(summary.signalBucket))) {
             append(stringResource(R.string.dbm_value, dBm.toString()))
         }
@@ -212,12 +205,11 @@ private fun titleLine(summary: ServingCellSummary) = buildAnnotatedString {
 private fun detailLine(summary: ServingCellSummary, simLabel: String?): String? {
     val context = LocalContext.current
     val parts = listOfNotNull(
-        summary.enbSector?.let { (enb, sector) -> stringResource(R.string.survey_point_enb_sector, enb, sector) }
-            ?: summary.identity?.let { "${it.label} ${it.value}" },
+        cellIdentityText(summary.enbSector, summary.identity),
         summary.distanceMeters?.let { stringResource(R.string.map_card_distance, MeasurementFormatter.formatDistance(context, it)) },
         simLabel,
     )
-    return parts.takeIf { it.isNotEmpty() }?.joinToString(PART_SEPARATOR)
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(CELL_PART_SEPARATOR)
 }
 
 /** The expanded card's details, as label-over-value pairs that wrap to the card's width. */

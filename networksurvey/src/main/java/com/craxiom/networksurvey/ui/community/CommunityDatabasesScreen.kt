@@ -45,6 +45,7 @@ interface CommunityDatabasesActions {
     fun onOpenUploadSettings() {}
     fun onSeeOrganizationSettings() {}
     fun onUseOwnSettings() {}
+    fun onOpenNewTowers() {}
 }
 
 /** The Community databases page with its view model and upload dialogs. */
@@ -54,6 +55,7 @@ fun CommunityDatabasesScreen(
     onOpenUploadSettings: () -> Unit,
     onSeeOnMap: () -> Unit,
     onOpenOrganizationSettings: () -> Unit,
+    onOpenNewTowers: () -> Unit,
     viewModel: CommunityUploadViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -73,6 +75,7 @@ fun CommunityDatabasesScreen(
             override fun onOpenUploadSettings() = onOpenUploadSettings()
             override fun onSeeOrganizationSettings() = onOpenOrganizationSettings()
             override fun onUseOwnSettings() = viewModel.useOwnSettings()
+            override fun onOpenNewTowers() = onOpenNewTowers()
             override fun onUploadNow() {
                 if (viewModel.shouldShowUploadConfigDialog()) {
                     showUploadDialog = true
@@ -172,6 +175,20 @@ fun CommunityDatabasesContent(
                 onClick = if (state.uploadButtonEnabled) actions::onUploadNow else null,
             )
             NsRowDivider()
+            // The towers the new tower alerts found, beside the uploads whose survey found them
+            if (state.showNewTowers) {
+                NsRow(
+                    title = stringResource(R.string.new_towers_title),
+                    subtitle = if (state.newTowerCount > 0) {
+                        pluralStringResource(R.plurals.new_towers_found_count, state.newTowerCount, state.newTowerCount)
+                    } else {
+                        stringResource(R.string.new_towers_none_found)
+                    },
+                    icon = R.drawable.ic_cell_tower,
+                    onClick = actions::onOpenNewTowers,
+                )
+                NsRowDivider()
+            }
             NsRow(title = stringResource(R.string.community_upload_settings), icon = R.drawable.ic_settings, onClick = actions::onOpenUploadSettings)
         }
 

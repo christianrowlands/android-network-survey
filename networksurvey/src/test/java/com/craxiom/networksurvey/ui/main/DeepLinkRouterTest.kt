@@ -46,8 +46,9 @@ class DeepLinkRouterTest {
     }
 
     @Test
-    fun theNewTowerNotification_opensTheMapTab() {
-        assertEquals(DeepLinkTarget.HomeTab(MainScreens.Map.route), route(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP))
+    fun theNewTowerNotification_opensTheNewTowersPage() {
+        assertEquals(DeepLinkTarget.NewTowers, route(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_NEW_TOWERS))
+        assertTrue(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_NEW_TOWERS in DeepLinkRouter.NAVIGATION_EXTRAS)
     }
 
     @Test

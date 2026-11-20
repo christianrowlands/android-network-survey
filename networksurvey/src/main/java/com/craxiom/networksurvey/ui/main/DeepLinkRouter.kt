@@ -27,10 +27,10 @@ sealed interface DeepLinkTarget {
     /** The Community databases page (the community upload notification), where the upload's results are. */
     data object CommunityPage : DeepLinkTarget
 
-    /**
-     * A tab, by its [MainScreens] route (the survey notification selects Survey, the new-tower
-     * notification selects Map).
-     */
+    /** The New towers page (the new-tower alert and its end-of-survey summary). */
+    data object NewTowers : DeepLinkTarget
+
+    /** A tab, by its [MainScreens] route (the survey notification selects Survey). */
     data class HomeTab(val route: String) : DeepLinkTarget
 }
 
@@ -46,7 +46,7 @@ object DeepLinkRouter {
         NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY,
         UploaderNotificationHelper.EXTRA_NAVIGATE_TO_COMMUNITY,
         NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD,
-        NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP,
+        NetworkSurveyConstants.EXTRA_NAVIGATE_TO_NEW_TOWERS,
     )
 
     /**
@@ -64,7 +64,7 @@ object DeepLinkRouter {
             NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY in trueExtras -> DeepLinkTarget.WatchlistHistory
             UploaderNotificationHelper.EXTRA_NAVIGATE_TO_COMMUNITY in trueExtras -> DeepLinkTarget.CommunityPage
             NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD in trueExtras -> DeepLinkTarget.HomeTab(MainScreens.Survey.route)
-            NetworkSurveyConstants.EXTRA_NAVIGATE_TO_MAP in trueExtras -> DeepLinkTarget.HomeTab(MainScreens.Map.route)
+            NetworkSurveyConstants.EXTRA_NAVIGATE_TO_NEW_TOWERS in trueExtras -> DeepLinkTarget.NewTowers
             else -> null
         }
     }

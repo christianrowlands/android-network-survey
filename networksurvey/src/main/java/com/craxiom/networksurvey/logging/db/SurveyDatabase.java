@@ -12,6 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.craxiom.networksurvey.logging.db.dao.CdmaRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.GsmRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.LteRecordDao;
+import com.craxiom.networksurvey.logging.db.dao.NewTowerFindDao;
 import com.craxiom.networksurvey.logging.db.dao.NrRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.NsAnalyticsDao;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
@@ -24,6 +25,7 @@ import com.craxiom.networksurvey.logging.db.dao.WifiRecordDao;
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.NewTowerFindEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsConnectionEntity;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity;
@@ -37,7 +39,8 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
         NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class, WatchlistEntryEntity.class,
-        WatchlistHitEntity.class, SurveyedPointEntity.class}, version = 16, exportSchema = false)
+        WatchlistHitEntity.class, SurveyedPointEntity.class, NewTowerFindEntity.class}, version = 17,
+        exportSchema = false)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -63,6 +66,8 @@ public abstract class SurveyDatabase extends RoomDatabase
     public abstract WatchlistHitDao watchlistHitDao();
 
     public abstract SurveyedPointDao surveyedPointDao();
+
+    public abstract NewTowerFindDao newTowerFindDao();
 
     private static volatile SurveyDatabase INSTANCE;
 
@@ -411,6 +416,47 @@ public abstract class SurveyDatabase extends RoomDatabase
         }
     };
 
+    /**
+     * Migration from version 16 to 17: Add the {@code new_tower_find} table behind the "New towers"
+     * page. The DDL must match the schema Room generates from {@link NewTowerFindEntity}, including
+     * the NOT NULL identity columns and the auto-named unique index, or Room's schema validation
+     * fails on upgrade and the destructive fallback wipes survey data. No existing tables are touched.
+     */
+    @VisibleForTesting
+    static final Migration MIGRATION_16_17 = new Migration(16, 17)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            database.execSQL("CREATE TABLE IF NOT EXISTS new_tower_find ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "mcc TEXT NOT NULL, "
+                    + "mnc TEXT NOT NULL, "
+                    + "area INTEGER NOT NULL, "
+                    + "cellId INTEGER NOT NULL, "
+                    + "radio TEXT NOT NULL, "
+                    + "firstSeenAt INTEGER NOT NULL, "
+                    + "lastSeenAt INTEGER NOT NULL, "
+                    + "sessionStartedAt INTEGER NOT NULL, "
+                    + "latitude REAL, "
+                    + "longitude REAL, "
+                    + "accuracy REAL, "
+                    + "operatorName TEXT, "
+                    + "band TEXT, "
+                    + "signalDbm INTEGER, "
+                    + "channel INTEGER, "
+                    + "pci INTEGER, "
+                    + "inDatabase INTEGER NOT NULL, "
+                    + "lastCheckedAt INTEGER NOT NULL, "
+                    + "towerLatitude REAL, "
+                    + "towerLongitude REAL"
+                    + ")");
+
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_new_tower_find_mcc_mnc_area_cellId_radio "
+                    + "ON new_tower_find (mcc, mnc, area, cellId, radio)");
+        }
+    };
+
     public static SurveyDatabase getInstance(Context context)
     {
         if (INSTANCE == null)
@@ -421,7 +467,8 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
+                                    MIGRATION_16_17)
                             .fallbackToDestructiveMigration(true)
                             .build();
                 }

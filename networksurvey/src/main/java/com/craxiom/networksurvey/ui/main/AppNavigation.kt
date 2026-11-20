@@ -37,6 +37,8 @@ import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
 import com.craxiom.networksurvey.ui.mqtt.MqttBrokerEditorScreen
 import com.craxiom.networksurvey.ui.mqtt.MqttBrokersScreen
+import com.craxiom.networksurvey.ui.newtowers.NewTowersScreen
+import com.craxiom.networksurvey.ui.newtowers.NewTowersViewModel
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
 import com.craxiom.networksurvey.ui.organization.OrganizationSettingsScreen
@@ -153,7 +155,12 @@ fun NavGraphBuilder.mainGraph(
                 onOpenUploadSettings = { mainNavController.navigate(NavOption.UploadSettings.name) },
                 onSeeOnMap = { sharedViewModel.triggerNavigationToMapTab() },
                 onOpenOrganizationSettings = { sharedViewModel.triggerNavigationToOrganizationSettings() },
+                onOpenNewTowers = { mainNavController.navigate(NavOption.NewTowers.name) },
             )
+        }
+
+        composable(NavOption.NewTowers.name) {
+            NewTowersScreen(viewModel = viewModel<NewTowersViewModel>(), onNavigateUp = { mainNavController.navigateUp() })
         }
 
         composable(NavOption.LogFiles.name) {
@@ -334,6 +341,7 @@ enum class NavOption {
     WatchlistHistory,
     WatchlistHistoryDetail,
     CommunityDatabases,
+    NewTowers,
     MqttBrokerEditor,
     OrganizationSettings,
     LogFiles,

@@ -77,7 +77,7 @@ fun UploadSettingsScreen(onBack: () -> Unit, onOpenOrganization: () -> Unit) {
             PreferenceSwitch(preferences, NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, NetworkSurveyConstants.DEFAULT_UPLOAD_RETRY_ENABLED,
                 R.string.upload_retry_title, R.string.upload_retry_summary, R.string.upload_retry_summary)
             NsRowDivider()
-            PreferenceSwitch(preferences, NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false, R.string.new_tower_alerts_title,
+            PreferenceSwitch(preferences, NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, NetworkSurveyConstants.DEFAULT_NEW_TOWER_ALERTS_ENABLED, R.string.new_tower_alerts_title,
                 R.string.new_tower_alerts_summary_on, R.string.new_tower_alerts_summary_off, icon = R.drawable.ic_cell_tower)
             NsRowDivider()
             NsSwitchRow(

@@ -43,8 +43,8 @@ public class NetworkSurveyConstants
     // Intent extra used by the survey and upload notifications to land the user on the dashboard.
     public static final String EXTRA_NAVIGATE_TO_DASHBOARD = "navigate_to_dashboard";
 
-    // Intent extra used by the new-tower notification to land the user on the Map tab.
-    public static final String EXTRA_NAVIGATE_TO_MAP = "navigate_to_map";
+    // Intent extra used by the new-tower notification to land the user on the New towers page.
+    public static final String EXTRA_NAVIGATE_TO_NEW_TOWERS = "navigate_to_new_towers";
 
     public static final String WAKE_LOCK_TAG = "NetworkSurvey:WakeLock";
 
@@ -175,6 +175,7 @@ public class NetworkSurveyConstants
     public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = true;
     public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = true;
     public static final boolean DEFAULT_UPLOAD_RETRY_ENABLED = true;
+    public static final boolean DEFAULT_NEW_TOWER_ALERTS_ENABLED = false;
 
     public static final String DEFAULT_COVERAGE_CIRCLE_COLOR = "default";
 

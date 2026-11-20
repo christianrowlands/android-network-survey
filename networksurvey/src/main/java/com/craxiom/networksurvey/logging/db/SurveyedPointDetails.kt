@@ -126,7 +126,8 @@ data class SurveyedPointDetails(
             )
         }
 
-        private fun protocolOf(protocol: CellularProtocol): Int = when (protocol) {
+        /** @return The survey point `PROTOCOL_` constant for [protocol], which [SignalBuckets] takes. */
+        internal fun protocolOf(protocol: CellularProtocol): Int = when (protocol) {
             CellularProtocol.GSM -> SurveyedPointEntity.PROTOCOL_GSM
             CellularProtocol.CDMA -> SurveyedPointEntity.PROTOCOL_CDMA
             CellularProtocol.UMTS -> SurveyedPointEntity.PROTOCOL_UMTS

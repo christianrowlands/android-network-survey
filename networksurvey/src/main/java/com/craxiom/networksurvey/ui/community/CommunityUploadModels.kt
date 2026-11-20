@@ -11,6 +11,8 @@ import com.craxiom.networksurvey.util.OpenCelliDSigning
  * @property cellularQueueCount Cellular records waiting to upload, or -1 while loading.
  * @property wifiQueueCount     Wi-Fi records waiting to upload, or -1 while loading.
  * @property autoUploadLocked   True when the organization sets whether uploads run automatically.
+ * @property newTowerCount      How many towers the New towers list holds.
+ * @property newTowerAlertsOn   Whether the "New tower alerts" setting is on.
  */
 data class UploadUiState(
     val visible: Boolean = true,
@@ -24,7 +26,12 @@ data class UploadUiState(
     val beaconDbOn: Boolean = false,
     val autoUploadWifiOnly: Boolean = true,
     val autoUploadLocked: Boolean = false,
-)
+    val newTowerCount: Int = 0,
+    val newTowerAlertsOn: Boolean = false,
+) {
+    /** The New towers row shows once it has something to open or the alerts can find something. */
+    val showNewTowers: Boolean get() = newTowerCount > 0 || newTowerAlertsOn
+}
 
 /** How OpenCelliD uploads are signed, which decides whether they can run at all. */
 enum class OpenCelliDKey {

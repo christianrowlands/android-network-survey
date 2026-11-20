@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.common
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -100,10 +101,10 @@ fun NsHeroStatusCard(
 /**
  * The secondaryContainer explainer card shown under the hero card on list management screens.
  * Horizontal 16dp outer padding is baked in; vertical spacing comes from the hero card above and
- * the list content padding below.
+ * the list content padding below. An optional [action] (a button) sits under the text.
  */
 @Composable
-fun NsInfoCard(text: String) {
+fun NsInfoCard(text: String, action: (@Composable () -> Unit)? = null) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -112,12 +113,17 @@ fun NsInfoCard(text: String) {
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
-        Text(
-            text = text,
+        Column(
             modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer
-        )
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            action?.invoke()
+        }
     }
 }
 
