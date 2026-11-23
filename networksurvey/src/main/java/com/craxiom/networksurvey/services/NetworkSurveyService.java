@@ -3182,35 +3182,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // piggyback on the active provider. This is a no-op on standard Android.
                 updateOtherLocationListeners(locationProviderPreference, locationManager, smallestScanRate);
 
-                // Register the primary listener in its own try/catch. Previously this shared the
-                // try block above, so a provider that is missing or disabled on this device could
-                // throw from the optional-provider registrations and abort this method before the
-                // primary listener was ever registered. The service then had no location at all
-                // and every logged record carried latitude/longitude 0.000000.
-                try
-                {
-                    locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
-                    Timber.i("Registered the primary location listener on provider=%s at %d ms", provider, smallestScanRate);
-                } catch (Throwable t)
-                {
-                    Timber.e(t, "Could not request location updates for the primary listener on provider=%s", provider);
-                }
-
-                // Seed the primary listener with the last known fix so that records written before
-                // the first callback still carry a location. GpsListener drops fixes older than
-                // LOCATION_AGE_THRESHOLD_MS, so a stale seed is discarded automatically.
-                try
-                {
-                    final Location lastKnownLocation = locationManager.getLastKnownLocation(provider);
-                    if (lastKnownLocation != null)
-                    {
-                        Timber.i("Seeding the primary location listener with the last known fix from provider=%s", provider);
-                        primaryLocationListener.onLocationChanged(lastKnownLocation);
-                    }
-                } catch (Throwable t)
-                {
-                    Timber.w(t, "Could not read the last known location for provider=%s", provider);
-                }
+                // The extra listeners above never throw (a provider missing on this device is skipped),
+                // so they can't stop the primary listener, the one every record reads, from registering
+                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
+                Timber.i("Registered the primary location listener on provider=%s at %d ms", provider, smallestScanRate);
             } catch (Throwable t)
             {
                 // An IllegalArgumentException was occurring on phones that don't have a GPS provider, so some defensive coding here
