@@ -40,7 +40,8 @@ private const val CHEVRON_TURN_MS = 180
 
 /**
  * Grouped-by-SSID parent row. Taps toggle expand/collapse only; individual APs navigate from
- * the child rows. Passpoint badge shows if ANY AP in the group is Passpoint. One TalkBack item
+ * the child rows. Passpoint badge shows if ANY AP in the group is Passpoint, and the Connected tag
+ * if the phone is connected to one of them (so it shows while the group is collapsed). One TalkBack item
  * reads the name, AP count, bands, security and best signal; a long press on the SSID copies it.
  */
 @Composable
@@ -101,6 +102,9 @@ private fun TitleRow(
             NsNetworkTag(text = stringResource(R.string.wifi_tag_passpoint), variant = NetworkTagVariant.Passpoint)
         }
         GroupCountPill(count = group.apCount)
+        if (group.containsConnected) {
+            ConnectedTag()
+        }
         if (group.allExcluded) {
             ExcludedTag()
         }
@@ -180,6 +184,7 @@ private fun spokenGroup(group: WifiDisplayItem.GroupParent): String {
         name,
         resources.getString(R.string.wifi_tag_passpoint).takeIf { group.anyPasspoint },
         pluralStringResource(R.plurals.wifi_ap_count, group.apCount, group.apCount),
+        resources.getString(R.string.wifi_tag_connected).takeIf { group.containsConnected },
         group.bands.mapNotNull { spokenBand(it, channel = null) }.joinToString(", ").ifBlank { null },
         securityLabelText(group.encryptionLabel).ifBlank { null },
         resources.getString(R.string.wifi_details_excluded_from_survey).takeIf { group.allExcluded },

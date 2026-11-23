@@ -338,6 +338,8 @@
     <string name="bssid_copy_content_description">Copy BSSID</string>
     <string name="ssid_copied">SSID copied</string>
     <string name="wifi_tag_excluded">Excluded</string>
+    <!-- Tag on the Wi-Fi list row and details of the access point the phone is connected to -->
+    <string name="wifi_tag_connected">Connected</string>
     <plurals name="wifi_group_excluded_count">
         <item quantity="one">%1$d excluded</item>
         <item quantity="other">%1$d excluded</item>
@@ -547,6 +549,11 @@
     <string name="map_about_towers">Tower locations come from crowd-sourced databases such as OpenCelliD (https://opencellid.org). They are estimated from survey results and can be off, so check another source when accuracy matters.</string>
     <string name="map_action_search">Search for a tower</string>
     <string name="map_action_filters">Filters</string>
+    <!-- What TalkBack reads for the Map's Filters button while filters narrow what the map shows -->
+    <plurals name="map_action_filters_on">
+        <item quantity="one">Filters, %1$d on</item>
+        <item quantity="other">Filters, %1$d on</item>
+    </plurals>
     <string name="map_action_layers">Layers</string>
     <string name="map_follow_location">Follow my location</string>
     <string name="map_stop_following">Stop following</string>

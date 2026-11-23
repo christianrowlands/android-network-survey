@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.wifi
 
+import android.content.ClipboardManager
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
@@ -9,7 +10,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
 import com.craxiom.networksurvey.R
 import com.craxiom.messaging.wifi.AkmSuite
 import com.craxiom.messaging.wifi.CipherSuite
@@ -28,6 +31,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /** The Wi-Fi details page: its cards, the notice when the phone cannot scan, and its actions. */
@@ -104,6 +108,48 @@ class WifiDetailsScreenTest {
     }
 
     @Test
+    fun anExcludedNetwork_linksToTheExclusionList() {
+        show(ready.copy(excluded = true))
+
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Manage excluded SSIDs"))
+        compose.onNodeWithText("Manage excluded SSIDs").performClick()
+
+        assertEquals(listOf("exclusion list"), actions.calls)
+    }
+
+    @Test
+    fun anIncludedNetwork_hasNoExclusionListLink() {
+        show(ready)
+
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Watch"))
+        compose.onAllNodesWithText("Manage excluded SSIDs").assertCountEquals(0)
+    }
+
+    @Test
+    fun theConnectedAccessPoint_isTagged() {
+        show(ready.copy(connected = true))
+
+        compose.onNodeWithText("Connected").assertIsDisplayed()
+    }
+
+    @Test
+    fun anAccessPointThePhoneIsNotOn_hasNoConnectedTag() {
+        show(ready)
+
+        compose.onAllNodesWithText("Connected").assertCountEquals(0)
+    }
+
+    @Test
+    fun aLongPressOnARadioValue_copiesItAsShown() {
+        show(ready)
+
+        compose.onNodeWithText("5180").performTouchInput { longClick() }
+
+        val clipboard = RuntimeEnvironment.getApplication().getSystemService(ClipboardManager::class.java)
+        assertEquals("5180 MHz", clipboard.primaryClip?.getItemAt(0)?.text.toString())
+    }
+
+    @Test
     fun aPhoneRecord_showsAndroidsCapabilities_andNoScoutCards() {
         show(ready)
 
@@ -176,6 +222,7 @@ class WifiDetailsScreenTest {
         override fun onToggleExcluded() { calls += "exclude" }
         override fun onWatchlistClick() { calls += "watchlist" }
         override fun onOpenSettings() { calls += "scan settings" }
+        override fun onOpenExclusionList() { calls += "exclusion list" }
         override fun onAllow() { calls += "allow" }
         override fun onOpenAppSettings() { calls += "settings" }
         override fun onTurnOnLocation() { calls += "location" }

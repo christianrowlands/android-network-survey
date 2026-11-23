@@ -43,6 +43,7 @@ import com.craxiom.networksurvey.ui.common.NsValueCell
 import com.craxiom.networksurvey.ui.common.NsValueGrid
 import com.craxiom.networksurvey.ui.common.PermissionAccess
 import com.craxiom.networksurvey.ui.common.bluetoothScanRateHelp
+import com.craxiom.networksurvey.ui.common.longPressCopy
 import com.craxiom.networksurvey.ui.common.nsContentWidth
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
 import com.craxiom.networksurvey.ui.manufacturer.BluetoothManufacturerCard
@@ -117,7 +118,7 @@ private fun DeviceCards(
     }
 }
 
-/** The name (or "No name"), the address (long press copies it) and the signal with its meter. */
+/** The name (or "No name"), the address and the signal with its meter; a long press copies the name or the address. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HeroCard(device: BluetoothRecordData, currentRssi: Int?, onCopyAddress: () -> Unit) {
@@ -131,7 +132,9 @@ private fun HeroCard(device: BluetoothRecordData, currentRssi: Int?, onCopyAddre
                 fontWeight = if (named) FontWeight.SemiBold else FontWeight.Normal,
                 fontStyle = if (named) FontStyle.Normal else FontStyle.Italic,
                 color = if (named) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .longPressCopy(stringResource(R.string.bluetooth_sort_name), device.otaDeviceName.takeIf { named }),
             )
             Text(
                 text = signal,
@@ -158,7 +161,8 @@ private fun HeroCard(device: BluetoothRecordData, currentRssi: Int?, onCopyAddre
 /**
  * Technology, address type, class, company ID, what sent a Find My advertisement and the Tx power
  * in the value grid the Wi-Fi Radio card and Cellular use, then the service UUIDs and the
- * manufacturer data (too long for a grid cell) as full-width values under their labels.
+ * manufacturer data (too long for a grid cell) as full-width values under their labels. A long press
+ * copies a grid value; the UUIDs and the manufacturer data can be selected, to copy all or part.
  */
 @Composable
 private fun FieldsCard(device: BluetoothRecordData) {
@@ -178,11 +182,12 @@ private fun FieldsCard(device: BluetoothRecordData) {
     NsDetailsCardFrame {
         NsCardHeader(text = stringResource(R.string.bluetooth_details_device))
         if (fields.isNotEmpty()) {
-            NsValueGrid(fields, cellMinWidth = FIELD_CELL_MIN_WIDTH, maxColumns = 2) { (label, value), cellModifier ->
-                NsValueCell(value = value, label = stringResource(label), modifier = cellModifier)
+            NsValueGrid(fields, cellMinWidth = FIELD_CELL_MIN_WIDTH, maxColumns = 2) { (labelRes, value), cellModifier ->
+                val label = stringResource(labelRes)
+                NsValueCell(value = value, label = label, modifier = cellModifier.longPressCopy(label, value))
             }
         }
-        if (uuids != null) Field(stringResource(R.string.bluetooth_details_service_uuids), uuids)
+        if (uuids != null) Field(stringResource(R.string.bluetooth_details_service_uuids), uuids, selectable = true)
         if (manufacturerData != null) {
             Field(
                 stringResource(R.string.bluetooth_details_manufacturer_data),

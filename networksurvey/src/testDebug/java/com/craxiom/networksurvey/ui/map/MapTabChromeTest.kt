@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.ui.map
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Text
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
@@ -88,6 +89,23 @@ class MapTabChromeTest {
         compose.onNodeWithContentDescription("Search for a tower").assertDoesNotExist()
         compose.onNodeWithContentDescription("Filters").assertDoesNotExist()
         compose.onNodeWithContentDescription("Layers").assertIsDisplayed()
+    }
+
+    @Test
+    fun filtersThatAreOn_areBadgedOnTheFiltersButton() {
+        show(MapChromeState(activeFilterCount = 2))
+
+        // The badge's number is drawn, and read as part of the button's name rather than on its own
+        compose.onNodeWithContentDescription("Filters, 2 on").assertIsDisplayed().performClick()
+        assertEquals(listOf("filters"), actions.calls)
+    }
+
+    @Test
+    fun noFilterOn_meansNoBadge() {
+        show(MapChromeState())
+
+        compose.onNodeWithContentDescription("Filters").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Filters", substring = true).assertContentDescriptionEquals("Filters")
     }
 
     @Test

@@ -17,7 +17,11 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiRecords.wifi
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -188,12 +192,28 @@ class WifiDetailsViewModelTest {
         return viewModel
     }
 
-    private fun newViewModel() = WifiDetailsViewModel(
+    @Test
+    fun connected_followsTheConnectedAccessPoint() = runTest(dispatcher) {
+        val connectedBssid = MutableStateFlow<String?>(null)
+        val viewModel = newViewModel(connectedBssid)
+        val values = mutableListOf<Boolean>()
+        val collection = launch { viewModel.connected.collect { values += it } }
+        viewModel.show(network)
+
+        connectedBssid.value = "02:00:a4:11:f0:21"
+        connectedBssid.value = "02:00:d8:4e:9a:0c"
+        collection.cancel()
+
+        assertEquals(listOf(false, true, false), values)
+    }
+
+    private fun newViewModel(connectedBssids: Flow<String?> = flowOf(null)) = WifiDetailsViewModel(
         application = RuntimeEnvironment.getApplication(),
         environment = { scanState },
         exclusions = exclusions,
         watchlistMatches = { flowOf(false) },
         chartSink = chart,
         mainDispatcher = dispatcher,
+        connectedBssids = connectedBssids,
     )
 }

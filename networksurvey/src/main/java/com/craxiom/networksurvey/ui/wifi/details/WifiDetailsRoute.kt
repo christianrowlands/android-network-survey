@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
  * watchlist sheet and the confirmations. Shows nothing without a network (a route opened without one).
  */
 @Composable
-fun WifiDetailsRoute(network: WifiNetwork?, onBack: () -> Unit) {
+fun WifiDetailsRoute(network: WifiNetwork?, onBack: () -> Unit, onOpenExclusionList: () -> Unit) {
     if (network == null) return
     val context = LocalContext.current
     val activity = context.findComponentActivity() ?: return
@@ -66,6 +66,7 @@ fun WifiDetailsRoute(network: WifiNetwork?, onBack: () -> Unit) {
     val scanState by viewModel.scanState.collectAsStateWithLifecycle()
     val excluded by viewModel.excluded.collectAsStateWithLifecycle()
     val watched by viewModel.watched.collectAsStateWithLifecycle()
+    val connected by viewModel.connected.collectAsStateWithLifecycle()
     val connectedClients by viewModel.connectedClients.collectAsStateWithLifecycle()
     val clientsViewModel: WifiClientsViewModel = viewModel(viewModelStoreOwner = activity)
     var watchlistSheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -79,12 +80,15 @@ fun WifiDetailsRoute(network: WifiNetwork?, onBack: () -> Unit) {
             scanState = scanState,
             excluded = excluded,
             watched = watched,
+            connected = connected,
             connectedClients = connectedClients,
         ),
         permissionAccess = permission.access,
         chart = viewModel.chart,
         actions = remember(viewModel, permission) {
-            RouteActions(context, viewModel, sharedViewModel, clientsViewModel, permission, onBack) { watchlistSheetOpen = true }
+            RouteActions(context, viewModel, sharedViewModel, clientsViewModel, permission, onBack, onOpenExclusionList) {
+                watchlistSheetOpen = true
+            }
         },
     )
 
@@ -126,6 +130,7 @@ private class RouteActions(
     private val clientsViewModel: WifiClientsViewModel,
     private val permission: PermissionRequest,
     private val onBack: () -> Unit,
+    private val onOpenExclusionList: () -> Unit,
     private val onOpenWatchlistSheet: () -> Unit,
 ) : WifiDetailsActions {
 
@@ -146,6 +151,8 @@ private class RouteActions(
     }
 
     override fun onOpenSettings() = sharedViewModel.triggerNavigationToSettings()
+
+    override fun onOpenExclusionList() = onOpenExclusionList.invoke()
 
     override fun onClientClick(client: ScoutClient) {
         clientsViewModel.noteOpened(client)

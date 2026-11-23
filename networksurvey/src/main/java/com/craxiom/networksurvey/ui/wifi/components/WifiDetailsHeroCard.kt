@@ -41,6 +41,7 @@ import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.ui.common.NsNetworkTag
 import com.craxiom.networksurvey.ui.common.NsSignalMeterWide
 import com.craxiom.networksurvey.ui.common.classifySecurity
+import com.craxiom.networksurvey.ui.common.longPressCopy
 import com.craxiom.networksurvey.ui.common.securityLabelText
 import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -54,8 +55,9 @@ private val HeroStackedGap = 8.dp
 
 /**
  * Hero card at the top of the Wi-Fi Details screen: big SSID + large dBm, the BSSID · vendor line,
- * a full-width meter, and a wrapping tag row (band chip, security, standard, passpoint, and "Heard by"
- * the NS Scout for an access point a Scout heard).
+ * a full-width meter, and a wrapping tag row (Connected when the phone is connected to it, band chip,
+ * security, standard, passpoint, and "Heard by" the NS Scout for an access point a Scout heard). A long
+ * press copies the SSID, the BSSID, the vendor, the security or the standard.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -63,6 +65,7 @@ fun WifiDetailsHeroCard(
     network: WifiNetwork,
     currentRssi: Int?,
     modifier: Modifier = Modifier,
+    connected: Boolean = false,
 ) {
     val hidden = network.ssid.isEmpty()
     val band = frequencyMhzToWifiBand(network.frequency)
@@ -85,19 +88,28 @@ fun WifiDetailsHeroCard(
             itemVerticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
         ) {
+            if (connected) {
+                ConnectedTag()
+            }
             if (band != null) {
                 NsBandChip(band = band, channel = network.channel)
             }
             if (network.encryptionType.isNotBlank()) {
+                val securityText = securityLabelText(network.encryptionType)
                 NsNetworkTag(
-                    text = securityLabelText(network.encryptionType),
+                    text = securityText,
                     variant = NetworkTagVariant.Security(classifySecurity(network.encryptionType)),
+                    modifier = Modifier.longPressCopy(stringResource(R.string.wifi_details_security), securityText),
                 )
             }
             val standardText =
                 com.craxiom.networksurvey.util.WifiUtils.formatStandard(network.standard)
             if (standardText.isNotBlank()) {
-                NsNetworkTag(text = standardText, variant = NetworkTagVariant.Standard)
+                NsNetworkTag(
+                    text = standardText,
+                    variant = NetworkTagVariant.Standard,
+                    modifier = Modifier.longPressCopy(stringResource(R.string.wifi_details_standard), standardText),
+                )
             }
             if (network.passpoint == true) {
                 NsNetworkTag(
@@ -154,6 +166,8 @@ private fun BssidVendorRow(bssid: String) {
                     fontStyle = if (label.italic) FontStyle.Italic else FontStyle.Normal,
                 ),
                 color = if (label.italic) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                // A long press copies a vendor name, not a placeholder like "Randomized MAC"
+                modifier = Modifier.longPressCopy(stringResource(R.string.manufacturer_label), text.takeUnless { label.italic }),
             )
         }
     }

@@ -32,7 +32,7 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
  * "Variant A – Calm Data" row for the flat Wi-Fi list.
  *
  * Three lines:
- *  1. SSID (accent) + optional Passpoint pill. dBm (signal-colored, tabular) on the right.
+ *  1. SSID (accent) + optional Passpoint and Connected pills. dBm (signal-colored, tabular) on the right.
  *  2. BSSID (monospace) · vendor/status text. Meter bar on the right.
  *  3. Band chip + Security tag + Standard tag, spanning full width (wraps at large text sizes).
  *
@@ -85,6 +85,9 @@ fun WifiRowA(
                     if (ap.passpoint) {
                         NsNetworkTag(text = stringResource(R.string.wifi_tag_passpoint), variant = NetworkTagVariant.Passpoint)
                     }
+                    if (ap.isConnected) {
+                        ConnectedTag()
+                    }
                 }
                 BssidVendorRow(ap, vendorLabel, onClick = onClick, onBssidLongPress = onCopyBssid)
             }
@@ -135,6 +138,16 @@ internal fun ExcludedTag(modifier: Modifier = Modifier) {
     )
 }
 
+/** Marks the access point the phone is connected to. Shared by every Wi-Fi row and the Details hero. */
+@Composable
+internal fun ConnectedTag(modifier: Modifier = Modifier) {
+    NsNetworkTag(
+        text = stringResource(R.string.wifi_tag_connected),
+        variant = NetworkTagVariant.Connected,
+        modifier = modifier,
+    )
+}
+
 /** @return The row's copy actions: the SSID's (when visible) and the BSSID's. */
 @Composable
 internal fun copyActions(onCopySsid: (() -> Unit)?, onCopyBssid: (() -> Unit)?): List<WifiCopyAction> {
@@ -157,6 +170,7 @@ internal fun spokenAccessPoint(
     return listOfNotNull(
         name.takeIf { includeName },
         resources.getString(R.string.wifi_tag_passpoint).takeIf { ap.passpoint && includeName },
+        resources.getString(R.string.wifi_tag_connected).takeIf { ap.isConnected },
         spokenBand(ap.band, ap.channel),
         ap.bandwidthLabel.takeIf { !includeName && it.isNotBlank() },
         securityLabelText(ap.encryptionLabel).takeIf { includeName && it.isNotBlank() },

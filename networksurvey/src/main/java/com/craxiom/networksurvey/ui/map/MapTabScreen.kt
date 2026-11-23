@@ -71,6 +71,9 @@ fun MapTabScreen(sharedViewModel: SharedViewModel) {
     val servingCellLines by towerViewModel.servingCellLines.collectAsStateWithLifecycle()
     val showTowersLayer by towerViewModel.showTowersLayer.collectAsStateWithLifecycle()
     val showSurveyPoints by towerViewModel.showSurveyPoints.collectAsStateWithLifecycle()
+    val plmnFilter by towerViewModel.plmnFilter.collectAsStateWithLifecycle()
+    val maxTowerAgeMonths by towerViewModel.maxTowerAgeMonths.collectAsStateWithLifecycle()
+    val surveyPointFilters = rememberSurveyedPointsSettings(towerViewModel).filters
 
     // Looking up a SIM's label asks the system, so only when the set of SIMs changes
     val simIds = servingCells.keys.sorted()
@@ -100,6 +103,13 @@ fun MapTabScreen(sharedViewModel: SharedViewModel) {
             controlsVisible = uiState.surveyedSelection == null,
             searchAvailable = showTowersLayer,
             filtersAvailable = showTowersLayer || showSurveyPoints,
+            activeFilterCount = activeMapFilterCount(
+                showTowers = showTowersLayer,
+                operatorSet = plmnFilter.isSet(),
+                maxTowerAgeMonths = maxTowerAgeMonths,
+                showSurveyPoints = showSurveyPoints,
+                surveyPointFilters = surveyPointFilters,
+            ),
             showZoom = showZoom,
             following = camera.cameraMode == CameraMode.TRACKING,
         ),

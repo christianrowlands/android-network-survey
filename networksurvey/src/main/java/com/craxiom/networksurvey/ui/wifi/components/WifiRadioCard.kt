@@ -31,6 +31,7 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.common.HelpItem
 import com.craxiom.networksurvey.ui.common.NsCardHeader
 import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
+import com.craxiom.networksurvey.ui.common.longPressCopy
 import com.craxiom.networksurvey.util.WifiUtils
 
 private const val STANDARD_PREFIX = "802.11"
@@ -42,7 +43,7 @@ private const val STANDARD_PREFIX = "802.11"
  * on the data. The Standard cell inverts the pattern: the constant "802.11" prefix is
  * dimmed and the variant suffix (e.g. "be") is emphasized, with a stacked Wi-Fi
  * generation pill (e.g. "Wi-Fi 7") underneath where applicable. A trailing info button
- * opens a dialog explaining what each cell means. For an access point an NS Scout heard, beacon
+ * opens a dialog explaining what each cell means, and a long press on a cell copies its value. For an access point an NS Scout heard, beacon
  * interval, SNR and the supported Wi-Fi generations follow, when the Scout heard them.
  */
 @Composable
@@ -178,8 +179,10 @@ internal fun RadioStatCell(
     belowContent: (@Composable () -> Unit)? = null,
 ) {
     val isBlank = primary.isBlank()
+    // A long press copies the value as shown: "36 (42)", "5180 MHz", "802.11ax"
+    val copyText = if (isBlank) null else listOfNotNull((prefix.orEmpty() + primary), suffix).joinToString(" ")
     Column(
-        modifier = modifier,
+        modifier = modifier.longPressCopy(label, copyText),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(

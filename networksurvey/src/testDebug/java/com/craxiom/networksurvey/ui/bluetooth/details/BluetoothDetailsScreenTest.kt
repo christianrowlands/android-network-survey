@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.bluetooth.details
 
+import android.content.ClipboardManager
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
@@ -23,6 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -94,6 +96,20 @@ class BluetoothDetailsScreenTest {
 
         assertEquals(listOf("copy"), actions.calls)
     }
+
+    @Test
+    fun aLongPressOnTheNameOrAField_copiesIt() {
+        show(keys, -63)
+
+        compose.onNodeWithText("Forklift scanner 12").performTouchInput { longClick() }
+        assertEquals("Forklift scanner 12", clip())
+
+        compose.onNodeWithContentDescription("Company ID, 4C").performTouchInput { longClick() }
+        assertEquals("4C", clip())
+    }
+
+    private fun clip(): String? = RuntimeEnvironment.getApplication().getSystemService(ClipboardManager::class.java)
+        .primaryClip?.getItemAt(0)?.text?.toString()
 
     @Test
     fun theScanIntervalCard_opensItsSetting() {

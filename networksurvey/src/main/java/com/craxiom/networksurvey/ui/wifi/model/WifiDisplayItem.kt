@@ -28,13 +28,22 @@ data class WifiAccessPointDisplay(
     val encryptionLabel: String,
     val passpoint: Boolean,
     val isExcluded: Boolean,
+    /** True when the phone is connected to this access point. */
+    val isConnected: Boolean = false,
 ) {
+    /** @return This display marked connected or not, the same instance when nothing changes. */
+    fun withConnected(connectedBssid: String?): WifiAccessPointDisplay {
+        val connected = ConnectedWifi.isConnected(bssid, connectedBssid)
+        return if (connected == isConnected) this else copy(isConnected = connected)
+    }
+
     companion object {
         fun fromWrapper(
             wrapper: WifiRecordWrapper,
             bandwidthLabel: String,
             standardLabel: String,
             encryptionLabel: String,
+            connectedBssid: String? = null,
         ): WifiAccessPointDisplay {
             val data = wrapper.wifiBeaconRecord.data
             val ssid = data.ssid ?: ""
@@ -42,8 +51,9 @@ data class WifiAccessPointDisplay(
             val frequency = if (data.hasFrequencyMhz()) data.frequencyMhz.value else null
             val channel = if (data.hasChannel()) data.channel.value else null
             val passpoint = data.hasPasspoint() && data.passpoint.value
+            val bssid = data.bssid ?: ""
             return WifiAccessPointDisplay(
-                bssid = data.bssid ?: "",
+                bssid = bssid,
                 ssid = ssid,
                 ssidIsHidden = ssid.isEmpty(),
                 rssi = rssi,
@@ -55,6 +65,7 @@ data class WifiAccessPointDisplay(
                 encryptionLabel = encryptionLabel,
                 passpoint = passpoint,
                 isExcluded = wrapper.isExcluded,
+                isConnected = ConnectedWifi.isConnected(bssid, connectedBssid),
             )
         }
     }
@@ -86,6 +97,8 @@ sealed class WifiDisplayItem {
         val anyPasspoint: Boolean,
         val expanded: Boolean,
         val excludedCount: Int = 0,
+        /** True when the phone is connected to one of this group's access points. */
+        val containsConnected: Boolean = false,
     ) : WifiDisplayItem() {
         override val key: String get() = "group:$groupKey"
 

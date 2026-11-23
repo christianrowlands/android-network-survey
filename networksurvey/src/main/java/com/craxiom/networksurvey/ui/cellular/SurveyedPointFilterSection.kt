@@ -39,6 +39,14 @@ data class SurveyedPointFilterSelection(
                 source != SurveyedPointSourceFilter.BOTH ||
                 upload != SurveyedPointUploadFilter.ANY
 
+    /** How many of the three filters are narrowing the layer, for the Map's Filters badge. */
+    val activeCount: Int
+        get() = listOf(
+            time != SurveyedPointTimeFilter.ANY,
+            source != SurveyedPointSourceFilter.BOTH,
+            upload != SurveyedPointUploadFilter.ANY,
+        ).count { it }
+
     /** This selection with every filter back at its default. */
     fun cleared(): SurveyedPointFilterSelection = SurveyedPointFilterSelection()
 }

@@ -24,6 +24,7 @@ import com.craxiom.networksurvey.model.WifiNetworkScout
 import com.craxiom.networksurvey.ui.common.NsCardHeader
 import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.ui.common.NsValueCell
+import com.craxiom.networksurvey.ui.common.longPressCopy
 import com.craxiom.networksurvey.ui.common.NsValueGrid
 import com.craxiom.networksurvey.ui.common.SMALL_ICON
 import com.craxiom.networksurvey.ui.common.securityLabelText
@@ -196,7 +197,9 @@ private fun ScoutCard(title: String, note: String?, values: List<ScoutValue>, mo
                 Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        NsValueGrid(values, maxColumns = 2) { item, cellModifier -> NsValueCell(item.value, item.label, cellModifier) }
+        NsValueGrid(values, maxColumns = 2) { item, cellModifier ->
+            NsValueCell(item.value, item.label, cellModifier.longPressCopy(item.label, item.value))
+        }
     }
 }
 

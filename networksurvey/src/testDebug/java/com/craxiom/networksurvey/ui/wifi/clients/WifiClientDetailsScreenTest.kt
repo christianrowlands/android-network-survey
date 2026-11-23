@@ -137,6 +137,7 @@ class WifiClientDetailsScreenTest {
                 override fun onToggleExcluded() = Unit
                 override fun onWatchlistClick() = Unit
                 override fun onOpenSettings() = Unit
+                override fun onOpenExclusionList() = Unit
                 override fun onAllow() = Unit
                 override fun onOpenAppSettings() = Unit
                 override fun onTurnOnLocation() = Unit

@@ -292,7 +292,11 @@ fun NavGraphBuilder.mainGraph(
                     WifiNetwork.KEY
                 )
 
-            WifiDetailsRoute(wifiNetwork, onBack = { mainNavController.navigateUp() })
+            WifiDetailsRoute(
+                wifiNetwork,
+                onBack = { mainNavController.navigateUp() },
+                onOpenExclusionList = { mainNavController.navigate(NavOption.SsidExclusionList.name) },
+            )
         }
 
         composable(NavOption.BluetoothDetails.name) {

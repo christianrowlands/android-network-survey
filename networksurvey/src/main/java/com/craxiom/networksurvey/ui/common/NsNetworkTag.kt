@@ -5,10 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -34,6 +36,8 @@ private const val PASSPOINT_BORDER_ALPHA = 0.35f
  *    SSIDs excluded from survey data output (files, uploads, streaming)
  *  - [NetworkTagVariant.New] - success-tinted text on the success container, marking a tower
  *    found new during a Community upload (the Map's serving-cell card)
+ *  - [NetworkTagVariant.Connected] - the same success tint as New, marking the Wi-Fi access point
+ *    the phone is connected to (list rows and the Details hero)
  *  - [NetworkTagVariant.Tracker] - tracker-tinted text/border, surface background, marking a
  *    Bluetooth device that looks like an AirTag
  */
@@ -54,7 +58,7 @@ fun NsNetworkTag(
         NetworkTagVariant.Passpoint -> tags.passpoint
         NetworkTagVariant.Tracker -> tags.tracker
         NetworkTagVariant.Excluded -> NsTheme.colors.status.warning.content
-        NetworkTagVariant.New -> NsTheme.colors.status.success.content
+        NetworkTagVariant.New, NetworkTagVariant.Connected -> NsTheme.colors.status.success.content
         NetworkTagVariant.Standard -> Color.Unspecified
     }
 
@@ -63,19 +67,19 @@ fun NsNetworkTag(
             MaterialTheme.colorScheme.surfaceContainerHighest
 
         NetworkTagVariant.Passpoint -> Color.Transparent
-        NetworkTagVariant.New -> NsTheme.colors.status.success.container
+        NetworkTagVariant.New, NetworkTagVariant.Connected -> NsTheme.colors.status.success.container
     }
     val borderColor = when (variant) {
         NetworkTagVariant.Standard -> MaterialTheme.colorScheme.outlineVariant
-        is NetworkTagVariant.Security, NetworkTagVariant.Excluded, NetworkTagVariant.New, NetworkTagVariant.Tracker ->
-            semanticColor.copy(alpha = TAG_BORDER_ALPHA)
+        is NetworkTagVariant.Security, NetworkTagVariant.Excluded, NetworkTagVariant.New, NetworkTagVariant.Connected,
+        NetworkTagVariant.Tracker -> semanticColor.copy(alpha = TAG_BORDER_ALPHA)
 
         NetworkTagVariant.Passpoint -> semanticColor.copy(alpha = PASSPOINT_BORDER_ALPHA)
     }
     val textColor = when (variant) {
         NetworkTagVariant.Standard -> MaterialTheme.colorScheme.onSurface
         is NetworkTagVariant.Security, NetworkTagVariant.Excluded, NetworkTagVariant.Passpoint, NetworkTagVariant.New,
-        NetworkTagVariant.Tracker -> semanticColor
+        NetworkTagVariant.Connected, NetworkTagVariant.Tracker -> semanticColor
     }
 
     Text(
@@ -91,6 +95,8 @@ fun NsNetworkTag(
             )
             .heightIn(min = 19.dp)
             .padding(horizontal = 7.dp, vertical = 2.dp)
+            // The text is shorter than the minimum height; centered, not drawn at the top of it
+            .wrapContentHeight(Alignment.CenterVertically)
     )
 }
 
@@ -105,6 +111,8 @@ sealed class NetworkTagVariant {
     object Excluded : NetworkTagVariant()
 
     object New : NetworkTagVariant()
+
+    object Connected : NetworkTagVariant()
 
     object Tracker : NetworkTagVariant()
 }
