@@ -10,6 +10,7 @@
 * Other apps can't start Wi-Fi clients or Raw frames through the Intent API: `wifi_clients` and `wifi_raw` in a start request are left out and the rest of the request starts. An organization's `survey_wifi_clients` or `survey_wifi_raw` set to `on` still applies.
 
 **BUG FIXES**
+* Fix survey records being written with no location, latitude and longitude `0.000000` and an empty `locationAge`, on devices where one of the optional location providers the app registers does not exist. Registering those providers could throw and stop the primary location listener from being registered at all, so no record ever received a fix.
 * The Wi-Fi list marks the access point the phone is connected to again, with a Connected tag that moves as soon as the phone roams to another access point. The group holding it and the network details show it too. [#170](https://github.com/christianrowlands/android-network-survey/issues/170)
 * A long press copies any value on the Wi-Fi and Bluetooth network details pages again, and Service UUIDs can be selected.
 * The Wi-Fi network details link to the excluded SSIDs list again when the network is excluded.
