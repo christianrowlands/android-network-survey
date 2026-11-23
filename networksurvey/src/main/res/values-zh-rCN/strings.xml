@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:ns0="urn:oasis:names:tc:xliff:document:1.2">
-
     <!-- General -->
     <string name="cdr_required_permissions_rationale_title">CDR 所需权限</string>
     <string name="cdr_required_permissions_rationale">Network Survey 需要若干权限才能进行通话记录（CDR）日志记录。如果拒绝这些权限，CDR 日志记录将无法工作。
@@ -15,15 +14,12 @@
     <string name="cdr_optional_permissions_rationale">除了在另一个对话框中列出的必需权限之外，CDR 日志记录还有一个可选权限。 \n\n1. <b>读取电话号码</b>：此权限用于获取本设备的电话号码，以便将其写入 CDR 日志文件。您可以拒绝此权限，CDR 日志记录功能仍可正常运行，只是不会记录您的电话号码。</string>
     <string name="request">请求</string>
     <string name="ignore">无权限继续</string>
-
     <!-- Mission ID -->
     <string name="mission_id_card_title">任务 ID</string>
     <string name="mission_id_copied">任务 ID 已复制</string>
     <string name="mission_id_copy_content_description">复制任务 ID</string>
-
     <!-- MQTT Help Dialog -->
     <string name="back_button_description">返回</string>
-
     <!-- gRPC Help Dialog -->
     <string name="bluetooth_permissions_rationale_title">蓝牙权限</string>
     <string name="bluetooth_permissions_rationale">执行蓝牙扫描以进行探测需要“查找附近设备”权限。如果拒绝此权限，蓝牙探测将无法工作。</string>
@@ -51,18 +47,14 @@
         <item quantity="other">载波聚合 · %1$d 载波 · %2$s MHz</item>
     </plurals>
     <string name="network_technology_explanation">这些字段描述您的手机当前正在使用的技术。\n\n大号文字显示您正在使用的网络：无线接入技术（RAT），以及 5G 是独立组网（NR 独立运行）还是非独立组网（NSA，NR 叠加在 LTE 锚点上）。\n\n语音标签是承载通话的技术；Wi-Fi 通话可直接检测，而 VoLTE 和 VoNR 由推断得出，因为 Android 不向应用公开这些信息。\n\n数据标签是承载数据的无线接入技术（RAT），通常与上方的大号文字一致。\n\n品牌标识标签是运营商用于状态栏图标的文字标签（例如在 4G 网络上显示 5G）。它是营销品牌标识，并非实际的 RAT；当运营商未设置任何标识时显示为无。</string>
-
     <!-- UMTS labels -->
     <string name="short_cid_label">短 CID</string>
-
     <!-- LTE and Common labels -->
     <string name="sector_id_label">扇区 ID</string>
     <string name="bandwidth_label">带宽</string>
-
     <!-- NR labels -->
     <string name="frequency_label">频率</string>
     <string name="band_label">频段</string>
-
     <!-- Dashboard Constants -->
     <string name="upload_survey_records">上传探测记录</string>
     <string name="upload_progress">上传进度</string>
@@ -140,7 +132,6 @@
         <b>SS_RSRQ</b>（基于同步信号的参考信号接收质量）：衡量所接收参考信号的质量。有效范围 20 至 -43，其中 20 为最佳。\n\n
         <b>SS_SINR</b>（基于同步信号的信干噪比）：衡量相对于干扰和噪声的信号质量，单位为 dB。有效范围 -23 至 40，其中 40 为最佳。\n</string>
     <string name="location_services_disabled_message">位置已关闭。请开启位置，以便在地图上显示您的位置。</string>
-
     <!-- %1$s is a comma separated list of destinations, e.g. "Log files, MQTT" -->
     <string name="settings">设置</string>
     <string name="manual">用户手册</string>
@@ -153,30 +144,19 @@
     <string name="notification_protocols_line">正在扫描：%1$s</string>
     <string name="notification_health_battery_low">电池电量低（%1$d%%）</string>
     <string name="notification_health_network_interrupted">网络中断</string>
-
     <!-- %1$s is the destination name (MQTT or gRPC), %2$s is the connection status text -->
     <string name="notification_health_connecting">%1$s：%2$s</string>
-
     <!-- New tower alert notification -->
     <string name="new_tower_alert_channel_name">新基站提醒</string>
     <string name="new_tower_alert_channel_description">检测到新蜂窝基站时发出通知</string>
     <string name="new_tower_alert_title">发现新基站</string>
-
     <!-- %1$s is the radio technology (LTE, NR, ...), %2$s-%3$s is MCC-MNC, %4$d is the Cell ID -->
     <string name="new_tower_alert_content">%1$s  %2$s-%3$s  Cell ID %4$d</string>
-    <string name="new_tower_alert_details">技术：%1$s\nMCC-MNC：%2$s-%3$s\nTAC/LAC：%4$d\nCell ID：%5$d</string>
-    <plurals name="new_tower_alert_session_count">
-        <item quantity="one">本次探测发现 %d 个新基站</item>
-        <item quantity="other">本次探测发现 %d 个新基站</item>
-    </plurals>
-
     <!-- NS Analytics notification channel -->
     <string name="ns_analytics_notification_channel_name">NS Analytics</string>
     <string name="ns_analytics_notification_channel_description">有关 NS Analytics 上传的通知，例如上传暂停时</string>
-
     <!-- Wi-Fi Network List -->
     <string name="dbm_value">%1$s dBm</string>
-
     <!-- Wi-Fi redesign: list screen -->
     <string name="wifi_mode_flat_bssid">扁平 · BSSID</string>
     <string name="wifi_mode_group_by_ssid">按 SSID 分组</string>
@@ -187,7 +167,6 @@
         <item quantity="one">%1$d 个 AP</item>
         <item quantity="other">%1$d 个 AP</item>
     </plurals>
-
     <!-- While the list is filtered: %1$d shown of %2$d in all; the quantity follows %2$d -->
     <plurals name="wifi_list_access_points_filtered">
         <item quantity="one">%2$d 个 AP 中的 %1$d 个</item>
@@ -225,7 +204,6 @@
         <item quantity="one">已排除 %1$d 个</item>
         <item quantity="other">已排除 %1$d 个</item>
     </plurals>
-
     <!-- Wi-Fi redesign: display filter -->
     <string name="wifi_filter_title">筛选网络</string>
     <string name="wifi_filter_content_description">筛选 Wi-Fi 网络列表</string>
@@ -239,7 +217,6 @@
         <item quantity="other">显示 %2$d 个接入点中的 %1$d 个</item>
     </plurals>
     <string name="wifi_filter_manage_exclusions">管理已排除的 SSID</string>
-
     <!-- Wi-Fi redesign: details screen -->
     <string name="wifi_details_title">网络详情</string>
     <string name="wifi_details_radio">无线电</string>
@@ -275,7 +252,6 @@
     <string name="android_9_throttling_information">Android 9 会将 Wi-Fi 扫描限制为每分钟 2 次。如有可能，请升级 Android。</string>
     <string name="android_10_throttling_information">Android 10 及更高版本会对 Wi-Fi 扫描进行限制。要关闭限制：系统 -&gt; 高级 -&gt; 开发者选项 -&gt; 将“WiFi 扫描限制”设为关闭。</string>
     <string name="enable_developer_options">要启用开发者选项：设置 -&gt; 关于手机 -&gt; 连续点击版本号 7 次。</string>
-
     <!-- Bluetooth Device List -->
     <string name="airtag">AirTag</string>
     <plurals name="bluetooth_list_device_count">
@@ -312,15 +288,12 @@
         <item quantity="one">显示 %2$d 台设备中的 %1$d 台</item>
         <item quantity="other">显示 %2$d 台设备中的 %1$d 台</item>
     </plurals>
-
     <!-- Signals list strip (Wi-Fi and Bluetooth) -->
     <string name="list_updates_pause">暂停更新</string>
     <string name="list_updates_resume">恢复更新</string>
     <string name="list_updates_paused">更新已暂停</string>
-
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_topic_prefix_title">MQTT 主题前缀</string>
-
     <!-- App Restriction Constants -->
     <string name="mqtt_start_on_boot_title">MQTT 开机启动</string>
     <string name="mqtt_connection_host_title">MQTT 连接主机</string>
@@ -354,7 +327,6 @@
     <string name="auto_include_phone_state_description">蜂窝网络日志记录启动时自动启动手机状态日志记录</string>
     <string name="ignore_wifi_scan_throttling_warning_title">忽略 Wi-Fi 限制警告</string>
     <string name="ignore_wifi_scan_throttling_warning_description">True 表示隐藏 Wi-Fi 列表中的 Wi-Fi 扫描限制提示，false 表示显示该提示。该提示会告知用户 Android 会限制 Wi-Fi 扫描，并链接到开发者选项以关闭限制。如果您的组织禁用了开发者选项，请将此项设为 true，以免用户被引导至该处。</string>
-
     <!-- User Preference Constants -->
     <string name="mdm_override_title">覆盖组织设置</string>
     <string name="mdm_override_summary_on">使用您自己的设置，而非您所在组织\'的设置</string>
@@ -443,7 +415,6 @@
     <string name="show_zoom_controls_summary_on">地图上显示放大/缩小按钮</string>
     <string name="show_zoom_controls_summary_off">隐藏放大/缩小按钮（使用捏合手势）</string>
     <string name="survey_points_layer_title">我的探测点</string>
-
     <!-- %1$s is the formatted number of survey points -->
     <plurals name="survey_points_count">
         <item quantity="one">已探测 %1$s 个点</item>
@@ -456,14 +427,12 @@
     <string name="survey_points_about_sources">仅当向社区数据库或 NS Analytics 发送数据的探测正在运行时才会记录探测点，且仅记录该探测所采集的记录类型。日志文件、MQTT 和 gRPC 不会添加探测点。蓝牙探测点仅来自 NS Analytics。</string>
     <string name="survey_points_about_filters">「探测时间」筛选仅在探测曾向 NS Analytics 发送数据时才能选出该次探测；此时会显示该次探测\'的所有探测点，包括同时为 OpenCelliD 和 BeaconDB 采集的点。对于仅向 OpenCelliD 和 BeaconDB 发送数据的探测，请使用时间范围。</string>
     <string name="survey_points_about_spacing">步行时约每 %1$d m 记录一个点，驾车时约每 %2$d m 记录一个点，且仅在定位精度达到 %3$d m 或更高时才会记录。它记录的是您探测过的位置，而非每一次扫描。</string>
-
     <!-- %1$s is the formatted maximum number of points kept on the device -->
     <string name="survey_points_about_storage">探测点保留在本设备上，最多 %1$s 个。超出后，会先移除已发送且时间最早的探测点。您可随时在地图设置中清除。</string>
     <string name="survey_points_about_reading">缩小视图时，每个标记代表一个区域的汇总，而非单个探测点。放大后可查看单个探测点，点击某个点即可查看该处探测到的内容。</string>
     <string name="see_on_map">在地图上查看</string>
     <string name="survey_points_options_title">探测点</string>
     <string name="survey_points_change">更改</string>
-
     <!-- %1$s is the color mode name, %2$s the kind name, e.g. "Signal strength · Cellular" -->
     <string name="survey_points_summary">%1$s · %2$s</string>
     <string name="survey_points_key_description">探测点图例</string>
@@ -502,7 +471,6 @@
     <string name="survey_points_tech_lte">LTE</string>
     <string name="survey_points_tech_umts">UMTS</string>
     <string name="survey_points_tech_gsm">GSM</string>
-
     <!-- %1$s is the TAC or LAC number -->
     <string name="survey_points_area_label">区域 %1$s</string>
     <string name="survey_points_filter_when">探测时间</string>
@@ -535,14 +503,12 @@
     <string name="survey_point_tac">TAC %1$d</string>
     <string name="survey_point_lac">LAC %1$d</string>
     <string name="survey_point_dbm">%1$d dBm</string>
-
     <!-- %1$d is the dBm value, %2$s the metric name such as RSRP -->
     <string name="survey_point_dbm_metric">%1$d dBm（%2$s）</string>
     <string name="survey_point_destination_ns">NS Analytics</string>
     <string name="survey_point_destination_community">OpenCelliD 和 BeaconDB</string>
     <string name="survey_point_destination_ocid">OpenCelliD</string>
     <string name="survey_point_destination_beacondb">BeaconDB</string>
-
     <!-- %1$s is the kind, %2$s the count text, %3$d the strongest dBm, %4$s the relative time -->
     <string name="survey_point_peek_heard">%1$s · %2$s · 最强 %3$d dBm · %4$s</string>
     <plurals name="survey_point_networks_count">
@@ -567,7 +533,6 @@
     <string name="survey_point_common_provider">最常见的运营商</string>
     <string name="survey_point_first_surveyed">首次探测</string>
     <string name="survey_point_last_surveyed">最近一次探测</string>
-
     <!-- The quantity is the total (%2$d) -->
     <plurals name="survey_point_sent_count">
         <item quantity="one">共 %2$d 个，已上传 %1$d 个</item>
@@ -600,12 +565,10 @@
     <string name="privacy_policy">隐私政策</string>
     <string name="acknowledgments_title">致谢</string>
     <string name="acknowledgments_summary">认可开源贡献</string>
-
     <!-- GNSS Failure Alert -->
     <string name="not_supported_title">GNSS 功能可能无法正常使用</string>
     <string name="not_supported_description">Network Survey 未能从手机接收原始 GNSS 测量数据，而这些数据是生成 GNSS CSV 文件或通过 MQTT 流式传输 GNSS 记录所必需的。有关更多信息以及支持原始 GNSS 的设备列表，请参阅 Android\'的<a href="https://developer.android.com/guide/topics/sensors/gnss">原始 GNSS 测量数据</a>指南。</string>
     <string name="remember_my_decision">不再询问我</string>
-
     <!-- GNSS Status View -->
     <string name="gps_latitude_label">纬度</string>
     <string name="gps_longitude_label">经度</string>
@@ -652,7 +615,6 @@
     <string name="save">保存</string>
     <string name="sbas">SBAS</string>
     <string name="unknown">未知</string>
-
     <!-- GNSS Sky View -->
     <string name="sky_legend_title">图例</string>
     <string name="sky_legend_shape_gnss_title">全球导航卫星系统（GNSS）</string>
@@ -675,7 +637,6 @@
     <string name="sky_legend_shape_not_in_view">设备不可见</string>
     <string name="sky_legend_shape_in_view">可见</string>
     <string name="sky_legend_shape_used_in_fix">用于定位</string>
-
     <!-- Content descriptions -->
     <string name="gnss_measurement_status_loc_disabled">GNSS 提供程序或位置已禁用，启用前无更新</string>
     <string name="gnss_measurement_status_not_supported">设备不支持跟踪 GNSS 测量值</string>
@@ -685,7 +646,6 @@
     <string name="channel">信道</string>
     <string name="qr_code">二维码</string>
     <string name="open_wifi_spectrum">打开 Wi-Fi 频谱视图</string>
-
     <!-- Uploader -->
     <string name="uploader_notification_channel_name">上传器</string>
     <string name="uploader_notification_title">正在上传</string>
@@ -743,7 +703,6 @@
     <string name="delete_upload_data_failed">删除上传数据失败</string>
     <string name="show_upload_dialog_summary_off">将跳过上传对话框，使用以下设置</string>
     <string name="show_upload_dialog_summary_on">每次上传前将显示配置对话框</string>
-
     <!-- Battery Optimization -->
     <string name="battery_optimization_title">屏幕关闭时仍继续探测？</string>
     <string name="battery_optimization_message">Android 的电池优化可能会在数据采集过程中停止 Network Survey，导致您丢失重要的探测数据。这一点在屏幕关闭时尤其重要。</string>
@@ -755,16 +714,13 @@
     <string name="battery_optimization_settings_summary_enabled">点击禁用电池优化以提高探测可靠性</string>
     <string name="battery_optimization_settings_summary_disabled">电池优化已禁用 - 探测将可靠运行</string>
     <string name="battery_optimization_settings_title">电池优化</string>
-
     <!-- Streaming Queue Management -->
     <string name="streaming_queue_limit_title">流队列限制</string>
     <string name="streaming_queue_limit_description">当向 MQTT 或 gRPC 流式传输时，待发送消息的最大排队数量。当队列满时，扫描将暂停直到消息发送完成。设置为 0 以禁用（无限制队列）。建议：如果网络不可靠，设置为 20,000。</string>
     <string name="streaming_queue_limit_mdm_description">在暂停扫描前最大的待处理消息数。设置为 0 以禁用（无限制队列）。有效范围：0–100000。用于在网络连接较差时防止内存不足崩溃。</string>
-
     <!-- MQTT Drop Mode UI -->
     <string name="mqtt_drop_mode_title">MQTT 消息丢弃</string>
     <string name="mqtt_drop_mode_subtitle">文件日志记录继续</string>
-
     <!-- Queue Limit Warning Dialogs -->
     <string name="disable_queue_limit_title">禁用队列限制？</string>
     <string name="disable_queue_limit_message">当网络慢或不可用时，禁用队列限制将允许无限数量的消息排队。如果连接问题持续存在，这可能导致应用因内存耗尽而崩溃。\n\n您确定要禁用限制吗？</string>
@@ -773,7 +729,6 @@
     <string name="high_queue_limit_message">超过 50,000 的队列限制可能会对某些设备造成内存压力。建议值为 20,000。\n\n继续使用此设置吗？</string>
     <string name="high_queue_limit_use_recommended">使用推荐值</string>
     <string name="high_queue_limit_keep_value">保留当前值</string>
-
     <!-- Battery Management -->
     <string name="battery_pause_title">低电量时暂停扫描</string>
     <string name="battery_pause_mdm_description">设置所有探测操作将暂停的电池电量阈值。设置为 0 可禁用暂停。充电后，当电池电量回升至该阈值以上时，操作将自动恢复。有效值范围：0 – 95</string>
@@ -781,7 +736,6 @@
     <string name="battery_management_disabled_description">探测将持续运行直至电量耗尽</string>
     <string name="battery_pause_active_description">当电池电量降至 %1$d%% 或以下时，探测将暂停</string>
     <string name="battery_threshold_summary">当电池电量 ≤ %1$d%% 时暂停</string>
-
     <!-- Display Settings -->
     <string name="measurement_units_title">测量单位</string>
     <string name="app_theme_title">主题</string>
@@ -801,7 +755,6 @@
     <string name="accent_phosphor">荧光绿</string>
     <string name="accent_amber">琥珀</string>
     <string name="accent_magenta">洋红</string>
-
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID 排除列表</string>
     <string name="ssid_exclusion_list_description">管理要从探测数据中排除的 SSID</string>
@@ -826,7 +779,6 @@
     <string name="ssid_exclusion_remove_title">移除已排除的 SSID？</string>
     <string name="ssid_exclusion_remove_message">从排除列表中移除 \"%1$s\"？它将再次包含在探测数据中。</string>
     <string name="ssid_exclusion_match_note">匹配为精确匹配且区分大小写。</string>
-
     <!-- Provider Color Overrides -->
     <string name="provider_colors_category_title">提供商颜色</string>
     <string name="provider_color_overrides_title">颜色覆盖</string>
@@ -857,7 +809,6 @@
         <item quantity="one">已使用 %2$d 个中的 %1$d 个</item>
         <item quantity="other">已使用 %2$d 个中的 %1$d 个</item>
     </plurals>
-
     <!-- NS Analytics -->
     <string name="ns_analytics_survey_stopped">探测已停止</string>
     <string name="ns_analytics_not_registered">请先在 NS Analytics 中注册设备</string>
@@ -866,7 +817,6 @@
     <string name="ns_analytics_survey_already_stopped">NS Analytics 探测已停止</string>
     <string name="ns_analytics_survey_toggle_failed">切换 NS Analytics 探测失败</string>
     <string name="ns_analytics_survey_no_protocols_enabled">必须为 NS Analytics 探测启用至少一种协议</string>
-
     <!-- First run -->
     <string name="onboarding_skip">跳过</string>
     <string name="onboarding_continue">继续</string>
@@ -900,12 +850,10 @@
     <string name="upgrade_welcome_mqtt_saved">您的 MQTT 代理服务器已保存。开启 %1$s 即可使用；它接收的记录类型与探测中的其他内容相同。</string>
     <string name="upgrade_welcome_tabs">信号页提供蜂窝网络、Wi-Fi、蓝牙和 GNSS 的实时视图。地图页显示基站和您的探测点。更多页包含目标端、关注列表等工具以及设置。</string>
     <string name="upgrade_welcome_done">知道了</string>
-
     <!-- NS Analytics Deep Link - Already Registered -->
     <string name="ns_analytics_qr_detected_title">NS Analytics 二维码</string>
     <string name="ns_analytics_already_registered_message">您当前已注册到“%1$s”工作区。</string>
     <string name="ns_analytics_new_workspace_detected">检测到新工作区：%1$s</string>
-
     <!-- NS Analytics Upload Status -->
     <string name="ns_analytics_upload_status_no_records">没有要上传的记录</string>
     <string name="ns_analytics_upload_status_no_network">没有网络连接</string>
@@ -914,7 +862,6 @@
     <string name="ns_analytics_upload_status_uploading">正在上传…</string>
     <string name="ns_analytics_upload_status_ready">已准备好上传</string>
     <string name="ns_analytics_upload_status_not_registered">未注册</string>
-
     <!-- %1$d is minutes since the survey started -->
     <string name="ns_analytics_upload_status_complete">上传完成</string>
     <string name="ns_analytics_upload_status_failed">上传失败</string>
@@ -931,7 +878,6 @@
     </plurals>
     <string name="ns_analytics_upload_resumed">上传已恢复</string>
     <string name="ns_analytics_open_dashboard">打开 NS Analytics</string>
-
     <!-- Quota paused banner and notification -->
     <string name="ns_analytics_upload_paused_banner_title">上传已暂停：达到配额</string>
     <string name="ns_analytics_upload_paused_banner_body">自动上传已暂停，因为您的工作区已达到记录限制。请释放空间或升级，然后点击“立即上传”恢复。</string>
@@ -942,11 +888,9 @@
     <string name="ns_analytics_removed_notification_title">已断开与 NS Analytics 的连接</string>
     <string name="ns_analytics_removed_notification_text">NS Analytics 已不再接收本机发出的记录，探测已停止向其中发送。本机上已有的记录会保留。点按可重新连接。</string>
     <string name="ns_analytics_removed_notification_text_stopped">NS Analytics 已不再接收本机发出的记录，且它是探测\'的唯一目标端，因此探测已停止。本机上已有的记录会保留。点按可重新连接。</string>
-
     <!-- QR Code Error Messages -->
     <string name="qr_code_data_too_large_title">二维码错误</string>
     <string name="qr_code_data_too_large_message">MQTT 连接设置太大，无法放入二维码。请尝试缩短主机地址、用户名、密码或主题前缀字段。</string>
-
     <!-- OUI manufacturer lookup -->
     <string name="settings_oui_title">制造商查询</string>
     <string name="settings_oui_summary">从 MAC 地址前缀识别设备制造商。将观察到的 24 位 OUI 前缀发送到后端 NS 服务。不存储任何扫描数据。</string>
@@ -974,7 +918,6 @@
     <string name="manufacturer_sheet_chipset">来自 OUI（MAC 地址的前 24 位）。识别无线芯片制造商。可能与品牌不同。</string>
     <string name="manufacturer_info_content_description">关于制造商来源</string>
     <string name="manufacturer_disagreement_hint">关于此设备的来源信息不一致。点击信息图标了解原因。</string>
-
     <!-- PLMN Lookup screen -->
     <string name="plmn_lookup_drawer_title">PLMN 查询</string>
     <string name="plmn_lookup_drawer_description">通过 MCC-MNC 或名称查询运营商和国家/地区</string>
@@ -1010,7 +953,6 @@
     <string name="plmn_lookup_mnc_field_a11y">移动网络码</string>
     <string name="plmn_row_open_details">打开 PLMN 详情</string>
     <string name="plmn_help_description">PLMN 字段信息</string>
-
     <!-- PLMN Details screen -->
     <string name="plmn_details_title">PLMN 详情</string>
     <string name="plmn_details_no_value">-</string>
@@ -1034,7 +976,6 @@
     <string name="plmn_subtitle_brand">手机上显示的面向消费者的名称</string>
     <string name="plmn_subtitle_operator">拥有网络的特许法人实体</string>
     <string name="plmn_subtitle_brand_operator">消费者品牌和持牌运营商（此网络中相同）</string>
-
     <!-- PLMN Info bottom sheet -->
     <string name="plmn_info_sheet_title">关于 PLMN 字段</string>
     <string name="plmn_info_section_plmn">PLMN</string>
@@ -1049,7 +990,6 @@
     <string name="plmn_info_operator_desc">拥有频谱并运营网络的特许法人实体（例如 Verizon Wireless）。</string>
     <string name="plmn_info_section_tadig">TADIG</string>
     <string name="plmn_info_tadig_desc">转帐帐户数据交换组。5 字符的 GSMA 标识符（3 字符国家代码 + 2 字符运营商代码，例如 Verizon Wireless 的 USAVZ）。用于漫游结算文件；当 MCC/MNC 对发生变化或被共享时，可作为稳定的运营商键使用。</string>
-
     <!-- OUI Lookup screen -->
     <string name="oui_lookup_drawer_title">OUI 查询</string>
     <string name="oui_lookup_drawer_description">查询 MAC 地址对应的制造商</string>
@@ -1086,17 +1026,14 @@
     <string name="oui_lookup_private_body">该厂商已在 IEEE 注册，但请求了隐私保护。</string>
     <string name="oui_lookup_shared_block_title">共享厂商块</string>
     <string name="oui_lookup_shared_block_body">此前缀被多个小型厂商块共享。仅凭 OUI 无法识别具体厂商。</string>
-
     <!-- Watchlist feature -->
     <string name="watchlist_title">关注列表</string>
-
     <!-- Watchlist notifications -->
     <string name="watchlist_alert_channel_name">关注列表提醒</string>
     <string name="watchlist_alert_channel_description">发现已关注网络时发出通知</string>
     <string name="watchlist_alert_title">附近有已关注的网络</string>
     <string name="watchlist_alert_content">%1$s 在附近（%2$d dBm）</string>
     <string name="watchlist_alert_content_no_signal">%1$s 在附近</string>
-
     <!-- Watchlist management screen -->
     <string name="watchlist_info">添加要关注的 Wi-Fi 网络。Network Survey 每次扫描 Wi-Fi 时都会查找它们：在包含 Wi-Fi 的探测期间，或 Wi-Fi 页面打开时。一旦发现，您\'会收到通知，并会出现在历史记录中。</string>
     <string name="watchlist_empty">暂无已关注的网络。添加网络后，它\'在附近时我们\'会提醒您。</string>
@@ -1111,7 +1048,6 @@
     <string name="watchlist_delete_title">从关注列表移除？</string>
     <string name="watchlist_delete_message">不再关注 \"%1$s\"？</string>
     <string name="watchlist_navigate_back">返回</string>
-
     <!-- Watchlist add dialog -->
     <string name="watchlist_add_dialog_title">添加到关注列表</string>
     <string name="watchlist_field_ssid">网络名称（SSID）</string>
@@ -1121,14 +1057,11 @@
     <string name="watchlist_validation_duplicate">您\'已在关注此网络。</string>
     <string name="watchlist_added">已将 \"%1$s\" 添加到关注列表</string>
     <string name="watchlist_added_alerts_enabled">已将 \"%1$s\" 添加到关注列表并开启关注列表提醒</string>
-
     <!-- Watchlist import (deep link) -->
     <string name="watchlist_import_title">添加 \"%1$s\"？</string>
     <string name="watchlist_import_title_generic">将网络添加到您的关注列表？</string>
-
     <!-- Composed: %1$s is a newly-added count, %2$s is an already-saved count. -->
     <string name="watchlist_import_summary">来自链接。%1$s，%2$s。</string>
-
     <!-- Composed: %1$s is a newly-added count. -->
     <string name="watchlist_import_summary_no_dupes">来自链接。%1$s。</string>
     <string name="watchlist_import_helper">已添加的网络可随时在关注列表页移除。</string>
@@ -1148,13 +1081,11 @@
         <item quantity="one">该网络已在您的关注列表中。</item>
         <item quantity="other">此链接中的全部 %1$d 个网络都已在您的关注列表中。</item>
     </plurals>
-
     <!-- Watchlist clear all -->
     <string name="watchlist_more_options">更多选项</string>
     <string name="watchlist_clear_all">全部清除</string>
     <string name="watchlist_clear_all_title">清空关注列表？</string>
     <string name="watchlist_clear_all_message">这会移除所有已关注的网络及其历史记录。此操作无法\'撤销。</string>
-
     <!-- Watchlist history screen -->
     <string name="watchlist_history_empty">尚无发现记录。提醒会显示在这里。</string>
     <string name="watchlist_history_clear">清除历史记录</string>
@@ -1162,21 +1093,18 @@
     <string name="watchlist_history_clear_message">此操作将移除全部关注列表历史记录，已关注的网络会保留。</string>
     <string name="watchlist_signal_dbm">%1$d dBm</string>
     <string name="watchlist_signal_unknown">- dBm</string>
-
     <!-- Watchlist redesign: rows -->
     <string name="watchlist_watched_count">已关注 · %1$d</string>
     <string name="watchlist_row_ssid_quoted">SSID \"%1$s\"</string>
     <string name="watchlist_row_seen_times">已发现 %1$d×</string>
     <string name="watchlist_row_not_seen">尚未发现</string>
     <string name="watchlist_alerts_subtitle">应用扫描 Wi-Fi 时通知我</string>
-
     <!-- Watchlist redesign: add sheet -->
     <string name="watchlist_match_by">匹配方式</string>
     <string name="watchlist_match_by_name">网络名称</string>
     <string name="watchlist_match_by_ap">指定 AP</string>
     <string name="watchlist_field_display_name">显示名称</string>
     <string name="watchlist_add_confirm">添加到关注列表</string>
-
     <!-- Watchlist redesign: history list + map -->
     <string name="watchlist_history_search_hint">搜索网络</string>
     <string name="watchlist_history_no_matches">没有符合搜索条件的网络。</string>
@@ -1186,7 +1114,6 @@
     <string name="watchlist_history_sort_recent">最近发现</string>
     <string name="watchlist_history_sort_strongest">信号最强</string>
     <string name="watchlist_history_sort_most_seen">发现次数最多</string>
-
     <!-- Composed: %1$s is a sightings count, %2$s is a networks count. -->
     <string name="watchlist_history_count_summary">%1$s · %2$s</string>
     <string name="watchlist_matched_by_name_short">按名称匹配</string>
@@ -1195,14 +1122,12 @@
     <string name="watchlist_history_group_subtitle">%1$s · %2$s · %3$s</string>
     <string name="watchlist_history_map_no_locations">暂无已记录位置的发现记录。</string>
     <string name="watchlist_history_map_offline">地图需要联网才能加载。</string>
-
     <!-- Composed: %1$s is a networks count, %2$s is a located-sightings count. -->
     <string name="watchlist_history_map_summary">%1$s · %2$s</string>
     <string name="watchlist_history_view_sightings">查看发现记录</string>
     <string name="watchlist_history_open_detail">打开发现记录详情</string>
     <string name="watchlist_map_view_list">列表视图</string>
     <string name="watchlist_map_view_map">地图视图</string>
-
     <!-- Watchlist redesign: sighting details -->
     <plurals name="watchlist_detail_subtitle">
         <item quantity="one">%1$s · %2$d 条发现记录</item>
@@ -1235,13 +1160,11 @@
     <string name="watchlist_detail_latlng">%1$s, %2$s</string>
     <string name="watchlist_detail_clear_title">清除此网络\'的历史记录？</string>
     <string name="watchlist_detail_clear_message">这会删除 \"%1$s\" 的发现记录，关注的网络仍会保留。</string>
-
     <!-- Watchlist settings -->
     <string name="watchlist_settings_title">关注列表</string>
     <string name="watchlist_settings_enable_title">关注列表提醒</string>
     <string name="watchlist_settings_enable_summary_on">正在监测已保存的网络并触发提醒</string>
     <string name="watchlist_settings_enable_summary_off">关注列表提醒已关闭</string>
-
     <!-- Cellular Tools: band reference browser and the cellular calculators -->
     <string name="cellular_tools">蜂窝网络工具</string>
     <string name="cellular_tools_description">LTE 与 5G NR 频段、信道及 Cell ID 解码工具</string>
@@ -1305,17 +1228,14 @@
     <string name="calculator_no_band">没有频段包含此信道</string>
     <string name="calculator_frequency">频率</string>
     <string name="calculator_ambiguous_hint">NR 频段范围存在重叠，因此单凭信道号并不总能确定唯一频段。手机能够直接上报频段时会优先使用上报值。</string>
-
     <!-- Survey setup: what each destination is sent -->
     <string name="destination_what_is_sent_title">发送内容</string>
     <string name="destination_what_is_sent">除通话记录外，探测记录的全部内容。记录类型在探测页选择，所有目标端收到的都是同一组内容。</string>
     <string name="ns_analytics_not_allowed_by_organization">您的组织不允许在此手机上向 NS Analytics 发送数据</string>
     <string name="ns_analytics_what_is_sent">除通话记录外，探测记录的全部内容。每条记录都会计入工作区配额，因此如无需要请关闭 GNSS 与蓝牙。</string>
-
     <!-- Survey setup: starting automatically -->
     <string name="auto_start_survey_title">自动开始探测</string>
     <string name="auto_start_survey_summary">在应用打开时和手机重启时开始探测</string>
-
     <!-- Survey setup: managed configuration (MDM) restrictions -->
     <string name="mdm_choice_user">由用户决定</string>
     <string name="mdm_choice_on">始终开启</string>
@@ -1342,7 +1262,6 @@
     <string name="mdm_deprecated_auto_start_description">已废弃，仅再读取一个版本。请改用记录类型键（survey_*）、destination_log_files 和 auto_start_survey。</string>
     <string name="mdm_deprecated_stream_description">已废弃，仅再读取一个版本。请改用记录类型键（survey_*）；每个目标端都会接收探测所记录的全部记录类型。</string>
     <string name="mdm_deprecated_mqtt_start_on_boot_description">已废弃，仅再读取一个版本。请改用 destination_mqtt 和 auto_start_survey。</string>
-
     <!-- Survey screen -->
     <string name="nav_survey">探测</string>
     <string name="survey_question_types">要探测哪些内容？</string>
@@ -1366,12 +1285,10 @@
     <string name="survey_type_wifi_clients_description">设备及其搜索的网络</string>
     <string name="survey_type_wifi_raw">原始帧</string>
     <string name="survey_type_wifi_raw_description">802.11 帧，pcapng 格式，仅限日志文件</string>
-
     <!-- On the Raw frames tile while it is on and Log files is off -->
     <string name="survey_type_wifi_raw_needs_log_files">开启日志文件才能保存这些内容</string>
     <string name="survey_type_needs_scout">需要 %1$s</string>
     <string name="survey_item_needs_scout">%1$s 需要以 NS Scout 作为 Wi-Fi 来源</string>
-
     <!-- %1$s is the record type, "Raw frames" -->
     <string name="survey_item_needs_log_files">仅日志文件会保存 %1$s</string>
     <string name="survey_destination_not_sent">%1$s · %2$s 未发送</string>
@@ -1387,7 +1304,6 @@
     <string name="survey_phone_state_follows_cellular">只要记录蜂窝网络，就会记录电话状态。</string>
     <string name="survey_dest_log_files">日志文件</string>
     <string name="survey_dest_log_files_detail">本机上的 CSV 文件</string>
-
     <!-- The Log files row while the survey saves Raw frames (pcapng files) too -->
     <string name="survey_dest_log_files_detail_raw">本机上的 CSV 和 pcapng</string>
     <string name="survey_dest_ns_analytics">NS Analytics</string>
@@ -1439,7 +1355,6 @@
     <string name="survey_location_turn_on">开启</string>
     <string name="survey_location_permission">需要位置权限</string>
     <string name="survey_location_allow">允许</string>
-
     <!-- %1$s is how long the last survey ran ("12 min"), %2$s its record count ("3,118 records") -->
     <string name="survey_last_session">上次探测运行了 %1$s · %2$s</string>
     <plurals name="survey_minutes_short">
@@ -1572,7 +1487,6 @@
     </plurals>
     <string name="survey_status_next_try_at">下次重试于 %1$s</string>
     <string name="survey_status_key_rejected_detail">OpenCelliD 拒绝了 API 密钥</string>
-
     <!-- %1$s is the community upload's own result, for example "Invalid API key" -->
     <string name="survey_status_upload_failed_detail">上次上传失败：%1$s</string>
     <string name="community_target_result">%1$s：%2$s</string>
@@ -1628,7 +1542,6 @@
     <string name="scout_item_cant_connect">%1$s 无法完成连接，因此未在记录 Wi-Fi</string>
     <string name="scout_item_updating">%1$s 正在更新固件，因此未在记录 Wi-Fi</string>
     <string name="scout_item_out_of_range_types">%1$s 超出范围，因此未在记录 %2$s</string>
-
     <!-- %1$s is the types, like "Wi-Fi from NS-ABCD, Wi-Fi clients, Raw frames and Bluetooth" -->
     <string name="scout_item_bluetooth_off_types">蓝牙已关闭，因此未在记录 %1$s</string>
     <string name="scout_item_permission_types">%1$s 需要「附近的设备」权限，因此未在记录 %2$s</string>
@@ -1637,7 +1550,6 @@
     <string name="scout_item_pairing_lost_types">%1$s 需要重新配对，因此未在记录 %2$s</string>
     <string name="scout_item_cant_connect_types">%1$s 无法完成连接，因此未在记录 %2$s</string>
     <string name="scout_item_updating_types">%1$s 正在更新固件，因此未在记录 %2$s</string>
-
     <!-- Survey notification title once the NS Scout has kept Wi-Fi out for 10 minutes or more -->
     <plurals name="scout_notification_no_wifi_title">
         <item quantity="one">%d 分钟无 Wi-Fi</item>
@@ -1671,7 +1583,6 @@
     <string name="survey_apply_now">立即应用</string>
     <string name="survey_remove_ns_analytics_note">已排队的记录仍会上传。</string>
     <string name="survey_remove_ns_analytics_note_manual">已排队的记录会保留在这台手机上，直到您从 NS Analytics 上传它们。</string>
-
     <!-- Saved setups on the Survey screen -->
     <string name="survey_setups_heading">已保存的配置</string>
     <string name="survey_setups_save_current_row">保存当前配置</string>
@@ -1709,7 +1620,6 @@
     <string name="keep_screen_on_while_recording_summary">在应用任意页面都生效，一眼即可看出探测仍在运行</string>
     <string name="survey_state_ready">就绪</string>
     <string name="survey_notification_override">正在使用自己的设置</string>
-
     <!-- MQTT broker profiles -->
     <string name="mqtt_broker_organization_copy_name">您组织代理服务器的副本</string>
     <string name="mqtt_brokers_group">代理服务器</string>
@@ -1778,7 +1688,6 @@
     <string name="camera_missing">此设备没有相机，无法扫描二维码。</string>
     <string name="camera_open_failed">无法打开相机以扫描二维码。</string>
     <string name="survey_dest_mqtt_choose">选择代理服务器</string>
-
     <!-- Organization settings page -->
     <string name="organization_settings_title">组织设置</string>
     <string name="organization_settings_summary">您的组织在这台手机上设置的全部内容</string>
@@ -1793,7 +1702,6 @@
     <string name="org_note_broker_only">MQTT 代理服务器由您的组织提供，其余全部由您决定。</string>
     <string name="org_note_overridden">您正在使用自己的设置。以下是您组织的值。</string>
     <string name="org_unmanaged">没有组织管理这台手机。</string>
-
     <!-- Log files page -->
     <string name="log_files_location">位置</string>
     <string name="log_files_location_detail">%1$s · CSV，每种记录类型一个文件（蜂窝网络按制式分开），外加设备状态</string>
@@ -1825,7 +1733,6 @@
     <string name="log_files_reinstall">应用重装前的文件仍在 %1$s。请用文件管理器打开它们。</string>
     <string name="log_files_unreadable">暂时无法读取日志文件文件夹。文件可能仍已保存；请在探测结束后再检查。</string>
     <string name="log_files_share_failed">无法分享这些文件</string>
-
     <!-- gRPC page -->
     <string name="grpc_status_ready">可以开始流式传输</string>
     <string name="grpc_status_not_set_up_detail">把每条记录实时流式传输到 gRPC 服务器。</string>
@@ -1846,7 +1753,6 @@
     <string name="grpc_saved_reconnecting">gRPC 服务器已保存。正在重新连接。</string>
     <string name="grpc_connected_toast">已连接到 gRPC 服务器</string>
     <string name="grpc_unreachable_toast">无法连接 gRPC 服务器</string>
-
     <!-- NS Analytics connect walkthrough and connected page -->
     <string name="ns_analytics_connect_title">连接到 NS Analytics</string>
     <string name="ns_analytics_intro">NS Analytics 是 Network Survey 数据的网页分析伴侣。每台已连接的手机都会把记录上传到您的工作区。</string>
@@ -1927,7 +1833,6 @@
     <string name="ns_analytics_message_offline">请连接网络以断开这台手机</string>
     <string name="ns_analytics_message_disconnect_failed">无法断开这台手机：%1$s</string>
     <string name="ns_analytics_message_disconnected">这台手机已从工作区断开</string>
-
     <!-- Community databases page -->
     <string name="community_ocid_your_key">蜂窝网络 · 使用您的 API 密钥</string>
     <string name="community_ocid_anonymous">蜂窝网络 · 匿名上传</string>
@@ -1957,7 +1862,6 @@
         <item quantity="other">%1$s 条蜂窝网络记录和 %2$s 条 Wi-Fi 记录待上传</item>
     </plurals>
     <string name="community_nothing_ready">暂无可上传的内容</string>
-
     <!-- Navigation: the tabs, Signals and More -->
     <string name="nav_signals">信号</string>
     <string name="nav_map">地图</string>
@@ -2014,49 +1918,35 @@
     <string name="gnss_row_spoken_not_heard">未收到</string>
     <string name="gnss_row_spoken_elevation">仰角 %1$s 度</string>
     <string name="gnss_row_spoken_azimuth">方位角 %1$s 度</string>
-
     <!-- TalkBack, on a satellite row: the lowest and highest C/N0 of the last two minutes -->
     <string name="gnss_row_spoken_range">2 分钟范围 %1$s 到 %2$s</string>
-
     <!-- The satellite table's column headers; keep each short, the table is narrow -->
     <string name="gnss_col_band">频段</string>
-
     <!-- Column header and panel note: the trend lines cover the last two minutes -->
     <string name="gnss_trend_window">2 分钟</string>
-
     <!-- Column header: a satellite's elevation, short -->
     <string name="gnss_col_el">仰角</string>
-
     <!-- Column header: a satellite's azimuth, short -->
     <string name="gnss_col_az">方位</string>
-
     <!-- One letter: the signal is used in the fix -->
     <string name="gnss_flag_used">U</string>
-
     <!-- One letter: the phone has the satellite's ephemeris -->
     <string name="gnss_flag_ephemeris">E</string>
-
     <!-- One letter: the phone has the satellite's almanac -->
     <string name="gnss_flag_almanac">A</string>
     <string name="gnss_flags_legend">%1$s 参与定位 · %2$s 星历 · %3$s 历书</string>
-
     <!-- TalkBack: what tapping a column header does; %1$s is a sort, such as "Signal strength" -->
     <string name="gnss_sort_action">按 %1$s 排序</string>
-
     <!-- TalkBack: the column header the table is sorted by -->
     <string name="gnss_sorted">已排序</string>
     <string name="gnss_trends_title">按频段的 AGC 与 C/N0</string>
-
     <!-- The average C/N0 of a band's four strongest signals -->
     <string name="gnss_trends_cn0_top4">C/N0 前 4 强</string>
     <string name="gnss_trends_no_agc">这台手机不报告 AGC。</string>
-
     <!-- Shown on the AGC and C/N0 panel while the constellation filter hides some systems -->
     <string name="gnss_trends_all_systems">涵盖所有系统，包括被筛选隐藏的系统。</string>
-
     <!-- A band group of carriers that fit none of the named bands -->
     <string name="gnss_trends_other">其它</string>
-
     <!-- The one band group when the phone gives no carrier frequencies -->
     <string name="gnss_trends_all_signals">全部信号</string>
     <string name="gnss_trends_info">关于 AGC 与 C/N0</string>
@@ -2064,10 +1954,8 @@
     <string name="gnss_trends_info_body">AGC 表示接收机对某个频段的放大量。该频段内额外的功率（例如干扰器）会使其下降，其它在该频段增加功率的因素也会影响它。\n\nC/N0 是每颗卫星的信号与噪声之比。建筑物、车辆和您的手会同时降低许多卫星的 C/N0，此时 AGC 通常保持稳定。\n\n某个频段的 AGC 与 C/N0 同时下降而其它频段没有，值得进一步关注；C/N0 异常偏高且在每颗卫星上几乎相同，同样值得关注。\n\n不同手机的电平不同，请与这台手机的正常读数对比。此视图不检测干扰或欺骗。</string>
     <string name="gnss_trends_spoken_down">比 2 分钟中位数低 %1$s</string>
     <string name="gnss_trends_spoken_up">比 2 分钟中位数高 %1$s</string>
-
     <!-- TalkBack: the average C/N0 of a band's four strongest signals -->
     <string name="gnss_trends_spoken_cn0">C/N0 前 4 强，%1$s dB-Hz</string>
-
     <!-- TalkBack: the location's horizontal accuracy, such as "3.2 m" -->
     <string name="gnss_accuracy_spoken">水平精度 %1$s</string>
     <string name="gnss_vertical_accuracy_label">垂直精度</string>
@@ -2106,7 +1994,6 @@
     <string name="settings_device_ids">设备 ID</string>
     <string name="settings_device_serial_number">设备序列号</string>
     <string name="settings_app_instance_id">应用实例 ID</string>
-
     <!-- Settings page groups and rows (Compose Settings) -->
     <string name="settings_group_survey">探测</string>
     <string name="settings_group_phone">手机</string>
@@ -2115,7 +2002,6 @@
     <string name="settings_group_fleet">设备群</string>
     <string name="settings_scan_rates">扫描频率</string>
     <string name="settings_scan_rate_part">%1$s %2$d 秒</string>
-
     <!-- An interval in seconds, for example "15 s" -->
     <string name="settings_seconds">%1$d 秒</string>
     <string name="settings_whole_number">请输入整数</string>
@@ -2145,7 +2031,6 @@
     <string name="upload_data_category">数据管理</string>
     <string name="upload_delete_all_title">删除所有等待上传的数据</string>
     <string name="upload_delete_all_summary">删除内部数据库中所有等待上传的数据</string>
-
     <!-- Wi-Fi list: what stops a scan, the throttling notice and the rows -->
     <string name="wifi_state_off">Wi-Fi 已关闭</string>
     <string name="wifi_state_off_body">Wi-Fi 与 Wi-Fi 扫描均已关闭，手机无法搜索网络。请开启 Wi-Fi 以查看。</string>
@@ -2157,7 +2042,6 @@
     <string name="wifi_row_open_details">打开详情</string>
     <string name="wifi_row_copy_ssid">复制 SSID</string>
     <string name="wifi_row_band_channel">%1$s，信道 %2$d</string>
-
     <!-- Details and spectrum pages: what stops new scans -->
     <string name="signals_blocked_location_notice">位置已关闭，因此不会收到新的扫描结果。</string>
     <string name="wifi_blocked_permission_notice">允许精确位置权限以获取新的扫描结果。</string>
@@ -2165,7 +2049,6 @@
     <string name="bluetooth_blocked_permission_notice">允许「附近的设备」与位置权限以获取新的扫描结果。</string>
     <string name="bluetooth_blocked_permission_notice_location">允许精确位置权限以获取新的扫描结果。</string>
     <string name="bluetooth_blocked_off_notice">蓝牙已关闭，因此不会收到新的扫描结果。</string>
-
     <!-- Details and spectrum pages: the scan interval -->
     <plurals name="details_scan_interval">
         <item quantity="one">每 %d 秒扫描一次</item>
@@ -2176,14 +2059,12 @@
     <string name="bluetooth_scan_rate_info_body">扫描蓝牙设备的间隔，单位为秒。数值越小越耗电；数值越大，信号图表滞后越多。24 秒是最短的蓝牙扫描间隔，因为一次完整扫描就需要这么久。</string>
     <string name="bluetooth_scan_rate_live_info">蓝牙页面打开时，收到设备后信号强度也会在两次扫描之间更新。这些中间更新只在页面上显示，探测的蓝牙记录不受影响。\'</string>
     <string name="bluetooth_settings_content_description">蓝牙设置</string>
-
     <!-- Wi-Fi spectrum: one chart per band -->
     <string name="wifi_spectrum_band_24">2.4 GHz</string>
     <string name="wifi_spectrum_band_5_low">5 GHz，信道 36 至 64</string>
     <string name="wifi_spectrum_band_5_mid">5 GHz，信道 100 至 144</string>
     <string name="wifi_spectrum_band_5_high">5 GHz，信道 149 至 177</string>
     <string name="wifi_spectrum_band_6">6 GHz</string>
-
     <!-- Bluetooth details -->
     <string name="bluetooth_details_device">设备</string>
     <string name="bluetooth_details_technology">技术</string>
@@ -2227,7 +2108,6 @@
     <string name="color_name_white">白色</string>
     <string name="measurement_units_metric">公制 (m, km, km/h)</string>
     <string name="measurement_units_imperial">英制 (ft, mi, mph)</string>
-
     <!-- The Map Layers sheet -->
     <string name="map_layers_title">地图图层</string>
     <string name="map_layers_tiles">地图瓦片</string>
@@ -2238,7 +2118,6 @@
     <string name="map_layers_serving_only_summary">只显示手机当前连接的基站</string>
     <string name="map_layers_beacondb">BeaconDB 覆盖范围</string>
     <string name="tower_source_btsearch">BTSearch（波兰）</string>
-
     <!-- The tower filters on the Map -->
     <string name="tower_filter_provider">运营商</string>
     <string name="tower_filter_provider_summary">按 MCC 和 MNC 只显示某个运营商的基站\'</string>
@@ -2262,7 +2141,6 @@
         <item quantity="other">%d 年内</item>
     </plurals>
     <string name="tower_filter_age_not_btsearch">时间筛选不适用于 BTSearch 基站。</string>
-
     <!-- The tower search on the Map -->
     <string name="tower_search_title">查找基站</string>
     <string name="tower_search_summary">输入基站的编码以在地图上找到它。\'</string>
@@ -2270,7 +2148,6 @@
     <string name="tower_search_button">搜索</string>
     <string name="tower_search_no_match">没有匹配此搜索的基站。</string>
     <string name="tower_search_failed">无法搜索基站。请重试。\'</string>
-
     <!-- The Cellular calculators -->
     <string name="calculator_nci_title">NCI 转换为 gNB ID 与扇区 ID</string>
     <string name="calculator_gnb_id_length">gNB ID 长度</string>
@@ -2284,10 +2161,8 @@
     <string name="calculator_umts_title">UMTS Cell ID 转换为 RNC ID 与短 Cell ID</string>
     <string name="calculator_umts_cell_id">UMTS Cell ID</string>
     <string name="calculator_short_cell_id">短 Cell ID</string>
-
     <!-- %1$s is the field (Cell ID, PCI), %2$s the largest value it accepts -->
     <string name="calculator_out_of_range">%1$s 必须在 0 到 %2$s 之间</string>
-
     <!-- The tower sheet on the Map -->
     <plurals name="tower_list_title">
         <item quantity="one">此处有 %d 个基站</item>
@@ -2308,7 +2183,6 @@
     <string name="tower_detail_changeable">可变更</string>
     <string name="tower_detail_yes">是</string>
     <string name="tower_detail_no">否</string>
-
     <!-- The provider row at the top of the tower details, looked up from the tower's MCC-MNC -->
     <string name="tower_provider_loading">正在查询运营商</string>
     <string name="tower_provider_unknown">未知运营商</string>
@@ -2320,28 +2194,22 @@
     <string name="tower_provider_show_all">显示该 PLMN 上的所有运营商</string>
     <string name="tower_provider_hide_all">隐藏其它运营商</string>
     <string name="tower_provider_change_color">更改该运营商在地图上的颜色\'</string>
-
     <!-- The badge after the provider name when other names share the PLMN; %d is how many ("+1") -->
     <string name="tower_provider_more_badge">+%d</string>
-
     <!-- Read aloud for the badge above -->
     <plurals name="tower_provider_more_names">
         <item quantity="one">另有 %d 个运营商</item>
         <item quantity="other">另有 %d 个运营商</item>
     </plurals>
-
     <!-- Under the provider name when the PLMN is used in several countries; always 2 or more -->
     <plurals name="tower_provider_shared_countries">
         <item quantity="one">由 %d 个国家共用</item>
         <item quantity="other">由 %d 个国家共用</item>
     </plurals>
-
     <!-- A label and its value on one line ("Cell ID: 1234"); %1$s is the label, %2$s the value -->
     <string name="label_value_pair">%1$s：%2$s</string>
-
     <!-- The marker on the Cellular signal chart where the serving cell changed -->
     <string name="chart_serving_cell_change">服务小区变更</string>
-
     <!-- Provider color names (the rest of the palette shares the coverage color names above) -->
     <string name="color_name_pink">粉色</string>
     <string name="color_name_deep_purple">深紫色</string>
@@ -2354,7 +2222,6 @@
     <string name="color_name_brown">棕色</string>
     <string name="color_name_amber">琥珀色</string>
     <string name="color_name_deep_orange">深橙色</string>
-
     <!-- Acknowledgments: what each open source library does -->
     <string name="ack_desc_gpstest">GNSS 界面组件与卫星可视化代码改编自 GPSTest 开源安卓应用，包括天空视图、信号强度图表与卫星状态显示。</string>
     <string name="ack_desc_dagger_hilt">Android 的依赖注入框架</string>
@@ -2375,7 +2242,6 @@
     <string name="ack_desc_protobuf">Protocol Buffer 序列化</string>
     <string name="ack_desc_gson">JSON 序列化/反序列化库</string>
     <string name="ack_desc_workmanager">后台任务调度库</string>
-
     <!-- The Acknowledgments page -->
     <string name="ack_special">特别致谢</string>
     <string name="ack_core">核心库</string>
@@ -2384,20 +2250,17 @@
     <string name="ack_header_title">开源致谢</string>
     <string name="ack_header_body">Network Survey 的构建得益于许多优秀的开源库。我们衷心感谢创建与维护这些项目的开发者与社区所作出的贡献。</string>
     <string name="ack_by_author">作者：%1$s</string>
-
     <!-- An open (unencrypted) Wi-Fi network -->
     <string name="wifi_security_open">开放</string>
-
     <!-- What TalkBack reads for the OUI lookup MAC readout; %1$s is the typed address -->
     <string name="oui_lookup_mac_spoken">MAC 地址 %1$s</string>
     <string name="oui_lookup_mac_spoken_empty">MAC 地址，空</string>
-    <string name="battery_steps_xiaomi">1. 进入 设置 > 电池 &amp; 性能\n2. 选择\'应用省电策略\'\n3. 选择 Network Survey\n4. 选择\'无限制\'\n5. 同时在安全应用中开启\'自启动\'</string>
-    <string name="battery_steps_samsung">1. 进入 设置 > 设备维护 > 电池\n2. 点击\'后台使用限制\'\n3. 将 Network Survey 加入\'永不休眠的应用\'\n4. 关闭\'将未使用的应用置于休眠\'</string>
-    <string name="battery_steps_huawei">1. 进入 设置 > 电池 > 应用启动管理\n2. 找到 Network Survey\n3. 关闭\'自动管理\'\n4. 开启全部三项（自动启动、关联启动、后台活动）</string>
-    <string name="battery_steps_oppo">1. 进入 设置 > 电池 > 应用耗电管理\n2. 找到 Network Survey\n3. 关闭后台限制\n4. 同时检查 安全中心 > 权限隐私 > 自启动管理</string>
-    <string name="battery_steps_vivo">1. 进入 设置 > 电池 > 后台高耗电\n2. 找到 Network Survey\n3. 允许后台运行\n4. 同时检查 i 管家 > 应用管理 > 自启动</string>
-    <string name="battery_steps_oneplus">1. 进入 设置 > 电池 > 电池优化\n2. 找到 Network Survey\n3. 选择\'不优化\'\n4. 同时关闭\'自适应电池\'与\'睡眠待机优化\'\'</string>
-
+    <string name="battery_steps_xiaomi">1. 进入 设置 &gt; 电池 &amp; 性能\n2. 选择\'应用省电策略\'\n3. 选择 Network Survey\n4. 选择\'无限制\'\n5. 同时在安全应用中开启\'自启动\'</string>
+    <string name="battery_steps_samsung">1. 进入 设置 &gt; 设备维护 &gt; 电池\n2. 点击\'后台使用限制\'\n3. 将 Network Survey 加入\'永不休眠的应用\'\n4. 关闭\'将未使用的应用置于休眠\'</string>
+    <string name="battery_steps_huawei">1. 进入 设置 &gt; 电池 &gt; 应用启动管理\n2. 找到 Network Survey\n3. 关闭\'自动管理\'\n4. 开启全部三项（自动启动、关联启动、后台活动）</string>
+    <string name="battery_steps_oppo">1. 进入 设置 &gt; 电池 &gt; 应用耗电管理\n2. 找到 Network Survey\n3. 关闭后台限制\n4. 同时检查 安全中心 &gt; 权限隐私 &gt; 自启动管理</string>
+    <string name="battery_steps_vivo">1. 进入 设置 &gt; 电池 &gt; 后台高耗电\n2. 找到 Network Survey\n3. 允许后台运行\n4. 同时检查 i 管家 &gt; 应用管理 &gt; 自启动</string>
+    <string name="battery_steps_oneplus">1. 进入 设置 &gt; 电池 &gt; 电池优化\n2. 找到 Network Survey\n3. 选择\'不优化\'\n4. 同时关闭\'自适应电池\'与\'睡眠待机优化\'\'</string>
     <!-- Why a shared watchlist link was refused -->
     <string name="watchlist_link_no_data">该链接不含关注列表数据</string>
     <string name="watchlist_link_too_large">该关注列表链接过大</string>
@@ -2418,14 +2281,12 @@
     <string name="ns_analytics_link_local_server">其服务器地址不能位于本地网络。</string>
     <string name="ns_analytics_link_server_too_long">其服务器地址过长。</string>
     <string name="ns_analytics_link_name_too_long">其工作区名称过长。</string>
-
     <!-- Log files that could not be written, and upload progress lines -->
     <string name="log_file_create_failed">无法创建日志文件，因此没有记录任何内容</string>
     <string name="log_folder_create_failed">无法创建日志文件文件夹</string>
     <string name="upload_progress_records">正在上传记录…</string>
     <string name="ns_analytics_upload_batch">正在上传第 %1$d 批，共 %2$d 批…</string>
     <string name="ns_analytics_upload_batch_done">已发送第 %1$d 批，共 %2$d 批</string>
-
     <!-- The one NS Scout status word every surface shows (Survey row, Scout page, More) -->
     <string name="scout_word_connected">已连接</string>
     <string name="scout_word_connecting">正在连接</string>
@@ -2448,7 +2309,6 @@
         <item quantity="one">来自其缓冲区的 %1$s 条记录 · 已放回收到时的位置</item>
         <item quantity="other">来自其缓冲区的 %1$s 条记录 · 已放回收到时的位置</item>
     </plurals>
-
     <!-- %1$s is how long ago, like "2 minutes ago" -->
     <string name="scout_detail_last_heard">上次收到于 %1$s</string>
     <string name="scout_detail_still_listening">Scout 仍在监听 · 上次收到于 %1$s</string>
@@ -2457,7 +2317,6 @@
     <string name="scout_detail_hold_near">请靠近这台手机</string>
     <string name="scout_detail_bluetooth_off">这台手机需要蓝牙才能连接到 Scout</string>
     <string name="scout_detail_permission">这台手机需要「附近的设备」权限才能连接到 Scout</string>
-
     <!-- %1$s is the firmware version, like 0.1.0 -->
     <string name="scout_detail_firmware">固件 %1$s 对此应用来说过旧</string>
     <string name="scout_detail_app_update">请更新 Network Survey 以使用 %1$s</string>
@@ -2465,12 +2324,10 @@
     <string name="scout_detail_pairing_refused">请按住其 BOOT 按钮约 3 秒，然后重新配对</string>
     <string name="scout_detail_updating">请保持通电并放在这台手机旁边</string>
     <string name="scout_detail_cant_connect">%1$s 有响应但无法完成连接。请拔下电源 5 秒后重新插上。</string>
-
     <!-- The Wi-Fi bands a Scout hears. %1$s is a list of numbers, like "2.4 and 5" -->
     <string name="scout_bands">%1$s GHz</string>
     <string name="scout_battery_percent">电量 %1$d%%</string>
     <string name="scout_usb_powered">USB 供电</string>
-
     <!-- The Survey tab's Scout row while this phone is the Wi-Fi source. %1$s is the Scout's name -->
     <string name="scout_row_phone_title">来自这台手机的 Wi-Fi</string>
     <string name="scout_row_phone_detail">%1$s 未使用</string>
@@ -2478,13 +2335,10 @@
     <string name="scout_action_scout_page">Scout 页面</string>
     <string name="scout_action_pair_again">重新配对</string>
     <string name="scout_action_bluetooth_settings">蓝牙设置</string>
-
     <!-- %1$s is the types, like "Wi-Fi from NS-ABCD, Wi-Fi clients and Bluetooth" -->
     <string name="scout_plate_bluetooth_body">将不会记录 %1$s。</string>
-
     <!-- %1$s is the Scout's name, %2$s the types -->
     <string name="scout_plate_permission_body">这台手机需要该权限才能连接到 %1$s，因此将不会记录 %2$s。</string>
-
     <!-- %1$s is the types -->
     <string name="scout_plate_firmware_body">在更新之前将不会记录 %1$s。通过蓝牙更新约需一分钟。</string>
     <string name="scout_plate_app_update_body">在更新 Network Survey 之前将不会记录 %1$s。</string>
@@ -2492,20 +2346,16 @@
     <string name="scout_plate_cant_connect_body">在连接成功之前将不会记录 %1$s。请拔下 Scout 电源 5 秒后重新插上。</string>
     <string name="scout_plate_updating_body">在更新完成之前将不会记录 %1$s。</string>
     <string name="scout_plate_out_of_range_body">Scout 会继续监听最多 5 分钟，回到范围内后会发送它听到的内容。探测的其它部分继续进行。</string>
-
     <!-- Snackbars after the Wi-Fi source changes -->
     <string name="scout_snackbar_phone">Wi-Fi 现在来自这台手机。可从 Scout 一行切回。</string>
     <string name="scout_snackbar_scout">Wi-Fi 现在来自 %1$s。</string>
-
     <!-- Survey tiles and chips while the Scout is the Wi-Fi source. %1$s is the Scout's name -->
     <string name="survey_type_wifi_from_scout">来自 %1$s</string>
     <string name="survey_type_wifi_from">来自 %1$s 的 Wi-Fi</string>
     <string name="survey_chip_wifi_scout">Wi-Fi · %1$s</string>
-
     <!-- More tab -->
     <string name="more_section_hardware">硬件</string>
     <string name="more_scout_subtitle">可选开发板，提供更详细的 Wi-Fi 数据</string>
-
     <!-- The NS Scout page with no Scout paired -->
     <string name="scout_page_title">NS Scout</string>
     <string name="scout_intro_tagline">为本应用监听 Wi-Fi 的小型扩展板</string>
@@ -2514,18 +2364,15 @@
     <string name="scout_intro_details">补充安全详情、噪声，以及每个接入点的繁忙程度。</string>
     <string name="scout_intro_listens">它只监听，从不发射 Wi-Fi 信号，并通过蓝牙与这台手机通信。</string>
     <string name="scout_need_heading">您需要准备</string>
-
     <!-- %1$s is the recommended board, ESP32-C5-DevKitC-1, shown in bold -->
     <string name="scout_need_body">推荐使用乐鑫 %1$s：ESP32-C5 是唯一支持 5 GHz 的受支持芯片。ESP32-C6、S3 与 C3 开发板支持 2.4 GHz。可通过 USB 或移动电源供电。</string>
     <string name="scout_install_heading">安装 Scout 软件</string>
-
     <!-- %1$s is the installer address, install.networksurvey.app -->
     <string name="scout_install_body">请用装有 Chrome 或 Edge 的电脑操作一次。用 USB 数据线连接开发板并打开 %1$s。之后的更新可通过本应用经蓝牙安装。</string>
     <string name="scout_install_share">分享链接</string>
     <string name="scout_install_share_text">请用装有 Chrome 或 Edge 的电脑安装 NS Scout 软件：%1$s</string>
     <string name="scout_where_to_buy">购买渠道</string>
     <string name="scout_add">添加 Scout</string>
-
     <!-- The NS Scout page with a Scout paired. %1$s is the Scout's name -->
     <string name="scout_not_in_use_body">已与这台手机配对。在您切回之前，Wi-Fi 来自这台手机。</string>
     <string name="scout_out_hint">请确认已接通电源（指示灯闪烁）且在数米范围内。如果它曾与其它手机配对过，请按住其 BOOT 按钮约 3 秒。</string>
@@ -2536,7 +2383,6 @@
     <string name="scout_source_locked_phone">一次探测自始至终只使用一个 Wi-Fi 来源。请停止探测以切换到 %1$s。</string>
     <string name="scout_now_heading">当前状态</string>
     <string name="scout_now_doing">正在执行</string>
-
     <!-- %1$d is how many channels the Scout hops, %2$d the channel it is on now -->
     <string name="scout_now_doing_capture">全部 %1$d 个信道 · 当前 %2$d</string>
     <string name="scout_now_doing_waiting">等待探测或 Wi-Fi 页面</string>
@@ -2561,7 +2407,6 @@
     <string name="scout_info_heading">Scout</string>
     <string name="scout_info_model">型号</string>
     <string name="scout_info_firmware">固件</string>
-
     <!-- %1$s is the firmware version -->
     <string name="scout_info_firmware_update">%1$s · 需要更新</string>
     <string name="scout_info_bands">Wi-Fi 频段</string>
@@ -2576,7 +2421,6 @@
     <string name="scout_erase">擦除 Scout 上的配对</string>
     <string name="scout_erase_subtitle">仅在转交他人前需要</string>
     <string name="scout_erase_needs_link">请先连接到 Scout</string>
-
     <!-- Remove and Erase dialogs. %1$s is the Scout's name -->
     <string name="scout_remove_title">移除 %1$s？</string>
     <string name="scout_remove_body">Wi-Fi 将改为来自这台手机。</string>
@@ -2592,11 +2436,9 @@
     <string name="scout_erased">%1$s 已擦除配对并被移除。</string>
     <string name="scout_erase_failed">%1$s 未能擦除配对。请将其放在这台手机旁边后重试。</string>
     <string name="scout_replace_title">更换 %1$s？</string>
-
     <!-- %1$s is the paired Scout, %2$s the new one -->
     <string name="scout_replace_body">这台手机同一时间只使用一个 Scout。配对 %2$s 会将 %1$s 从 Network Survey 中移除。</string>
     <string name="scout_replace_confirm">更换</string>
-
     <!-- The Add a Scout sheet. %1$s is a Scout's name, like NS-ABCD -->
     <string name="scout_pair_looking">正在查找 Scout</string>
     <string name="scout_pair_status_ready">可以配对</string>
@@ -2610,7 +2452,6 @@
     <string name="scout_pair_action">配对</string>
     <string name="scout_pair_hint">请将 Scout 放在这台手机旁边。新的 Scout 可直接配对：其指示灯快速闪烁。</string>
     <string name="scout_pair_didnt_see">没有看到您的 Scout？</string>
-
     <!-- %1$s is the installer address, install.networksurvey.app -->
     <string name="scout_pair_check_software">Scout 软件已安装（需用电脑在 %1$s 操作一次）。</string>
     <string name="scout_pair_check_power">已接通电源：指示灯闪烁。</string>
@@ -2632,10 +2473,8 @@
     <string name="scout_paired">%1$s 已配对。Wi-Fi 现在来自 Scout。</string>
     <string name="scout_paired_recording">%1$s 已配对。本次探测继续使用手机 Wi-Fi；探测停止后可在此切换到 Scout。</string>
     <string name="scout_organization_off">您的组织不允许在这台手机上使用 NS Scout。</string>
-
     <!-- Organization settings: where Wi-Fi comes from, %1$s is the Scout's name -->
     <string name="org_wifi_source">Wi-Fi 来源</string>
-
     <!-- NS Scout: Signals, Wi-Fi details and Settings -->
     <string name="wifi_scout_allow_body">这台手机需要「附近的设备」权限才能连接到 %1$s，Wi-Fi 来自那里。</string>
     <string name="wifi_scout_bluetooth_off_body">这台手机需要蓝牙才能连接到 %1$s，Wi-Fi 来自那里。</string>
@@ -2657,16 +2496,13 @@
     <string name="wifi_scout_action_turn_on_bluetooth">开启蓝牙</string>
     <string name="wifi_scout_action_scout_page">打开 NS Scout 页面</string>
     <string name="wifi_scout_action_use_phone">改用手机 Wi-Fi</string>
-
     <!-- The short word on the Signals strip while the Scout can't deliver -->
     <string name="wifi_scout_strip_update">需要更新</string>
     <string name="wifi_scout_now_phone">Wi-Fi 现在来自这台手机。</string>
     <string name="wifi_scout_stop_to_switch">请停止探测以切换到手机 Wi-Fi</string>
-
     <!-- The line the Wi-Fi throttle notice adds while no NS Scout is paired -->
     <string name="wifi_throttle_scout_line">NS Scout 是一块小型扩展板，可不受 Android 限制地扫描 Wi-Fi。</string>
     <string name="wifi_throttle_scout_action">关于 NS Scout</string>
-
     <!-- Wi-Fi details for an access point an NS Scout heard -->
     <string name="wifi_details_heard_by">由 %1$s 收到</string>
     <string name="wifi_details_security">安全</string>
@@ -2685,7 +2521,6 @@
     <string name="wifi_details_noise">噪声 %1$d dBm</string>
     <string name="wifi_details_unit_db">dB</string>
     <string name="wifi_details_unit_ms">ms</string>
-
     <!-- The Wi-Fi generations an access point supports, shown as "Wi-Fi 4, 5, 6" -->
     <string name="wifi_details_generations">代际</string>
     <string name="wifi_details_generation_prefix">Wi-Fi</string>
@@ -2694,17 +2529,13 @@
     <string name="wifi_details_stations">站点数</string>
     <string name="wifi_details_channel_use">信道占用</string>
     <string name="wifi_details_percent">%1$d%%</string>
-
     <!-- Settings > Wi-Fi scan rate while an NS Scout is paired. %1$s is the Scout's name -->
     <string name="settings_wifi_rate_scout">使用 %1$s 时：每个网络与客户端的保存间隔。探测期间 Scout 会持续监听。</string>
     <string name="settings_wifi_rate_scout_locked">该间隔由您的组织设置，它也决定了 %1$s 保存每个网络的频率。</string>
-
     <!-- One of the things an NS Scout adds over the phone, on the Scout page before one is paired -->
     <string name="scout_intro_clients">记录 Wi-Fi 客户端及其搜索的网络，以及可在 Wireshark 中打开的原始帧。</string>
-
     <!-- %1$s names the record types, "Wi-Fi, Wi-Fi clients and Raw frames" -->
     <string name="scout_plate_not_connected_body_types">在连接成功之前将不会记录 %1$s。请接通电源并放在这台手机旁边。</string>
-
     <!-- The third Wi-Fi list mode, only while an NS Scout is the Wi-Fi source -->
     <string name="wifi_mode_clients">客户端</string>
     <string name="wifi_clients_by_client">按客户端</string>
@@ -2713,13 +2544,10 @@
         <item quantity="one">%1$d 个客户端</item>
         <item quantity="other">%1$d 个客户端</item>
     </plurals>
-
     <!-- A text tag on a client whose MAC address has the locally administered bit set -->
     <string name="wifi_client_tag_randomized">已随机化</string>
-
     <!-- %1$s is a network name or an access point's BSSID -->
     <string name="wifi_client_connected_to">已连接到 %1$s</string>
-
     <!-- %1$s is a list of network names, "eduroam, HOME-5G" -->
     <string name="wifi_client_looking_for">正在搜索 %1$s</string>
     <string name="wifi_client_heard_only">收到其发送，网络未知</string>
@@ -2731,13 +2559,10 @@
     <string name="wifi_clients_empty">尚未收到任何 Wi-Fi 客户端。当 %1$s 收到手机、笔记本等设备的发送时，它们会显示在这里。</string>
     <string name="wifi_clients_networks_empty">尚无设备按名称搜索网络。</string>
     <string name="wifi_client_open_details">打开客户端详情</string>
-
     <!-- TalkBack for a client row: address, then the rest. %1$s is the address read in pairs -->
     <string name="wifi_client_address_spoken">地址 %1$s</string>
-
     <!-- Client details -->
     <string name="wifi_client_details_title">Wi-Fi 客户端</string>
-
     <!-- %1$s is how long ago, "just now"; %2$d is the channel -->
     <string name="wifi_client_last_heard_channel">上次收到于 %1$s · 信道 %2$d</string>
     <string name="wifi_client_last_heard">上次收到于 %1$s</string>
@@ -2756,46 +2581,36 @@
     <string name="wifi_frame_reassociation_request">重关联请求</string>
     <string name="wifi_frame_authentication">认证</string>
     <string name="wifi_frame_action">动作</string>
-
     <!-- The Connected clients card on an access point's details -->
     <string name="wifi_connected_clients_title">已连接客户端</string>
-
     <!-- %1$d clients heard talking to this access point -->
     <plurals name="wifi_connected_clients_heard">
         <item quantity="one">收到 %1$d 个</item>
         <item quantity="other">收到 %1$d 个</item>
     </plurals>
-
     <!-- NS Scout firmware update. %1$s is the Scout's name, like NS-ABCD, unless noted -->
     <string name="scout_fw_title">更新固件</string>
     <string name="scout_fw_row_checks">检查是否有更新版本</string>
-
     <!-- %1$s is a firmware version, like 0.2.0 -->
     <string name="scout_fw_row_available">可使用 %1$s</string>
     <string name="scout_fw_row_recording">探测停止后可用</string>
     <string name="scout_fw_row_updating">正在更新</string>
-
     <!-- Scout page firmware line. %1$s is the firmware version -->
     <string name="scout_info_firmware_up_to_date">%1$s · 已是最新</string>
     <string name="scout_info_firmware_available">%1$s · 有可用更新</string>
     <string name="scout_info_firmware_newer">%1$s · 高于最新发行版</string>
     <string name="scout_fw_overline">更新</string>
     <string name="scout_fw_versions_spoken">从固件 %1$s 更新到 %2$s</string>
-
     <!-- A reinstall of the version the Scout already runs, %1$s like "0.1.0" -->
     <string name="scout_fw_version_latest">%1$s · 最新发行版</string>
-
     <!-- %1$s is a date, like Oct 24, 2026 -->
     <string name="scout_fw_released">发布于 %1$s · 由 Network Survey 签名</string>
     <string name="scout_fw_signed">由 Network Survey 签名</string>
-
     <!-- %1$s is a download size, like 1.2 MB; %2$s is the Scout's name -->
     <string name="scout_fw_preflight">将下载 %1$s，随后约需一分钟。请保持 %2$s 通电并放在这台手机旁边。若连接中断，更新会从中断处继续。</string>
-
     <!-- %1$s is the Scout's name, %2$s the firmware version -->
     <string name="scout_fw_same_title">%1$s 已运行 %2$s，即最新发行版</string>
     <string name="scout_fw_older_title">最新发行版 %2$s 比 %1$s 上的固件更旧</string>
-
     <!-- %1$s is a firmware version -->
     <string name="scout_fw_newer_seen">这台手机之前见过更新的发行版（%1$s）。发布服务器可能已过期。</string>
     <string name="scout_fw_checking">正在检查更新</string>
@@ -2814,14 +2629,11 @@
     <string name="scout_fw_step_done">完成</string>
     <string name="scout_fw_step_current">进行中</string>
     <string name="scout_fw_step_waiting">未开始</string>
-
     <!-- %1$d is the share of the firmware sent, 0 to 100 -->
     <string name="scout_fw_sent_percent">已发送 %1$d%%</string>
-
     <!-- %1$d is the attempt number -->
     <string name="scout_fw_reconnecting">连接已断开。正在重连，第 %1$d 次尝试。</string>
     <string name="scout_fw_keep_open">请将手机放在 %1$s 旁边直到更新完成。</string>
-
     <!-- %1$s is a firmware version -->
     <string name="scout_fw_done_title">已更新到 %1$s</string>
     <string name="scout_fw_done_reinstalled">已重新安装 %1$s</string>
@@ -2838,28 +2650,23 @@
     <string name="scout_fw_cancel_body">传输将停止，%1$s 会保留当前固件。</string>
     <string name="scout_fw_cancel_keep">继续更新</string>
     <string name="scout_fw_back_blocked">更新仍在进行。请等待其完成。</string>
-
     <!-- The ongoing notification's title while firmware installs -->
     <string name="scout_fw_notification_title">正在更新 Scout 固件</string>
     <string name="scout_fw_consent_same">重新安装 Scout 当前运行的版本</string>
     <string name="scout_fw_consent_older">安装比 Scout 当前版本更旧的版本</string>
-
     <!-- %1$s is a firmware version -->
     <string name="scout_fw_consent_stale">尽管 %1$s 已发布，仍要安装</string>
     <string name="scout_fw_error_manifest_unavailable">无法检查固件更新。请检查网络连接后重试。</string>
     <string name="scout_fw_error_manifest_invalid">无法读取固件发行信息。请稍后重试。</string>
     <string name="scout_fw_error_manifest_signature">该固件发行版未由受信任的密钥签名，因此未使用。</string>
     <string name="scout_fw_error_format">该固件发行版需要更新版本的 Network Survey。请先更新应用。</string>
-
     <!-- %1$s is the offered version, %2$s the oldest version still considered safe -->
     <string name="scout_fw_error_stale">发布服务器提供固件 %1$s，但低于 %2$s 的版本已不再被视为安全。服务器可能已过期。请稍后重试。</string>
-
     <!-- %1$s is the Scout's model -->
     <string name="scout_fw_error_no_image">%1$s 没有官方固件。要更新它，请用电脑通过 USB 安装您自己的构建。</string>
     <string name="scout_fw_error_download">固件下载失败。请检查网络连接后重试。</string>
     <string name="scout_fw_error_corrupt">下载的固件已损坏。请重试。</string>
     <string name="scout_fw_error_signature">固件签名与受信任的密钥不匹配。文件可能已被更改。</string>
-
     <!-- %1$s is the image's chip, %2$s the Scout's name, %3$s the Scout's chip -->
     <string name="scout_fw_error_wrong_chip">该固件是为 %1$s 构建的，但 %2$s 中的芯片是 %3$s。</string>
     <string name="scout_fw_error_wrong_board">该固件适用于其它开发板型号，因此未发送到 %1$s。请重新开始以获取正确的固件。</string>
@@ -2872,15 +2679,12 @@
     <string name="scout_fw_error_verify">%1$s 在传输后拒绝了该固件（校验和或镜像检查失败）。它将保留当前固件。</string>
     <string name="scout_fw_error_protocol">由于 %1$s 返回了意外响应，更新已停止。请重试。</string>
     <string name="scout_fw_error_did_not_return">%1$s 重启后未重新连接。请确认已通电且在附近，然后打开 Scout 页面。</string>
-
     <!-- %2$s is the firmware version the Scout went back to -->
     <string name="scout_fw_error_rolled_back">%1$s 已回退到固件 %2$s：新固件未能正常启动。</string>
     <string name="scout_fw_error_not_confirmed">%1$s 已用固件 %2$s 重启，但未确认新镜像，因此可能已回退到之前的副本。请检查 Scout，必要时重新安装。</string>
-
     <!-- %2$s is the version found, %3$s the version installed -->
     <string name="scout_fw_error_unexpected">%1$s 重启后运行的是固件 %2$s，而不是 %3$s。</string>
     <string name="scout_fw_error_canceled">更新已取消。%1$s 保留当前固件。</string>
-
     <!-- NS Scout: Raw frames -->
     <string name="survey_raw_confirm_title">保存原始 Wi-Fi 帧？</string>
     <string name="survey_raw_confirm_body">原始帧包含附近设备的地址与网络名称，其中也包括他人的设备。它们只会保存到这台手机的日志文件，绝不会发送到任何地方。</string>
@@ -2890,10 +2694,8 @@
     <string name="survey_records_raw_failed_word">已停止</string>
     <string name="survey_records_raw_storage_full">这台手机存储空间即将耗尽，因此原始帧已停止保存。目前已写入的文件会保留。请释放空间，然后开始新的探测以继续保存。</string>
     <string name="survey_records_raw_failed">原始帧无法写入日志文件，因此已停止保存。目前已写入的文件会保留。</string>
-
     <!-- The Log files folder's description once an NS Scout is paired -->
     <string name="log_files_location_detail_raw">%1$s · CSV，每种记录类型一个文件（蜂窝网络按制式分开），外加设备状态；原始帧保存为可在 Wireshark 中打开的 pcapng 文件。原始帧文件增长很快。</string>
-
     <!-- A raw frames file in the Log files list: %1$s is the size, %2$s when it was last written -->
     <string name="log_files_row_detail_raw">原始帧（pcapng） · %1$s · %2$s</string>
 </resources>
