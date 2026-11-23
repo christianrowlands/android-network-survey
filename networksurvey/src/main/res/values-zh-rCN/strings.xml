@@ -17,13 +17,12 @@
     <string name="bluetooth_permissions_rationale_title">蓝牙权限</string>
     <string name="bluetooth_permissions_rationale">执行蓝牙扫描以进行探测需要“查找附近设备”权限。如果拒绝此权限，蓝牙探测将无法工作。</string>
     <string name="background_location_permission_rationale_title">后台位置权限</string>
-    <string name="background_location_permission_rationale">网络探测需要收集位置数据，以便在设备启动时自动开始蜂窝网络、Wi-Fi、蓝牙和 GNSS 探测，即使应用已关闭或未在使用中也是如此。
-        \n\n如果没有后台位置权限，此应用将无法在设备启动时开始蜂窝网络、Wi-Fi 或 GNSS 探测。如果您不希望手机启动时自动开始探测，则无需启用此权限。\n\n请通过点击下一页上的 <b>始终允许</b>，在 Android 设置中为这款应用启用后台位置权限。</string>
+    <string name="background_location_permission_rationale">Network Survey 需要收集位置数据，以便在设备启动时自动开始蜂窝网络、Wi-Fi、蓝牙和 GNSS 探测，即使应用已关闭或未在使用中也是如此。\n\n如果没有后台位置权限，此应用将无法在设备启动时开始蜂窝网络、Wi-Fi 或 GNSS 探测。如果您不希望手机启动时自动开始探测，则无需启用此权限。\n\n请在下一页选择<b>始终允许</b>，在 Android 设置中为此应用启用后台位置权限。</string>
     <string name="open_settings">打开设置</string>
     <string name="deny_permission">拒绝权限</string>
     <string name="settings_not_available">此设备不支持设置界面</string>
     <string name="grant_bluetooth_scan_permission">蓝牙探测需要“查找附近设备”权限</string>
-    <string name="grant_bluetooth_connect_permission">蓝牙探测不需要蓝牙连接权限，但该权限可以获取设备名称。</string>
+    <string name="grant_bluetooth_connect_permission">蓝牙探测不需要蓝牙连接权限，但该权限可以获取设备名称</string>
     <string name="carrier_unknown">未知运营商</string>
     <string name="voice_bearer_wifi_calling">Wi-Fi 通话</string>
     <string name="voice_bearer_none">无</string>
@@ -55,7 +54,7 @@
     <string name="upload_to_opencellid">上传到 OpenCelliD （蜂窝网络）</string>
     <string name="anonymously">匿名</string>
     <string name="upload_dialog_message">上传您的探测记录将会与第三方服务共享位置数据。向这些众包数据库贡献数据有助于改善覆盖地图和地理定位精度。您的参与完全出于自愿；是否共享数据的选择权完全在您手中。</string>
-    <string name="access_token_warning">您必须在首选项中输入有效的访问令牌。</string>
+    <string name="access_token_warning">您必须在首选项中输入有效的访问令牌</string>
     <string name="upload_to_beacondb">上传到 BeaconDB（蜂窝网络和 Wi-Fi）</string>
     <string name="retry_on_failure">失败时重试</string>
     <string name="dont_show_again">失败时重试</string>
@@ -74,20 +73,20 @@
     <string name="card_title_neighbors_lte">LTE 邻区</string>
     <string name="card_title_neighbors_nr">NR 邻区</string>
     <string name="gsm_info_description">GSM 术语信息</string>
-    <string name="gsm_cellular_terms_explanation"><b>MCC</b> （移动国家码）: 移动网络的唯一国家标识符。\n\n
-        <b>MNC</b> （移动网络码）: 国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n
-        <b>LAC</b> （位置区码）: 一组用于寻呼的基站的标识符。\n\n
-        <b>CID</b> （小区标识）: 特定基站的标识符。MCC、MNC、LAC 和 CID 共同唯一标识全球范围内一个特定的 GSM 小区扇区。.\n\n
-        <b>ARFCN</b> （绝对射频频道号）: 表示 GSM 载波频率的编号。\n\n
-        <b>BSIC</b> （基站识别码）: 物理层小区标识符，帮助移动设备在使用相同频率的小区选择/重选过程中区分两个不同的小区。\n\n
-        <b>RSSI</b> （接收信号强度指示）: 移动设备接收到的下行链路信号功率，单位为 dBm。\n\n</string>
+    <string name="gsm_cellular_terms_explanation"><b>MCC</b>（移动国家码）：移动网络的唯一国家标识符。\n\n
+        <b>MNC</b>（移动网络码）：国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n
+        <b>LAC</b>（位置区码）：一组用于寻呼的基站的标识符。\n\n
+        <b>CID</b>（小区标识）：特定基站的标识符。MCC、MNC、LAC 和 CID 共同唯一标识全球范围内一个特定的 GSM 小区扇区。\n\n
+        <b>ARFCN</b>（绝对射频频道号）：表示 GSM 载波频率的编号。\n\n
+        <b>BSIC</b>（基站识别码）：物理层小区标识符，帮助移动设备在使用相同频率的小区选择/重选过程中区分两个不同的小区。\n\n
+        <b>RSSI</b>（接收信号强度指示）：移动设备接收到的下行链路信号功率，单位为 dBm。\n\n</string>
     <string name="umts_info_description">UMTS 术语信息</string>
-    <string name="umts_cellular_terms_explanation"><b>MCC</b> （移动国家码）: 移动网络的唯一国家标识符。\n\n
-        <b>MNC</b> （移动网络码）: 国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n
-        <b>LAC</b> （位置区码）: 一组用于寻呼的基站的标识符。\n\n
-        <b>CID</b> （小区标识）: 特定基站的标识符。MCC、MNC、LAC 和 CID 共同唯一标识全球范围内一个特定的 GSM 小区扇区。.\n\n
-		<b>UARFCN</b>UTRA 绝对射频频道号）：表示 UMTS 载波频率的编号。\n\n
-		<b>PSC</b>（主扰码）：物理层小区标识符，帮助移动设备区分使用相同频率的两个不同小区。\n\n
+    <string name="umts_cellular_terms_explanation"><b>MCC</b>（移动国家码）：移动网络的唯一国家标识符。\n\n
+        <b>MNC</b>（移动网络码）：国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n
+        <b>LAC</b>（位置区码）：一组用于寻呼的基站的标识符。\n\n
+        <b>CID</b>（小区标识）：特定基站的标识符。MCC、MNC、LAC 和 CID 共同唯一标识全球范围内一个特定的 UMTS 小区扇区。\n\n
+        <b>UARFCN</b>（UTRA 绝对射频频道号）：表示 UMTS 载波频率的编号。\n\n
+        <b>PSC</b>（主扰码）：物理层小区标识符，帮助移动设备区分使用相同频率的两个不同小区。\n\n
         <b>RSSI</b>（接收信号强度指示）：移动设备接收到的下行链路信号功率，单位为 dBm。\n\n
         <b>RSCP</b>（接收信号码功率）：移动设备接收到的参考信号功率，单位为 dBm。\n\n</string>
     <string name="lte_info_description">LTE 术语信息</string>
@@ -108,15 +107,9 @@
         <b>SNR</b>（信噪比）：参考信号的信噪比，单位为 dB。完整范围：-20 dB 至 +30 dB，其中 30 为最佳。常见范围约为 5 至 15。\n</string>
     <string name="nr_info_description">NR 术语信息</string>
     <string name="nr_cellular_terms_explanation"><b>MCC</b>（移动国家码）：移动网络的唯一国家标识符。\n\n <b>MNC</b>（移动网络码）：国家内移动网络的唯一标识符。MCC 和 MNC 共同代表特定的服务提供商（例如 T-Mobile）。\n\n <b>TAC</b>（跟踪区码）：一组用于寻呼的基站的标识符。\n\n <b>CID</b>（小区标识）：特定基站的标识符。MCC、MNC 和 CID 共同唯一标识全球范围内一个特定的 NR 小区扇区。\n\n <b>NARFCN</b>（新空口绝对射频频道号）：表示 NR 载波频率的编号。\n\n <b>Band</b>（频段）：3GPP NR 工作频段（例如 n77）。低于 n257 的频段为 Sub-6（FR1），n257 及以上为毫米波（FR2）。\n\n <b>Frequency</b>（频率）：根据 NARFCN 计算出的 NR 载波中心频率，单位为 MHz。\n\n <b>PCI</b>（物理小区 ID）：物理层小区标识符，帮助移动设备在使用相同频率的小区选择/重选过程中区分两个不同的小区。有效范围 0–1007。括号中的数字表示主同步序列（PSS）和辅同步序列（SSS）。\n\n <b>TA</b>（时间提前量）：移动设备用于保持其传输与基站同步的时间偏移量。代表与基站之间的射频距离，可大致换算为物理距离。数值越大表示设备离基站越远。\n\n <b>SS_RSRP</b>（同步信号参考信号接收功率）：移动设备接收到的参考信号功率，单位为 dBm。有效范围 -31 至 -156。\n\n <b>SS_RSRQ</b>（同步信号参考信号接收质量）：衡量接收到的参考信号的质量。有效范围 20 至 -43，其中 20 为最佳。\n\n <b>SS_SINR</b>（基于同步信号的信号与干扰加噪声比）：衡量相对于干扰和噪声的信号质量，单位为 dB。有效范围 -23 至 40，其中 40 为最佳。\n</string>
-    <string name="nr_secondary_cell_explanation"><b>这张卡片是什么？</b> 辅小区是您的手机在主小区之外正在使用的 5G NR 小区，
-        在 5G 非独立组网（NSA）网络中，您的手机注册在一个 LTE 小区（锚点）上，
-        5G 数据通过这个 NR 小区传输，因此显示在此处，
-        而不是显示在邻区表中。在采用载波聚合的 5G 独立组网网络中，
-        这是一个用于提升速率的附加 NR 载波。\n\n
-        在 NSA 下，NR 小区仅在有数据正在传输时才会附着，传输停止几秒后即断开。
-        此时该卡片会变暗并显示最近一次的数值，附带空闲徽标，
-        待下一次数据流动时恢复为实时数值。\n\n
-        <b>频段</b>：3GPP NR 工作频段（例如 n77）。低于 n257 的频段为 Sub-6（FR1），n257 及以上为 mmWave（FR2）。\n\n
+    <string name="nr_secondary_cell_explanation"><b>这张卡片是什么？</b> 辅小区是您的手机在主小区之外正在使用的 5G NR 小区。在 5G 非独立组网（NSA）网络中，您的手机注册在一个 LTE 小区（锚点）上，5G 数据通过这个 NR 小区传输，因此显示在此处，而不是显示在邻区表中。在采用载波聚合的 5G 独立组网网络中，这是一个用于提升速率的附加 NR 载波。\n\n
+        在 NSA 下，NR 小区仅在有数据正在传输时才会附着，传输停止几秒后即断开。此时该卡片会变暗并显示最近一次的数值，附带空闲徽标，待下一次数据流动时恢复为实时数值。\n\n
+        <b>频段</b>：3GPP NR 工作频段（例如 n77）。低于 n257 的频段为 Sub-6（FR1），n257 及以上为毫米波（FR2）。\n\n
         <b>频率</b>：NR 载波的中心频率，单位为 MHz，由 NARFCN 计算得出。\n\n
         <b>PCI</b>（物理 Cell ID）：物理层小区标识，用于帮助移动设备在使用相同频率的小区选择/重选过程中区分两个小区。有效范围 0-1007。括号中的数值代表主同步序列（PSS）和辅同步序列（SSS）。\n\n
         <b>NARFCN</b>（新空口绝对射频信道号）：表示 NR 载波频率的编号。\n\n
@@ -131,7 +124,7 @@
     <string name="report_issue">报告问题</string>
     <string name="network_survey_service_description">当应用需要在后台执行工作时（例如写入日志文件或通过活动连接流式传输数据），Network Survey 服务会运行</string>
     <string name="connection_service_description">连接服务负责管理与远程服务器的连接，以流式传输 Network Survey 数据</string>
-    <string name="notification_channel_name">网络探测</string>
+    <string name="notification_channel_name">Network Survey</string>
     <string name="notification_list_separator">", "</string>
     <string name="notification_protocols_line">正在扫描：%1$s</string>
     <string name="notification_health_battery_low">电池电量低（%1$d%%）</string>
@@ -371,7 +364,7 @@
     <string name="include_neighbor_cells_title">包含邻区</string>
     <string name="include_neighbor_cells_summary_on">所有附近的小区（服务小区和邻区）都将包含在日志记录和流式传输中</string>
     <string name="include_neighbor_cells_summary_off">仅记录和流式传输服务小区（已注册），减少记录量</string>
-    <string name="include_neighbor_cells_description">禁用时，仅包含服务小区（已注册）。邻区将从所有输出中排除，包括日志记录、流式传输和显示。这会减少数据量，但会丢失对周围小区环境的可见性。默认启用（推荐）。</string>
+    <string name="include_neighbor_cells_description">禁用时，仅包含服务小区（已注册）。邻区将从所有输出中排除，包括日志记录、流式传输和显示。这会减少数据量，但会丢失对周围小区环境的可见性。默认启用（推荐）</string>
     <string name="cellular_scan_interval_title">蜂窝网络扫描间隔</string>
     <string name="cellular_scan_interval_description">扫描蜂窝基站的速率（单位：秒）。较小的数值会降低电池续航。</string>
     <string name="wifi_scan_interval_title">Wi-Fi 扫描间隔</string>
@@ -399,8 +392,8 @@
     <plurals name="map_towers_truncated">
         <item quantity="other">仅显示前 %1$,d 座基站。放大地图或缩小筛选范围即可查看全部。</item>
     </plurals>
-    <string name="map_age_filter_not_btsearch">时间筛选不适用于 BTSearch 数据</string>
-    <string name="map_key_fallback_toast">无法加载地图密钥，因此正在显示其他地图瓦片</string>
+    <string name="map_age_filter_not_btsearch">时间筛选不适用于 BTSearch 数据。</string>
+    <string name="map_key_fallback_toast">无法加载地图密钥，因此正在显示其他地图瓦片。</string>
     <string name="map_about_title">关于地图</string>
     <string name="map_about_towers">基站位置来自 OpenCelliD（https://opencellid.org）等众包数据库。这些位置依据探测结果估算，可能存在偏差；若对精度要求较高，请核对其他来源。</string>
     <string name="map_action_search">搜索基站</string>
@@ -703,7 +696,7 @@
     <string name="preferences">偏好设置</string>
     <string name="show_upload_dialog_pref_title">每次上传前询问</string>
     <string name="uploader_enqueued">上传失败，稍后将重试。</string>
-    <string name="uploader_waiting_to_start">手机具备运行条件后将立即开始上传</string>
+    <string name="uploader_waiting_to_start">手机具备运行条件后将立即开始上传。</string>
     <string name="upload_disabled_via_mdm">已由您的组织停用</string>
     <string name="ns_analytics_disabled_via_mdm">已由您的组织停用</string>
     <string name="upload_saving_toggle_failed">尝试开始保存记录以供上传时发生错误</string>
@@ -785,7 +778,7 @@
     <string name="clear_all">全部清除</string>
     <string name="confirm_clear_exclusion_list_title">清空排除列表？</string>
     <string name="confirm_clear_exclusion_list_message">这会从排除列表中移除所有 SSID。</string>
-    <string name="wifi_exclusion_info">被排除的 SSID 将不会保存到文件或上传到数据库</string>
+    <string name="wifi_exclusion_info">被排除的 SSID 不会写入日志文件，也不会上传或流式传输。它们仍会显示在 Wi-Fi 列表中，并带有“已排除”标签</string>
     <string name="ssid_exclusion_status_title">已排除的 SSID</string>
     <string name="ssid_exclusion_status_full_title">排除列表已满</string>
     <string name="ssid_exclusion_section_count">已排除 · %1$d</string>
@@ -2056,7 +2049,7 @@
     <string name="wifi_sort_security_type">安全类型</string>
     <string name="bluetooth_sort_signal_strength">信号强度</string>
     <string name="bluetooth_sort_address">源地址</string>
-    <string name="bluetooth_sort_name">OTA 设备名称</string>
+    <string name="bluetooth_sort_name">名称</string>
     <string name="bluetooth_sort_technology">技术支持</string>
     <string name="location_source_fused">融合定位</string>
     <string name="location_source_network">网络定位</string>
