@@ -9,6 +9,9 @@
 * The Wi-Fi CSV file keeps CSV Version 0.4.0 and its columns. Columns that the phone never fills (such as service set type, supported rates and AKM suites) stay empty for phone scans and are filled for NS Scout records.
 * Other apps can't start Wi-Fi clients or Raw frames through the Intent API: `wifi_clients` and `wifi_raw` in a start request are left out and the rest of the request starts. An organization's `survey_wifi_clients` or `survey_wifi_raw` set to `on` still applies.
 
+**BUG FIXES**
+* Fix survey records being written with no location, latitude and longitude `0.000000` and an empty `locationAge`, on devices where one of the optional location providers the app registers does not exist. Registering those providers could throw and stop the primary location listener from being registered at all, so no record ever received a fix.
+
 ## [2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0) - 2026-10-29
 
 Network Survey 2.0 rebuilds the whole app.
