@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.survey.model
 
 import com.craxiom.networksurvey.logging.RawFramesProgress
+import com.craxiom.networksurvey.privacy.PrivacyZoneState
 import com.craxiom.networksurvey.scout.model.ScoutState
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.model.Destination
@@ -39,6 +40,8 @@ import com.craxiom.networksurvey.survey.status.ScoutWifiStatus
  *                                 without one, or when the organization doesn't allow it.
  * @property scoutLastHeardAtMs    When the Scout last sent a status, for "Last heard 2 minutes ago".
  * @property rawFrames             What the raw frames files saved this survey, null while none are saved.
+ * @property privacyZone           Whether the phone is in a privacy zone, for the Ready line (the
+ *                                 running survey reads it from [runtime]).
  */
 data class SurveyInputs(
     val runtime: SurveyRuntimeState,
@@ -62,6 +65,7 @@ data class SurveyInputs(
     val scout: ScoutState = ScoutState.NotPaired,
     val scoutLastHeardAtMs: Long? = null,
     val rawFrames: RawFramesProgress? = null,
+    val privacyZone: PrivacyZoneState = PrivacyZoneState.UNDECIDED,
 ) {
     /** True when a Scout is paired (and the organization allows one), so Scout-only types are offered. */
     val scoutPaired: Boolean get() = scout.scout != null

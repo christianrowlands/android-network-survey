@@ -28,9 +28,16 @@ data class SurveyStatus(
     val recordTypes: Set<RecordType> = emptySet(),
     val pausedForBattery: Boolean = false,
     val pausedForBackpressure: Boolean = false,
+    val pausedForPrivacyZone: Boolean = false,
 ) {
-    /** True while scanning is paused for low battery or a full MQTT queue. */
-    val paused: Boolean get() = pausedForBattery || pausedForBackpressure
+    /**
+     * True while nothing is recorded: scanning is paused for low battery or a full MQTT queue, or
+     * the phone is in a privacy zone (where scans go on for the live screens but nothing is saved).
+     */
+    val paused: Boolean get() = pausedForBattery || pausedForBackpressure || pausedForPrivacyZone
+
+    /** True while the scans themselves have stopped (not in a privacy zone, where they go on). */
+    val scansPaused: Boolean get() = pausedForBattery || pausedForBackpressure
 
     /**
      * @return True when the screen should stay on: a survey records, the user wants the screen on
@@ -45,6 +52,7 @@ data class SurveyStatus(
             recordTypes = state.recordTypes,
             pausedForBattery = state.pausedForBattery,
             pausedForBackpressure = state.pausedForBackpressure,
+            pausedForPrivacyZone = state.pausedForPrivacyZone,
         )
     }
 }

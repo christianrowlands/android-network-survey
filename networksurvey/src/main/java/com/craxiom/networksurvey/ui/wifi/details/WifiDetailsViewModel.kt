@@ -20,6 +20,7 @@ import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.signals.ScanConditions
 import com.craxiom.networksurvey.ui.signals.ScanListenerRegistration
 import com.craxiom.networksurvey.ui.wifi.clients.WifiClientFeed
+import com.craxiom.networksurvey.ui.wifi.model.ConnectedWifi
 import com.craxiom.networksurvey.ui.wifi.model.SourceAwareWifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiEnvironment
 import com.craxiom.networksurvey.ui.wifi.model.WifiScanState
@@ -31,9 +32,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -58,6 +61,7 @@ class WifiDetailsViewModel internal constructor(
     watchlistMatches: (WifiNetwork) -> Flow<Boolean>,
     private val chartSink: RssiChartSink,
     private val mainDispatcher: CoroutineDispatcher,
+    connectedBssids: Flow<String?> = emptyFlow(),
 ) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
@@ -67,6 +71,7 @@ class WifiDetailsViewModel internal constructor(
         watchlistMatches = { network -> watchedIn(application, network) },
         chartSink = StoredRssiChart(),
         mainDispatcher = Dispatchers.Main,
+        connectedBssids = ConnectedWifi.bssids(application),
     )
 
     private val mutableNetwork = MutableStateFlow<WifiNetwork?>(null)
@@ -107,6 +112,11 @@ class WifiDetailsViewModel internal constructor(
     val watched: StateFlow<Boolean> = mutableNetwork.filterNotNull()
         .flatMapLatest(watchlistMatches)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
+
+    /** Whether the phone is connected to this access point; follows a roam while the page shows. */
+    val connected: StateFlow<Boolean> = combine(connectedBssids.onStart { emit(null) }, mutableNetwork) { connected, network ->
+        network != null && ConnectedWifi.isConnected(network.bssid, connected)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
     /** The chart to draw (null in tests). */
     val chart = chartSink.chart

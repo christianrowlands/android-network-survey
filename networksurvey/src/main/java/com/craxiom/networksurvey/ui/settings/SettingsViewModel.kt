@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.privacy.PrivacyZoneStore
 import com.craxiom.networksurvey.scout.ScoutManager
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource
@@ -198,6 +199,8 @@ class SettingsViewModel internal constructor(
             appInstanceId = appInstanceId,
             // Read with the rest on refresh, so pairing or removing a Scout shows on the way back
             scoutName = ScoutManager.getInstance(application).pairedScout.value?.name,
+            // Read on refresh too, so the count is right on the way back from the zones page
+            privacyZoneCount = PrivacyZoneStore.getInstance(application).zones.value.size,
         )
     }
 }

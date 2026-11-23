@@ -2,8 +2,10 @@ package com.craxiom.networksurvey.services.controller
 
 import com.craxiom.networksurvey.logging.WifiClientCsvLogger
 import com.craxiom.networksurvey.logging.WifiProbeCsvLogger
+import com.craxiom.networksurvey.privacy.PrivacyZoneTestGate
 import com.craxiom.networksurvey.scout.ScoutManager
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.PrivacyZoneHold
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.mock
@@ -16,7 +18,10 @@ import org.robolectric.RobolectricTestRunner
 class WifiClientsControllerRolloverTest {
     private val clientLogger = mock<WifiClientCsvLogger>()
     private val probeLogger = mock<WifiProbeCsvLogger>()
-    private val controller = WifiClientsController(mock<NetworkSurveyService>(), mock<WifiController>(), mock<ScoutManager>(), clientLogger, probeLogger)
+    private val controller = WifiClientsController(
+        mock<NetworkSurveyService>(), mock<WifiController>(), mock<ScoutManager>(), clientLogger, probeLogger,
+        PrivacyZoneHold(PrivacyZoneTestGate().gate),
+    )
 
     @Test
     fun `a rollover setting change reaches both files`() {

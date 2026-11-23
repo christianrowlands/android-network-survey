@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.logging.db.CommunityQueueScrubber;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.SurveyedPointStore;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
@@ -107,6 +108,9 @@ public class NsUploaderWorker extends Worker
                 uploadResultBundle.setResult(UploadTarget.BeaconDB, UploadResult.UploadDisabledForTarget);
                 return Result.success(getResultData(uploadResultBundle));
             }
+
+            // Records queued inside a privacy zone (including before the zone existed) never go out
+            CommunityQueueScrubber.scrubActiveZones(getApplicationContext());
 
             SurveyRecordDao dao = database.surveyRecordDao();
             // Records every target in play already has (a target turned off since) can go first

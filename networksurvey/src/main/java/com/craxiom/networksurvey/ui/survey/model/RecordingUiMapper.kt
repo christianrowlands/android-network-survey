@@ -22,7 +22,7 @@ internal object RecordingUiMapper {
 
     fun recording(inputs: SurveyInputs, form: FormFacts): RecordingUi {
         val runtime = inputs.runtime
-        val paused = runtime.pausedForBattery || runtime.pausedForBackpressure
+        val paused = runtime.paused
         val types = SurveyUiStateMapper.ordered(runtime.recordTypes)
         // The community databases only save a record once the phone has moved, so counting every
         // record processed would climb while standing still; they show what was saved instead.
@@ -161,7 +161,7 @@ internal object RecordingUiMapper {
     ): DestinationStatus = DestinationStatusRules.status(
         destination = destination,
         runtime = runtime.destinations[destination],
-        paused = runtime.pausedForBattery || runtime.pausedForBackpressure,
+        paused = runtime.paused,
         queues = queues,
         autoUpload = DestinationStatusRules.AutoUpload(info.nsAnalyticsAutoUpload, info.communityAutoUpload),
         nowMs = nowMs,
@@ -179,13 +179,17 @@ internal object RecordingUiMapper {
         if (runtime.pausedForBackpressure) {
             plates += AttentionPlateUi.MqttOnlyPaused(inputs.destinationInfo.queueLimitSetByOrganization)
         }
+        // A deliberate pause, not a problem: its own plate, never a "Needs attention" item
+        if (runtime.pausedForPrivacyZone) {
+            plates += AttentionPlateUi.PrivacyZonePaused(runtime.privacyZoneName)
+        }
         if (runtime.mqttDropping) {
             plates += AttentionPlateUi.MqttDropping(
                 Destination.entries.filter { it != Destination.MQTT && it in runtime.destinations }
             )
         }
         val stalled = runtime.stalledMinutes
-        if (stalled != null && !runtime.pausedForBattery && !runtime.pausedForBackpressure) {
+        if (stalled != null && !runtime.paused) {
             plates += AttentionPlateUi.Stalled(stalled)
         }
         val (scoutPlates, items) = ScoutSurveyMapper.splitRecording(attentionItems(inputs) + deliveryItems(inputs, runtime.mqttDropping))

@@ -25,6 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger
  *                                         restored, or its session ends.
  * @param onSessionEnded                   Called (outside the lock) with the session that just ended,
  *                                         so it can be persisted.
+ * @param onSessionStarted                 Called (inside the lock) when a new session starts, before
+ *                                         the caller registers any listener that can emit a record.
+ * @param onSessionClosed                  Called (inside the lock) when the session ends or a failed
+ *                                         start clears it. With [onSessionStarted] it runs under the
+ *                                         lock, so a Stop and a Start racing on two threads always
+ *                                         reach these hooks in the order the sessions changed (an end
+ *                                         never lands after the next start). Both must be short and
+ *                                         must never call back into this tracker.
  */
 class MissionSessionTracker(
     private val generateMissionId: () -> String,
@@ -33,6 +41,8 @@ class MissionSessionTracker(
     private val onMissionIdChanged: (missionId: String?, missionSessionActive: Boolean) -> Unit,
     private val clock: () -> Long = System::currentTimeMillis,
     private val onSessionEnded: (LastSession) -> Unit = {},
+    private val onSessionStarted: () -> Unit = {},
+    private val onSessionClosed: () -> Unit = {},
 ) {
     private val lock = Any()
 
@@ -102,6 +112,7 @@ class MissionSessionTracker(
                 Timber.i("Starting new survey session")
                 sessionStartTimeMs = clock()
                 resetCounts()
+                onSessionStarted()
             }
 
             if (missionRelevant) sawMissionRelevant = true
@@ -186,8 +197,10 @@ class MissionSessionTracker(
             }
 
             if (!isAnySurveyActive()) {
+                val hadSession = sessionStartTimeMs != null
                 sessionStartTimeMs = null
                 resetCounts()
+                if (hadSession) onSessionClosed()
             }
         }
         notify?.let { onMissionIdChanged(it.missionId, it.missionSessionActive) }
@@ -208,6 +221,7 @@ class MissionSessionTracker(
         lastSession = ended
         sessionStartTimeMs = null
         resetCounts()
+        onSessionClosed()
         return ended
     }
 

@@ -33,6 +33,7 @@ import com.craxiom.networksurvey.data.oui.OuiStatus
 import androidx.compose.ui.res.stringResource
 import com.craxiom.networksurvey.ui.common.NsCardHeader
 import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
+import com.craxiom.networksurvey.ui.common.longPressCopy
 
 /**
  * Authoritative manufacturer identity card for a Bluetooth device. Always renders the three
@@ -94,7 +95,8 @@ fun BluetoothManufacturerCard(
             text = primaryText,
             style = MaterialTheme.typography.titleMedium.copy(
                 fontStyle = if (primaryItalic) FontStyle.Italic else FontStyle.Normal
-            )
+            ),
+            modifier = Modifier.longPressCopy(stringResource(R.string.manufacturer_label), primary),
         )
 
         SourcesSection(sources)
@@ -185,6 +187,8 @@ private fun SourceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // A long press copies a vendor the source named, not a placeholder like "Not advertised"
+            .longPressCopy(label, value.takeUnless { italic })
             .background(bg, MaterialTheme.shapes.small)
             .padding(vertical = 4.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically

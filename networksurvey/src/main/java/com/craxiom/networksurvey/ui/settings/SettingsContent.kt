@@ -14,6 +14,7 @@ import com.craxiom.networksurvey.ui.common.NsRow
 import com.craxiom.networksurvey.ui.common.NsRowDivider
 import com.craxiom.networksurvey.ui.common.NsRowGroup
 import com.craxiom.networksurvey.ui.common.NsSwitchRow
+import com.craxiom.networksurvey.ui.privacy.PrivacyZonesRow
 
 /** What the Settings rows ask the page to do. */
 interface SettingsActions {
@@ -31,6 +32,7 @@ interface SettingsActions {
     fun onOpenUploads()
     fun onOpenMapSettings()
     fun onOpenSsidExclusions()
+    fun onOpenPrivacyZones()
     fun onOpenOrganization()
     fun onCopy(label: String, value: String)
 }
@@ -40,7 +42,7 @@ enum class SettingsPicker { SCAN_RATES, LOCATION_SOURCE, BATTERY_THRESHOLD, THEM
 
 /**
  * The Settings page: grouped panels under small labels, as in the prototype (Survey, Phone,
- * Destinations, Watchlist, Map and lookups, Fleet, Device IDs). A setting the organization set
+ * Destinations, Privacy, Watchlist, Map and lookups, Fleet, Device IDs). A setting the organization set
  * keeps its value, shows "Set by your organization" and explains itself on a tap.
  */
 @Composable
@@ -54,6 +56,7 @@ fun SettingsContent(state: SettingsUiState, actions: SettingsActions, snackbarHo
         SurveyGroup(state, actions)
         PhoneGroup(state, actions)
         DestinationsGroup(state, actions)
+        PrivacyGroup(state, actions)
         WatchlistGroup(state, actions)
         MapGroup(state, actions)
         FleetGroup(state, actions)
@@ -168,6 +171,33 @@ private fun DestinationsGroup(state: SettingsUiState, actions: SettingsActions) 
     }
 }
 
+/**
+ * The two privacy controls side by side, since they cover each other's gaps: privacy zones keep
+ * places out, the SSID exclusion list keeps the user's own network out everywhere. Zones turned off
+ * by the organization stay off with the override on, so that row reads the policy, not the lock.
+ */
+@Composable
+private fun PrivacyGroup(state: SettingsUiState, actions: SettingsActions) {
+    NsGroupLabel(stringResource(R.string.settings_group_privacy))
+    NsRowGroup {
+        PrivacyZonesRow(
+            count = state.privacyZoneCount,
+            allowed = state.privacyZonesAllowed,
+            summary = R.plurals.privacy_zones_summary,
+            noneText = R.string.privacy_zones_summary_none,
+            onOpen = actions::onOpenPrivacyZones,
+            onBlocked = actions::onBlocked,
+        )
+        NsRowDivider()
+        NsRow(
+            title = stringResource(R.string.ssid_exclusion_list_title),
+            subtitle = stringResource(R.string.ssid_exclusion_list_description),
+            icon = R.drawable.ic_wifi,
+            onClick = actions::onOpenSsidExclusions,
+        )
+    }
+}
+
 @Composable
 private fun WatchlistGroup(state: SettingsUiState, actions: SettingsActions) {
     NsGroupLabel(stringResource(R.string.watchlist_settings_title))
@@ -202,13 +232,6 @@ private fun MapGroup(state: SettingsUiState, actions: SettingsActions) {
         LockableSwitch(R.string.settings_oui_title, state.ouiLookup, actions, R.drawable.ic_search_24, R.string.settings_oui_summary) {
             actions.onSwitch(NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED, it)
         }
-        NsRowDivider()
-        NsRow(
-            title = stringResource(R.string.ssid_exclusion_list_title),
-            subtitle = stringResource(R.string.ssid_exclusion_list_description),
-            icon = R.drawable.ic_wifi,
-            onClick = actions::onOpenSsidExclusions,
-        )
     }
 }
 

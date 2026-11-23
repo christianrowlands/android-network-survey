@@ -75,6 +75,7 @@ internal fun buildGroupParents(
         val encryptionLabel = distinctSecurity.joinToString(WifiBeaconMessageConstants.SECURITY_LABEL_SEPARATOR)
         val anyPasspoint = sortedAps.any { it.passpoint }
         val excludedCount = sortedAps.count { it.isExcluded }
+        val containsConnected = sortedAps.any { it.isConnected }
         WifiDisplayItem.GroupParent(
             groupKey = groupKey,
             displaySsid = displaySsid,
@@ -86,6 +87,7 @@ internal fun buildGroupParents(
             anyPasspoint = anyPasspoint,
             expanded = expandedGroupKeys.contains(groupKey),
             excludedCount = excludedCount,
+            containsConnected = containsConnected,
         )
     }.sortedWith(groupComparator(sortIndex))
 }
@@ -125,11 +127,12 @@ internal fun dedupeByBssid(wrappers: List<WifiRecordWrapper>): List<WifiRecordWr
 /**
  * The display of each wrapper, reusing [cache]'s entry when its values did not change, so an
  * unchanged access point keeps its reference and its row skips recomposition. New and changed
- * entries are written to [cache].
+ * entries are written to [cache]. The access point whose BSSID is [connectedBssid] is marked connected.
  */
 internal fun cachedDisplays(
     wrappers: List<WifiRecordWrapper>,
     cache: MutableMap<String, WifiAccessPointDisplay>,
+    connectedBssid: String? = null,
 ): List<WifiAccessPointDisplay> = wrappers.map { wrapper ->
     val data = wrapper.wifiBeaconRecord.data
     val fresh = WifiAccessPointDisplay.fromWrapper(
@@ -137,6 +140,7 @@ internal fun cachedDisplays(
         bandwidthLabel = WifiUtils.formatBandwidth(data.bandwidth),
         standardLabel = WifiUtils.formatStandard(data.standard),
         encryptionLabel = WifiBeaconMessageConstants.getEncryptionTypeString(data.encryptionType),
+        connectedBssid = connectedBssid,
     )
     val cached = cache[fresh.bssid]
     if (cached == fresh) {
@@ -145,6 +149,19 @@ internal fun cachedDisplays(
         cache[fresh.bssid] = fresh
         fresh
     }
+}
+
+/**
+ * Marks the access point whose BSSID is [connectedBssid] connected and clears the mark on the rest,
+ * keeping [cache] in step. Only the rows whose mark changes get a new instance, so a roam recomposes
+ * two rows, not the list.
+ */
+internal fun markConnected(
+    displays: List<WifiAccessPointDisplay>,
+    cache: MutableMap<String, WifiAccessPointDisplay>,
+    connectedBssid: String?,
+): List<WifiAccessPointDisplay> = displays.map { display ->
+    display.withConnected(connectedBssid).also { if (it !== display) cache[it.bssid] = it }
 }
 
 /**

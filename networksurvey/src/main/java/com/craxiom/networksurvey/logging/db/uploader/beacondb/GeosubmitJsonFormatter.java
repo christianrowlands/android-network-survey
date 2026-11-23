@@ -5,6 +5,7 @@ import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 import com.craxiom.networksurvey.logging.db.uploader.ObservationTime;
 
@@ -12,11 +13,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Converts the database survey records to the Geosubmit API format defined
- * <a href="https://ichnaea.readthedocs.io/en/latest/api/geosubmit2.html#api-geosubmit-latest">here</a>
+ * <a href="https://ichnaea.readthedocs.io/en/latest/api/geosubmit2.html#api-geosubmit-latest">here</a>.
+ * Hidden and opted-out access points (see {@link WifiOptOut}) are never included.
  */
 public class GeosubmitJsonFormatter
 {
@@ -50,7 +53,7 @@ public class GeosubmitJsonFormatter
             itemsArray.put(formatNrRecord(record));
         }
 
-        for (WifiBeaconRecordEntity record : wifiRecords)
+        for (WifiBeaconRecordEntity record : sendable(wifiRecords))
         {
             itemsArray.put(formatWifiRecord(record));
         }
@@ -59,6 +62,36 @@ public class GeosubmitJsonFormatter
         geosubmitJson.put("items", itemsArray);
 
         return geosubmitJson;
+    }
+
+    /**
+     * @return True if the records hold nothing BeaconDB may take, so no request needs to be sent.
+     * That happens for a batch of only hidden or opted-out access points queued before they were
+     * filtered at capture.
+     */
+    public static boolean hasNothingToSend(UploadRecordsWrapper records)
+    {
+        return records.gsmRecords().isEmpty()
+                && records.umtsRecords().isEmpty()
+                && records.lteRecords().isEmpty()
+                && records.nrRecords().isEmpty()
+                && sendable(records.wifiRecords()).isEmpty();
+    }
+
+    /**
+     * Records are filtered when they are queued, but rows queued by an older version may still
+     * hold hidden or opted-out access points, so the report is the last place they are dropped.
+     *
+     * @return The access points that may be sent, without the ones {@link WifiOptOut} excludes.
+     */
+    static List<WifiBeaconRecordEntity> sendable(List<WifiBeaconRecordEntity> wifiRecords)
+    {
+        final List<WifiBeaconRecordEntity> sendable = new ArrayList<>(wifiRecords.size());
+        for (WifiBeaconRecordEntity record : wifiRecords)
+        {
+            if (!WifiOptOut.isExcludedFromBeaconDb(record.ssid)) sendable.add(record);
+        }
+        return sendable;
     }
 
     private static JSONObject formatGsmRecord(GsmRecordEntity record) throws JSONException

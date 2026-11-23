@@ -135,6 +135,19 @@ class SettingsModelTest {
         assertFalse(defaults.contains(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS))
     }
 
+    @Test
+    fun privacyZones_areOffOnManagedPhonesUnlessTheOrganizationSaysYes_evenWithTheOverride() {
+        val key = NetworkSurveyConstants.MDM_PROPERTY_ALLOW_PRIVACY_ZONES
+        assertTrue(read(RestrictionsSnapshot(emptyMap())).privacyZonesAllowed)
+        assertFalse(read(managed).privacyZonesAllowed)
+
+        preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, true) }
+
+        assertFalse(read(managed).privacyZonesAllowed)
+        assertFalse(read(RestrictionsSnapshot(mapOf(key to false))).privacyZonesAllowed)
+        assertTrue(read(RestrictionsSnapshot(mapOf(key to true))).privacyZonesAllowed)
+    }
+
     private fun read(
         restrictions: RestrictionsSnapshot,
         autoStart: ManagedState = ManagedState.USER,

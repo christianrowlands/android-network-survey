@@ -7,6 +7,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Tests the session and Mission ID rules in isolation, with explicit activity flags.
@@ -19,6 +21,8 @@ class MissionSessionTrackerTest {
     private val changes = mutableListOf<Pair<String?, Boolean>>()
     private val endedSessions = mutableListOf<LastSession>()
     private var now = 1_000L
+    private var sessionStarts = 0
+    private var sessionCloses = 0
 
     private val tracker = MissionSessionTracker(
         generateMissionId = { "m${++counter}" },
@@ -27,6 +31,8 @@ class MissionSessionTrackerTest {
         onMissionIdChanged = { id, active -> changes += id to active },
         clock = { now },
         onSessionEnded = { endedSessions += it },
+        onSessionStarted = { sessionStarts++ },
+        onSessionClosed = { sessionCloses++ },
     )
 
     @Test
@@ -38,6 +44,71 @@ class MissionSessionTrackerTest {
         assertEquals("m1", tracker.rolledMissionId())
         assertEquals(1, counter)
         assertEquals(listOf("m1" to true), changes)
+    }
+
+    @Test
+    fun `session start is announced once per session, for the privacy zone reset`() {
+        tracker.onSurveyStarted(false)
+        anyActive = true
+        tracker.onSurveyStarted(true)
+        assertEquals(1, sessionStarts)
+
+        anyActive = false; missionActive = false
+        tracker.onSurveyStopped()
+        tracker.onSurveyStarted(true)
+        assertEquals(2, sessionStarts)
+    }
+
+    @Test
+    fun `session close is announced by Stop, the last stop, and a failed start`() {
+        tracker.onSurveyStarted(true)
+        tracker.endSession()
+        tracker.endSession()
+        assertEquals(1, sessionCloses)
+
+        anyActive = true
+        tracker.onSurveyStarted(false)
+        anyActive = false
+        tracker.onSurveyStopped()
+        assertEquals(2, sessionCloses)
+
+        val before = tracker.snapshot()
+        tracker.onSurveyStarted(true)
+        tracker.undoOptimisticStart(before)
+        assertEquals(3, sessionCloses)
+        // Nothing left to close
+        tracker.undoOptimisticStart(before)
+        assertEquals(3, sessionCloses)
+    }
+
+    @Test
+    fun `a Stop racing a Start never closes the session after the next one started`() {
+        val events = mutableListOf<String>()
+        val stopCalled = CountDownLatch(1)
+        lateinit var racer: MissionSessionTracker
+        var stopThread: Thread? = null
+        racer = MissionSessionTracker(
+            generateMissionId = { "m" },
+            isAnySurveyActive = { false },
+            isAnyMissionRelevantSurveyActive = { false },
+            onMissionIdChanged = { _, _ -> },
+            onSessionStarted = {
+                // A Stop on another thread arrives while this start is still announcing itself
+                stopThread = Thread {
+                    stopCalled.countDown()
+                    racer.endSession()
+                }.also { it.start() }
+                stopCalled.await(1, TimeUnit.SECONDS)
+                Thread.sleep(RACE_WINDOW_MS)
+                synchronized(events) { events += "started" }
+            },
+            onSessionClosed = { synchronized(events) { events += "closed" } },
+        )
+
+        racer.onSurveyStarted(true)
+        stopThread!!.join(TimeUnit.SECONDS.toMillis(1))
+
+        assertEquals(listOf("started", "closed"), events)
     }
 
     @Test
@@ -221,5 +292,10 @@ class MissionSessionTrackerTest {
         tracker.onSurveyStarted(true)
         tracker.endSession()
         assertEquals(LastSession(0L, 0L, 1_000L, "m1"), tracker.lastSession())
+    }
+
+    private companion object {
+        /** Long enough for an unguarded end to land first. */
+        const val RACE_WINDOW_MS = 100L
     }
 }

@@ -37,6 +37,7 @@ class SettingsNavigation(
     val onOpenUploads: () -> Unit,
     val onOpenMapSettings: () -> Unit,
     val onOpenSsidExclusions: () -> Unit,
+    val onOpenPrivacyZones: () -> Unit,
     val onOpenOrganization: () -> Unit,
     /** Explains background location, which starting at boot needs (shown by the main screen). */
     val onBackgroundLocationRationale: () -> Unit,
@@ -110,6 +111,7 @@ fun SettingsScreen(navigation: SettingsNavigation, viewModel: SettingsViewModel 
             override fun onOpenUploads() = navigation.onOpenUploads()
             override fun onOpenMapSettings() = navigation.onOpenMapSettings()
             override fun onOpenSsidExclusions() = navigation.onOpenSsidExclusions()
+            override fun onOpenPrivacyZones() = navigation.onOpenPrivacyZones()
             override fun onOpenOrganization() = navigation.onOpenOrganization()
             override fun onCopy(label: String, value: String) =
                 copyWithSystemConfirmation(context, label, value, resources.getString(R.string.value_copied_to_clipboard))

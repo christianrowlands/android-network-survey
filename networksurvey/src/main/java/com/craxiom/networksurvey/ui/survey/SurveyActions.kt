@@ -50,4 +50,7 @@ interface SurveyActions {
 
     /** Makes this phone the Wi-Fi source instead of the NS Scout ("Use phone Wi-Fi instead"). */
     fun onUsePhoneWifi() {}
+
+    /** Opens the Privacy zones page (the "Paused in a privacy zone" plate). */
+    fun onOpenPrivacyZones() {}
 }

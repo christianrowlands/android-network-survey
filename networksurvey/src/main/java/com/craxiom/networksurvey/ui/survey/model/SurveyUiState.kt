@@ -18,6 +18,9 @@ import com.craxiom.networksurvey.survey.status.ScoutOutage
  *
  * @property commandInFlight True while a start, change or stop is on its way to the service; Start
  *                           and Stop are disabled meanwhile, so a double tap sends one command.
+ * @property readyPrivacyZone Ready only: the phone is in a privacy zone, so a survey started here
+ *                           would save and send nothing. Null outside a zone and while recording
+ *                           (the running survey has its own plate).
  */
 data class SurveyUiState(
     val recording: RecordingUi? = null,
@@ -45,6 +48,7 @@ data class SurveyUiState(
     val known: Boolean = true,
     val commandInFlight: Boolean = false,
     val scoutRow: ScoutRowUi? = null,
+    val readyPrivacyZone: PrivacyZoneNoticeUi? = null,
 ) {
     /** True while a survey runs; the screen shows the Recording layout and the Stop button. */
     val isRecording: Boolean get() = recording != null
@@ -71,6 +75,9 @@ data class SavedSetupsUi(
     val selected: SurveySetup?,
     val canSave: Boolean,
 )
+
+/** The phone is in a privacy zone named [zoneName] (null or blank when it has no name). */
+data class PrivacyZoneNoticeUi(val zoneName: String?)
 
 /** The state of the location line at the top of the screen. */
 sealed interface LocationStatus {
@@ -271,6 +278,12 @@ sealed interface AttentionPlateUi {
      * limit comes from the organization, so the plate cannot offer to change it.
      */
     data class MqttOnlyPaused(val limitSetByOrganization: Boolean = false) : AttentionPlateUi
+
+    /**
+     * The phone is in a privacy zone: nothing is saved or sent until it leaves. [zoneName] is the
+     * zone's name, null or blank when it has none.
+     */
+    data class PrivacyZonePaused(val zoneName: String?) : AttentionPlateUi
     data class MqttDropping(val stillReceiving: List<Destination>) : AttentionPlateUi
     data class Stalled(val minutes: Int) : AttentionPlateUi
     data class NeedsAttention(val items: List<AttentionItemUi>) : AttentionPlateUi

@@ -2,7 +2,10 @@ package com.craxiom.networksurvey.ui.wifi.model
 
 import com.craxiom.networksurvey.ui.wifi.model.WifiRecords.wifi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -51,5 +54,44 @@ class WifiListSortersTest {
 
         assertEquals(listOf("Weak", "Unmeasured"), groups.map { it.displaySsid })
         assertNull(groups.last().bestRssi)
+    }
+
+    @Test
+    fun theConnectedAccessPoint_isMarked_whateverTheCase_andItsGroupSaysSo() {
+        val cache = mutableMapOf<String, WifiAccessPointDisplay>()
+        val displays = cachedDisplays(
+            listOf(wifi("02:00:A4:11:F0:21", ssid = "Acme-Corp"), wifi("02:00:A4:11:F0:22", ssid = "Acme-Corp"), wifi("02:00:D8:4E:9A:0C", ssid = "Lab")),
+            cache,
+            connectedBssid = "02:00:a4:11:f0:22",
+        )
+
+        assertEquals(listOf(false, true, false), displays.map { it.isConnected })
+        val groups = buildGroupParents(displays, sortIndex = 0, expandedGroupKeys = emptySet())
+        assertEquals(mapOf("Acme-Corp" to true, "Lab" to false), groups.associate { it.displaySsid to it.containsConnected })
+    }
+
+    @Test
+    fun aRoam_movesTheMark_andKeepsEveryOtherRowTheSameInstance() {
+        val cache = mutableMapOf<String, WifiAccessPointDisplay>()
+        val before = cachedDisplays(
+            listOf(wifi("02:00:A4:11:F0:21"), wifi("02:00:A4:11:F0:22"), wifi("02:00:A4:11:F0:23")),
+            cache,
+            connectedBssid = "02:00:a4:11:f0:21",
+        )
+
+        val after = markConnected(before, cache, "02:00:a4:11:f0:22")
+
+        assertEquals(listOf(false, true, false), after.map { it.isConnected })
+        assertSame(before[2], after[2])
+        // The cache holds the new marks, so the next scan reuses them rather than flipping back
+        assertTrue(cache.getValue("02:00:A4:11:F0:22").isConnected)
+        assertFalse(cache.getValue("02:00:A4:11:F0:21").isConnected)
+    }
+
+    @Test
+    fun noConnection_marksNothing() {
+        val displays = cachedDisplays(listOf(wifi("02:00:A4:11:F0:21")), mutableMapOf(), connectedBssid = null)
+
+        assertFalse(displays.single().isConnected)
     }
 }

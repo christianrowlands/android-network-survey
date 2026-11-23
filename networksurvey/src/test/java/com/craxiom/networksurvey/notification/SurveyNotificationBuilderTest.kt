@@ -333,6 +333,19 @@ class SurveyNotificationBuilderTest {
     }
 
     @Test
+    fun privacyZone_showsPausedWithoutTheZoneName() {
+        val n = builder.build(
+            SurveyNotificationState(fileLogging = true, scanningCellular = true, pausedForPrivacyZone = true, sessionStartMs = sessionStart)
+        )
+
+        assertEquals("Paused", title(n))
+        // The lock screen never shows where the zone is
+        assertEquals("Inside a privacy zone", text(n))
+        assertEquals("Inside a privacy zone\nLog files\nScanning: Cellular", bigText(n))
+        assertEquals(R.drawable.ic_pause, icon(n))
+    }
+
+    @Test
     fun batteryPauseOutranksStallAndDropMode() {
         val n = builder.build(
             SurveyNotificationState(

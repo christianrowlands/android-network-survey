@@ -8,6 +8,8 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate;
+
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -15,6 +17,8 @@ import timber.log.Timber;
 
 /**
  * A GPS Listener that is registered with the Android Location Service so that we are notified of Location updates.
+ * <p>
+ * Every fix is also fed to the {@link PrivacyZoneGate}, which decides whether the phone is in a privacy zone.
  * <p>
  * This code was modeled after the WiGLE Wi-Fi App GPSListener:
  * https://github.com/wiglenet/wigle-wifi-wardriving/blob/master/wiglewifiwardriving/src/main/java/net/wigle/wigleandroid/listener/GPSListener.java
@@ -25,9 +29,19 @@ public class GpsListener implements LocationListener
 {
     public static final long LOCATION_AGE_THRESHOLD_MS = 60_000L;
     private final Set<LocationListener> listeners = new CopyOnWriteArraySet<>();
+    private final PrivacyZoneGate privacyZoneGate;
 
     private Location latestLocation;
     private Runnable gnssTimeoutCallback;
+
+    /**
+     * @param privacyZoneGate Receives every fix (and the loss of the GPS provider) to decide whether the phone is in
+     *                        a privacy zone.
+     */
+    public GpsListener(@NonNull PrivacyZoneGate privacyZoneGate)
+    {
+        this.privacyZoneGate = privacyZoneGate;
+    }
 
     /**
      * Adds a callback so that the the caller can check for a GNSS timeout. This will be called whenever a new location
@@ -165,6 +179,9 @@ public class GpsListener implements LocationListener
     private synchronized void updateLocation(Location newLocation)
     {
         latestLocation = newLocation;
+
+        // Before the listeners hear of the fix, so a record built from it sees the matching zone decision
+        privacyZoneGate.onLocation(newLocation);
 
         if (newLocation != null)
         {

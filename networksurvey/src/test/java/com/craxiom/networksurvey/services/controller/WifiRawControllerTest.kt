@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.craxiom.networksurvey.logging.PcapngFileWriter
 import com.craxiom.networksurvey.logging.RawFramesProgress
+import com.craxiom.networksurvey.privacy.PrivacyZoneTestGate
 import com.craxiom.networksurvey.scout.ScoutManager
 import com.craxiom.networksurvey.scout.model.PairedScout
 import com.craxiom.networksurvey.scout.model.ScoutLinkDetails
@@ -12,6 +13,7 @@ import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.scout.raw.RawFrameTestData.FRAMES
 import com.craxiom.networksurvey.scout.raw.ScoutRawSource
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.PrivacyZoneHold
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -45,6 +47,7 @@ class WifiRawControllerTest {
     private val app = ApplicationProvider.getApplicationContext<Context>()
     private val service = mock<NetworkSurveyService>()
     private val manager = mock<ScoutManager>()
+    private val zones = PrivacyZoneTestGate()
     private val executor: ExecutorService = WifiRawController.newWriterExecutor()
     private var freeBytes = Long.MAX_VALUE
     private lateinit var writer: PcapngFileWriter
@@ -63,7 +66,7 @@ class WifiRawControllerTest {
             fileTime = { "20261102-180300" },
             freeSpaceBytes = { freeBytes },
         )
-        controller = WifiRawController(service, manager, executor, writer)
+        controller = WifiRawController(service, manager, executor, writer, PrivacyZoneHold(zones.gate))
     }
 
     @After
@@ -97,6 +100,21 @@ class WifiRawControllerTest {
         drain()
         assertEquals(FRAMES.size.toLong(), controller.progress()?.framesSaved)
         assertEquals(1, folder.root.listFiles().orEmpty().size)
+    }
+
+    @Test
+    fun `frames that arrive inside a privacy zone are not saved or counted as lost`() {
+        controller.toggleLogging(true)
+        zones.enter()
+        controller.enqueue(FRAMES)
+        drain()
+        assertEquals(0L, controller.progress()?.framesSaved)
+        assertEquals(0L, controller.progress()?.framesDropped)
+
+        zones.leave()
+        controller.enqueue(FRAMES)
+        drain()
+        assertEquals(FRAMES.size.toLong(), controller.progress()?.framesSaved)
     }
 
     @Test

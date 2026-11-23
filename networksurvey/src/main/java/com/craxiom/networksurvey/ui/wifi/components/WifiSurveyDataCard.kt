@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.NsDetailsCardFrame
 import com.craxiom.networksurvey.ui.common.NsScanRateActions
+import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.wifiScanRateHelp
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
@@ -35,7 +36,7 @@ private val PILL_BORDER = 1.dp
  * network's SSID, plus the watchlist status and Watch/View action for this network. The card
  * header hosts a settings gear (deep-links to the Wi-Fi scan-rate preference) and an info button
  * (explains the scan rate). Each action row is followed by an always-visible caption that teaches
- * what the action actually does. The exclude pill is hidden for hidden-SSID networks (exclusion is
+ * what the action actually does; an excluded network also links to the exclusion list. The exclude pill is hidden for hidden-SSID networks (exclusion is
  * SSID-based), but the watchlist row stays because a specific AP can be watched by BSSID.
  */
 @Composable
@@ -47,6 +48,7 @@ fun WifiSurveyDataCard(
     onToggle: () -> Unit,
     onWatchlistClick: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onViewExclusionList: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NsDetailsCardFrame(modifier = modifier) {
@@ -88,6 +90,9 @@ fun WifiSurveyDataCard(
             onPillClick = onToggle,
         )
         CaptionText(stringResource(R.string.wifi_exclusion_info))
+        if (isExcluded) {
+            NsTextAction(text = stringResource(R.string.wifi_filter_manage_exclusions), onClick = onViewExclusionList)
+        }
         StatusPillRow(
             statusText = if (isWatched) {
                 stringResource(R.string.wifi_details_on_watchlist)

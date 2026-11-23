@@ -26,10 +26,15 @@ import com.craxiom.networksurvey.ui.common.NsSwitchRow
 import com.craxiom.networksurvey.ui.common.SectionHeader
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
+/** An overlay's switch in the Layers sheet that another screen owns (the Map tab's privacy zones). */
+data class MapLayerSwitch(val checked: Boolean, val onCheckedChange: (Boolean) -> Unit)
+
 /**
  * The Map tab's Layers sheet: the tile source as a single-choice group, then the overlays (towers
- * with their display mode, survey points, BeaconDB coverage) as switch rows, in the same row groups
- * as the destination pages. Every change applies at once.
+ * with their display mode, survey points, BeaconDB coverage, and privacy zones when there are any)
+ * as switch rows, in the same row groups as the destination pages. Every change applies at once.
+ *
+ * @param privacyZones The privacy zones switch, or null to leave it out (no zones saved).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +54,8 @@ fun MapLayersDialog(
     onSetShowBeaconDbCoverage: (Boolean) -> Unit,
     onSetShowTowersLayer: (Boolean) -> Unit,
     onSetShowOnlyServingCell: (Boolean) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    privacyZones: MapLayerSwitch? = null,
 ) {
     val bottomSheetState = rememberModalBottomSheetState()
 
@@ -117,6 +123,15 @@ fun MapLayersDialog(
                     checked = showBeaconDbCoverage,
                     onCheckedChange = onSetShowBeaconDbCoverage,
                 )
+                privacyZones?.let { zones ->
+                    NsRowDivider()
+                    NsSwitchRow(
+                        title = stringResource(R.string.map_layers_privacy_zones),
+                        subtitle = stringResource(R.string.map_layers_privacy_zones_summary),
+                        checked = zones.checked,
+                        onCheckedChange = zones.onCheckedChange,
+                    )
+                }
             }
         }
     }

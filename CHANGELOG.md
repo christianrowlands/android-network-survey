@@ -11,6 +11,10 @@
 
 **BUG FIXES**
 * Fix survey records being written with no location, latitude and longitude `0.000000` and an empty `locationAge`, on devices where one of the optional location providers the app registers does not exist. Registering those providers could throw and stop the primary location listener from being registered at all, so no record ever received a fix.
+* The Wi-Fi list marks the access point the phone is connected to again, with a Connected tag that moves as soon as the phone roams to another access point. The group holding it and the network details show it too. [#170](https://github.com/christianrowlands/android-network-survey/issues/170)
+* A long press copies any value on the Wi-Fi and Bluetooth network details pages again, and Service UUIDs can be selected.
+* The Wi-Fi network details link to the excluded SSIDs list again when the network is excluded.
+* The Map's Filters button shows a badge counting the filters that are on, such as the tower operator, so a narrowed map no longer looks like the whole picture.
 
 ## [2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.0) - 2026-10-29
 

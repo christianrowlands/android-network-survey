@@ -51,6 +51,7 @@ class WifiListViewModelTest {
     private var scanState = WifiScanState.READY
     private var throttle = WifiThrottleInputs(throttleEnabled = false, developerOptionsOn = true, ignored = false)
     private var now = 0L
+    private val connected = MutableStateFlow<String?>(null)
 
     @Before
     fun setUp() {
@@ -143,6 +144,57 @@ class WifiListViewModelTest {
         assertEquals(1, viewModel.uiState.value.scanNumber)
         assertEquals(listOf("02:00:A4:11:F0:21"), viewModel.seedRecords().map { it.wifiBeaconRecord.data.bssid })
     }
+
+    @Test
+    fun theConnectedAccessPoint_isMarked_andTheMarkFollowsARoamWithoutAScan() = runTest(dispatcher) {
+        connected.value = "02:00:a4:11:f0:21"
+        val viewModel = newViewModel()
+        viewModel.setMode(WifiListMode.FLAT)
+        viewModel.onServiceChanged(service)
+        viewModel.onWifiBeaconSurveyRecords(listOf(wifi("02:00:A4:11:F0:21"), wifi("02:00:A4:11:F0:22")))
+        advanceUntilIdle()
+        assertEquals(listOf("02:00:A4:11:F0:21"), viewModel.connectedRows())
+
+        connected.value = "02:00:a4:11:f0:22"
+        advanceUntilIdle()
+
+        assertEquals(listOf("02:00:A4:11:F0:22"), viewModel.connectedRows())
+        assertEquals(1, viewModel.uiState.value.scanNumber)
+    }
+
+    @Test
+    fun aCollapsedGroup_saysItHoldsTheConnectedAccessPoint() = runTest(dispatcher) {
+        connected.value = "02:00:a4:11:f0:22"
+        val viewModel = newViewModel()
+        viewModel.onServiceChanged(service)
+        viewModel.onWifiBeaconSurveyRecords(listOf(wifi("02:00:A4:11:F0:21"), wifi("02:00:A4:11:F0:22"), wifi("02:00:D8:4E:9A:0C", ssid = "Lab")))
+        advanceUntilIdle()
+
+        val groups = viewModel.uiState.value.items.filterIsInstance<WifiDisplayItem.GroupParent>()
+        assertEquals(mapOf("Acme-Corp" to true, "Lab" to false), groups.associate { it.displaySsid to it.containsConnected })
+    }
+
+    @Test
+    fun theMarkMovesWhilePaused_andClearsWhenTheScreenUnbinds() = runTest(dispatcher) {
+        connected.value = "02:00:a4:11:f0:21"
+        val viewModel = newViewModel()
+        viewModel.setMode(WifiListMode.FLAT)
+        viewModel.onServiceChanged(service)
+        viewModel.onWifiBeaconSurveyRecords(listOf(wifi("02:00:A4:11:F0:21"), wifi("02:00:A4:11:F0:22")))
+        advanceUntilIdle()
+
+        viewModel.togglePaused()
+        connected.value = "02:00:a4:11:f0:22"
+        advanceUntilIdle()
+        assertEquals(listOf("02:00:A4:11:F0:22"), viewModel.connectedRows())
+
+        viewModel.onServiceChanged(null)
+        advanceUntilIdle()
+        assertEquals(emptyList<String>(), viewModel.connectedRows())
+    }
+
+    private fun WifiListViewModel.connectedRows(): List<String> =
+        uiState.value.items.filterIsInstance<WifiDisplayItem.Flat>().filter { it.ap.isConnected }.map { it.ap.bssid }
 
     @Test
     fun theSortIsKept() {
@@ -344,6 +396,7 @@ class WifiListViewModelTest {
         clock = { now },
         mainDispatcher = dispatcher,
         sdk = sdk,
+        connectedBssids = connected,
     )
 
     private companion object {

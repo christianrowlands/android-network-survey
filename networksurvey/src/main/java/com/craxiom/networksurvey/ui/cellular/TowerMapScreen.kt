@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -99,6 +100,8 @@ private const val MAPTILER_MAP_ID = "basic-v2-dark"
  * @param state The camera and the open sheets, shared with the chrome.
  * @param selectedSim The SIM whose serving cell is highlighted, or null to highlight every SIM's.
  * @param contentPadding How much of the map the chrome covers at the top and the bottom.
+ * @param underlay Map layers the Map tab adds beneath everything else (the privacy zones); it is
+ *   told whether the basemap is dark.
  */
 @Composable
 internal fun TowerMapScreen(
@@ -106,6 +109,7 @@ internal fun TowerMapScreen(
     state: TowerMapUiState,
     selectedSim: Int?,
     contentPadding: PaddingValues,
+    underlay: @Composable (isDarkMap: Boolean) -> Unit = {},
 ) {
     val isMapInitializing by viewModel.isMapInitializing.collectAsStateWithLifecycle()
 
@@ -129,7 +133,7 @@ internal fun TowerMapScreen(
             } else {
                 Box(modifier = Modifier.fillMaxSize()) {
                     LoadSavedSettingsOnce(viewModel)
-                    TowerMap(viewModel, state, selectedSim, contentPadding)
+                    TowerMap(viewModel, state, selectedSim, contentPadding, underlay)
                     SurveyedPointSheetHost(state)
                     MapStyleFallbackToasts(viewModel)
                 }
@@ -218,7 +222,10 @@ private fun TowerMap(
     state: TowerMapUiState,
     selectedSim: Int?,
     contentPadding: PaddingValues,
+    underlay: @Composable (isDarkMap: Boolean) -> Unit,
 ) {
+    // The map content is composed inside a LaunchedEffect, so it must read the latest underlay
+    val currentUnderlay by rememberUpdatedState(underlay)
     val mapTilerKey by viewModel.mapTilerKey.collectAsState()
     val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
     val selectedTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
@@ -308,7 +315,8 @@ private fun TowerMap(
         },
         onMapDestroyed = viewModel::onMapDestroyed,
     ) {
-        // Survey points sit beneath everything else, so they are composed first
+        // The underlay, then the survey points, sit beneath everything else, so they are composed first
+        currentUnderlay(darkMap.value)
         if (showSurveyPoints) {
             val surveyedData by viewModel.surveyedPoints.data.collectAsStateWithLifecycle()
             val surveyedMode by viewModel.surveyedPoints.colorMode.collectAsStateWithLifecycle()

@@ -114,6 +114,10 @@ class SurveyNotificationBuilder(private val context: Context) {
         if (state.pausedForBackpressure) {
             add(context.getString(R.string.notification_health_network_interrupted))
         }
+        // The zone's name is left out on purpose: the notification shows on the lock screen
+        if (state.pausedForPrivacyZone) {
+            add(context.getString(R.string.survey_notification_in_privacy_zone))
+        }
         addAll(scoutItems.map(itemLine))
         if (state.mqttDropping) {
             add(context.getString(R.string.mqtt_drop_mode_title))

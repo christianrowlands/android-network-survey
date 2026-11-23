@@ -23,6 +23,7 @@ import android.content.res.Configuration;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.lang.LocaleManager;
+import com.craxiom.networksurvey.logging.db.CommunityQueueScrubber;
 import com.craxiom.networksurvey.notification.NotificationChannels;
 import com.craxiom.networksurvey.survey.mdm.AndroidRestrictionsSource;
 import com.craxiom.networksurvey.mqtt.profile.MqttBrokerProfile;
@@ -101,6 +102,9 @@ public class Application extends android.app.Application
 
         // Apply the Theme setting before any activity inflates, so Views and Compose agree
         ThemeMode.applyFromPreferences(this);
+
+        // A privacy zone added or grown also removes the community records queued inside it
+        CommunityQueueScrubber.watchZoneChanges(this);
     }
 
     @Override

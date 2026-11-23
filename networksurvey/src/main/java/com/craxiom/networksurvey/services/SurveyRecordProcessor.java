@@ -107,6 +107,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILiveScanView;
+import com.craxiom.networksurvey.listeners.IPrivacyZoneExempt;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.CdrEvent;
@@ -118,6 +119,7 @@ import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.TowerKey;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate;
 import com.craxiom.networksurvey.scout.wifi.ScoutBeaconRecordBuilder;
 import com.craxiom.networksurvey.scout.wifi.ScoutHeard;
 import com.craxiom.networksurvey.services.controller.CellularController;
@@ -151,10 +153,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -181,6 +181,15 @@ public class SurveyRecordProcessor
     private static final int UNSET_RSSI = 127;
     private static final int MAX_CDR_LOCATION_WAIT_TIME = 5_000;
 
+    private static final String CELLULAR_LISTENER = "Cellular Survey Record Listener";
+    private static final String WIFI_LISTENER = "Wi-Fi Survey Record Listener";
+    private static final String PASSIVE_WIFI_LISTENER = "passive Wi-Fi Survey Record Listener";
+    private static final String BLUETOOTH_LISTENER = "Bluetooth Survey Record Listener";
+    private static final String GNSS_LISTENER = "GNSS Survey Record Listener";
+    private static final String CDR_LISTENER = "CDR Event Listener";
+    private static final String DEVICE_STATUS_LISTENER = "Device Status Listener";
+    private static final String PHONE_STATE_LISTENER = "Phone State Listener";
+
     /**
      * Maximum age for cell info data in milliseconds (60 seconds).
      * Cell info older than this will be considered stale and ignored.
@@ -191,20 +200,30 @@ public class SurveyRecordProcessor
     private final Object activityUpdateLock = new Object();
 
     private final GpsListener gpsListener;
-    private final Set<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new CopyOnWriteArraySet<>();
-    private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final PrivacyZoneGate privacyZoneGate;
+    private final PrivacyZoneHold privacyZoneHold;
+
+    // Every listener set is a RecordListeners, the one way a record reaches a listener, so no sink
+    // can get around the privacy zone hold (PrivacyZoneSinkWalkTest checks it stays that way).
+    private final RecordListeners<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
+    private final RecordListeners<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
     /**
      * Passive Wi-Fi listeners (currently just the Watchlist detector) observe every Wi-Fi scan the
      * app processes, whatever started it (a survey that includes Wi-Fi, or an open Wi-Fi list,
      * details, or spectrum screen), but unlike normal listeners they do NOT cause Wi-Fi scanning to
-     * start and do NOT keep the service alive. They always receive unfiltered records.
+     * start and do NOT keep the service alive. They always receive unfiltered records, inside a
+     * privacy zone too, because the Watchlist is exempt ({@link IPrivacyZoneExempt}).
      */
-    private final Set<IWifiSurveyRecordListener> passiveWifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
-    private final Set<IBluetoothSurveyRecordListener> bluetoothSurveyRecordListeners = new CopyOnWriteArraySet<>();
-    private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
-    private final Set<ICdrEventListener> cdrListeners = new CopyOnWriteArraySet<>();
-    private final Set<IDeviceStatusListener> deviceStatusListeners = new CopyOnWriteArraySet<>();
-    private final Set<IPhoneStateListener> phoneStateListeners = new CopyOnWriteArraySet<>();
+    private final RecordListeners<IWifiSurveyRecordListener> passiveWifiSurveyRecordListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
+    private final RecordListeners<IBluetoothSurveyRecordListener> bluetoothSurveyRecordListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
+    private final RecordListeners<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
+    private final RecordListeners<ICdrEventListener> cdrListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
+    /**
+     * Device status is never held: inside a privacy zone it still goes out, with its locations
+     * cleared ({@link PrivacyZoneHold#withoutLocationInZone}).
+     */
+    private final RecordListeners<IDeviceStatusListener> deviceStatusListeners = new RecordListeners<>(() -> false);
+    private final RecordListeners<IPhoneStateListener> phoneStateListeners = new RecordListeners<>(this::isHoldingForPrivacyZone);
     private volatile NetworkSurveyActivity networkSurveyActivity;
 
     private final ExecutorService executorService;
@@ -251,10 +270,15 @@ public class SurveyRecordProcessor
      * @param gpsListener The GPS Listener that is used to retrieve the latest location.
      * @param deviceId    The Device ID associated with this phone.
      * @param context     The context that is used to get the app's default shared preferences.
+     * @param privacyZoneGate Decides whether the phone is in a privacy zone, where records reach only
+     *                        the live screens and the Watchlist.
      */
-    SurveyRecordProcessor(GpsListener gpsListener, String deviceId, Context context, ExecutorService executorService)
+    SurveyRecordProcessor(GpsListener gpsListener, String deviceId, Context context, ExecutorService executorService,
+                          PrivacyZoneGate privacyZoneGate)
     {
         this.gpsListener = gpsListener;
+        this.privacyZoneGate = privacyZoneGate;
+        this.privacyZoneHold = new PrivacyZoneHold(privacyZoneGate);
         this.deviceId = deviceId;
         this.executorService = executorService;
         this.context = context;
@@ -640,14 +664,9 @@ public class SurveyRecordProcessor
         final List<WifiRecordWrapper> all = scoutBeacons.peeked(beacons);
         if (all.isEmpty()) return;
         final List<WifiRecordWrapper> records = listener.wantsExcludedRecords()
-                ? all : all.stream().filter(record -> !record.isExcluded()).collect(Collectors.toList());
-        try
-        {
-            if (!records.isEmpty()) listener.onWifiBeaconSurveyRecords(records);
-        } catch (Exception e)
-        {
-            Timber.e(e, "Unable to give a leaving Wi-Fi listener the open window");
-        }
+                ? all : withoutRecordsHeardInZone(all.stream().filter(record -> !record.isExcluded()).collect(Collectors.toList()));
+        if (records.isEmpty()) return;
+        wifiSurveyRecordListeners.deliverTo(listener, WIFI_LISTENER, l -> l.onWifiBeaconSurveyRecords(records));
     }
 
     /**
@@ -3013,6 +3032,24 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * @return True while the phone is in a privacy zone, so records reach only the live screens and
+     * the Watchlist.
+     */
+    private boolean isHoldingForPrivacyZone()
+    {
+        return privacyZoneHold.isHolding();
+    }
+
+    /**
+     * Counts records that reached the survey's sinks, for the session totals. Records held for a
+     * privacy zone are not counted: they are not recorded, and they are not "left out" either.
+     */
+    private void countRecords(RecordType type, int count)
+    {
+        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(type, count);
+    }
+
+    /**
      * Notify all the listeners that we have a new GSM Record available.
      *
      * @param gsmRecord The new GSM Survey Record to send to the listeners.
@@ -3021,17 +3058,9 @@ public class SurveyRecordProcessor
     {
         if (gsmRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
-
-        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
+        if (cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER, l -> l.onGsmSurveyRecord(gsmRecord)))
         {
-            try
-            {
-                listener.onGsmSurveyRecord(gsmRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.CELLULAR, 1);
         }
     }
 
@@ -3044,17 +3073,9 @@ public class SurveyRecordProcessor
     {
         if (cdmaRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
-
-        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
+        if (cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER, l -> l.onCdmaSurveyRecord(cdmaRecord)))
         {
-            try
-            {
-                listener.onCdmaSurveyRecord(cdmaRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.CELLULAR, 1);
         }
     }
 
@@ -3067,17 +3088,9 @@ public class SurveyRecordProcessor
     {
         if (umtsRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
-
-        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
+        if (cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER, l -> l.onUmtsSurveyRecord(umtsRecord)))
         {
-            try
-            {
-                listener.onUmtsSurveyRecord(umtsRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.CELLULAR, 1);
         }
     }
 
@@ -3091,17 +3104,9 @@ public class SurveyRecordProcessor
     {
         if (lteRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
-
-        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
+        if (cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER, l -> l.onLteSurveyRecord(lteRecord)))
         {
-            try
-            {
-                listener.onLteSurveyRecord(lteRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.CELLULAR, 1);
         }
     }
 
@@ -3115,17 +3120,10 @@ public class SurveyRecordProcessor
     {
         if (nrRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.CELLULAR, 1);
-
-        cellularSurveyRecordListeners.forEach(l -> {
-            try
-            {
-                l.onNrSurveyRecord(nrRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
-        });
+        if (cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER, l -> l.onNrSurveyRecord(nrRecord)))
+        {
+            countRecords(RecordType.CELLULAR, 1);
+        }
     }
 
     /**
@@ -3142,19 +3140,12 @@ public class SurveyRecordProcessor
     {
         // The records in this batch were already counted, one by one, when each per-protocol
         // listener notify ran, so they are not counted again here.
+        final boolean reachedSinks = cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER,
+                l -> l.onCellularBatch(cellularRecords, subscriptionId));
 
-        cellularSurveyRecordListeners.forEach(l -> {
-            try
-            {
-                l.onCellularBatch(cellularRecords, subscriptionId);
-            } catch (Throwable t)
-            {
-                Timber.e(t, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
-        });
-
-        // Check for new towers if the preference is enabled and upload scanning is active
-        checkForNewTowers(cellularRecords);
+        // Check for new towers if the preference is enabled and upload scanning is active. Inside a
+        // privacy zone nothing is saved, the New towers list included.
+        if (reachedSinks) checkForNewTowers(cellularRecords);
     }
 
     /**
@@ -3166,15 +3157,7 @@ public class SurveyRecordProcessor
      */
     private void notifyNetworkTypeListeners(NetworkTechnologyInfo technologyInfo, int subscriptionId)
     {
-        cellularSurveyRecordListeners.forEach(l -> {
-            try
-            {
-                l.onNetworkType(technologyInfo, subscriptionId);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
-            }
-        });
+        cellularSurveyRecordListeners.deliver(CELLULAR_LISTENER, l -> l.onNetworkType(technologyInfo, subscriptionId));
     }
 
     /**
@@ -3244,6 +3227,10 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Gives Wi-Fi records to the listeners. The live views and the Watchlist get every record; the
+     * sinks (files, streams, uploads) never get an excluded SSID, nothing at all while the phone is
+     * in a privacy zone, and no NS Scout record heard inside a privacy zone.
+     *
      * @param includeLiveViews False for NS Scout windows, whose live views get snapshots instead.
      */
     private void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords, boolean includeLiveViews)
@@ -3251,48 +3238,48 @@ public class SurveyRecordProcessor
         if (wifiBeaconRecords == null || wifiBeaconRecords.isEmpty()) return;
 
         // Filter out excluded SSIDs for persistence and streaming
-        List<WifiRecordWrapper> nonExcludedRecords = wifiBeaconRecords.stream()
+        final List<WifiRecordWrapper> nonExcludedRecords = wifiBeaconRecords.stream()
                 .filter(record -> !record.isExcluded())
                 .collect(Collectors.toList());
+        final List<WifiRecordWrapper> sinkRecords = withoutRecordsHeardInZone(nonExcludedRecords);
 
-        // Count non-excluded records only
-        if (networkSurveyService != null)
-        {
-            networkSurveyService.onRecordsProcessed(RecordType.WIFI, nonExcludedRecords.size());
-        }
-
-        // Send ALL records (including excluded) to listeners that want them (UI display and the
-        // Watchlist detector); send only non-excluded records to logging/streaming listeners.
-        for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
-        {
-            if (!includeLiveViews && listener instanceof ILiveScanView) continue;
-            try
+        // Send ALL records (including excluded) to listeners that want them (UI display); send only
+        // non-excluded records outside a privacy zone to logging/streaming listeners.
+        final boolean reachedSinks = wifiSurveyRecordListeners.deliver(WIFI_LISTENER, listener -> {
+            if (!includeLiveViews && listener instanceof ILiveScanView) return;
+            if (!RecordListeners.reachesWhileHeld(listener))
             {
-                if (listener.wantsExcludedRecords())
-                {
-                    listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
-                } else
-                {
-                    listener.onWifiBeaconSurveyRecords(nonExcludedRecords);
-                }
-            } catch (Exception e)
+                listener.onWifiBeaconSurveyRecords(sinkRecords);
+            } else
             {
-                Timber.e(e, "Unable to notify a Wi-Fi Survey Record Listener because of an exception");
+                listener.onWifiBeaconSurveyRecords(listener.wantsExcludedRecords() ? wifiBeaconRecords : nonExcludedRecords);
             }
-        }
+        });
+
+        // Count only what the sinks got
+        if (reachedSinks) countRecords(RecordType.WIFI, sinkRecords.size());
 
         // Passive listeners (the Watchlist detector) always get all records, including excluded
         // SSIDs, so the user can be alerted on a network even when it is excluded from logging.
-        for (IWifiSurveyRecordListener listener : passiveWifiSurveyRecordListeners)
-        {
-            try
-            {
-                listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a passive Wi-Fi Survey Record Listener because of an exception");
-            }
-        }
+        passiveWifiSurveyRecordListeners.deliver(PASSIVE_WIFI_LISTENER, l -> l.onWifiBeaconSurveyRecords(wifiBeaconRecords));
+    }
+
+    /**
+     * @return The records without the NS Scout records whose own capture-time fix puts them in a
+     * privacy zone. A Scout record can be heard minutes before it arrives, so the phone's current
+     * place alone does not decide it. The phone's own scans carry the phone's fix, which the
+     * privacy zone hold already judges.
+     */
+    private List<WifiRecordWrapper> withoutRecordsHeardInZone(List<WifiRecordWrapper> records)
+    {
+        return records.stream().filter(record -> !isScoutRecordHeardInZone(record)).collect(Collectors.toList());
+    }
+
+    private boolean isScoutRecordHeardInZone(WifiRecordWrapper record)
+    {
+        if (record.getScoutDetails() == null) return false;
+        final WifiBeaconRecordData data = record.getWifiBeaconRecord().getData();
+        return privacyZoneHold.holdsPlace(data.getLatitude(), data.getLongitude(), (float) data.getAccuracy());
     }
 
     /**
@@ -3305,17 +3292,7 @@ public class SurveyRecordProcessor
     {
         if (wifiBeaconRecords.isEmpty()) return;
 
-        for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
-        {
-            if (!(listener instanceof ILiveScanView)) continue;
-            try
-            {
-                listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a live Wi-Fi view because of an exception");
-            }
-        }
+        wifiSurveyRecordListeners.deliverToLiveViews(WIFI_LISTENER, l -> l.onWifiBeaconSurveyRecords(wifiBeaconRecords));
     }
 
     /**
@@ -3329,17 +3306,9 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.BLUETOOTH, 1);
-
-        for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
+        if (bluetoothSurveyRecordListeners.deliver(BLUETOOTH_LISTENER, l -> l.onBluetoothSurveyRecord(bluetoothRecord)))
         {
-            try
-            {
-                listener.onBluetoothSurveyRecord(bluetoothRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.BLUETOOTH, 1);
         }
     }
 
@@ -3353,17 +3322,7 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecord == null) return;
 
-        for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
-        {
-            if (!(listener instanceof ILiveScanView)) continue;
-            try
-            {
-                listener.onBluetoothSurveyRecord(bluetoothRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a live Bluetooth view because of an exception");
-            }
-        }
+        bluetoothSurveyRecordListeners.deliverToLiveViews(BLUETOOTH_LISTENER, l -> l.onBluetoothSurveyRecord(bluetoothRecord));
     }
 
     /**
@@ -3376,20 +3335,9 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
 
-        if (networkSurveyService != null)
+        if (bluetoothSurveyRecordListeners.deliver(BLUETOOTH_LISTENER, l -> l.onBluetoothSurveyRecords(bluetoothRecords)))
         {
-            networkSurveyService.onRecordsProcessed(RecordType.BLUETOOTH, bluetoothRecords.size());
-        }
-
-        for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
-        {
-            try
-            {
-                listener.onBluetoothSurveyRecords(bluetoothRecords);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.BLUETOOTH, bluetoothRecords.size());
         }
     }
 
@@ -3404,17 +3352,9 @@ public class SurveyRecordProcessor
     {
         if (gnssRecord == null) return;
 
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.GNSS, 1);
-
-        for (IGnssSurveyRecordListener listener : gnssSurveyRecordListeners)
+        if (gnssSurveyRecordListeners.deliver(GNSS_LISTENER, l -> l.onGnssSurveyRecord(gnssRecord)))
         {
-            try
-            {
-                listener.onGnssSurveyRecord(gnssRecord);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a GNSS Survey Record Listener because of an exception");
-            }
+            countRecords(RecordType.GNSS, 1);
         }
     }
 
@@ -3428,24 +3368,32 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Notify all the listeners that we have a new CDR event available.
+     * Notify all the listeners that we have a new CDR event available. Inside a privacy zone the
+     * event is dropped, like any other record.
      *
      * @param cdrEvent The new CDR event to send to the listeners.
      */
-    private void notifyCdrListeners(CdrEvent cdrEvent)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyCdrListeners(CdrEvent cdrEvent)
     {
-        if (networkSurveyService != null && cdrEvent != null) networkSurveyService.onRecordsProcessed(RecordType.CDR, 1);
+        if (cdrEvent == null) return;
 
-        for (ICdrEventListener listener : cdrListeners)
+        if (cdrListeners.deliver(CDR_LISTENER, l -> l.onCdrEvent(cdrEvent)))
         {
-            try
-            {
-                listener.onCdrEvent(cdrEvent);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a CDR Event Listener because of an exception");
-            }
+            countRecords(RecordType.CDR, 1);
         }
+    }
+
+    /**
+     * Stamps the event with the location it got and sends it. The location also goes to the privacy
+     * zone gate first: when only CDR runs the service requests no location updates, so this may be
+     * the only fix the gate sees. The gate judges its age and accuracy like any other fix.
+     */
+    private void notifyCdrListenersAt(CdrEvent cdrEvent, Location location)
+    {
+        cdrEvent.setLocation(location);
+        privacyZoneGate.onLocation(location);
+        notifyCdrListeners(cdrEvent);
     }
 
     /**
@@ -3467,8 +3415,7 @@ public class SurveyRecordProcessor
             long ageMs = SystemClock.elapsedRealtime() - NANOSECONDS.toMillis(listenerLocation.getElapsedRealtimeNanos());
             if (ageMs < 30_000)
             {
-                cdrEvent.setLocation(listenerLocation);
-                notifyCdrListeners(cdrEvent);
+                notifyCdrListenersAt(cdrEvent, listenerLocation);
                 return;
             }
         }
@@ -3491,8 +3438,7 @@ public class SurveyRecordProcessor
 
         Consumer<Location> locationConsumer = location -> {
             cancellationTimer.cancel();
-            cdrEvent.setLocation(location);
-            notifyCdrListeners(cdrEvent);
+            notifyCdrListenersAt(cdrEvent, location);
         };
 
         requestLocation(context, cancellationSignal, executorService, locationConsumer);
@@ -3555,12 +3501,17 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Notify all the listeners that we have a new Device Status available.
+     * Notify all the listeners that we have a new Device Status available. Device status is never
+     * held for a privacy zone, so the fleet heartbeat keeps going; inside a zone it goes out with
+     * every location cleared. Outside a zone each location (primary, GNSS, network) that lies
+     * inside one is still cleared on its own, because the GNSS and network locations are each
+     * provider's last fix, kept indefinitely, and can still be one taken inside a zone.
      *
      * @param deviceStatus The new Device Status Message to send to the listeners.
      * @since 1.1.0
      */
-    private void notifyDeviceStatusListeners(DeviceStatus deviceStatus)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    void notifyDeviceStatusListeners(DeviceStatus deviceStatus)
     {
         if (deviceStatus == null) return;
 
@@ -3568,18 +3519,9 @@ public class SurveyRecordProcessor
         statusBuilder.setData(statusBuilder.getDataBuilder()
                 .setMissionId(getMissionId())
                 .setRecordNumber(deviceStatusRecordNumber.getAndIncrement()));
-        deviceStatus = statusBuilder.build();
+        final DeviceStatus status = privacyZoneHold.withoutLocationInZone(statusBuilder.build());
 
-        for (IDeviceStatusListener listener : deviceStatusListeners)
-        {
-            try
-            {
-                listener.onDeviceStatus(deviceStatus);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Device Status Listener because of an exception");
-            }
-        }
+        deviceStatusListeners.deliver(DEVICE_STATUS_LISTENER, l -> l.onDeviceStatus(status));
     }
 
     /**
@@ -3591,17 +3533,10 @@ public class SurveyRecordProcessor
     void notifyPhoneStateListeners(PhoneState phoneState)
     {
         if (phoneState == null) return;
-        if (networkSurveyService != null) networkSurveyService.onRecordsProcessed(RecordType.PHONE_STATE, 1);
 
-        for (IPhoneStateListener listener : phoneStateListeners)
+        if (phoneStateListeners.deliver(PHONE_STATE_LISTENER, l -> l.onPhoneState(phoneState)))
         {
-            try
-            {
-                listener.onPhoneState(phoneState);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unable to notify a Phone State Listener because of an exception");
-            }
+            countRecords(RecordType.PHONE_STATE, 1);
         }
     }
 }

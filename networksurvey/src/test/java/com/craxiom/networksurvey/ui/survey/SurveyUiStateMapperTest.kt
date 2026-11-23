@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.ui.survey
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.privacy.PrivacyZone
+import com.craxiom.networksurvey.privacy.PrivacyZoneState
 import com.craxiom.networksurvey.survey.engine.DestinationResult
 import com.craxiom.networksurvey.survey.engine.DestinationRuntime
 import com.craxiom.networksurvey.survey.engine.LinkState
@@ -34,6 +36,7 @@ import com.craxiom.networksurvey.ui.survey.model.ItemLock
 import com.craxiom.networksurvey.ui.survey.model.LastSessionUi
 import com.craxiom.networksurvey.ui.survey.model.LocationStatus
 import com.craxiom.networksurvey.ui.survey.model.OrgLineUi
+import com.craxiom.networksurvey.ui.survey.model.PrivacyZoneNoticeUi
 import com.craxiom.networksurvey.ui.survey.model.RoutingColumn
 import com.craxiom.networksurvey.ui.survey.model.SessionLength
 import com.craxiom.networksurvey.ui.survey.model.StartBlockReason
@@ -557,6 +560,24 @@ class SurveyUiStateMapperTest {
         assertEquals(AttentionPlateUi.Stalled(5), stalled.plates.single())
         val pausedAndStalled = map(runtime = recording().copy(stalledMinutes = 5, pausedForBackpressure = true))
         assertEquals(listOf(AttentionPlateUi.MqttOnlyPaused()), pausedAndStalled.plates)
+    }
+
+    @Test
+    fun `Ready inside a privacy zone says so, and the running survey uses its plate instead`() {
+        val home = PrivacyZoneState(decided = true, zone = PrivacyZone("home", "Home", 40.0, -105.0))
+        assertEquals(PrivacyZoneNoticeUi("Home"), SurveyUiStateMapper.map(inputs().copy(privacyZone = home)).readyPrivacyZone)
+        assertNull(SurveyUiStateMapper.map(inputs()).readyPrivacyZone)
+        assertNull(SurveyUiStateMapper.map(inputs(runtime = recording()).copy(privacyZone = home)).readyPrivacyZone)
+    }
+
+    @Test
+    fun `a privacy zone pauses the hero and every row, with its own plate and no stall`() {
+        val inZone = map(runtime = recording().copy(pausedForPrivacyZone = true, privacyZoneName = "Home", stalledMinutes = 5))
+
+        assertTrue(inZone.recording!!.paused)
+        assertTrue(inZone.recording!!.destinations.all { it.status.word == StatusWord.PAUSED })
+        // A deliberate pause: not a "Needs attention" item, and never a stall
+        assertEquals(listOf(AttentionPlateUi.PrivacyZonePaused("Home")), inZone.plates)
     }
 
     @Test

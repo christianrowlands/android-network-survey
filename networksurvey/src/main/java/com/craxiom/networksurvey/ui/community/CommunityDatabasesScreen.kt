@@ -8,12 +8,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.privacy.PrivacyZoneStore
 import com.craxiom.networksurvey.survey.model.Destination
 import com.craxiom.networksurvey.ui.common.NsManagedLockSheet
 import com.craxiom.networksurvey.ui.common.NsPageScaffold
@@ -25,6 +27,8 @@ import com.craxiom.networksurvey.ui.common.NsSummaryText
 import com.craxiom.networksurvey.ui.common.NsSwitchRow
 import com.craxiom.networksurvey.ui.common.NsTextAction
 import com.craxiom.networksurvey.ui.common.SectionHeader
+import com.craxiom.networksurvey.ui.privacy.PrivacyZonesRow
+import com.craxiom.networksurvey.ui.privacy.rememberPrivacyZonesAllowed
 import com.craxiom.networksurvey.ui.survey.DestinationPageStatus
 import com.craxiom.networksurvey.ui.survey.components.DestinationStatusPanel
 import com.craxiom.networksurvey.ui.survey.components.rememberDestinationStatus
@@ -46,6 +50,7 @@ interface CommunityDatabasesActions {
     fun onSeeOrganizationSettings() {}
     fun onUseOwnSettings() {}
     fun onOpenNewTowers() {}
+    fun onOpenPrivacyZones() {}
 }
 
 /** The Community databases page with its view model and upload dialogs. */
@@ -56,9 +61,13 @@ fun CommunityDatabasesScreen(
     onSeeOnMap: () -> Unit,
     onOpenOrganizationSettings: () -> Unit,
     onOpenNewTowers: () -> Unit,
+    onOpenPrivacyZones: () -> Unit,
     viewModel: CommunityUploadViewModel = viewModel(),
 ) {
+    val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val zones by remember { PrivacyZoneStore.getInstance(context).zones }.collectAsStateWithLifecycle()
+    val zonesAllowed = rememberPrivacyZonesAllowed()
     // The view model acknowledges a failure when the user leaves the page, so it says so while open
     val status = rememberDestinationStatus(Destination.COMMUNITY)
     var showUploadDialog by rememberSaveable { mutableStateOf(false) }
@@ -76,6 +85,7 @@ fun CommunityDatabasesScreen(
             override fun onSeeOrganizationSettings() = onOpenOrganizationSettings()
             override fun onUseOwnSettings() = viewModel.useOwnSettings()
             override fun onOpenNewTowers() = onOpenNewTowers()
+            override fun onOpenPrivacyZones() = onOpenPrivacyZones()
             override fun onUploadNow() {
                 if (viewModel.shouldShowUploadConfigDialog()) {
                     showUploadDialog = true
@@ -85,7 +95,7 @@ fun CommunityDatabasesScreen(
             }
         }
     }
-    CommunityDatabasesContent(state, actions, status = status)
+    CommunityDatabasesContent(state, actions, status = status, privacyZones = CommunityPrivacyZones(zones.size, zonesAllowed))
 
     if (showUploadDialog) {
         UploadConfirmationDialog(
@@ -100,6 +110,9 @@ fun CommunityDatabasesScreen(
     if (showNoInternet) NoInternetDialog(onDismiss = { showNoInternet = false })
 }
 
+/** The Privacy zones row's numbers: how many zones are saved, and whether the organization allows them. */
+data class CommunityPrivacyZones(val count: Int, val allowed: Boolean)
+
 /**
  * The Community databases page, stateless: which public databases receive the towers and Wi-Fi
  * networks this phone sees, whether uploads run on their own, and Upload now with the running or
@@ -111,8 +124,10 @@ fun CommunityDatabasesContent(
     actions: CommunityDatabasesActions,
     modifier: Modifier = Modifier,
     status: DestinationPageStatus? = null,
+    privacyZones: CommunityPrivacyZones? = null,
 ) {
     var showLockSheet by rememberSaveable { mutableStateOf(false) }
+    var showBlockedSheet by rememberSaveable { mutableStateOf(false) }
     var confirmOwnSettings by rememberSaveable { mutableStateOf(false) }
 
     NsPageScaffold(title = stringResource(R.string.survey_dest_community), onBack = actions::onBack, modifier = modifier) {
@@ -189,6 +204,18 @@ fun CommunityDatabasesContent(
                 )
                 NsRowDivider()
             }
+            // Keeping home out of the public databases is the most common reason for a zone
+            privacyZones?.let { zones ->
+                PrivacyZonesRow(
+                    count = zones.count,
+                    allowed = zones.allowed,
+                    summary = R.plurals.community_privacy_zones_summary,
+                    noneText = R.string.community_privacy_zones_none,
+                    onOpen = actions::onOpenPrivacyZones,
+                    onBlocked = { showBlockedSheet = true },
+                )
+                NsRowDivider()
+            }
             NsRow(title = stringResource(R.string.community_upload_settings), icon = R.drawable.ic_settings, onClick = actions::onOpenUploadSettings)
         }
 
@@ -212,6 +239,10 @@ fun CommunityDatabasesContent(
             },
             onDismiss = { showLockSheet = false },
         )
+    }
+    if (showBlockedSheet) {
+        // The override never lifts the organization's privacy zone setting, so it is not offered
+        NsManagedLockSheet(onSeeAll = actions::onSeeOrganizationSettings, onUseOwnSettings = null, onDismiss = { showBlockedSheet = false })
     }
     if (confirmOwnSettings) {
         UseOwnSettingsDialog(onConfirm = actions::onUseOwnSettings, onDismiss = { confirmOwnSettings = false })

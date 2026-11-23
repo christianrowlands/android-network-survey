@@ -64,6 +64,7 @@ class WifiListViewModel internal constructor(
     private val sdk: Int,
     scoutStates: Flow<Pair<ScoutState, WifiSource>> = emptyFlow(),
     private val scoutAllowed: () -> Boolean = { true },
+    private val connectedBssids: Flow<String?> = emptyFlow(),
 ) : AndroidViewModel(application), IWifiSurveyRecordListener, ILiveScanView {
 
     constructor(application: Application) : this(
@@ -82,6 +83,7 @@ class WifiListViewModel internal constructor(
         sdk = Build.VERSION.SDK_INT,
         scoutStates = ScoutManager.getInstance(application).let { combine(it.state, it.wifiSource, ::Pair) },
         scoutAllowed = { ScoutPolicy.isAllowed(application) },
+        connectedBssids = ConnectedWifi.bssids(application),
     )
 
     private val preferences: SharedPreferences =
@@ -136,6 +138,10 @@ class WifiListViewModel internal constructor(
     private var recording = false
     private var recordingWatch: Job? = null
 
+    // The access point the phone is connected to, watched while the screen is bound, so its row is marked
+    private var connectedBssid: String? = null
+    private var connectedWatch: Job? = null
+
     private val registration = ScanListenerRegistration(
         register = { it.registerWifiSurveyRecordListener(this) },
         unregister = { it.unregisterWifiSurveyRecordListener(this) },
@@ -170,6 +176,10 @@ class WifiListViewModel internal constructor(
         recordingWatch?.cancel()
         recordingWatch = service?.surveyStateFlow?.map { it.isRecording }?.distinctUntilChanged()
             ?.onEach { recording = it; applyScanState() }?.launchIn(viewModelScope + mainDispatcher)
+        // Unbound, the mark is cleared rather than left to go stale; binding again reports the current one
+        connectedWatch?.cancel()
+        if (service == null) applyConnected(null)
+        connectedWatch = service?.let { connectedBssids.onEach(::applyConnected).launchIn(viewModelScope + mainDispatcher) }
         registration.onServiceChanged(service, conditions.state.value == WifiScanState.READY)
         // Only Android 9 and 10 measure the gap between scans
         if (sdk < Build.VERSION_CODES.R) scanGap.watchSurveyPauses(viewModelScope, service?.surveyStateFlow)
@@ -234,6 +244,16 @@ class WifiListViewModel internal constructor(
     override fun onCleared() {
         registration.release()
         conditions.close()
+    }
+
+    /** Moves the Connected mark to [bssid]'s row as soon as the phone connects or roams, paused or not. */
+    private fun applyConnected(bssid: String?) {
+        if (bssid == connectedBssid) return
+        connectedBssid = bssid
+        latestSortedDisplays = markConnected(latestSortedDisplays, displayCache, bssid)
+        applyFilter()
+        rebuildGroups()
+        _uiState.update { it.copy(items = interleave(it.mode)) }
     }
 
     /** A blocked list drops its rows (paused ones stay frozen), so none come back stale when it clears. */
@@ -381,7 +401,7 @@ class WifiListViewModel internal constructor(
             wrappersByBssid[wrapper.wifiBeaconRecord.data.bssid] = wrapper
         }
 
-        val displays = cachedDisplays(dedupedWrappers, displayCache)
+        val displays = cachedDisplays(dedupedWrappers, displayCache, connectedBssid)
 
         // Trim cached entries for APs that disappeared this scan.
         displayCache.keys.retainAll(wrappersByBssid.keys)

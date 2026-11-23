@@ -39,6 +39,9 @@ interface WifiDetailsActions : WifiScanFixes {
     fun onWatchlistClick()
     fun onOpenSettings()
 
+    /** Opens the SSID exclusion list. */
+    fun onOpenExclusionList()
+
     /** Opens Client details for one of the access point's connected clients. */
     fun onClientClick(client: ScoutClient) {}
 }
@@ -50,6 +53,8 @@ data class WifiDetailsPageState(
     val scanState: WifiScanState,
     val excluded: Boolean,
     val watched: Boolean,
+    /** Whether the phone is connected to this access point. */
+    val connected: Boolean = false,
     /** The clients an NS Scout heard talking to this access point; empty for a phone record. */
     val connectedClients: List<ScoutClient> = emptyList(),
 )
@@ -96,7 +101,7 @@ private fun LazyListScope.detailsCards(
     actions: WifiDetailsActions,
 ) {
     item(key = "hero") {
-        WifiDetailsHeroCard(network = network, currentRssi = page.currentRssi)
+        WifiDetailsHeroCard(network = network, currentRssi = page.currentRssi, connected = page.connected)
     }
     item(key = "radio") {
         WifiRadioCard(network = network)
@@ -128,6 +133,7 @@ private fun LazyListScope.detailsCards(
             onToggle = actions::onToggleExcluded,
             onWatchlistClick = actions::onWatchlistClick,
             onNavigateToSettings = actions::onOpenSettings,
+            onViewExclusionList = actions::onOpenExclusionList,
         )
     }
 }

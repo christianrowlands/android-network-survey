@@ -231,6 +231,8 @@ private class ScreenActions(
 
     override fun onOpenScout() = sharedViewModel.triggerNavigationToScout()
 
+    override fun onOpenPrivacyZones() = sharedViewModel.triggerNavigationToPrivacyZones()
+
     override fun onUpdateScoutFirmware() = sharedViewModel.triggerNavigationToScoutFirmware()
 
     override fun onUseScout() = viewModel.useScout()

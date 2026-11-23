@@ -112,6 +112,10 @@ data class SurveyEndedBy(val destination: Destination, val failure: LinkFailure)
  * @property pausedForBattery      True while scanning is paused for low battery.
  * @property pausedForBackpressure True while scanning is paused because the MQTT queue is full and
  *                                 MQTT is the only destination.
+ * @property pausedForPrivacyZone  True while a survey runs and the phone is in a privacy zone: scanning
+ *                                 goes on for the live screens, but nothing is saved or sent.
+ * @property privacyZoneName       The name of the zone the phone is in while [pausedForPrivacyZone];
+ *                                 may be blank.
  * @property mqttDropping          True while MQTT drops messages because its queue is full.
  * @property stalledMinutes        Minutes without a record while running, or null when records flow.
  * @property policy                The organization policy in force.
@@ -147,7 +151,16 @@ data class SurveyRuntimeState(
     val lastSession: LastSession? = null,
     val requested: SurveySetup? = null,
     val endedBy: SurveyEndedBy? = null,
+    val pausedForPrivacyZone: Boolean = false,
+    val privacyZoneName: String? = null,
 ) {
+    /**
+     * True while nothing is being recorded on purpose: a battery or full MQTT queue pause (scanning
+     * stops) or a privacy zone (scanning goes on for the live screens only).
+     */
+    val paused: Boolean
+        get() = pausedForBattery || pausedForBackpressure || pausedForPrivacyZone
+
     /** True while any destination runs or connects (one that gave up doesn't count). */
     val isRecording: Boolean
         get() = destinations.values.any { !it.failed }

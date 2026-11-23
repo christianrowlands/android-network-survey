@@ -97,8 +97,9 @@ enum class StripState {
 data class ScanStripState(val state: StripState, val intervalSeconds: Int?, val sim: ViewedSim?)
 
 /**
- * @return The strip for [subTab]: whether its records are saved, its scan interval (not for GNSS,
- * whose view updates at the receiver's rate, nor while the survey is paused), and the SIM.
+ * @return The strip for [subTab]: whether its records are saved (paused in a privacy zone too), its
+ * scan interval (not for GNSS, whose view updates at the receiver's rate, nor while the survey's
+ * scans are paused), and the SIM.
  */
 fun scanStripState(subTab: SignalsSubTab, status: SurveyStatus, intervalSeconds: Int, sim: ViewedSim?): ScanStripState {
     val inSurvey = status.recording && subTab.recordType in status.recordTypes
@@ -108,8 +109,9 @@ fun scanStripState(subTab: SignalsSubTab, status: SurveyStatus, intervalSeconds:
         status.recording -> StripState.NOT_IN_SURVEY
         else -> StripState.LIVE
     }
-    // A paused survey's scans have stopped, so its interval would mislead.
-    val showsInterval = subTab != SignalsSubTab.GNSS && state != StripState.PAUSED
+    // A paused survey's scans have stopped, so its interval would mislead. In a privacy zone the
+    // scans go on (only saving pauses), so the interval stays true.
+    val showsInterval = subTab != SignalsSubTab.GNSS && !(state == StripState.PAUSED && status.scansPaused)
     return ScanStripState(
         state = state,
         intervalSeconds = intervalSeconds.takeIf { showsInterval },

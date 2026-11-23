@@ -134,6 +134,16 @@ class SignalsContentTest {
     }
 
     @Test
+    fun aSurveyPausedInAPrivacyZone_saysPaused_andKeepsTheInterval() {
+        val inZone = recordingCellular.copy(pausedForPrivacyZone = true)
+        val state = scanStripState(SignalsSubTab.CELLULAR, inZone, 5, ViewedSim.NO_SIM)
+        // Nothing is saved, so it never reads as Recording; the scans go on, so the interval stays
+        assertEquals(ScanStripState(StripState.PAUSED, 5, ViewedSim.NO_SIM), state)
+        compose.showPage { ScanStrip(state) }
+        compose.onNodeWithText("Survey paused", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
     fun gnss_hasNoInterval_becauseItsViewUpdatesAtTheReceiversRate() {
         val recording = SurveyStatus(recording = true, recordTypes = setOf(RecordType.GNSS))
         assertEquals(ScanStripState(StripState.LIVE, null, null), scanStripState(SignalsSubTab.GNSS, idle, 45, mint))

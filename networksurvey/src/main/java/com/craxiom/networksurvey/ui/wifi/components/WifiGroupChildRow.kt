@@ -23,7 +23,7 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 
 /**
- * Indented child row under an expanded group. Line 1: band chip + bandwidth · standard
+ * Indented child row under an expanded group. Line 1: Connected tag (when connected) + band chip + bandwidth · standard
  * (each as its own Text with a dot separator for clear spacing).
  * Line 2: BSSID (monospace) + vendor. Right column: dBm + meter. Taps navigate to details; one
  * TalkBack item reads the radio and signal, then the BSSID.
@@ -74,6 +74,10 @@ private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
         verticalArrangement = Arrangement.spacedBy(NsTheme.spacing.xs),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
+        // First, so the connected access point stands out in its group
+        if (ap.isConnected) {
+            ConnectedTag()
+        }
         ap.band?.let { band ->
             NsBandChip(band = band, channel = ap.channel)
         }

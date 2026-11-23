@@ -32,6 +32,8 @@ import com.craxiom.networksurvey.survey.status.LeftOutItem
  * @property batteryLevel The battery percentage, only meaningful when [pausedForBattery] is true.
  * @property pausedForBackpressure True when scanning is paused because the MQTT queue is full and
  * MQTT is the only output.
+ * @property pausedForPrivacyZone True when the phone is in a privacy zone, so nothing is saved or sent
+ * (scanning continues for the live screens).
  * @property stalledMinutes Minutes since the last record when the stall watchdog has fired, or null
  * while records are flowing (or the watchdog is not applicable).
  * @property noWifiMinutes Minutes Wi-Fi has been out because the NS Scout, its source, is out of
@@ -66,6 +68,7 @@ data class SurveyNotificationState(
     val noWifiMinutes: Int? = null,
     val scanningWifiClients: Boolean = false,
     val savingRawFrames: Boolean = false,
+    val pausedForPrivacyZone: Boolean = false,
 ) {
     /** True when the MQTT connection is up or being (re)established. */
     val mqttActive: Boolean
@@ -79,7 +82,7 @@ data class SurveyNotificationState(
     val anyOutputActive: Boolean
         get() = fileLogging || communitySurvey || nsAnalytics || mqttActive || grpcActive
 
-    /** True when scanning has been deliberately paused by the app. */
+    /** True when recording has been deliberately paused: low battery, a full queue, or a privacy zone. */
     val paused: Boolean
-        get() = pausedForBattery || pausedForBackpressure
+        get() = pausedForBattery || pausedForBackpressure || pausedForPrivacyZone
 }

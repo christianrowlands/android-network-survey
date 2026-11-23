@@ -7,6 +7,9 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
  * change in the app. On a managed phone (without the override) each of these that the organization
  * set shows on Settings as set by the organization. The pre-v2 auto start keys stay in this list for
  * the one release that still reads them (see [LegacyMdmMapper]).
+ *
+ * `allow_privacy_zones` is here because the user manages zones in the app, but unlike the others the
+ * override never lifts it (see [com.craxiom.networksurvey.privacy.PrivacyZonePolicy]).
  */
 object MdmOverlapKeys {
 
@@ -48,5 +51,6 @@ object MdmOverlapKeys {
         NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY,
         NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED,
         NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED,
+        NetworkSurveyConstants.MDM_PROPERTY_ALLOW_PRIVACY_ZONES,
     )
 }

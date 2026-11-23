@@ -2,7 +2,9 @@ package com.craxiom.networksurvey.logging.db.uploader
 
 import android.content.Context
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
+import com.craxiom.networksurvey.logging.db.dao.CommunityQueuePlaceDao
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao
+import com.craxiom.networksurvey.logging.db.model.BaseRecordEntity
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity
@@ -11,8 +13,12 @@ import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity
 import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity
 import com.craxiom.networksurvey.logging.db.uploader.beacondb.BeaconDbUploadClient
+import com.craxiom.networksurvey.logging.db.uploader.beacondb.GeosubmitJsonFormatter
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDCsvFormatter
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDUploadClient
+import com.craxiom.networksurvey.privacy.PrivacyZone
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate
+import com.craxiom.networksurvey.privacy.PrivacyZoneRules
 import com.craxiom.networksurvey.util.PreferenceUtils
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -25,10 +31,15 @@ import java.io.IOException
  * that fails sits out the rest of the run while the other one keeps going. So an OpenCelliD outage
  * doesn't hold back BeaconDB, and a target that already has a record never gets it again.
  *
+ * The queue is scrubbed of privacy zone rows before the run, but a zone can be saved while a batch
+ * is already read, so each batch is checked against the zones in force again just before it is
+ * sent: rows inside one are deleted, not sent.
+ *
  * @param openCelliD True to upload to OpenCelliD.
  * @param anonymousOpenCelliD True to upload to OpenCelliD with the app's shared key.
  * @param beaconDb True to upload to BeaconDB.
  * @param batchSize The most records read and sent at once.
+ * @param activeZones The privacy zones in force right now (none when the organization turned them off).
  */
 class CommunityBatchUploader @JvmOverloads constructor(
     private val context: Context,
@@ -37,8 +48,10 @@ class CommunityBatchUploader @JvmOverloads constructor(
     private val anonymousOpenCelliD: Boolean,
     private val beaconDb: Boolean,
     private val batchSize: Int = BATCH_SIZE,
+    private val activeZones: () -> List<PrivacyZone> = { PrivacyZoneGate.getInstance(context).activeZones() },
 ) {
     private val dao: SurveyRecordDao get() = database.surveyRecordDao()
+    private val placeDao: CommunityQueuePlaceDao get() = database.communityQueuePlaceDao()
 
     /** The targets still uploading in this run; one that fails leaves it. */
     private val active = mutableSetOf<UploadTarget>()
@@ -98,11 +111,15 @@ class CommunityBatchUploader @JvmOverloads constructor(
         return batches
     }
 
-    /** Sends [batch] to each target still in the run that doesn't have its records yet. */
-    private fun <T> upload(batch: Batch<T>, results: UploadResultBundle, isStopped: () -> Boolean) {
+    /**
+     * Sends [batch] to each target still in the run that doesn't have its records yet, after
+     * deleting the rows a privacy zone saved since the batch was read now covers.
+     */
+    private fun <T : BaseRecordEntity> upload(batch: Batch<T>, results: UploadResultBundle, isStopped: () -> Boolean) {
+        val records = withoutZoneRows(batch)
         for (target in active.toList()) {
             if (isStopped()) return
-            val waiting = batch.records.filterNot { batch.table.uploaded(it, target) }
+            val waiting = records.filterNot { batch.table.uploaded(it, target) }
             if (waiting.isEmpty()) continue
             if (!batch.table.takes(target)) {
                 // Nothing in these records goes to this target, so there is nothing to send
@@ -119,6 +136,25 @@ class CommunityBatchUploader @JvmOverloads constructor(
                 active -= target
             }
         }
+    }
+
+    /**
+     * Deletes the rows of [batch] inside a privacy zone in force right now, checked like the queue
+     * scrub (the row's own place and accuracy).
+     *
+     * @return The rest of the batch, which may be sent.
+     */
+    private fun <T : BaseRecordEntity> withoutZoneRows(batch: Batch<T>): List<T> {
+        val zones = activeZones()
+        if (zones.isEmpty()) return batch.records
+        val (inside, outside) = batch.records.partition {
+            PrivacyZoneRules.zoneContaining(zones, it.latitude, it.longitude, it.accuracy.toFloat()) != null
+        }
+        if (inside.isNotEmpty()) {
+            batch.table.delete(inside)
+            Timber.i("Deleted %d records inside a privacy zone saved during the upload", inside.size)
+        }
+        return outside
     }
 
     private fun send(target: UploadTarget, records: List<*>): UploadResult = try {
@@ -150,6 +186,8 @@ class CommunityBatchUploader @JvmOverloads constructor(
     }
 
     private fun sendToBeaconDb(wrapper: UploadRecordsWrapper): UploadResult {
+        // Only hidden or opted-out access points: there is nothing to send, so they are just marked
+        if (GeosubmitJsonFormatter.hasNothingToSend(wrapper)) return UploadResult.Success
         val response = BeaconDbUploadClient.getInstance().uploadToBeaconDB(wrapper).execute()
         return response.anyBody().use { body ->
             BeaconDbUploadClient.mapRequestResultToUploadResult(BeaconDbUploadClient.handleBeaconDbResponse(response.code(), body))
@@ -157,20 +195,21 @@ class CommunityBatchUploader @JvmOverloads constructor(
     }
 
     /** Some records of one table, read for upload. */
-    private class Batch<T>(val table: Table<T>, val records: List<T>)
+    private class Batch<T : BaseRecordEntity>(val table: Table<T>, val records: List<T>)
 
     /**
      * How the uploader reads and marks one record table.
      *
      * @property takes Whether a target takes anything in these records.
      */
-    private inner class Table<T>(
+    private inner class Table<T : BaseRecordEntity>(
         private val read: (ocid: Boolean, beaconDb: Boolean, limit: Int) -> List<T>,
         private val id: (T) -> Long,
         private val ocidUploaded: (T) -> Boolean,
         private val beaconDbUploaded: (T) -> Boolean,
         private val markOcid: (List<Long>) -> Unit,
         private val markBeaconDb: (List<Long>) -> Unit,
+        private val deleteIds: (List<Long>) -> Int,
         val takes: (UploadTarget) -> Boolean,
     ) {
         /** @return Up to [limit] records waiting for a target in play, or null if none wait. */
@@ -191,35 +230,40 @@ class CommunityBatchUploader @JvmOverloads constructor(
                 }
             }
         }
+
+        /** Deletes [records] from the queue; a batch is far below SQLite's bound parameter limit. */
+        fun delete(records: List<T>) {
+            deleteIds(records.map(id))
+        }
     }
 
     /** The record tables, in the order they upload. */
     private fun tables(): List<Table<*>> = listOf(
         Table<GsmRecordEntity>(
             dao::getGsmRecordsForUpload, { it.id }, { it.ocidUploaded }, { it.beaconDbUploaded },
-            dao::markGsmRecordsAsUploadedToOcid, dao::markGsmRecordsAsUploadedToBeaconDb, takes = { true },
+            dao::markGsmRecordsAsUploadedToOcid, dao::markGsmRecordsAsUploadedToBeaconDb, placeDao::deleteGsm, takes = { true },
         ),
         // Neither target takes CDMA, so its records are only marked so they can be deleted
         Table<CdmaRecordEntity>(
             dao::getCdmaRecordsForUpload, { it.id }, { it.ocidUploaded }, { it.beaconDbUploaded },
-            dao::markCdmaRecordsAsUploadedToOcid, dao::markCdmaRecordsAsUploadedToBeaconDb, takes = { false },
+            dao::markCdmaRecordsAsUploadedToOcid, dao::markCdmaRecordsAsUploadedToBeaconDb, placeDao::deleteCdma, takes = { false },
         ),
         Table<UmtsRecordEntity>(
             dao::getUmtsRecordsForUpload, { it.id }, { it.ocidUploaded }, { it.beaconDbUploaded },
-            dao::markUmtsRecordsAsUploadedToOcid, dao::markUmtsRecordsAsUploadedToBeaconDb, takes = { true },
+            dao::markUmtsRecordsAsUploadedToOcid, dao::markUmtsRecordsAsUploadedToBeaconDb, placeDao::deleteUmts, takes = { true },
         ),
         Table<LteRecordEntity>(
             dao::getLteRecordsForUpload, { it.id }, { it.ocidUploaded }, { it.beaconDbUploaded },
-            dao::markLteRecordsAsUploadedToOcid, dao::markLteRecordsAsUploadedToBeaconDb, takes = { true },
+            dao::markLteRecordsAsUploadedToOcid, dao::markLteRecordsAsUploadedToBeaconDb, placeDao::deleteLte, takes = { true },
         ),
         Table<NrRecordEntity>(
             dao::getNrRecordsForUpload, { it.id }, { it.ocidUploaded }, { it.beaconDbUploaded },
-            dao::markNrRecordsAsUploadedToOcid, dao::markNrRecordsAsUploadedToBeaconDb, takes = { true },
+            dao::markNrRecordsAsUploadedToOcid, dao::markNrRecordsAsUploadedToBeaconDb, placeDao::deleteNr, takes = { true },
         ),
         // OpenCelliD takes no Wi-Fi, so Wi-Fi records count as already there for it
         Table<WifiBeaconRecordEntity>(
             { _, beacon, limit -> dao.getWifiRecordsForUpload(beacon, limit) }, { it.id },
-            { true }, { it.beaconDbUploaded }, {}, dao::markWifiRecordsAsUploadedToBeaconDb,
+            { true }, { it.beaconDbUploaded }, {}, dao::markWifiRecordsAsUploadedToBeaconDb, placeDao::deleteWifi,
             takes = { it == UploadTarget.BeaconDB },
         ),
     )
