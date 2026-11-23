@@ -192,6 +192,8 @@ public class NetworkSurveyConstants
     public static final String MDM_PROPERTY_ALLOW_NS_ANALYTICS = "allow_ns_analytics";
     /** False hides the NS Scout row and page and keeps Wi-Fi on the phone; unset means allowed. */
     public static final String MDM_PROPERTY_ALLOW_NS_SCOUT = "allow_ns_scout";
+    /** False turns privacy zones off (saved zones are kept but ignored); unset means allowed. */
+    public static final String MDM_PROPERTY_ALLOW_PRIVACY_ZONES = "allow_privacy_zones";
     public static final String PROPERTY_MDM_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     // Preferences
@@ -325,6 +327,10 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_SURVEY_POINTS_COLOR_MODE = "survey_points_color_mode";
     public static final String PROPERTY_SURVEY_POINTS_KIND = "survey_points_kind";
     public static final String PROPERTY_CLEAR_SURVEY_POINTS = "clear_survey_points";
+
+    /** Whether the Map draws the privacy zones (the Layers sheet's switch). */
+    public static final String PROPERTY_SHOW_PRIVACY_ZONES = "show_privacy_zones";
+    public static final boolean DEFAULT_SHOW_PRIVACY_ZONES = true;
 
     public static final String TOWER_MAP_SHARED_PREFERENCES = "tower_map_prefs";
     public static final String PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION = "last_tower_map_view_location";

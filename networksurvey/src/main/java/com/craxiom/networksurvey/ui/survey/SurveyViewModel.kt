@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate
 import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.survey.engine.SurveyRuntimeState
 import com.craxiom.networksurvey.survey.engine.SurveyTypeResolver
@@ -341,6 +342,7 @@ class SurveyViewModel @JvmOverloads constructor(
     ) { runtime, _, info, location, now -> buildInputs(service, runtime, info, location, now) }
         .combine(CommunityUploadRepository.get(getApplication()).progress) { inputs, upload -> inputs.copy(communityUpload = upload) }
         .combine(scout.inputs()) { inputs, scoutInputs -> scout.apply(inputs, scoutInputs) }
+        .combine(PrivacyZoneGate.getInstance(getApplication()).state) { inputs, zone -> inputs.copy(privacyZone = zone) }
         // No empty placeholder first: it would briefly say "Nothing waiting" while records wait
         .combine(DeliveryQueueReader(getApplication()).queues()) { inputs, queues ->
             // Ready has no ticker, so the queue refresh also brings "next upload in" up to date

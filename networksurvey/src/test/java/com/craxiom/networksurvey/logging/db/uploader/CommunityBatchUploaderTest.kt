@@ -9,6 +9,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity
+import com.craxiom.networksurvey.privacy.PrivacyZone
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -29,7 +30,8 @@ import java.util.concurrent.Executors
 /**
  * The community upload with one target down, the way OpenCelliD answered 521 for a whole day while
  * BeaconDB took everything: BeaconDB still gets every record exactly once, OpenCelliD keeps its
- * records for the retry, and nothing is deleted before every target has it.
+ * records for the retry, and nothing is deleted before every target has it. Hidden and opted-out
+ * access points queued by an older version never reach BeaconDB.
  */
 @RunWith(RobolectricTestRunner::class)
 class CommunityBatchUploaderTest {
@@ -165,6 +167,54 @@ class CommunityBatchUploaderTest {
     }
 
     @Test
+    fun `opted-out access points queued before the filter are never sent and are cleared`() {
+        openCelliDCode = OK_CODE
+        insert(nr = 0, wifi = WIFI_COUNT, ssid = "Home_nomap")
+        insert(nr = 0, wifi = 0, hidden = 1)
+
+        val result = runWorker(retry = true)
+
+        assertTrue(result is ListenableWorker.Result.Success)
+        assertTrue("No request for a batch with nothing to send", beaconDbBodies.isEmpty())
+        assertEquals(0, background { database.surveyRecordDao().getWifiRecordCountForUpload(true) })
+    }
+
+    @Test
+    fun `opted-out access points mixed with others leave only the others in the report`() {
+        openCelliDCode = OK_CODE
+        insert(nr = 0, wifi = 1, ssid = "Home_optout")
+        insert(nr = 0, wifi = 1)
+
+        runWorker(retry = true)
+
+        assertEquals(1, occurrences(beaconDbBodies, "\"wifiAccessPoints\""))
+        assertFalse(beaconDbBodies.any { it.contains("Home_optout") })
+    }
+
+    @Test
+    fun `rows inside a zone saved after the run started are deleted at send time, not sent`() {
+        openCelliDCode = OK_CODE
+        insert(nr = 0, wifi = WIFI_COUNT)
+        // Centered on the first rows
+        val zone = PrivacyZone("z", "Zone", LATITUDE, LONGITUDE, ZONE_RADIUS_METERS)
+        // The worker's scrub ran before the zone was saved, so only the send-time check can hold them
+        val uploader = CommunityBatchUploader(
+            context, database, openCelliD = true, anonymousOpenCelliD = true, beaconDb = true,
+            activeZones = { listOf(zone) },
+        )
+
+        val results = background { uploader.run({ false }) {} }
+
+        assertEquals(UploadResult.Success, results.getResult(UploadTarget.BeaconDB))
+        val sent = occurrences(beaconDbBodies, "\"wifiAccessPoints\"")
+        assertTrue("Some rows were outside the zone", sent > 0)
+        assertTrue("Rows inside the zone were not sent", sent < WIFI_COUNT)
+        assertFalse(beaconDbBodies.any { it.contains("\"latitude\":$LATITUDE,") })
+        // Sent rows are marked, inside rows are gone: nothing waits
+        assertEquals(0, background { database.surveyRecordDao().getWifiRecordCountForUpload(true) })
+    }
+
+    @Test
     fun `with retry off the outage fails and says which target failed`() {
         insert(nr = NR_COUNT, wifi = 0)
 
@@ -208,9 +258,10 @@ class CommunityBatchUploaderTest {
         }
     }
 
-    private fun insert(nr: Int, wifi: Int) = background {
+    private fun insert(nr: Int, wifi: Int, ssid: String = "test", hidden: Int = 0) = background {
         database.nrRecordDao().insertRecords(List(nr) { nrRecord(it) })
-        database.wifiRecordDao().insertRecords(List(wifi) { wifiRecord(it) })
+        database.wifiRecordDao().insertRecords(List(wifi) { wifiRecord(it, ssid) })
+        database.wifiRecordDao().insertRecords(List(hidden) { wifiRecord(it, "") })
     }
 
     private fun nrRecord(index: Int) = NrRecordEntity().apply {
@@ -226,10 +277,10 @@ class CommunityBatchUploaderTest {
         servingCell = true
     }
 
-    private fun wifiRecord(index: Int) = WifiBeaconRecordEntity().apply {
+    private fun wifiRecord(index: Int, ssid: String) = WifiBeaconRecordEntity().apply {
         base(index)
         bssid = "00:11:22:33:%02x:%02x".format(index / 256, index % 256)
-        ssid = "test"
+        this.ssid = ssid
     }
 
     private fun com.craxiom.networksurvey.logging.db.model.BaseRecordEntity.base(index: Int) {
@@ -279,5 +330,8 @@ class CommunityBatchUploaderTest {
         const val LATITUDE_STEP = 0.0001
         const val LONGITUDE = -80.8836966
         const val ACCURACY = 12
+
+        /** About 11 m per row step, so the zone covers the first few dozen rows. */
+        const val ZONE_RADIUS_METERS = 250
     }
 }

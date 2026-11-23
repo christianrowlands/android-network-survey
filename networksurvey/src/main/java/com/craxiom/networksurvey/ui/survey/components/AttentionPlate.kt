@@ -59,6 +59,9 @@ interface AttentionPlateActions {
 
     /** Makes this phone the Wi-Fi source instead of the NS Scout (Ready only). */
     fun onUsePhoneWifi() {}
+
+    /** Opens the Privacy zones page. */
+    fun onOpenPrivacyZones() {}
 }
 
 /**
@@ -102,6 +105,17 @@ fun AttentionPlate(plate: AttentionPlateUi, actions: AttentionPlateActions, modi
                 NsTextAction(stringResource(R.string.survey_plate_disable_limit), actions::onDisableQueueLimit)
             }
         }
+
+        // The pause styling the hero uses, so the zone's color is chosen in one place (the theme)
+        is AttentionPlateUi.PrivacyZonePaused -> Plate(
+            colors = NsTheme.colors.state.paused,
+            icon = R.drawable.ic_shield,
+            title = stringResource(R.string.survey_plate_privacy_zone_title),
+            body = plate.zoneName?.takeIf { it.isNotBlank() }
+                ?.let { stringResource(R.string.survey_plate_privacy_zone_body, it) }
+                ?: stringResource(R.string.survey_plate_privacy_zone_body_unnamed),
+            modifier = modifier,
+        ) { NsTextAction(stringResource(R.string.privacy_zones_title), actions::onOpenPrivacyZones) }
 
         is AttentionPlateUi.MqttDropping -> Plate(
             colors = status.warning,

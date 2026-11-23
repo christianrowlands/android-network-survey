@@ -21,6 +21,7 @@ import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
+import com.craxiom.networksurvey.logging.db.uploader.beacondb.WifiOptOut;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
@@ -213,7 +214,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     {
         final long observedAt = System.currentTimeMillis();
         executorService.execute(() -> {
-            surveyedPointStore.observeWifi(allWifiBeaconRecords, observedAt);
+            // A point is marked as sent to BeaconDB later, so it only stands for networks BeaconDB may get
+            surveyedPointStore.observeWifi(withoutOptedOut(allWifiBeaconRecords), observedAt);
 
             // BeaconDB takes what was heard where the phone is now; an NS Scout's backlog from
             // while it was out of range is saved to the other destinations only.
@@ -222,7 +224,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             final List<WifiBeaconRecordEntity> wifiRecords = new ArrayList<>();
 
             // The movement gate looks at the first record that may be uploaded
-            final List<WifiRecordWrapper> located = wellLocated(wifiBeaconRecords);
+            final List<WifiRecordWrapper> located = uploadable(wifiBeaconRecords);
 
             if (!located.isEmpty())
             {
@@ -389,22 +391,47 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     /**
      * A phone scan shares one location across the batch. An NS Scout window spans seconds and each
      * record has the place it was heard (or none when no phone fix was close), so every record is
-     * checked on its own: it needs a location and a good accuracy.
+     * checked on its own: it needs a location and a good accuracy. Hidden and opted-out networks
+     * (see {@link WifiOptOut}) are never queued.
      *
      * @return The records that may be uploaded to BeaconDB, in their order.
      */
-    static List<WifiRecordWrapper> wellLocated(List<WifiRecordWrapper> records)
+    static List<WifiRecordWrapper> uploadable(List<WifiRecordWrapper> records)
     {
-        final List<WifiRecordWrapper> located = new ArrayList<>();
+        final List<WifiRecordWrapper> eligible = new ArrayList<>();
         for (WifiRecordWrapper wrapper : records)
         {
             final WifiBeaconRecordData data = wrapper.getWifiBeaconRecord().getData();
-            if (data.getLatitude() != 0d && data.getLongitude() != 0d && !isAccuracyBad(data.getAccuracy()))
+            if (data.getLatitude() != 0d && data.getLongitude() != 0d && !isAccuracyBad(data.getAccuracy())
+                    && !isOptedOut(wrapper))
             {
-                located.add(wrapper);
+                eligible.add(wrapper);
             }
         }
-        return located;
+        return eligible;
+    }
+
+    /**
+     * The community survey point for a Wi-Fi batch is later marked as sent to BeaconDB, so it is
+     * built only from the networks BeaconDB may get. A batch of only hidden or opted-out networks
+     * makes no community point.
+     *
+     * @return The records without the hidden and opted-out networks (see {@link WifiOptOut}), in
+     * their order.
+     */
+    static List<WifiRecordWrapper> withoutOptedOut(List<WifiRecordWrapper> records)
+    {
+        final List<WifiRecordWrapper> kept = new ArrayList<>(records.size());
+        for (WifiRecordWrapper wrapper : records)
+        {
+            if (wrapper.getWifiBeaconRecord() == null || !isOptedOut(wrapper)) kept.add(wrapper);
+        }
+        return kept;
+    }
+
+    private static boolean isOptedOut(WifiRecordWrapper wrapper)
+    {
+        return WifiOptOut.isExcludedFromBeaconDb(wrapper.getWifiBeaconRecord().getData().getSsid());
     }
 
     /**

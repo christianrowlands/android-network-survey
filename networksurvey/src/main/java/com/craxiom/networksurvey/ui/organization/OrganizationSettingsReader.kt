@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.craxiom.mqttlibrary.MqttConstants
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.privacy.PrivacyZonePolicy
 import com.craxiom.networksurvey.scout.ScoutPolicy
 import com.craxiom.networksurvey.survey.mdm.ManagedState
 import com.craxiom.networksurvey.survey.mdm.RestrictionDefinition
@@ -63,6 +64,7 @@ object OrganizationSettingsReader {
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD,
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS,
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT,
+        NetworkSurveyConstants.MDM_PROPERTY_ALLOW_PRIVACY_ZONES,
         NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL,
     )
 
@@ -145,6 +147,9 @@ object OrganizationSettingsReader {
 
         NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_SCOUT ->
             if (ScoutPolicy.isAllowed(snapshot)) OrgValue.Allowed else OrgValue.NotAllowed
+
+        NetworkSurveyConstants.MDM_PROPERTY_ALLOW_PRIVACY_ZONES ->
+            if (PrivacyZonePolicy.isAllowed(snapshot)) OrgValue.Allowed else OrgValue.NotAllowed
 
         else -> when (snapshot.getBoolean(key)) {
             true -> OrgValue.Allowed

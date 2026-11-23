@@ -10,7 +10,9 @@ import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.scout.raw.ScoutRawSource
 import com.craxiom.networksurvey.scout.raw.StampedRawFrame
 import com.craxiom.networksurvey.scout.wifi.ScoutSourceWatcher
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.PrivacyZoneHold
 import com.craxiom.networksurvey.services.SurveyRecordProcessor
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
@@ -44,12 +46,16 @@ import java.util.concurrent.atomic.AtomicLong
  * session starts the capture at once instead of reading the old session's state. Frames queued for
  * an earlier session are skipped. Session control (start, close) is never refused: only frame
  * batches are bounded ([MAX_PENDING_BATCHES]), the writer queue itself is not.
+ *
+ * Privacy zones: frames that arrive while the phone is in a zone are dropped and not counted as
+ * lost (they carry no location of their own, so the phone's place decides).
  */
 class WifiRawController @JvmOverloads constructor(
     private val service: NetworkSurveyService,
     private val scoutManager: ScoutManager = ScoutManager.getInstance(service),
     private val writerExecutor: ExecutorService = newWriterExecutor(),
     private val writer: PcapngFileWriter = newWriter(service),
+    private val privacyZoneHold: PrivacyZoneHold = PrivacyZoneHold(PrivacyZoneGate.getInstance(service)),
 ) {
     private val lock = Any()
     private val loggingEnabled = AtomicBoolean(false)
@@ -178,7 +184,7 @@ class WifiRawController @JvmOverloads constructor(
     /** Called on the Scout thread: hands the frames to the writer thread, or drops them when it is behind. */
     @VisibleForTesting
     internal fun enqueue(frames: List<StampedRawFrame>) {
-        if (!loggingEnabled.get()) return
+        if (!loggingEnabled.get() || privacyZoneHold.isHolding()) return
         val id = session.get()
         if (pendingBatches.incrementAndGet() > MAX_PENDING_BATCHES) {
             pendingBatches.decrementAndGet()

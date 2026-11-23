@@ -6,13 +6,18 @@ import com.craxiom.messaging.WifiClientRecord
 import com.craxiom.messaging.WifiProbeRequestRecord
 import com.craxiom.networksurvey.data.SsidExclusionManager
 import com.craxiom.networksurvey.listeners.IWifiClientSurveyRecordListener
+import com.craxiom.networksurvey.privacy.PrivacyZoneRulesTest.Companion.north
+import com.craxiom.networksurvey.privacy.PrivacyZoneTestGate
+import com.craxiom.networksurvey.privacy.PrivacyZoneTestGate.Companion.HOME
 import com.craxiom.networksurvey.scout.ScoutManager
 import com.craxiom.networksurvey.scout.clients.ScoutClientTestData
 import com.craxiom.networksurvey.scout.model.PairedScout
 import com.craxiom.networksurvey.scout.model.ScoutLinkDetails
 import com.craxiom.networksurvey.scout.model.WifiSource
+import com.craxiom.networksurvey.scout.wifi.PhoneFix
 import com.craxiom.networksurvey.scout.wifi.ScoutHeard
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.PrivacyZoneHold
 import com.craxiom.networksurvey.survey.model.RecordType
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.After
@@ -42,6 +47,7 @@ class WifiClientsControllerTest {
     private val app = ApplicationProvider.getApplicationContext<Context>()
     private val service = mock<NetworkSurveyService>()
     private val manager = mock<ScoutManager>()
+    private val zones = PrivacyZoneTestGate()
     private val wifiSource = MutableStateFlow(WifiSource.PHONE)
     private val clientRecords = ArrayList<WifiClientRecord>()
     private val probeRecords = ArrayList<WifiProbeRequestRecord>()
@@ -65,7 +71,7 @@ class WifiClientsControllerTest {
         whenever(manager.pairedScout).thenReturn(MutableStateFlow(SCOUT))
         whenever(manager.wifiSource).thenReturn(wifiSource)
         whenever(manager.linkDetails).thenReturn(MutableStateFlow(ScoutLinkDetails()))
-        controller = WifiClientsController(service, mock<WifiController>(), manager)
+        controller = WifiClientsController(service, mock<WifiController>(), manager, privacyZoneHold = PrivacyZoneHold(zones.gate))
     }
 
     @After
@@ -73,7 +79,34 @@ class WifiClientsControllerTest {
         controller.onDestroy()
     }
 
-    private fun <O> heard(observation: O) = ScoutHeard(observation, "NS-ABCD", HEARD, null, false)
+    private fun <O> heard(observation: O, fix: PhoneFix? = null) = ScoutHeard(observation, "NS-ABCD", HEARD, fix, false)
+
+    /** A fix [meters] north of the privacy zone's center. */
+    private fun fixAt(meters: Double): PhoneFix {
+        val (lat, lon) = north(HOME, meters)
+        return PhoneFix(HEARD, lat, lon, null, 10f, null)
+    }
+
+    @Test
+    fun `clients and probes heard inside a privacy zone reach no sink and are not counted`() {
+        controller.registerListener(sink)
+        zones.leave()
+
+        controller.onScoutClients(listOf(heard(ScoutClientTestData.client(1, -60, HEARD), fixAt(50.0))))
+        controller.onScoutProbes(listOf(heard(ScoutClientTestData.probe(1, "eduroam", -60, HEARD), fixAt(50.0))))
+        assertTrue(clientRecords.isEmpty())
+        assertTrue(probeRecords.isEmpty())
+
+        // The phone in the zone holds even a client with no fix of its own
+        zones.enter()
+        controller.onScoutClients(listOf(heard(ScoutClientTestData.client(2, -60, HEARD))))
+        assertTrue(clientRecords.isEmpty())
+        verify(service, never()).onRecordsProcessed(any(), any())
+
+        zones.leave()
+        controller.onScoutClients(listOf(heard(ScoutClientTestData.client(3, -60, HEARD), fixAt(5_000.0))))
+        assertEquals(1, clientRecords.size)
+    }
 
     @Test
     fun `a window with no sink takes no record numbers and adds nothing to the counts`() {

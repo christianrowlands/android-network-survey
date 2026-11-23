@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.annotation.StringRes
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.privacy.PrivacyZonePolicy
 import com.craxiom.networksurvey.survey.mdm.ManagedState
 import com.craxiom.networksurvey.survey.mdm.MdmOverlapKeys
 import com.craxiom.networksurvey.survey.mdm.RestrictionsSnapshot
@@ -71,12 +72,16 @@ data class SettingsUiState(
     val appInstanceId: String? = null,
     /** The paired NS Scout's name, which changes what the Wi-Fi interval means; null without one. */
     val scoutName: String? = null,
+    /** How many privacy zones are saved. */
+    val privacyZoneCount: Int = 0,
+    /** False when the organization turned privacy zones off; the override never lifts it. */
+    val privacyZonesAllowed: Boolean = true,
 )
 
 /**
  * Reads [SettingsUiState]. On a managed phone without the override, a setting the organization set
  * (one of [MdmOverlapKeys]) shows the organization's value, locked; everything else shows the
- * stored value. The upload and NS Analytics blocks apply even with the override, as before.
+ * stored value. The upload, NS Analytics and privacy zone blocks apply even with the override.
  */
 object SettingsReader {
 
@@ -90,6 +95,7 @@ object SettingsReader {
         val deviceSerial: String?,
         val appInstanceId: String?,
         val scoutName: String? = null,
+        val privacyZoneCount: Int = 0,
     )
 
     /** Every stored key the page shows; a change to any other leaves the page as it is. */
@@ -146,6 +152,8 @@ object SettingsReader {
             deviceSerial = environment.deviceSerial,
             appInstanceId = environment.appInstanceId,
             scoutName = environment.scoutName,
+            privacyZoneCount = environment.privacyZoneCount,
+            privacyZonesAllowed = PrivacyZonePolicy.isAllowed(restrictions),
         )
     }
 

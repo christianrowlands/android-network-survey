@@ -40,6 +40,12 @@ sealed class NavigationEvent {
 
     /** The NS Scout firmware update. */
     data object ScoutFirmware : NavigationEvent()
+
+    /** The Privacy zones list. */
+    data object PrivacyZones : NavigationEvent()
+
+    /** The editor of the privacy zone with [zoneId] (a tap on a zone on the Map tab). */
+    data class PrivacyZoneEditor(val zoneId: String) : NavigationEvent()
 }
 
 @HiltViewModel
@@ -101,6 +107,16 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToTowerMapSettings() {
         _navigationEvent.value = NavigationEvent.TowerMapSettings
+    }
+
+    /** Opens the Privacy zones list (the Survey tab's in-zone notice links here). */
+    fun triggerNavigationToPrivacyZones() {
+        _navigationEvent.value = NavigationEvent.PrivacyZones
+    }
+
+    /** Opens the editor of the privacy zone with [zoneId]. */
+    fun triggerNavigationToPrivacyZoneEditor(zoneId: String) {
+        _navigationEvent.value = NavigationEvent.PrivacyZoneEditor(zoneId)
     }
 
     fun triggerNavigationToWatchlist() {

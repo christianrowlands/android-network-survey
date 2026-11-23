@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.ui.cellular.MapLayerSwitch
 import com.craxiom.networksurvey.ui.cellular.SurveyedPointFilterChips
 import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
 import com.craxiom.networksurvey.ui.cellular.TowerMapSheets
@@ -34,6 +35,7 @@ import com.craxiom.networksurvey.ui.common.ServiceConnectionHandler
 import com.craxiom.networksurvey.ui.common.findComponentActivity
 import com.craxiom.networksurvey.ui.common.openLocationSettings
 import com.craxiom.networksurvey.ui.main.SharedViewModel
+import com.craxiom.networksurvey.ui.privacy.rememberPrivacyZonesAllowed
 import com.craxiom.networksurvey.ui.signals.SignalsViewModel
 import com.craxiom.networksurvey.ui.signals.SimLabels
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -55,6 +57,7 @@ fun MapTabScreen(sharedViewModel: SharedViewModel) {
     val signalsViewModel: SignalsViewModel = viewModel(viewModelStoreOwner = activity)
     // Lives with the Map tab's back stack entry, so it is kept across tab visits
     val towerViewModel: TowerMapLibreViewModel = viewModel()
+    val zonesViewModel: MapPrivacyZonesViewModel = viewModel(viewModelStoreOwner = activity)
 
     val camera = rememberCameraPositionState { rawPosition = mapTabViewModel.initialCamera().toCameraPosition() }
     val uiState = rememberTowerMapUiState(camera)
@@ -103,10 +106,44 @@ fun MapTabScreen(sharedViewModel: SharedViewModel) {
         actions = actions,
         surveyPoints = { SurveyPointsChrome(towerViewModel, uiState) },
     ) { contentPadding ->
-        TowerMapScreen(towerViewModel, uiState, selectedSim, contentPadding)
+        val underlay: @Composable (Boolean) -> Unit = { isDarkMap ->
+            PrivacyZonesUnderlay(zonesViewModel, isDarkMap, zonesViewModel::select)
+        }
+        TowerMapScreen(towerViewModel, uiState, selectedSim, contentPadding, underlay)
     }
 
-    TowerMapSheets(towerViewModel, uiState)
+    val zones by zonesViewModel.zones.collectAsStateWithLifecycle()
+    val showZones by zonesViewModel.show.collectAsStateWithLifecycle()
+    val tappedZone by zonesViewModel.selected.collectAsStateWithLifecycle()
+    // The organization may turn zones off while the tab is open or away
+    val zonesAllowed = rememberPrivacyZonesAllowed()
+    LaunchedEffect(zonesViewModel, zonesAllowed) { zonesViewModel.refresh() }
+    TowerMapSheets(
+        towerViewModel,
+        uiState,
+        // The switch only shows once there is a zone to hide
+        privacyZones = if (zones.isEmpty()) null else MapLayerSwitch(showZones, zonesViewModel::setShow),
+    )
+    tappedZone?.let { zone ->
+        PrivacyZoneTapSheet(
+            zone = zone,
+            onEdit = {
+                zonesViewModel.dismiss()
+                sharedViewModel.triggerNavigationToPrivacyZoneEditor(zone.id)
+            },
+            onDismiss = zonesViewModel::dismiss,
+        )
+    }
+}
+
+/** The privacy zones layer while it is switched on; a tap on a zone opens its sheet. */
+@Composable
+private fun PrivacyZonesUnderlay(viewModel: MapPrivacyZonesViewModel, isDarkMap: Boolean, onZoneClick: (String) -> Unit) {
+    val zones by viewModel.zones.collectAsStateWithLifecycle()
+    val show by viewModel.show.collectAsStateWithLifecycle()
+    if (show && zones.isNotEmpty()) {
+        PrivacyZonesMapLayer(zones = zones, isDarkMap = isDarkMap, onZoneClick = onZoneClick)
+    }
 }
 
 /**

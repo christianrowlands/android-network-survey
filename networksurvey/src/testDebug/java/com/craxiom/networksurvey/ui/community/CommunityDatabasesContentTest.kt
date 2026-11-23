@@ -42,6 +42,7 @@ class CommunityDatabasesContentTest {
         override fun onUploadNow() { calls += "upload" }
         override fun onCancelUpload() { calls += "cancel" }
         override fun onOpenNewTowers() { calls += "newTowers" }
+        override fun onOpenPrivacyZones() { calls += "zones" }
     }
     private val ready = UploadUiState(
         cellularQueueCount = 1204, wifiQueueCount = 351, uploadButtonEnabled = true,
@@ -143,8 +144,33 @@ class CommunityDatabasesContentTest {
         compose.onNodeWithText("Upload settings").performScrollTo().assertIsDisplayed()
     }
 
-    private fun show(state: UploadUiState, status: DestinationPageStatus? = null) =
-        compose.showPage { CommunityDatabasesContent(state, actions, status = status) }
+    @Test
+    fun thePrivacyZonesRow_countsTheZones_andOpensThem() {
+        show(ready, zones = CommunityPrivacyZones(count = 2, allowed = true))
+
+        compose.onNodeWithText("2 zones · nothing inside them is uploaded").performScrollTo().performClick()
+
+        assertEquals(listOf("zones"), calls)
+    }
+
+    @Test
+    fun withNoPrivacyZones_theRowSaysWhatTheyAreFor() {
+        show(ready, zones = CommunityPrivacyZones(count = 0, allowed = true))
+
+        compose.onNodeWithText("None · keep places like your home out of public databases").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun privacyZonesTurnedOffByTheOrganization_doNotOpen() {
+        show(ready, zones = CommunityPrivacyZones(count = 2, allowed = false))
+
+        compose.onNodeWithText("Off · saved zones are kept but not used").performScrollTo().performClick()
+
+        assertEquals(emptyList<String>(), calls)
+    }
+
+    private fun show(state: UploadUiState, status: DestinationPageStatus? = null, zones: CommunityPrivacyZones? = null) =
+        compose.showPage { CommunityDatabasesContent(state, actions, status = status, privacyZones = zones) }
 
     private companion object {
         const val NOW = 1_800_000_000_000L

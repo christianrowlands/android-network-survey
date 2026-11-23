@@ -111,6 +111,18 @@ class OrganizationSettingsReaderTest {
     }
 
     @Test
+    fun `privacy zones are listed as not allowed unless the organization allows them`() {
+        fun permissions(values: Map<String, Any?>) = read(values)
+            .groups.first { it.group == OrgGroup.PERMISSIONS }.rows.associate { it.key to it.value }
+        val key = NetworkSurveyConstants.MDM_PROPERTY_ALLOW_PRIVACY_ZONES
+        val base = mapOf<String, Any?>(SurveyMdmKeys.SURVEY_CELLULAR to SurveyMdmKeys.VALUE_ON)
+
+        assertEquals(OrgValue.NotAllowed, permissions(base)[key])
+        assertEquals(OrgValue.NotAllowed, permissions(base + (key to false))[key])
+        assertEquals(OrgValue.Allowed, permissions(base + (key to true))[key])
+    }
+
+    @Test
     fun `the override is carried for the page's note`() {
         assertTrue(read(mapOf(SurveyMdmKeys.SURVEY_CELLULAR to SurveyMdmKeys.VALUE_ON), overrideOn = true).overrideOn)
     }

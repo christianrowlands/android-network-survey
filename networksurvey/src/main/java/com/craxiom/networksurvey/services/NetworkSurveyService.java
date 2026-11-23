@@ -102,6 +102,7 @@ import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.services.watchlist.WatchlistChangePublisher;
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate;
 import com.craxiom.networksurvey.survey.engine.DestinationRuntime;
 import com.craxiom.networksurvey.survey.status.DestinationStatusRules;
 import com.craxiom.networksurvey.survey.status.LeftOutItems;
@@ -220,6 +221,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private String deviceId;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener primaryLocationListener;
+    private PrivacyZoneGate privacyZoneGate;
+    private PrivacyZoneStateWatcher privacyZoneStateWatcher;
     private ExtraLocationListener gnssLocationListener;
     private ExtraLocationListener networkLocationListener;
     private volatile DbUploadStore dbUploadStore;
@@ -333,6 +336,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     // Sessions only run after onCreate, so the store exists by the time one ends.
                     if (surveySetupStore != null) surveySetupStore.setLastSession(endedSession);
                     return Unit.INSTANCE;
+                },
+                () -> {
+                    // A new session starts with a fresh privacy zone decision (see PrivacyZoneEngine).
+                    // Runs under the tracker's lock, so it never interleaves with the end below.
+                    if (privacyZoneGate != null) privacyZoneGate.onSessionStarted();
+                    return Unit.INSTANCE;
+                },
+                () -> {
+                    if (privacyZoneGate != null) privacyZoneGate.onSessionEnded();
+                    return Unit.INSTANCE;
                 });
     }
 
@@ -370,11 +383,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         NotificationChannels.INSTANCE.createAll(context);
         surveyNotificationBuilder = new SurveyNotificationBuilder(this);
 
-        primaryLocationListener = new GpsListener();
+        privacyZoneGate = PrivacyZoneGate.getInstance(context);
+        primaryLocationListener = new GpsListener(privacyZoneGate);
         gnssLocationListener = new ExtraLocationListener(LocationManager.GPS_PROVIDER);
         networkLocationListener = new ExtraLocationListener(LocationManager.NETWORK_PROVIDER);
 
-        surveyRecordProcessor = new SurveyRecordProcessor(primaryLocationListener, deviceId, context, executorService);
+        surveyRecordProcessor = new SurveyRecordProcessor(primaryLocationListener, deviceId, context, executorService, privacyZoneGate);
         surveyRecordProcessor.setNetworkSurveyService(this);
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
@@ -440,6 +454,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         surveyStallWatchdog = createStallWatchdog();
         surveyStallWatchdog.start();
+
+        // Entering or leaving a privacy zone shows on the Survey screen and the notification at once
+        privacyZoneStateWatcher = new PrivacyZoneStateWatcher(privacyZoneGate);
+        privacyZoneStateWatcher.start(() -> serviceHandler.post(this::updateServiceNotification));
 
         updateServiceNotification();
     }
@@ -763,6 +781,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopAllLogging();
 
         if (surveyStallWatchdog != null) surveyStallWatchdog.stop();
+        if (privacyZoneStateWatcher != null) privacyZoneStateWatcher.stop();
         if (scoutStatusMonitor != null) scoutStatusMonitor.stop();
         serviceLooper.quitSafely();
         shutdownNotifications();
@@ -3568,6 +3587,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final SurveySetup requested = orchestrator.getRequestedSetup();
             final Map<Destination, DestinationRuntime> destinations =
                     destinationHealthReader.read(outputs, requested, orchestrator.getFileLoggingFailures());
+            final boolean pausedForPrivacyZone = isPausedForPrivacyZone();
 
             scheduleConnectingEscalation(destinations);
             surveyStateHolder.publish(new SurveyRuntimeState(
@@ -3588,7 +3608,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     mdmOverrideController != null && mdmOverrideController.getOrganizationUpdatedWhileOverridden(),
                     missionSessionTracker.lastSession(),
                     destinations.isEmpty() ? null : requested,
-                    destinationHealthReader.endedBy(requested, destinations)));
+                    destinationHealthReader.endedBy(requested, destinations),
+                    pausedForPrivacyZone,
+                    pausedForPrivacyZone ? privacyZoneGate.currentState().getZoneName() : null));
         } catch (Exception e)
         {
             Timber.e(e, "Could not publish the survey state");
@@ -3839,14 +3861,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 surveyCoordinator != null && surveyCoordinator.policy().getOverrideOn(),
                 DestinationStatusRules.INSTANCE.serviceStatuses(
                         surveyStateHolder.getState().getValue().getDestinations(),
-                        isPausedForBattery() || isPausedForQueueBackpressure(),
+                        isPausedForBattery() || isPausedForQueueBackpressure() || isPausedForPrivacyZone(),
                         PreferenceUtils.isAutoUploadEnabled(this),
                         System.currentTimeMillis()),
                 LeftOutItems.INSTANCE.of(surveyStateHolder.getState().getValue(),
                         new AndroidWifiEnvironment(this).scanState() == WifiScanState.WIFI_OFF,
                         scoutStatusMonitor != null ? scoutStatusMonitor.status() : null),
                 surveyStallWatchdog != null ? surveyStallWatchdog.getNoWifiMinutes() : null,
-                wifiClientsController.isRecording(), isWifiRawLoggingEnabled());
+                wifiClientsController.isRecording(), isWifiRawLoggingEnabled(),
+                isPausedForPrivacyZone());
     }
 
     /**
@@ -3871,7 +3894,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return new SurveyStallWatchdog(serviceHandler,
                 () -> (long) missionSessionTracker.getRecordCount().get() + wifiRawController.framesSaved(),
                 this::isAnySurveyActive,
-                () -> isPausedForBattery() || isPausedForQueueBackpressure() || isRecordingNoRecordTypes(),
+                // A privacy zone is a deliberate pause: no records is expected there, not a stall
+                () -> isPausedForBattery() || isPausedForQueueBackpressure() || isPausedForPrivacyZone()
+                        || isRecordingNoRecordTypes(),
                 this::getStallThresholdMs,
                 () -> {
                     updateServiceNotification();
@@ -3960,6 +3985,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 setScanRateValues();
                 enforceScoutPolicy();
+                privacyZoneGate.refreshPolicy();
                 // Applies a changed survey setup to the running survey and moves a running MQTT
                 // stream to a changed broker. A configuration push never starts an idle survey.
                 mdmOverrideController.onRestrictionsChanged();
@@ -4568,6 +4594,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public boolean isPausedForQueueBackpressure()
     {
         return isPausedDueToQueueBackpressure.get();
+    }
+
+    /**
+     * @return True while a survey runs and the phone is in a privacy zone: scanning goes on for the
+     * live screens, but no record is saved or sent (see {@link PrivacyZoneGate}).
+     */
+    public boolean isPausedForPrivacyZone()
+    {
+        return privacyZoneGate != null && privacyZoneGate.isPausedForZone() && isAnySurveyActive();
     }
 
     // ============================================================================

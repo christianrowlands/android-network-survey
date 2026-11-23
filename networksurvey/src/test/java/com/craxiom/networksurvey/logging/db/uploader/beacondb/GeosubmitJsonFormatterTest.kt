@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.logging.db.uploader.beacondb
 
 import com.craxiom.networksurvey.logging.db.model.BaseRecordEntity
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity
+import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -17,7 +18,8 @@ import java.util.Locale
  * The BeaconDB (Ichnaea geosubmit v2) report must carry the time the record was observed: the
  * spec defines `timestamp` as "the time of observation of the data, measured in milliseconds since
  * the UNIX epoch", and BeaconDB requires it and stores it apart from its own submission time. The
- * uploader used to send the upload time for every record. Runs under a comma decimal default
+ * uploader used to send the upload time for every record. Hidden and opted-out access points are
+ * never in the report. Runs under a comma decimal default
  * locale, since the JSON must stay locale independent.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -69,6 +71,29 @@ class GeosubmitJsonFormatterTest {
         assertFalse(text, text.contains("38,88"))
     }
 
+    @Test
+    fun `hidden and opted-out access points already queued are left out of the report`() {
+        val json = GeosubmitJsonFormatter.formatRecords(
+            emptyList(), emptyList(), emptyList(), emptyList(),
+            listOf(wifiRecord(), wifiRecord("Home_nomap"), wifiRecord(""), wifiRecord("Office_optout")),
+        )
+
+        val items = json.getJSONArray("items")
+        assertEquals(1, items.length())
+        assertEquals("Test", items.getJSONObject(0).getJSONArray("wifiAccessPoints").getJSONObject(0).getString("ssid"))
+    }
+
+    @Test
+    fun `a batch of only opted-out access points has nothing to send`() {
+        val optedOut = UploadRecordsWrapper.createRecordsWrapper(listOf(wifiRecord("Home_nomap"), wifiRecord("")))
+        val mixed = UploadRecordsWrapper.createRecordsWrapper(listOf(wifiRecord("Home_nomap"), wifiRecord()))
+        val cells = UploadRecordsWrapper.createRecordsWrapper(listOf(lteRecord()))
+
+        assertTrue(GeosubmitJsonFormatter.hasNothingToSend(optedOut))
+        assertFalse(GeosubmitJsonFormatter.hasNothingToSend(mixed))
+        assertFalse(GeosubmitJsonFormatter.hasNothingToSend(cells))
+    }
+
     private fun BaseRecordEntity.base() {
         deviceSerialNumber = "serial"
         deviceName = "device"
@@ -84,9 +109,9 @@ class GeosubmitJsonFormatterTest {
         mcc = 311; mnc = 480; tac = 7001; eci = 123456789; pci = 401; rsrp = -101.5f; servingCell = true
     }
 
-    private fun wifiRecord() = WifiBeaconRecordEntity().apply {
+    private fun wifiRecord(ssid: String = "Test") = WifiBeaconRecordEntity().apply {
         base()
-        bssid = "aa:bb:cc:dd:ee:ff"; ssid = "Test"; channel = 6; frequencyMhz = 2437; signalStrength = -60f
+        bssid = "aa:bb:cc:dd:ee:ff"; this.ssid = ssid; channel = 6; frequencyMhz = 2437; signalStrength = -60f
     }
 
     private companion object {

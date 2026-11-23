@@ -62,6 +62,8 @@ object SurveyUiStateMapper {
             stillToDo = if (recording == null) stillToDo(inputs) else emptyList(),
             routing = if (recording != null) RecordingUiMapper.routing(inputs) else readyRouting,
             scoutRow = ScoutSurveyMapper.row(inputs, recording = recording != null),
+            readyPrivacyZone = inputs.privacyZone.takeIf { recording == null && it.pausedForZone }
+                ?.let { PrivacyZoneNoticeUi(it.zoneName) },
         )
     }
 

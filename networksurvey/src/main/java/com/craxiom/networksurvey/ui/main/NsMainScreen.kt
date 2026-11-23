@@ -16,6 +16,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.craxiom.networksurvey.ui.privacy.navigateToPrivacyZoneEditor
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.bluetooth.details.BLUETOOTH_DATA_KEY
 import com.craxiom.networksurvey.ui.wifi.clients.WIFI_CLIENT_MAC_KEY
@@ -178,6 +179,8 @@ private fun NavigationEventEffect(
             NavigationEvent.LogFiles -> mainNavController.navigate(NavOption.LogFiles.name)
             NavigationEvent.NsScout -> mainNavController.navigate(NavOption.NsScout.name) { launchSingleTop = true }
             NavigationEvent.ScoutFirmware -> mainNavController.navigate(NavOption.ScoutFirmware.name) { launchSingleTop = true }
+            NavigationEvent.PrivacyZones -> mainNavController.navigate(NavOption.PrivacyZones.name) { launchSingleTop = true }
+            is NavigationEvent.PrivacyZoneEditor -> mainNavController.navigateToPrivacyZoneEditor(event.zoneId)
             // Back from the QR scanner to the NS Analytics page
             NavigationEvent.NsAnalyticsConnection -> mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
                 popUpTo(NavDrawerOption.None.name)

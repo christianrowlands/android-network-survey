@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.WatchlistMessageConstants
 import com.craxiom.networksurvey.listeners.IWatchlistListener
+import com.craxiom.networksurvey.listeners.IPrivacyZoneExempt
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
@@ -36,13 +37,16 @@ import java.util.function.Supplier
  * an absent-to-present transition and only re-arms an entry after it has been unmatched for an
  * absence window (a single dropped scan is not enough to mark a network absent, because real access
  * points flicker out of individual scan results). A per-entry cooldown is kept as a hard backstop.
+ * <p>
+ * Exempt from privacy zones ([IPrivacyZoneExempt]) by the user's choice: inside a zone a watched
+ * network still alerts, joins the history, and goes out over MQTT with its location.
  */
 class WatchlistDetectionManager(
     private val context: Context,
     private val deviceId: String,
     // Nullable because the supplier is implemented in Java, which cannot enforce non-null returns.
     private val missionIdProvider: Supplier<String?>
-) : IWifiSurveyRecordListener {
+) : IWifiSurveyRecordListener, IPrivacyZoneExempt {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val watchlistDao by lazy { SurveyDatabase.getInstance(context).watchlistDao() }

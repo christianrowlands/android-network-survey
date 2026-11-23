@@ -122,6 +122,8 @@ fun SurveyScreenContent(
                         onTurnOnLocation = actions::onTurnOnLocation,
                         onAllowLocation = actions::onAllowLocation,
                         onCopyMissionId = actions::onCopyMissionId,
+                        privacyZone = state.readyPrivacyZone,
+                        onOpenPrivacyZones = actions::onOpenPrivacyZones,
                     )
                     state.orgLine?.let { line ->
                         OrgStatusLine(
@@ -308,6 +310,7 @@ private fun plateActions(actions: SurveyActions, confirmDisableLimit: () -> Unit
     override fun onOpenScout() = actions.onOpenScout()
     override fun onUpdateScoutFirmware() = actions.onUpdateScoutFirmware()
     override fun onUsePhoneWifi() = actions.onUsePhoneWifi()
+    override fun onOpenPrivacyZones() = actions.onOpenPrivacyZones()
 }
 
 private const val TRANSITION_MS = 200

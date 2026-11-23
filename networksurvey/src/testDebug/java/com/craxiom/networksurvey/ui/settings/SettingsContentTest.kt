@@ -45,6 +45,7 @@ class SettingsContentTest {
         override fun onOpenUploads() { calls += "uploads" }
         override fun onOpenMapSettings() { calls += "map" }
         override fun onOpenSsidExclusions() { calls += "ssids" }
+        override fun onOpenPrivacyZones() { calls += "zones" }
         override fun onOpenOrganization() { calls += "organization" }
         override fun onCopy(label: String, value: String) { calls += "copy $value" }
     }
@@ -107,6 +108,34 @@ class SettingsContentTest {
         show(SettingsUiState(managed = true, uploadsBlocked = true))
 
         compose.onNodeWithText(string(R.string.upload_disabled_via_mdm)).performScrollTo().performClick()
+
+        assertEquals(listOf("blocked"), calls)
+    }
+
+    @Test
+    fun thePrivacyGroup_holdsTheZonesAndTheSsidExclusionList() {
+        show(SettingsUiState(privacyZoneCount = 2))
+
+        compose.onNodeWithText("PRIVACY").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("2 zones · the survey pauses inside them").performScrollTo().performClick()
+        compose.onNodeWithText(string(R.string.ssid_exclusion_list_title)).performScrollTo().performClick()
+
+        assertEquals(listOf("zones", "ssids"), calls)
+    }
+
+    @Test
+    fun noPrivacyZones_nudgesToAddOne() {
+        show(SettingsUiState())
+
+        compose.onNodeWithText("None · keep places like your home out of your survey data").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun privacyZonesTurnedOffByTheOrganization_explainInsteadOfOpening() {
+        // The organization's switch holds even with the override on
+        show(SettingsUiState(managed = true, overrideOn = true, privacyZoneCount = 1, privacyZonesAllowed = false))
+
+        compose.onNodeWithText("Off · saved zones are kept but not used").performScrollTo().performClick()
 
         assertEquals(listOf("blocked"), calls)
     }

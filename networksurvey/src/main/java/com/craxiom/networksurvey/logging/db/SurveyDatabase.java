@@ -10,6 +10,7 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.craxiom.networksurvey.logging.db.dao.CdmaRecordDao;
+import com.craxiom.networksurvey.logging.db.dao.CommunityQueuePlaceDao;
 import com.craxiom.networksurvey.logging.db.dao.GsmRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.LteRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.NewTowerFindDao;
@@ -68,6 +69,8 @@ public abstract class SurveyDatabase extends RoomDatabase
     public abstract SurveyedPointDao surveyedPointDao();
 
     public abstract NewTowerFindDao newTowerFindDao();
+
+    public abstract CommunityQueuePlaceDao communityQueuePlaceDao();
 
     private static volatile SurveyDatabase INSTANCE;
 

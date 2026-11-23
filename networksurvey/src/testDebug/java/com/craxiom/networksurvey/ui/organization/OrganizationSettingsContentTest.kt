@@ -49,7 +49,8 @@ class OrganizationSettingsContentTest {
         compose.onNodeWithText("Survey").assertIsDisplayed()
         // GNSS left to the person using the phone, and so is control by other apps.
         compose.onAllNodesWithText("You choose").assertCountEquals(2)
-        compose.onNodeWithText("Not allowed").performScrollTo().assertIsDisplayed()
+        // Community uploads and privacy zones, both off on a managed phone that leaves them unset.
+        compose.onAllNodesWithText("Not allowed").assertCountEquals(2)
         compose.onNodeWithText(string(R.string.org_note_community_managed, string(R.string.allow_data_upload))).assertIsDisplayed()
         compose.onNodeWithText("Use my own settings").performScrollTo().performClick()
         compose.onNodeWithText("Use your own settings?").assertIsDisplayed()

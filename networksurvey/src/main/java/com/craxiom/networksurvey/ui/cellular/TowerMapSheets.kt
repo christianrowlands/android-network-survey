@@ -26,9 +26,11 @@ import timber.log.Timber
 /**
  * The map's sheets and dialogs: Layers, Filters, Search, About, the survey points options and the
  * tower details. [state] says which is open; each one saves what the user changes.
+ *
+ * @param privacyZones The Layers sheet's privacy zones switch, or null to leave it out.
  */
 @Composable
-fun TowerMapSheets(viewModel: TowerMapLibreViewModel, state: TowerMapUiState) {
+fun TowerMapSheets(viewModel: TowerMapLibreViewModel, state: TowerMapUiState, privacyZones: MapLayerSwitch? = null) {
     val context = LocalContext.current
     val preferences = remember { PreferenceManager.getDefaultSharedPreferences(context) }
     val surveyed = rememberSurveyedPointsSettings(viewModel)
@@ -48,7 +50,7 @@ fun TowerMapSheets(viewModel: TowerMapLibreViewModel, state: TowerMapUiState) {
     )
 
     if (state.showLayers) {
-        LayersSheet(viewModel, state)
+        LayersSheet(viewModel, state, privacyZones)
     }
 
     if (state.showSurveyedOptions) {
@@ -126,7 +128,7 @@ fun TowerMapSheets(viewModel: TowerMapLibreViewModel, state: TowerMapUiState) {
 }
 
 @Composable
-private fun LayersSheet(viewModel: TowerMapLibreViewModel, state: TowerMapUiState) {
+private fun LayersSheet(viewModel: TowerMapLibreViewModel, state: TowerMapUiState, privacyZones: MapLayerSwitch?) {
     val context = LocalContext.current
     val preferences = remember { PreferenceManager.getDefaultSharedPreferences(context) }
     val surveyed = rememberSurveyedPointsSettings(viewModel)
@@ -182,7 +184,8 @@ private fun LayersSheet(viewModel: TowerMapLibreViewModel, state: TowerMapUiStat
             viewModel.setShowOnlyServingCell(show)
             preferences.edit { putBoolean(NetworkSurveyConstants.PROPERTY_MAP_SHOW_ONLY_SERVING_CELL, show) }
         },
-        onDismiss = { state.showLayers = false }
+        onDismiss = { state.showLayers = false },
+        privacyZones = privacyZones,
     )
 }
 

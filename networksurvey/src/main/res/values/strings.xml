@@ -734,6 +734,8 @@
     <string name="allow_ns_analytics_mdm_description">True to allow users to register and upload survey records to NS Analytics, false to prevent it</string>
     <string name="allow_ns_scout_title">Allow NS Scout</string>
     <string name="allow_ns_scout_mdm_description">True to allow users to pair an NS Scout and get Wi-Fi from it, false to hide NS Scout and keep Wi-Fi on the phone</string>
+    <string name="allow_privacy_zones_title">Allow privacy zones</string>
+    <string name="allow_privacy_zones_mdm_description">True to let users set privacy zones, places where nothing is saved or sent except watchlist alerts and device status without a location (this also pauses MQTT and other organization streams there). Off on managed phones unless set to true</string>
 
 
     <string name="pref_file_location_output_title">Location</string>
@@ -3041,4 +3043,109 @@
     <!-- A raw frames file in the Log files list: %1$s is the size, %2$s when it was last written -->
     <string name="log_files_row_detail_raw">Raw frames (pcapng) · %1$s · %2$s</string>
 
+    <!-- Privacy zones: UI -->
+    <string name="settings_group_privacy">Privacy</string>
+    <string name="privacy_zones_title">Privacy zones</string>
+    <!-- The Privacy zones rows in Settings and on the Community databases page start with this count, then a separator and the row's phrase: %d is the number of saved zones -->
+    <plurals name="privacy_zones_count">
+        <item quantity="one">%d zone</item>
+        <item quantity="other">%d zones</item>
+    </plurals>
+    <!-- The Privacy zones row in Settings, after the zone count and a separator ("2 zones · the survey pauses inside them"): the quantity is the number of zones -->
+    <plurals name="privacy_zones_summary">
+        <item quantity="one">the survey pauses inside it</item>
+        <item quantity="other">the survey pauses inside them</item>
+    </plurals>
+    <!-- The Privacy zones rows with no zones: this word, a separator, then the row's phrase -->
+    <string name="privacy_zones_none">None</string>
+    <!-- The Privacy zones row in Settings with no zones, after "None" and a separator -->
+    <string name="privacy_zones_summary_none">keep places like your home out of your survey data</string>
+    <!-- The Privacy zones rows when the organization turned zones off: this word, a separator, then the phrase below; "Set by your organization" shows under it -->
+    <string name="privacy_zones_off">Off</string>
+    <!-- The Privacy zones rows when the organization turned zones off, after "Off" and a separator -->
+    <string name="privacy_zones_summary_off">saved zones are kept but not used</string>
+    <!-- The Privacy zones row on the Community databases page, after the zone count and a separator: the quantity is the number of zones -->
+    <plurals name="community_privacy_zones_summary">
+        <item quantity="one">nothing inside it is uploaded</item>
+        <item quantity="other">nothing inside them is uploaded</item>
+    </plurals>
+    <!-- The Privacy zones row on the Community databases page with no zones, after "None" and a separator -->
+    <string name="community_privacy_zones_none">keep places like your home out of public databases</string>
+    <string name="privacy_zones_info">Inside a zone, the survey saves and sends nothing: no log files, uploads or streams. Two exceptions: watchlist alerts still go off (an alert sent over MQTT includes the location), and device status is still saved and sent, without a location. Signals and the Map keep showing live readings.</string>
+    <!-- Heading of the section that explains the rules behind privacy zones -->
+    <string name="privacy_zones_how_title">How zones work</string>
+    <!-- %1$s is a distance in the user's units, for example "500m" -->
+    <string name="privacy_zones_info_rules">Zones need the phone\'s location. Until a survey has a location accurate to %1$s or better, its records are kept. If the phone leaves a zone without one, recording stays paused until it gets one. The area checked is a little wider than the circle, because the location\'s accuracy is added to it. Zones work from the moment you save them: they don\'t change log files or recall anything already uploaded or streamed.</string>
+    <string name="privacy_zones_info_queues">Records still waiting to upload to the community databases are checked again and removed if they fall inside a zone. Records already waiting to upload to NS Analytics still upload.</string>
+    <string name="privacy_zones_info_ssid">To keep your own Wi-Fi network out everywhere, add it to the SSID exclusion list.</string>
+    <string name="privacy_zones_empty_title">No privacy zones</string>
+    <string name="privacy_zones_empty_body">Add places like your home so the survey pauses there</string>
+    <string name="privacy_zones_add">Add a zone</string>
+    <!-- The list header, followed by a separator and the number of zones -->
+    <string name="privacy_zones_section">Zones</string>
+    <!-- The page's status card while the survey is paused in a zone: %1$s is the zone's name -->
+    <string name="privacy_zones_hero_inside">You\'re inside %1$s now</string>
+    <string name="privacy_zones_hero_inside_unnamed">You\'re inside a privacy zone now</string>
+    <string name="privacy_zones_hero_inside_body">The survey saves and sends nothing here except watchlist alerts and device status without a location</string>
+    <!-- The page's status card: %d is the number of saved zones -->
+    <plurals name="privacy_zones_hero_count">
+        <item quantity="one">%d privacy zone</item>
+        <item quantity="other">%d privacy zones</item>
+    </plurals>
+    <string name="privacy_zones_hero_full">The zone list is full</string>
+    <string name="privacy_zones_hero_off">Turned off by your organization</string>
+    <string name="privacy_zones_hero_off_body">Privacy zones are off on phones your organization manages unless your administrator allows them. Saved zones are kept but not used and can\'t be changed, so the survey never pauses in them</string>
+    <!-- A zone in the list: %1$s is its radius, for example "250m" -->
+    <string name="privacy_zone_row_radius">%1$s radius</string>
+    <!-- After a zone's radius and a separator while the survey is paused in it ("250m radius · inside now") -->
+    <string name="privacy_zone_inside_now">inside now</string>
+    <!-- Delete confirmation: %1$s is the zone's name -->
+    <string name="privacy_zone_delete_title">Delete %1$s?</string>
+    <string name="privacy_zone_delete_message">Records made inside it will be saved and sent again from now on.</string>
+    <string name="privacy_zone_delete_confirm">Delete</string>
+    <string name="privacy_zone_delete">Delete zone</string>
+    <!-- The button on the Map tab's zone sheet that opens the zone editor -->
+    <string name="privacy_zone_edit">Edit zone</string>
+    <string name="privacy_zone_new_title">New privacy zone</string>
+    <string name="privacy_zone_edit_title">Edit privacy zone</string>
+    <string name="privacy_zone_move_hint">Move the map to place the zone</string>
+    <string name="privacy_zone_name">Name</string>
+    <!-- Placeholder in the empty name field -->
+    <string name="privacy_zone_name_hint">Home</string>
+    <!-- The name a zone saved with a blank name gets: %1$d is a number -->
+    <string name="privacy_zone_default_name">Privacy zone %1$d</string>
+    <string name="privacy_zone_unnamed">Unnamed zone</string>
+    <string name="privacy_zone_radius">Radius</string>
+    <string name="privacy_zone_center_tip">Tip: the center doesn\'t have to be your front door. Off to one side, the gap in the data points less clearly at your home.</string>
+    <!-- Under the radius slider: %1$s is the number of records -->
+    <plurals name="privacy_zone_scrubs_waiting">
+        <item quantity="one">%1$s record waiting to upload from inside this zone won\'t be uploaded</item>
+        <item quantity="other">%1$s records waiting to upload from inside this zone won\'t be uploaded</item>
+    </plurals>
+    <string name="privacy_zone_save">Save zone</string>
+    <string name="privacy_zone_save_failed">The zone couldn\'t be saved</string>
+    <string name="privacy_zone_use_my_location">Use my location</string>
+    <!-- TalkBack actions on the radius slider, which step to the next radius up or down -->
+    <string name="privacy_zone_radius_increase">Increase radius</string>
+    <string name="privacy_zone_radius_decrease">Decrease radius</string>
+    <string name="privacy_zone_finding_location">Finding your location…</string>
+    <string name="privacy_zone_map_description">Map with the zone\'s circle. The zone is centered on the pin; move the map to move the zone.</string>
+    <string name="map_layers_privacy_zones">Privacy zones</string>
+    <string name="map_layers_privacy_zones_summary">Turn off before sharing a screenshot of the map</string>
+
+    <!-- Privacy zones: pipeline -->
+    <!-- Survey screen plate while a survey runs and the phone is in a privacy zone -->
+    <string name="survey_plate_privacy_zone_title">Paused in a privacy zone</string>
+    <!-- %1$s is the zone's name, for example Home -->
+    <string name="survey_plate_privacy_zone_body">Nothing is saved or sent while you\'re in %1$s, except watchlist alerts and device status without a location. Recording picks up once the phone has a location outside the zone.</string>
+    <!-- The plate's body for a zone without a name -->
+    <string name="survey_plate_privacy_zone_body_unnamed">Nothing is saved or sent while you\'re in this zone, except watchlist alerts and device status without a location. Recording picks up once the phone has a location outside the zone.</string>
+    <!-- Line in the survey notification; it leaves the zone's name out because the notification shows on the lock screen -->
+    <string name="survey_notification_in_privacy_zone">Inside a privacy zone</string>
+    <!-- Ready line on the Survey screen while the phone is in a privacy zone, followed by a separator and the detail below: %1$s is the zone's name -->
+    <string name="survey_location_in_privacy_zone">Inside %1$s, a privacy zone</string>
+    <!-- The Ready line for a zone without a name, followed by a separator and the detail below -->
+    <string name="survey_location_in_privacy_zone_unnamed">Inside a privacy zone</string>
+    <!-- The Ready line's detail, after the zone and a separator -->
+    <string name="survey_location_in_privacy_zone_detail">a survey here saves and sends nothing except watchlist alerts and device status without a location</string>
 </resources>

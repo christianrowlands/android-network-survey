@@ -12,6 +12,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.survey.model.LastSessionUi
 import com.craxiom.networksurvey.ui.survey.model.LocationStatus
 import com.craxiom.networksurvey.ui.survey.model.OrgLineUi
+import com.craxiom.networksurvey.ui.survey.model.PrivacyZoneNoticeUi
 import com.craxiom.networksurvey.ui.survey.model.SessionLength
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.common.InlineNotice
@@ -22,7 +23,8 @@ import com.craxiom.networksurvey.ui.common.SMALL_ICON
 /**
  * The slim line at the top of the Survey screen: whether the phone has a location fix, and while
  * Ready, how the last survey went and its Mission ID, which can still be copied. It never blocks
- * Start; a survey without a fix still records.
+ * Start; a survey without a fix still records. While Ready inside a privacy zone it also says a
+ * survey here saves nothing ([privacyZone]); Start is still never blocked.
  */
 @Composable
 fun LocationLine(
@@ -32,9 +34,12 @@ fun LocationLine(
     onAllowLocation: () -> Unit,
     modifier: Modifier = Modifier,
     onCopyMissionId: (String) -> Unit = {},
+    privacyZone: PrivacyZoneNoticeUi? = null,
+    onOpenPrivacyZones: () -> Unit = {},
 ) {
     Column(modifier = modifier) {
         LocationStatusLine(status, onTurnOnLocation, onAllowLocation)
+        if (privacyZone != null) PrivacyZoneLine(privacyZone, onOpenPrivacyZones)
         // Its own line: next to the location text it wraps both on a phone-width screen.
         if (lastSession != null) {
             Text(
@@ -46,6 +51,18 @@ fun LocationLine(
             lastSession.missionId?.let { MissionIdRow(it, onCopyMissionId) }
         }
     }
+}
+
+/** Ready inside a privacy zone: neutral, since a zone is the user's choice, not a problem. */
+@Composable
+private fun PrivacyZoneLine(zone: PrivacyZoneNoticeUi, onOpenPrivacyZones: () -> Unit) {
+    val where = zone.zoneName?.takeIf { it.isNotBlank() }
+        ?.let { stringResource(R.string.survey_location_in_privacy_zone, it) }
+        ?: stringResource(R.string.survey_location_in_privacy_zone_unnamed)
+    InlineNotice(
+        text = where + stringResource(R.string.survey_dot_separator) + stringResource(R.string.survey_location_in_privacy_zone_detail),
+        icon = R.drawable.ic_shield,
+    ) { NsTextAction(stringResource(R.string.privacy_zones_title), onOpenPrivacyZones) }
 }
 
 @Composable

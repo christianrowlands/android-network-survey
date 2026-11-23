@@ -20,6 +20,7 @@ fun NavGraphBuilder.settingsPages(mainNavController: NavHostController, sharedVi
                 onOpenUploads = { mainNavController.navigate(NavOption.UploadSettings.name) },
                 onOpenMapSettings = { mainNavController.navigate(NavOption.TowerMapSettings.name) },
                 onOpenSsidExclusions = { mainNavController.navigate(NavOption.SsidExclusionList.name) },
+                onOpenPrivacyZones = { mainNavController.navigate(NavOption.PrivacyZones.name) },
                 onOpenOrganization = openOrganization,
                 onBackgroundLocationRationale = sharedViewModel::showBackgroundLocationRationale,
             )

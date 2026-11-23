@@ -46,6 +46,7 @@ import com.craxiom.networksurvey.ui.oui.OuiLookupScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnDetailsScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen
 import com.craxiom.networksurvey.ui.plmn.components.PlmnInfoSheet
+import com.craxiom.networksurvey.ui.privacy.privacyZonePages
 import com.craxiom.networksurvey.ui.scout.scoutPages
 import com.craxiom.networksurvey.ui.settings.settingsPages
 import com.craxiom.networksurvey.ui.watchlist.WATCHLIST_ENTRY_ID_KEY
@@ -156,6 +157,7 @@ fun NavGraphBuilder.mainGraph(
                 onSeeOnMap = { sharedViewModel.triggerNavigationToMapTab() },
                 onOpenOrganizationSettings = { sharedViewModel.triggerNavigationToOrganizationSettings() },
                 onOpenNewTowers = { mainNavController.navigate(NavOption.NewTowers.name) },
+                onOpenPrivacyZones = { mainNavController.navigate(NavOption.PrivacyZones.name) },
             )
         }
 
@@ -204,6 +206,7 @@ fun NavGraphBuilder.mainGraph(
         }
 
         settingsPages(mainNavController, sharedViewModel)
+        privacyZonePages(mainNavController)
         scoutPages(mainNavController)
         wifiClientPages(mainNavController, sharedViewModel)
 
@@ -348,6 +351,8 @@ enum class NavOption {
     NsScout,
     ScoutFirmware,
     WifiClientDetails,
+    PrivacyZones,
+    PrivacyZoneEditor,
 }
 
 /** The saved-state key that carries the broker profile id to the broker editor (null adds one). */

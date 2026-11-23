@@ -9,14 +9,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The BeaconDB and OpenCelliD upload gates: the movement threshold, and the per-record location
- * and accuracy check for NS Scout windows, whose records each carry their own fix.
+ * The BeaconDB and OpenCelliD upload gates: the movement threshold, the per-record location and
+ * accuracy check for NS Scout windows, whose records each carry their own fix, and the hidden and
+ * opted-out network filter (for the queue and for the community survey point).
  */
 class DbUploadStoreTest {
 
-    private fun wifi(bssid: String, latitude: Double, accuracy: Int) = WifiRecordWrapper(
+    private fun wifi(bssid: String, latitude: Double, accuracy: Int, ssid: String = "Cafe") = WifiRecordWrapper(
         WifiBeaconRecord.newBuilder().setData(
-            WifiBeaconRecordData.newBuilder().setBssid(bssid).setLatitude(latitude).setLongitude(-102.0).setAccuracy(accuracy)
+            WifiBeaconRecordData.newBuilder().setBssid(bssid).setSsid(ssid).setLatitude(latitude).setLongitude(-102.0)
+                .setAccuracy(accuracy)
         ).build(),
         "",
     )
@@ -28,7 +30,7 @@ class DbUploadStoreTest {
         val noFix = wifi("aa:bb:cc:dd:ee:03", 0.0, 8)
         val alsoGood = wifi("aa:bb:cc:dd:ee:04", 23.002, DbUploadStore.ACCURACY_THRESHOLD_METERS)
 
-        assertEquals(listOf(good, alsoGood), DbUploadStore.wellLocated(listOf(good, badLater, noFix, alsoGood)))
+        assertEquals(listOf(good, alsoGood), DbUploadStore.uploadable(listOf(good, badLater, noFix, alsoGood)))
     }
 
     @Test
@@ -36,7 +38,39 @@ class DbUploadStoreTest {
         val bad = wifi("aa:bb:cc:dd:ee:01", 23.0, 0)
         val good = wifi("aa:bb:cc:dd:ee:02", 23.001, 12)
 
-        assertEquals(listOf(good), DbUploadStore.wellLocated(listOf(bad, good)))
+        assertEquals(listOf(good), DbUploadStore.uploadable(listOf(bad, good)))
+    }
+
+    @Test
+    fun `hidden and opted-out networks are never queued for BeaconDB`() {
+        val good = wifi("aa:bb:cc:dd:ee:01", 23.0, 8)
+        val hidden = wifi("aa:bb:cc:dd:ee:02", 23.0, 8, ssid = "")
+        val nulBytes = wifi("aa:bb:cc:dd:ee:03", 23.0, 8, ssid = "\u0000\u0000\u0000")
+        val noMap = wifi("aa:bb:cc:dd:ee:04", 23.0, 8, ssid = "Home_nomap")
+        val optOut = wifi("aa:bb:cc:dd:ee:05", 23.0, 8, ssid = "Home_optout")
+
+        assertEquals(listOf(good), DbUploadStore.uploadable(listOf(hidden, nulBytes, noMap, optOut, good)))
+    }
+
+    @Test
+    fun `the community survey point never stands for hidden or opted-out networks`() {
+        val good = wifi("aa:bb:cc:dd:ee:01", 23.0, 8)
+        val noMap = wifi("aa:bb:cc:dd:ee:02", 23.0, 8, ssid = "Home_nomap")
+        val hidden = wifi("aa:bb:cc:dd:ee:03", 23.0, 8, ssid = "")
+        // Bad accuracy is the point gate's call, not this filter's
+        val coarse = wifi("aa:bb:cc:dd:ee:04", 23.0, DbUploadStore.ACCURACY_THRESHOLD_METERS + 1)
+
+        assertEquals(listOf(good, coarse), DbUploadStore.withoutOptedOut(listOf(noMap, good, hidden, coarse)))
+        // A batch of only opted-out networks makes no point, so none can be marked as sent to BeaconDB
+        assertTrue(DbUploadStore.withoutOptedOut(listOf(noMap, hidden)).isEmpty())
+    }
+
+    @Test
+    fun `a randomized BSSID is still queued for BeaconDB`() {
+        // 0x02 in the first octet: a locally administered address
+        val randomized = wifi("da:a1:19:00:00:01", 23.0, 8)
+
+        assertEquals(listOf(randomized), DbUploadStore.uploadable(listOf(randomized)))
     }
 
     @Test

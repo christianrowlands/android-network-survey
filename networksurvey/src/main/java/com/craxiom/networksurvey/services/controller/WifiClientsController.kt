@@ -18,7 +18,10 @@ import com.craxiom.networksurvey.scout.model.WifiSource
 import com.craxiom.networksurvey.scout.wifi.ScoutHeard
 import com.craxiom.networksurvey.scout.wifi.ScoutRecordNumbers
 import com.craxiom.networksurvey.scout.wifi.ScoutSourceWatcher
+import com.craxiom.networksurvey.privacy.PrivacyZoneGate
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.services.PrivacyZoneHold
+import com.craxiom.networksurvey.services.RecordListeners
 import com.craxiom.networksurvey.survey.model.RecordType
 import timber.log.Timber
 import java.util.concurrent.CopyOnWriteArraySet
@@ -39,6 +42,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * the source's thread, and only while a sink takes them: a client screen alone takes no numbers
  * and adds nothing to the survey's record counts. A source that starts during a battery or
  * backpressure pause stays paused.
+ *
+ * Privacy zones: a client or probe heard inside a zone (by its own capture-time fix, or while the
+ * phone is in one) reaches no sink and takes no number. The client screens keep their snapshots.
  */
 class WifiClientsController @JvmOverloads constructor(
     private val service: NetworkSurveyService,
@@ -46,9 +52,10 @@ class WifiClientsController @JvmOverloads constructor(
     private val scoutManager: ScoutManager = ScoutManager.getInstance(service),
     private val clientLogger: WifiClientCsvLogger = WifiClientCsvLogger(service),
     private val probeLogger: WifiProbeCsvLogger = WifiProbeCsvLogger(service),
+    private val privacyZoneHold: PrivacyZoneHold = PrivacyZoneHold(PrivacyZoneGate.getInstance(service)),
 ) : ScoutClientHost {
     private val lock = Any()
-    private val sinks = CopyOnWriteArraySet<IWifiClientSurveyRecordListener>()
+    private val sinks = RecordListeners<IWifiClientSurveyRecordListener>(privacyZoneHold::isHolding)
     private val liveListeners = CopyOnWriteArraySet<IWifiClientLiveListener>()
     private val loggingEnabled = AtomicBoolean(false)
     private val source = ScoutClientSource(scoutManager, this, service.primaryLocationListener)
@@ -139,7 +146,7 @@ class WifiClientsController @JvmOverloads constructor(
     }
 
     fun registerListener(listener: IWifiClientSurveyRecordListener) {
-        sinks += listener
+        sinks.add(listener)
         updateSource()
     }
 
@@ -147,11 +154,17 @@ class WifiClientsController @JvmOverloads constructor(
     fun unregisterListener(listener: IWifiClientSurveyRecordListener) {
         if (listener in sinks) {
             source.peekPending(
-                { clients -> buildClients(clients, peek = true).takeIf { it.isNotEmpty() }?.let { notify(listener) { l -> l.onWifiClientRecords(it) } } },
-                { probes -> buildProbes(probes, peek = true).takeIf { it.isNotEmpty() }?.let { notify(listener) { l -> l.onWifiProbeRequestRecords(it) } } },
+                { clients ->
+                    buildClients(clients, peek = true).takeIf { it.isNotEmpty() }
+                        ?.let { sinks.deliverTo(listener, LISTENER_NAME) { l -> l.onWifiClientRecords(it) } }
+                },
+                { probes ->
+                    buildProbes(probes, peek = true).takeIf { it.isNotEmpty() }
+                        ?.let { sinks.deliverTo(listener, LISTENER_NAME) { l -> l.onWifiProbeRequestRecords(it) } }
+                },
             )
         }
-        sinks -= listener
+        sinks.remove(listener)
         updateSource()
     }
 
@@ -247,16 +260,18 @@ class WifiClientsController @JvmOverloads constructor(
         if (sinks.isEmpty()) return
         val records = buildClients(clients)
         if (records.isEmpty()) return
-        service.onRecordsProcessed(RecordType.WIFI_CLIENTS, records.size)
-        sinks.forEach { sink -> notify(sink) { it.onWifiClientRecords(records) } }
+        if (sinks.deliver(LISTENER_NAME) { it.onWifiClientRecords(records) }) {
+            service.onRecordsProcessed(RecordType.WIFI_CLIENTS, records.size)
+        }
     }
 
     override fun onScoutProbes(probes: List<ScoutHeard<ProbeObservation>>) {
         if (sinks.isEmpty()) return
         val records = buildProbes(probes)
         if (records.isEmpty()) return
-        service.onRecordsProcessed(RecordType.WIFI_CLIENTS, records.size)
-        sinks.forEach { sink -> notify(sink) { it.onWifiProbeRequestRecords(records) } }
+        if (sinks.deliver(LISTENER_NAME) { it.onWifiProbeRequestRecords(records) }) {
+            service.onRecordsProcessed(RecordType.WIFI_CLIENTS, records.size)
+        }
     }
 
     override fun onScoutClientSnapshot(snapshot: ScoutClientSnapshot) {
@@ -269,27 +284,32 @@ class WifiClientsController @JvmOverloads constructor(
         }
     }
 
-    /** @param peek True for a leaving sink's early copy of the open window (same numbers as at close). */
+    /**
+     * Builds the records of the clients heard outside every privacy zone.
+     *
+     * @param peek True for a leaving sink's early copy of the open window (same numbers as at close).
+     */
     private fun buildClients(clients: List<ScoutHeard<ClientObservation>>, peek: Boolean = false): List<WifiClientRecord> {
         val missionId = service.missionIdForRecords
-        return clients.mapNotNull { ScoutClientRecords.client(it, service.surveyDeviceId, missionId, clientNumbers.next(it.slot, peek)) }
+        return clients.filterNot { privacyZoneHold.holdsFix(it.fix) }
+            .mapNotNull { ScoutClientRecords.client(it, service.surveyDeviceId, missionId, clientNumbers.next(it.slot, peek)) }
     }
 
-    /** @param peek True for a leaving sink's early copy of the open window (same numbers as at close). */
+    /**
+     * Builds the records of the probes heard outside every privacy zone.
+     *
+     * @param peek True for a leaving sink's early copy of the open window (same numbers as at close).
+     */
     private fun buildProbes(probes: List<ScoutHeard<ProbeObservation>>, peek: Boolean = false): List<WifiProbeRequestRecord> {
         val missionId = service.missionIdForRecords
-        return probes.mapNotNull { ScoutClientRecords.probe(it, service.surveyDeviceId, missionId, probeNumbers.next(it.slot, peek)) }
-    }
-
-    private fun notify(listener: IWifiClientSurveyRecordListener, call: (IWifiClientSurveyRecordListener) -> Unit) {
-        try {
-            call(listener)
-        } catch (e: Exception) {
-            Timber.e(e, "Unable to notify a Wi-Fi client record listener")
-        }
+        return probes.filterNot { privacyZoneHold.holdsFix(it.fix) }
+            .mapNotNull { ScoutClientRecords.probe(it, service.surveyDeviceId, missionId, probeNumbers.next(it.slot, peek)) }
     }
 
     private companion object {
+        /** Names the sinks in the log when one throws. */
+        const val LISTENER_NAME = "Wi-Fi client record listener"
+
         /** The slowest the client screens are refreshed, the same 5 s as a live Wi-Fi screen. */
         const val LIVE_SNAPSHOT_INTERVAL_MS = 5_000
 
