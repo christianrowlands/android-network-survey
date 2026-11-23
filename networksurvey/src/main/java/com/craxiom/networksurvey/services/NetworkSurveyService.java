@@ -3163,7 +3163,35 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // piggyback on the active provider. This is a no-op on standard Android.
                 updateOtherLocationListeners(locationProviderPreference, locationManager, smallestScanRate);
 
-                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
+                // Register the primary listener in its own try/catch. Previously this shared the
+                // try block above, so a provider that is missing or disabled on this device could
+                // throw from the optional-provider registrations and abort this method before the
+                // primary listener was ever registered. The service then had no location at all
+                // and every logged record carried latitude/longitude 0.000000.
+                try
+                {
+                    locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
+                    Timber.i("Registered the primary location listener on provider=%s at %d ms", provider, smallestScanRate);
+                } catch (Throwable t)
+                {
+                    Timber.e(t, "Could not request location updates for the primary listener on provider=%s", provider);
+                }
+
+                // Seed the primary listener with the last known fix so that records written before
+                // the first callback still carry a location. GpsListener drops fixes older than
+                // LOCATION_AGE_THRESHOLD_MS, so a stale seed is discarded automatically.
+                try
+                {
+                    final Location lastKnownLocation = locationManager.getLastKnownLocation(provider);
+                    if (lastKnownLocation != null)
+                    {
+                        Timber.i("Seeding the primary location listener with the last known fix from provider=%s", provider);
+                        primaryLocationListener.onLocationChanged(lastKnownLocation);
+                    }
+                } catch (Throwable t)
+                {
+                    Timber.w(t, "Could not read the last known location for provider=%s", provider);
+                }
             } catch (Throwable t)
             {
                 // An IllegalArgumentException was occurring on phones that don't have a GPS provider, so some defensive coding here
@@ -3216,13 +3244,58 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (locationProviderPreference == LOCATION_PROVIDER_ALL)
         {
-
-            locationManager.requestLocationUpdates(gnssLocationListener.getProvider(), scanRate, 0f, gnssLocationListener, serviceLooper);
-            locationManager.requestLocationUpdates(networkLocationListener.getProvider(), scanRate, 0f, networkLocationListener, serviceLooper);
+            requestLocationUpdatesIfAvailable(locationManager, gnssLocationListener, scanRate);
+            requestLocationUpdatesIfAvailable(locationManager, networkLocationListener, scanRate);
         } else
         {
             locationManager.removeUpdates(gnssLocationListener);
             locationManager.removeUpdates(networkLocationListener);
+        }
+    }
+
+    /**
+     * Registers one of the optional "extra" location listeners, but only when its provider actually
+     * exists on this device, and never lets a failure escape.
+     * <p>
+     * These listeners are optional: they only fill in the extra GNSS/network location columns on
+     * device status records. A provider that does not exist, for example {@code network} on devices
+     * where it has been removed, makes {@link LocationManager#requestLocationUpdates} throw
+     * {@link IllegalArgumentException}. That exception used to propagate out of
+     * {@link #updateLocationListener()} and prevent the primary location listener from being
+     * registered at all, which left every survey record with no location.
+     *
+     * @param locationManager The Android Location Manager.
+     * @param listener        The extra location listener to register.
+     * @param scanRate        The location update rate in milliseconds.
+     */
+    @SuppressLint("MissingPermission")
+    private void requestLocationUpdatesIfAvailable(LocationManager locationManager,
+                                                   ExtraLocationListener listener,
+                                                   int scanRate)
+    {
+        final String providerName = listener.getProvider();
+
+        try
+        {
+            final boolean providerExists;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            {
+                providerExists = locationManager.hasProvider(providerName);
+            } else
+            {
+                providerExists = locationManager.getProvider(providerName) != null;
+            }
+
+            if (!providerExists)
+            {
+                Timber.w("Not registering the extra %s location listener because this device has no such provider", providerName);
+                return;
+            }
+
+            locationManager.requestLocationUpdates(providerName, scanRate, 0f, listener, serviceLooper);
+        } catch (Throwable t)
+        {
+            Timber.e(t, "Could not register the extra %s location listener", providerName);
         }
     }
 
