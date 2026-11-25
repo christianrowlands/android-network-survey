@@ -1,13 +1,17 @@
 # Changelog
 
-## Unreleased
+## [2.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v2.1) - 2026-11-25
 
 **WHAT'S NEW**
 * NS Scout support: pair an optional ESP32 board running receive-only firmware from More > Hardware > NS Scout. Wi-Fi then comes from the Scout instead of the phone (never both in one survey), with no Android scan limit and more detail per access point, and two new record types: Wi-Fi clients (devices and the networks they look for, to Log files, MQTT and gRPC) and Raw frames (pcapng, Log files only). Scout firmware updates install from the app over Bluetooth, and managed configuration adds `allow_ns_scout`, `survey_wifi_clients` and `survey_wifi_raw`.
+* Privacy zones: mark places like your home where the survey saves and sends nothing, with no log files, uploads or streams. Add zones from Settings or the Community databases page and see them on the Map. Watchlist alerts still go off inside a zone, and device status is still saved and sent, without a location. Records waiting to upload to OpenCelliD and BeaconDB are removed if they fall inside a zone. On managed phones, privacy zones are off unless the organization sets `allow_privacy_zones`.
+* A New towers page lists the towers your phone connected to that are not in the tower database, grouped by survey, with a map of where you were for each one. The new tower alert opens it, the list is kept across restarts, and a tower is marked once it is in the tower database.
+* The Signals and Map screens update faster while they are open. Cellular refreshes every 2 seconds on the Cellular screen and every 5 seconds on the Map (Android 11 and later), and Wi-Fi scans every 5 seconds when Android's Wi-Fi scan throttling is off. A running survey saves these extra scans, and scanning returns to the survey's interval when the screen closes.
 
 **CHANGES TO KNOW ABOUT**
 * The Wi-Fi CSV file keeps CSV Version 0.4.0 and its columns. Columns that the phone never fills (such as service set type, supported rates and AKM suites) stay empty for phone scans and are filled for NS Scout records.
 * Other apps can't start Wi-Fi clients or Raw frames through the Intent API: `wifi_clients` and `wifi_raw` in a start request are left out and the rest of the request starts. An organization's `survey_wifi_clients` or `survey_wifi_raw` set to `on` still applies.
+* BeaconDB uploads skip hidden networks and networks whose SSID contains `_nomap` or `_optout`.
 
 **BUG FIXES**
 * Records carry a location again on phones that have no network or no GPS location provider. With the Location Provider setting on All, every record on those phones was saved with latitude and longitude `0.000000` and an empty `locationAge`.

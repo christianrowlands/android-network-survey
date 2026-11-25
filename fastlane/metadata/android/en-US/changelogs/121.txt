@@ -1,0 +1,6 @@
+* NS Scout: pair an optional ESP32 board for Wi-Fi with no Android scan limit, plus Wi-Fi clients and raw frames
+* Privacy zones: places like your home where nothing is saved or sent
+* New towers page lists towers that are not in the tower database
+* Signals and Map update faster while they are open
+* Fix records saved with no location on phones missing a location provider
+* The Wi-Fi list marks the connected access point again
