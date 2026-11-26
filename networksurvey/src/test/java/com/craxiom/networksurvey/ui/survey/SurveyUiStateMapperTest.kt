@@ -415,6 +415,21 @@ class SurveyUiStateMapperTest {
     fun `a last session of a minute or more rounds to whole minutes`() {
         assertEquals(LastSessionUi(SessionLength.Minutes(1), 12L), lastSessionLasting(60_000L))
         assertEquals(LastSessionUi(SessionLength.Minutes(2), 12L), lastSessionLasting(103_000L))
+        assertEquals(LastSessionUi(SessionLength.Minutes(59), 12L), lastSessionLasting(59 * MINUTE_MS))
+    }
+
+    @Test
+    fun `a last session of an hour or more splits into hours and minutes`() {
+        assertEquals(LastSessionUi(SessionLength.Hours(1, 0), 12L), lastSessionLasting(59 * MINUTE_MS + 40_000L))
+        assertEquals(LastSessionUi(SessionLength.Hours(21, 25), 12L), lastSessionLasting(1_285 * MINUTE_MS))
+        assertEquals(LastSessionUi(SessionLength.Hours(23, 59), 12L), lastSessionLasting(1_439 * MINUTE_MS))
+    }
+
+    @Test
+    fun `a last session of a day or more splits into days and rounded hours`() {
+        assertEquals(LastSessionUi(SessionLength.Days(1, 0), 12L), lastSessionLasting(1_440 * MINUTE_MS))
+        assertEquals(LastSessionUi(SessionLength.Days(1, 1), 12L), lastSessionLasting(1_520 * MINUTE_MS))
+        assertEquals(LastSessionUi(SessionLength.Days(2, 4), 12L), lastSessionLasting(52 * HOUR_MS + 20 * MINUTE_MS))
     }
 
     private fun lastSessionLasting(durationMs: Long): LastSessionUi? =
@@ -726,6 +741,8 @@ class SurveyUiStateMapperTest {
 
     private companion object {
         const val NOW = 1_800_000_000_000L
+        const val MINUTE_MS = 60_000L
+        const val HOUR_MS = 60 * MINUTE_MS
         const val MQTT_HOST_KEY = "mqtt_connection_host"
     }
 }

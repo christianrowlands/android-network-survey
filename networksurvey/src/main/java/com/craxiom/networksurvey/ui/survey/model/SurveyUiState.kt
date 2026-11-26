@@ -93,10 +93,15 @@ sealed interface LocationStatus {
  */
 data class LastSessionUi(val length: SessionLength, val records: Long, val missionId: String? = null)
 
-/** How long the last survey ran: seconds when it was under a minute, whole minutes otherwise. */
+/**
+ * How long the last survey ran, in the largest units that still read at a glance: seconds under a
+ * minute, whole minutes under an hour, hours and minutes under a day, and days and hours after that.
+ */
 sealed interface SessionLength {
     data class Seconds(val seconds: Int) : SessionLength
     data class Minutes(val minutes: Int) : SessionLength
+    data class Hours(val hours: Int, val minutes: Int) : SessionLength
+    data class Days(val days: Int, val hours: Int) : SessionLength
 }
 
 /** Why an item can't be changed from the Survey screen. */

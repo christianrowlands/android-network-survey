@@ -101,9 +101,23 @@ private fun lastSessionText(last: LastSessionUi): String {
     val length = when (val ran = last.length) {
         is SessionLength.Seconds -> pluralStringResource(R.plurals.survey_seconds_short, ran.seconds, ran.seconds)
         is SessionLength.Minutes -> pluralStringResource(R.plurals.survey_minutes_short, ran.minutes, ran.minutes)
+        is SessionLength.Hours -> lengthPair(
+            pluralStringResource(R.plurals.survey_hours_short, ran.hours, ran.hours),
+            ran.minutes.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.survey_minutes_short, it, it) },
+        )
+
+        is SessionLength.Days -> lengthPair(
+            pluralStringResource(R.plurals.survey_days_short, ran.days, ran.days),
+            ran.hours.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.survey_hours_short, it, it) },
+        )
     }
     return stringResource(R.string.survey_last_session, length, recordsText(last.records))
 }
+
+/** "21 h 25 min", or just the [larger] unit ("3 h") when the [smaller] one is zero. */
+@Composable
+private fun lengthPair(larger: String, smaller: String?): String =
+    smaller?.let { stringResource(R.string.survey_length_pair, larger, it) } ?: larger
 
 /**
  * "3,118 records", with the count grouped for the phone's locale, or "12 saved for upload" when

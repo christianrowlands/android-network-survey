@@ -1351,6 +1351,13 @@
     <plurals name="survey_minutes_short">
         <item quantity="other">%d 分钟</item>
     </plurals>
+    <plurals name="survey_hours_short">
+        <item quantity="other">%d 小时</item>
+    </plurals>
+    <plurals name="survey_days_short">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <string name="survey_length_pair">%1$s %2$s</string>
     <plurals name="survey_seconds_short">
         <item quantity="other">%d 秒</item>
     </plurals>

@@ -1629,12 +1629,22 @@
     <string name="survey_location_turn_on">Turn on</string>
     <string name="survey_location_permission">Location permission needed</string>
     <string name="survey_location_allow">Allow</string>
-    <!-- %1$s is how long the last survey ran ("12 min"), %2$s its record count ("3,118 records") -->
+    <!-- %1$s is how long the last survey ran ("12 min", "21 h 25 min", "2 d 4 h"), %2$s its record count ("3,118 records") -->
     <string name="survey_last_session">Last survey ran for %1$s · %2$s</string>
     <plurals name="survey_minutes_short">
         <item quantity="one">%d min</item>
         <item quantity="other">%d min</item>
     </plurals>
+    <plurals name="survey_hours_short">
+        <item quantity="one">%d h</item>
+        <item quantity="other">%d h</item>
+    </plurals>
+    <plurals name="survey_days_short">
+        <item quantity="one">%d d</item>
+        <item quantity="other">%d d</item>
+    </plurals>
+    <!-- Joins two units of how long the last survey ran: %1$s the larger ("21 h"), %2$s the smaller ("25 min") -->
+    <string name="survey_length_pair">%1$s %2$s</string>
     <plurals name="survey_seconds_short">
         <item quantity="one">%d s</item>
         <item quantity="other">%d s</item>

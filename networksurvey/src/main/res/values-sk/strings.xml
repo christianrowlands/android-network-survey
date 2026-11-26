@@ -1281,6 +1281,19 @@
         <item quantity="many">%d min</item>
         <item quantity="other">%d min</item>
     </plurals>
+    <plurals name="survey_hours_short">
+        <item quantity="one">%d h</item>
+        <item quantity="few">%d h</item>
+        <item quantity="many">%d h</item>
+        <item quantity="other">%d h</item>
+    </plurals>
+    <plurals name="survey_days_short">
+        <item quantity="one">%d d</item>
+        <item quantity="few">%d d</item>
+        <item quantity="many">%d d</item>
+        <item quantity="other">%d d</item>
+    </plurals>
+    <string name="survey_length_pair">%1$s %2$s</string>
     <plurals name="survey_seconds_short">
         <item quantity="one">%d s</item>
         <item quantity="few">%d s</item>

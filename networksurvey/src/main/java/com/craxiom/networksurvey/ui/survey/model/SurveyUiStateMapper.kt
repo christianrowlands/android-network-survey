@@ -198,15 +198,25 @@ object SurveyUiStateMapper {
 
     private fun lastSession(inputs: SurveyInputs): LastSessionUi? {
         val last = inputs.runtime.lastSession ?: return null
-        val seconds = (last.durationMs / MILLIS_PER_SECOND.toDouble()).roundToLong().coerceAtLeast(1L)
-        val length = if (seconds < SECONDS_PER_MINUTE) {
-            SessionLength.Seconds(seconds.toInt())
-        } else {
-            SessionLength.Minutes((last.durationMs / MILLIS_PER_MINUTE.toDouble()).roundToLong().toInt())
-        }
         // The ID is kept with the last session, so it can still be copied after Stop, a tab switch or
         // a restart; a new survey rolls a new one
-        return LastSessionUi(length, last.totalRecords, last.missionId)
+        return LastSessionUi(sessionLength(last.durationMs), last.totalRecords, last.missionId)
+    }
+
+    /**
+     * @return [durationMs] in the largest units that still read at a glance ("21 h 25 min", not
+     * "1285 min"). Each step rounds to its smallest unit, so 59 min 40 s reads as 1 h.
+     */
+    private fun sessionLength(durationMs: Long): SessionLength {
+        val seconds = (durationMs / MILLIS_PER_SECOND.toDouble()).roundToLong().coerceAtLeast(1L)
+        if (seconds < SECONDS_PER_MINUTE) return SessionLength.Seconds(seconds.toInt())
+        val minutes = (durationMs / MILLIS_PER_MINUTE.toDouble()).roundToLong()
+        if (minutes < MINUTES_PER_HOUR) return SessionLength.Minutes(minutes.toInt())
+        if (minutes < MINUTES_PER_DAY) {
+            return SessionLength.Hours((minutes / MINUTES_PER_HOUR).toInt(), (minutes % MINUTES_PER_HOUR).toInt())
+        }
+        val hours = (minutes / MINUTES_PER_HOUR.toDouble()).roundToLong()
+        return SessionLength.Days((hours / HOURS_PER_DAY).toInt(), (hours % HOURS_PER_DAY).toInt())
     }
 
     /** @return [types] in the order the screen always lists record types. */
@@ -215,6 +225,9 @@ object SurveyUiStateMapper {
     private const val MILLIS_PER_SECOND = 1_000L
     private const val SECONDS_PER_MINUTE = 60L
     private const val MILLIS_PER_MINUTE = 60_000L
+    private const val MINUTES_PER_HOUR = 60L
+    private const val HOURS_PER_DAY = 24L
+    private const val MINUTES_PER_DAY = MINUTES_PER_HOUR * HOURS_PER_DAY
 }
 
 /** The facts about the setup that both the Ready form and the Recording layout derive from. */
